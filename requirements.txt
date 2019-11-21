@@ -1,0 +1,8 @@
+geopandas>=0.6.1
+networkx>=2.4
+numpy>=1.17.3
+osmnx>=0.10
+pandas>=0.25.2
+seaborn>=0.9.0
+Shapely>=1.6.4
+python>=3.6

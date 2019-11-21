@@ -1,0 +1,11 @@
+channels:
+  - udst
+  - defaults
+  - conda-forge
+dependencies:
+  - osmnx==0.10
+  - importlib_metadata=0.23
+  - pip=19.3.1
+  - pip:
+    - python-louvain==0.13
+
