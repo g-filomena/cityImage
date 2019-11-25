@@ -6,8 +6,7 @@ import matplotlib.patches as mpatches
 
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
-
-from shapely.geometry import Point, LineString, MultiLineString
+import pylab
 
 
 
@@ -60,8 +59,7 @@ def plot_points(gdf, column, classes = 7, ms = 0.9, ms_col = None, title = 'Plot
     plt.axis('equal')
     ax.set_axis_off()
     
-    if line_back.empty == False:
-        line_back.plot(ax = ax, color = 'white', linewidth = 1.1, alpha = 0.3)
+    if line_back.empty == False: line_back.plot(ax = ax, color = 'white', linewidth = 1.1, alpha = 0.3)
     
     # markers size from column
     if (ms_col != None): ms = gdf[ms_col]

@@ -3,7 +3,7 @@ import functools
 
 from shapely.geometry import Point, LineString, Polygon, MultiPolygon, mapping, MultiLineString
 from shapely.ops import cascaded_union, linemerge, nearest_points
-pd.set_option('precision', 10)
+pd.set_option("precision", 10)
 
 import utilities as uf
    
@@ -26,18 +26,20 @@ def nodes_dict(G):
 
     for i, item in enumerate(nodes_list):
         cod = item
-        x = nodes_list[item]['x']
-        y = nodes_list[item]['y']
+        x = nodes_list[item]["x"]
+        y = nodes_list[item]["y"]
         nodes_dict[cod] = (x,y)
     
     return nodes_dict
-
+	
 def straightness_centrality(G, weight, normalized = True):
     """
     Straightness centrality compares the length of the path between two nodes with the straight line that links them capturing a 
     centrality that refers to ‘being more directly reachable’. (Porta, S., Crucitti, P. & Latora, V., 2006b. The Network Analysis Of Urban
     Streets: A Primal Approach. Environment and Planning B: Planning and Design, 33(5), pp.705–725.)
     
+	Function readapted from: https://github.com/jcaillet/mca/blob/master/mca/centrality/overridden_nx_straightness.py
+
     Parameters
     ----------
     G: networkx multigraph
@@ -69,14 +71,18 @@ def straightness_centrality(G, weight, normalized = True):
                     euclidean_dist = euclidean_distance(*coord_nodes[n]+coord_nodes[target])
                     straightness = straightness + (euclidean_dist/network_dist)
 
-            straightness_centrality[n] = straightness
-            if normalized: straightness_centrality[n] = straightness * (1.0/(len(G)-1.0) )
+            straightness_centrality[n] = straightness * (1.0/(len(G)-1.0))
+            if normalized: 
+				if len(sp)>: 1
+					s = (len(G) - 1.0) / (len(sp) - 1.0)
+                    straightness_centrality[n] *= s
+				else: straightness_centrality[n] = 0.0
         else:
             straightness_centrality[n] = 0.0
 
     return straightness_centrality
 
-def weight_nodes(nodes_gdf, service_points_gdf, G, radius, name):
+def weight_nodes(nodes_gdf, service_points_gdf, G, radius = 400, name):
     """
     Given a nodes- and a services/points-geodataframes, the function assigns an attribute to nodes in the graph G (prevously derived from 
     nodes_gdf) based indeed on the amount of features in the services_gdf in a buffer around each node. 
@@ -96,20 +102,21 @@ def weight_nodes(nodes_gdf, service_points_gdf, G, radius, name):
     nodes_gdf[name] = None
     sindex = service_points_gdf.sindex
 	
-	nodes_gdf[name] = nodes_gdf.apply(lambda row: count_services_around_node(row['geometry'], sindex, service_points_gdf, radius), axis=1)
+	nodes_gdf[name] = nodes_gdf.apply(lambda row: _count_services_around_node(row["geometry"], service_points_gdf, sindex, radius = radius), axis=1)
     for n in G.nodes(): G.nodes[n][name] = nodes_gdf[name].loc[n]
     
     return G
 	
-def count_services_around_node(node_geometry, sindex, service_points_gdf, radius)
+def _count_services_around_node(node_geometry, service_points_gdf, service_points_gdf_sindex, radius)
+
     """
     The functions supports the weight_nodes function.
     
     Parameters
     ----------
     node_geometry: Point geometry
-	sindex = spatial index on service_points_gdf
-    service_points_gdf: GeoDataFrame (Point geometry)
+	service_points_gdf: GeoDataFrame (Point geometry)
+	service_points_gdf_sindex = Rtree Spatial Index
     radius: float, distance around the node within looking for point features (services)
     
     Returns
@@ -132,7 +139,7 @@ def reach_centrality(G, weight, radius, attribute):
     The measure contemplates the assignment of attributes (e.g. number of activities, population, employees in an area) to nodes and
     accounts for opportunities that are reachable along the actual street network as perceived by pedestrians’. The reach centrality of a
     node j, indicates the number of other nodes reachable from i, at the shortest path distance of r, where nodes are rewarded with a
-    score (indicated by 'attribute') which indicates their importance. The function is readapted from: Sevtsuk, A. & Mekonnen, M., 2012.
+    score (indicated by "attribute") which indicates their importance. The function is readapted from: Sevtsuk, A. & Mekonnen, M., 2012.
     Urban Network Analysis: A New Toolbox For ArcGIS. Revue internationale de géomatique, 2, pp.287–305.
 
     Parameters
@@ -166,13 +173,13 @@ def reach_centrality(G, weight, radius, attribute):
                     weight_target = G.nodes[target][attribute]
                     reach = reach + weight_target
             reach_centrality[n] = reach
-        else:               
-            reach_centrality[n]=0.0
+        else: reach_centrality[n]=0.0
 
     return reach_centrality
 	
     
-def local_betweenness(nodes_gdf, measure = 'Bc', radius = 400):
+def rescale_centrality(nodes_gdf, measure = "Bc", radius = 400):
+
 	"""
     The measure rescales precomputed betweenness centrality values (see networkX) within a certain radius around each node.
 	Pleas indicate the value to rescalue through the parameter "measure".
@@ -189,20 +196,21 @@ def local_betweenness(nodes_gdf, measure = 'Bc', radius = 400):
     """
     
     nodes_gdf = nodes_gdf.copy()
-	if measure not in nodes_gdf.columns: raise columnError('The column name provided was not found in the nodes GeoDataFrame')
+	if measure not in nodes_gdf.columns: raise columnError("The column name provided was not found in the nodes GeoDataFrame")
     spatial_index = nodes_gdf.sindex # spatial index
-    nodes_gdf[measure+'_'+str(radius)] nodes_gdf.apply(lambda row: rescale_node_bc(row.Index, sindex, nodes_gdf, radius, measure), axis=1)
+    nodes_gdf[measure+"_"+str(radius)] nodes_gdf.apply(lambda row: _rescale_node_bc(row.Index, nodes_gdf, sindex, radius = radius, measure), axis=1)
         
     return nodes_gdf
 
-def rescale_node_BC(nodeID, sindex, nodes_gdf, radius, measure)
+def _rescale_node_centrality(nodeID, nodes_gdf, nodes_gdf_sindex, radius, measure)
+
     """
     The functions supports the local_betweenness function.
     Parameters
     ----------
     nodeID: integer
-	sindex = spatial index on service_points_gdf
-    nodes_points_gdf: GeoDataFrame (Point geometry)
+	nodes_points_gdf: GeoDataFrame (Point geometry)
+	nodes_gdf_sindex = Rtree Spatial Index
     radius: float, distance around the node within looking for other nodes
 	measure: string
     
@@ -217,25 +225,63 @@ def rescale_node_BC(nodeID, sindex, nodes_gdf, radius, measure)
         precise_matches = possible_matches[possible_matches.intersects(buffer)]
         uf.scaling_columnDF(precise_matches, measure) 
 		
-	return precise_matches[measure+'_sc'].loc[nodeID]
-	
-def nodes_dict(G):
-    """
-    it creates a dictionary where keys represent the node ID, and the items the coordinate tuples
-    
-    Parameters
-    G: NetworkX graph
-    ----------
-    """
-    nodes_list = G.nodes()
-    nodes_dict = {}
+	return precise_matches[measure+"_sc"].loc[nodeID]
 
-    for i, item in enumerate(nodes_list):
-        cod = item
-        x, y  = nodes_list[item]['x'], y = nodes_list[item]['y']
-        nodes_dict[cod] = (x,y)
+def centrality(G, measure, weight, normalized = False, all = False):
+
+    """"
+	The function computes betweenness centrality at the local level.
+      
+    Parameters
+    ----------
+    G: Networkx graph
+    weight: string, edges weight
+    radius: float, distance from node, within local betweenness is computed  
     
-    return nodes_dict
+    Returns
+    -------
+    dictionary
+    """		
+
+	if measure == "betweenness_centrality": c = nx.betweenness_centrality(G, weight = "length", normalized=normalized)
+	elif measure == "straightness_centrality": c = straightness_centrality(G, weight = "length", normalized=normalized)
+	elif measure == "closeness_centrality": c = nx.closeness_centrality(G, weight = "length", normalized=normalized)
+	elif measure == "information_centrlity" c=nx.current_flow_betweenness_centrality(G, weight = "length", solver ="lu", normalized=normalized) 
+	
+	return cb
+	
+	
+def local_centrality(G, measure, weight, radius = , normalized = False):
+
+    """
+    The function computes betweenness centrality at the local level.
+      
+    Parameters
+    ----------
+    G: Networkx graph
+    weight: string, edges weight
+    radius: float, distance from node, within local betweenness is computed  
+    
+    Returns
+    -------
+    dictionary
+    """
+           
+    path_length = functools.partial(nx.single_source_dijkstra_path_length, weight = weight)
+    nodes = G.nodes()
+    cm = {}
+    coord_nodes = nodes_dict(G)
+
+    for n in nodes:
+		G_small = nx.ego_graph(G, n, radius=radius, distance="weight")
+        if measure == "betweenness_centrality": c = nx.betweenness_centrality(G_small, weight = "length", normalized=normalized)[n]
+		elif measure == "straightness_centrality": c = straightness_centrality(G_small, weight = "length", normalized=normalized)[n]
+		elif measure == "closeness_centrality": c = nx.closeness_centrality(G_small, weight = "length", normalized=normalized)[n]
+		cm[n] = c
+    
+	return cb	
+
+
 	
 	
 	
