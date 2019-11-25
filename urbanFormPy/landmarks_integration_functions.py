@@ -5,6 +5,8 @@ pd.set_option("precision", 10)
 
 import utilities as uf
 
+
+
 def assign_buildings_to_nodes(nodes_gdf, buildings_gdf, buffer = 80):
     """
     The function simply resets the indexes of the two dataframes without losing the relative links

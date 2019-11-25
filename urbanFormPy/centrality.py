@@ -89,8 +89,8 @@ def weight_nodes(nodes_gdf, service_points_gdf, G, radius = 400, name):
     
     Parameters
     ----------
-    nodes_gdf: GeoDataFrame
-    service_points_gdf: GeoDataFrame (Point geometry)
+    nodes_gdf: Point GeoDataFrame
+    service_points_gdf: Point GeoDataFrame
     G: networkx multigraph
     radius: float, distance around the node within looking for point features (services)
     name: string, attribute name
@@ -115,7 +115,7 @@ def _count_services_around_node(node_geometry, service_points_gdf, service_point
     Parameters
     ----------
     node_geometry: Point geometry
-	service_points_gdf: GeoDataFrame (Point geometry)
+	service_points_gdf: Point GeoDataFrame
 	service_points_gdf_sindex = Rtree Spatial Index
     radius: float, distance around the node within looking for point features (services)
     
@@ -186,7 +186,7 @@ def rescale_centrality(nodes_gdf, measure = "Bc", radius = 400):
 
     Parameters
     ----------
-    nodes_gdf: GeoDataFrame
+    nodes_gdf: Point GeoDataFrame
     measure: string
     radius: float, distance from node within wich rescaling the betweenness centrality value
     
@@ -209,7 +209,7 @@ def _rescale_node_centrality(nodeID, nodes_gdf, nodes_gdf_sindex, radius, measur
     Parameters
     ----------
     nodeID: integer
-	nodes_points_gdf: GeoDataFrame (Point geometry)
+	nodes_gdf: Point GeoDataFrame
 	nodes_gdf_sindex = Rtree Spatial Index
     radius: float, distance around the node within looking for other nodes
 	measure: string
