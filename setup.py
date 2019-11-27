@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 with open("README.md", "r") as readme_file:
     readme = readme_file.read()
@@ -10,7 +10,7 @@ setup(
     description='A package for studying urban Form and obtaining the computational Image of the City',
     long_description=readme,
     long_description_content_type="text/markdown",
-	packages=find_packages(),
+	packages = ['urbanFormPy'],
 	version='0.1',
     url='http://github.com/urbanFormPy',
     author='Gabriele Filomena',
