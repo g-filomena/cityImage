@@ -374,24 +374,24 @@ def plot_lines_aside(gdf, gdf_c = None, classes = 7, lw = 0.9, columnA = None, c
         i.set_aspect("equal")
         
         # boolean map
-        if (column[n] != None) & (scheme == None): 
+        if (columns[n] != None) & (scheme == None): 
             if cmap == None & classes == 2: 
                 colors = ["white", "red"]
-                gdf.plot(ax = i, categorical = True, column = column[n], color = colors, linewidth = lw, legend = legend)
+                gdf.plot(ax = i, categorical = True, column = columns[n], color = colors, linewidth = lw, legend = legend)
             else:
                 cmap='tab20b'
-                gdf.plot(ax = i, categorical = True, column = column[n], cmap='tab20b', linewidth = lw, legend = legend)
+                gdf.plot(ax = i, categorical = True, column = columns[n], cmap='tab20b', linewidth = lw, legend = legend)
             
         # user defined bins
         elif scheme == "User_Defined":
-            gdf.plot(ax = i, column = column[n], cmap = cmap, linewidth = lw, scheme = scheme, legend = legend, classification_kwds={'bins':bins})
+            gdf.plot(ax = i, column = columns[n], cmap = cmap, linewidth = lw, scheme = scheme, legend = legend, classification_kwds={'bins':bins})
         # Lynch's bins - only for variables from 0 to 1 
         elif scheme == "Lynch_Breaks":  
             bins = [0.125, 0.25, 0.5, 0.75, 1.00]
-            gdf.plot(ax = i, column = column[n], cmap = cmap, linewidth = lw, scheme = scheme, legend = legend, classification_kwds={'bins':bins})  
+            gdf.plot(ax = i, column = columns[n], cmap = cmap, linewidth = lw, scheme = scheme, legend = legend, classification_kwds={'bins':bins})  
         # all other schemes         
         elif scheme != None: 
-            gdf.plot(ax = i, column = column[n], k = classes, cmap = cmap, linewidth = lw, scheme = scheme, legend = legend)
+            gdf.plot(ax = i, column = columns[n], k = classes, cmap = cmap, linewidth = lw, scheme = scheme, legend = legend)
         if legend:
             leg = i.get_legend()
             leg.set_bbox_to_anchor((0., 0., 0.2, 0.2))
