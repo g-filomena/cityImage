@@ -16,11 +16,11 @@ def scaling_columnDF(df, i, inverse = False):
     i: string (column name)
     ----------
     """
-	
+    
     df[i+"_sc"] = (df[i]-df[i].min())/(df[i].max()-df[i].min())
     if (inverse == True): df[i+"_sc"] = 1-(df[i]-df[i].min())/(df[i].max()-df[i].min())
         
-	
+    
 def dict_to_df(list_dict, list_col):
 
     """
@@ -49,13 +49,13 @@ def center_line(line_geometryA, line_geometryB):
     
     ----------
     Parameters
-	line_geometryA, line_geometryB: LineString
+    line_geometryA, line_geometryB: LineString
     
     Returns:
     ----------
     LineString
     """
-	    
+        
     line_coordsA = list(line_geometryA.coords)
     line_coordsB = list(line_geometryB.coords)
         
@@ -83,12 +83,12 @@ def center_line(line_geometryA, line_geometryB):
 def distance_geometry_gdf(geometry, gpd):
     """
     Given a geometry and a GeoDataFrame, it returns the minimum distance between the geometry and the GeoDataFrame. 
-	It provides also the index of the closest geometry in the GeoDataFrame
+    It provides also the index of the closest geometry in the GeoDataFrame
     
     ----------
     Parameters
-	geometry: Point, LineString or Polygon
-	gpd: GeoDataFrame
+    geometry: Point, LineString or Polygon
+    gpd: GeoDataFrame
     
     Returns:
     ----------
@@ -106,10 +106,10 @@ def merge_lines(line_geometries):
 
     """
     Given a list of line_geometries wich are connected by common to and from vertexes, the function infers the sequence, based on the coordinates and return a merged LineString feature.
-	
+    
     ----------
     Parameters
-	line_geometries: list of LineString
+    line_geometries: list of LineString
     
     Returns:
     ----------
@@ -119,8 +119,8 @@ def merge_lines(line_geometries):
     first = list(line_geometries[0].coords)
     second = list(line_geometries[1].coords)
     coords = []
-	
-	# determining directions
+    
+    # determining directions
     reverse = False
     if first[0] == second[0]: 
         reverse = True
@@ -130,7 +130,7 @@ def merge_lines(line_geometries):
         first.reverse()
         second.reverse()
         reverse = True
-	
+    
     coords = first + second
     last = second
     for n,i in enumerate(line_geometries):
@@ -147,23 +147,23 @@ def merge_lines(line_geometries):
 def merge_disconnected_lines(line_geometries):
     """
     Given a list of line_geometries wich are disconnected, the function infers the sequence, based on the coordinates and return a merged LineString feature.
-	
+    
     ----------
     Parameters
-	line_geometries: list of LineString
+    line_geometries: list of LineString
     
     Returns:
     ----------
     LineString
     """
-	
+    
     new_line = []
     for n, i in enumerate(list_lines):
         coords = list(i.coords)
         if n < len(list_lines)-1: coords.append(list_lines[n+1].coords[-1])
         new_line = new_line + coords
     
-	return LineString([coor for coor in new_line])
+    return LineString([coor for coor in new_line])
 
             
             

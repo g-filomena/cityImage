@@ -10,8 +10,8 @@ from shapely.geometry import Point, LineString, Polygon, MultiPolygon, mapping, 
 from shapely.ops import cascaded_union, linemerge, nearest_points
 pd.set_option("precision", 10)
 
-import .utilities as uf
-import .angles as af
+from .utilities import *
+from .angles import *
 
 """
 This set of functions is designed for extracting the computational Image of The City.
@@ -20,9 +20,9 @@ While the use of the terms "nodes" and "edges" can be cause confusion between th
 (See notebook "1_Nodes_paths_districts.ipynb" for usages and pipeline).
 
 """
-	
+    
 ## Graph preparation functions ###############
-	
+    
 def get_network_fromOSM(download_type, place, network_type = "all", epsg = None, distance = 7000): 
 
     """
@@ -72,7 +72,7 @@ def get_network_fromOSM(download_type, place, network_type = "all", epsg = None,
     nodes_gdf["old_nodeID"] = nodes_gdf.osmid.astype("int64")
     nodes_gdf["nodeID"] = nodes_gdf.index.values.astype(int)
     
-	edges_gdf = pd.merge(edges_gdf, nodes_gdf[["old_nodeID", "nodeID"]], how="left", left_on="old_u", right_on="old_nodeID")
+    edges_gdf = pd.merge(edges_gdf, nodes_gdf[["old_nodeID", "nodeID"]], how="left", left_on="old_u", right_on="old_nodeID")
     edges_gdf = edges_gdf.rename(columns = {"nodeID":"u"})
     edges_gdf = pd.merge(edges_gdf, nodes_gdf[["old_nodeID", "nodeID"]], how="left", left_on="old_v", right_on="old_nodeID")
     edges_gdf = edges_gdf.rename(columns = {"nodeID":"v"})
@@ -101,13 +101,13 @@ def get_network_fromSHP(path, epsg, crs, case_study_area = None, distance_from_b
     The function loads a vector lines shapefile from a specified directory, along with the epsg coordinate code.
     It creates two GeoDataFrame, one for street junctions (vertexes) and one for street segments (links).
     The GeoDataFrames are built assuming a planar undirected graph. 
-	The "case_study_area" polygon is optional and when provided is used to select geometries within the area + a buffer of x meters, fixed by the researcher (distance_from_boundary_area)
+    The "case_study_area" polygon is optional and when provided is used to select geometries within the area + a buffer of x meters, fixed by the researcher (distance_from_boundary_area)
      
     Parameters
     ----------
     path: string
     epsg: int
-	case_study_area: Polygon
+    case_study_area: Polygon
     roadType_field: indicates the column name where the street type is stored
     direction_field: indicates the column name where information about direction (one-way, two-way) is stored
     speed_field: string, indicates the column name where the speed limit is stored
@@ -126,24 +126,25 @@ def get_network_fromSHP(path, epsg, crs, case_study_area = None, distance_from_b
         cn = streets_gdf.geometry.unary_union.centroid
         buffer = cn.buffer(case_study_area) 
         streets_gdf = streets_gdf[streets_gdf.geometry.within(buffer)]
-    else: streets_gdf = streets_gdf[streets_gdf.geometry.within(case_study_area.buffer(distance_from_boundary_area)]
-	
+    else: streets_gdf = streets_gdf[streets_gdf.geometry.within(case_study_area.buffer(distance_from_boundary_area))]
+    
     columns = [roadType_field, direction_field, speed_field, name_field]
     new_columns = ["highway","oneway", "maxspeed","name"]
     streets_gdf["from"] = None
     streets_gdf["to"] = None
     
     # creating the dataframes
-    for n, i in enumerate(columns): if (i is not None): streets_gdf[new_columns[n]] = streets_gdf[i]
+    for n, i in enumerate(columns): 
+        if (i is not None): streets_gdf[new_columns[n]] = streets_gdf[i]
      
     standard_columns = ["geometry", "from", "to"]
     streets_gdf = streets_gdf[standard_columns + [new_columns[n] for n, i in enumerate(columns) if i is not None]]
     ix_geo = streets_gdf.columns.get_loc("geometry")+1
     
-	# remove z coordinates, if any
-	streets_gdf["geometry"] = streets_gdf.apply(lambda row: LineString([coor for coor in [row["geometry"].coords[i][0:2] for i in range(0, len(row["geometry"].coords))]]), axis = 1)
-	streets_gdf["from"] = streets_gdf.apply(lambda row: row.geometry.coord[0], axis = 1)
-	streets_gdf["to"] = streets_gdf.apply(lambda row: row.geometry.coord[-1], axis = 1)
+    # remove z coordinates, if any
+    streets_gdf["geometry"] = streets_gdf.apply(lambda row: LineString([coor for coor in [row["geometry"].coords[i][0:2] for i in range(0, len(row["geometry"].coords))]]), axis = 1)
+    streets_gdf["from"] = streets_gdf.apply(lambda row: row.geometry.coord[0], axis = 1)
+    streets_gdf["to"] = streets_gdf.apply(lambda row: row.geometry.coord[-1], axis = 1)
         
     streets_gdf = streets_gdf.loc[streets_gdf["from"] != streets_gdf["to"]]
     unique_nodes_tmp = list(streets_gdf["to"].unique()) + list(streets_gdf["from"].unique())
@@ -172,7 +173,7 @@ def get_network_fromSHP(path, epsg, crs, case_study_area = None, distance_from_b
     nodes_gdf.drop(["coordinates"], axis = 1, inplace = True)
         
     return nodes_gdf, edges_gdf
-	
+    
 
 def reset_index_gdf(nodes_gdf, edges_gdf):
 
@@ -182,7 +183,7 @@ def reset_index_gdf(nodes_gdf, edges_gdf):
     Parameters
     ----------
     nodes_gdf: Point GeoDataFrame
-	edges_gdf: LineString GeoDataFrames
+    edges_gdf: LineString GeoDataFrames
    
     Returns
     -------
@@ -213,12 +214,12 @@ def graph_fromGDF(nodes_gdf, edges_gdf, nodeID = "nodeID"):
 
     """
     From two GeoDataFrames (nodes and edges), it creates a NetworkX graph.
-	Provide column name of node identifier.
+    Provide column name of node identifier.
        
     Parameters
     ----------
     nodes_gdf: Point GeoDataFrame
-	edges_gdf: LineString GeoDataFrames
+    edges_gdf: LineString GeoDataFrames
     nodeID: int
     
     Returns
@@ -256,12 +257,12 @@ def multiGraph_fromGDF(nodes_gdf, edges_gdf, nodeID):
 
     """
     From two GeoDataFrames (nodes and edges), it creates a NetworkX MultiGraph.
-	Provide column name of node identifier.
+    Provide column name of node identifier.
     
     Parameters
     ----------
     nodes_gdf: Point GeoDataFrame
-	edges_gdf: LineString GeoDataFrames
+    edges_gdf: LineString GeoDataFrames
     nodeID: int
     
     Returns
@@ -291,7 +292,7 @@ def multiGraph_fromGDF(nodes_gdf, edges_gdf, nodeID):
         Mg.add_edge(row["u"], row["v"], key=row["key"], **attrs)
       
     return MG
-	
+    
 ## Building geo-dataframes for dual graph representation ###############
 
 def dual_gdf(nodes_gdf, edges_gdf, crs):
@@ -305,7 +306,7 @@ def dual_gdf(nodes_gdf, edges_gdf, crs):
     Parameters
     ----------
     nodes_gdf: Point GeoDataFrame
-	edges_gdf: LineString GeoDataFrames
+    edges_gdf: LineString GeoDataFrames
     crs: dictionary
     
     Returns
@@ -313,9 +314,9 @@ def dual_gdf(nodes_gdf, edges_gdf, crs):
     tuple of GeoDataFrames
     """
     
-	if list(edges_gdf.index.values) != list(edges_gdf.streetID.values): 
-		edges_gdf.index =  edges_gdf.streetID
-		del edges_gdf.index.name
+    if list(edges_gdf.index.values) != list(edges_gdf.streetID.values): 
+        edges_gdf.index =  edges_gdf.streetID
+        del edges_gdf.index.name
     
     # computing centroids                                       
     centroids_gdf = edges_gdf.copy()
@@ -326,28 +327,28 @@ def dual_gdf(nodes_gdf, edges_gdf, crs):
     ix_streetID = centroids_gdf.columns.get_loc("streetID")+1
          
     # find_intersecting segments and storing them in the centroids gdf
-	centroids["intersecting"] = centroids.apply(lambda row: list(centroids_gdf.loc[(centroids_gdf["u"] == row["u"])|(centroids_gdf["u"] == row["v"] )|
-													(centroids_gdf["v"] == row["v"] )|(centroids_gdf["v"] == row["u")].index), axis=1))
-	        
+    centroids["intersecting"] = centroids.apply(lambda row: list(centroids_gdf.loc[(centroids_gdf["u"] == row["u"])|(centroids_gdf["u"] == row["v"])|
+                                                    (centroids_gdf["v"] == row["v"])|(centroids_gdf["v"] == row["u"])].index), axis=1)
+            
     # creating vertexes representing street segments (centroids)
     centroids_data = centroids_gdf[["streetID", "intersecting", "length"]]
     nodes_dual = gpd.GeoDataFrame(centroids_data, crs=crs, geometry=centroids_gdf["centroid"])
     nodes_dual["x"], nodes_dual["y"] = [x.coords.xy[0][0] for x in centroids_gdf["centroid"]], [y.coords.xy[1][0] for y in centroids_gdf["centroid"]]
     nodes_dual.index =  nodes_dual.streetID
-	del nodes_dual.index.name
+    del nodes_dual.index.name
     
-	# creating fictious links between centroids
+    # creating fictious links between centroids
     edges_dual = pd.DataFrame(columns=["u","v", "geometry", "length"])
     ix_length = nodes_dual.columns.get_loc("length")+1
     ix_intersecting = nodes_dual.columns.get_loc("intersecting")+1
     ix_geo = nodes_dual.columns.get_loc("geometry")+1
 
     # connecting nodes which represent street segments share a linked in the actual street network   
-	processed = []
+    processed = []
     for row in nodes_dual.itertuples():                                           
         # intersecting segments:  # i is the streetID                                      
         for intersecting in row[ix_intersecting]:
-			if ((row.Index == intersecting) | ((row.Index, intersecting) in processed) | ((row.Index, intersecting) in processed)): continue
+            if ((row.Index == intersecting) | ((row.Index, intersecting) in processed) | ((row.Index, intersecting) in processed)): continue
             length_intersecting =  nodes_dual.loc[intersecting]["length"]
             distance = (row[ix_length]+length_intersecting)/2
         
@@ -356,14 +357,14 @@ def dual_gdf(nodes_gdf, edges_gdf, crs):
             ls = LineString([row[ix_geo], nodes_dual.loc[intersecting]["geometry"]])
             edges_dual.loc[-1] = [row.Index, intersecting, ls, distance] 
             edges_dual.index = edges_dual.index + 1
-			processed.append(row.Index, intersecting)
+            processed.append(row.Index, intersecting)
             
     edges_dual = edges_dual.sort_index(axis=0)
     edges_dual = gpd.GeoDataFrame(edges_dual[["u", "v", "length"]], crs=crs, geometry=edges_dual["geometry"])
-	
-	# setting angle values in degrees and radians
-	edges_dual["deg"] = edges_dual.apply(lambda row: af.angle_line_geometries(edges_gdf.loc[row["u"]].geometry, edges_gdf.loc[row["v"]].geometry, degree = True, angular_change = True), axis = 1)
-	edges_dual["rad"] = edges_dual.apply(lambda row: af.angle_line_geometries(edges_gdf.loc[row["u"]].geometry, edges_gdf.loc[row["v"]].geometry, degree = False, angular_change = True), axis = 1)
+    
+    # setting angle values in degrees and radians
+    edges_dual["deg"] = edges_dual.apply(lambda row: angle_line_geometries(edges_gdf.loc[row["u"]].geometry, edges_gdf.loc[row["v"]].geometry, degree = True, angular_change = True), axis = 1)
+    edges_dual["rad"] = edges_dual.apply(lambda row: angle_line_geometries(edges_gdf.loc[row["u"]].geometry, edges_gdf.loc[row["v"]].geometry, degree = False, angular_change = True), axis = 1)
         
     return nodes_dual, edges_dual
 
@@ -375,7 +376,7 @@ def dual_graph_fromGDF(nodes_dual, edges_dual):
     Parameters
     ----------
     nodes_dual: Point GeoDataFrame
-	edges_dual: LineString GeoDataFrame
+    edges_dual: LineString GeoDataFrame
 
     Returns
     -------
@@ -433,6 +434,6 @@ def dual_id_dict(dict_values, graph, nodeAttribute):
         
     return ed_dict
 
-	
+    
 
  

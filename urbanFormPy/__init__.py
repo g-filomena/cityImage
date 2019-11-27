@@ -5,10 +5,10 @@
 # License: MIT, see full license in LICENSE.txt
 ################################################################################
 
-from .angles import*
+from .angles import *
 from .centrality import *
 from .clean_network import *
-from .community import*
+from .community import *
 from .graph import *
 from .land_use_classification import*
 from .natural_roads import *

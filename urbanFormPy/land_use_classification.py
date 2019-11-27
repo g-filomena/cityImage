@@ -93,16 +93,16 @@ def land_use_from_polygons(buildings_gdf, other_source_gdf, column, land_use_fie
     -------
     GeoDataFrame
     """
-	
+    
     buildings_gdf = buildings_gdf.copy()
     buildings_gdf[column] = None
     # spatial index
     sindex = other_source_gdf.sindex
-	buildings_gdf[column] = buildings_gdf.apply(lambda row: _assign_land_use_from_polygons(row["geometry"], other_source_gdf, sindex, land_use_field)
-	
-	return buildings_gdf
-	
-def _assign_land_use_from_polygons(building_geometry, other_source_gdf, other_source_gdf_sindex, land_use_field)
+    buildings_gdf[column] = buildings_gdf.apply(lambda row: _assign_land_use_from_polygons(row["geometry"], other_source_gdf, sindex, land_use_field))
+    
+    return buildings_gdf
+    
+def _assign_land_use_from_polygons(building_geometry, other_source_gdf, other_source_gdf_sindex, land_use_field):
 
     """
     It assigns land-use attributes to a building, looking for possible matches in "other_source_gdf".
@@ -110,7 +110,7 @@ def _assign_land_use_from_polygons(building_geometry, other_source_gdf, other_so
     Parameters
     ----------
     buildings_geometry: Polygon
-	other_source_gdf: Polygon GeoDataFrame
+    other_source_gdf: Polygon GeoDataFrame
     other_source_gdf_sindex: Rtree spatial index
     land_use_field: string, name of the column in other_source_gdf wherein the land_use attribute is stored
    
@@ -118,21 +118,21 @@ def _assign_land_use_from_polygons(building_geometry, other_source_gdf, other_so
     -------
     GeoDataFrame
     """
-	
-	buildings_gdf = buildings_gdf.copy()
+    
+    buildings_gdf = buildings_gdf.copy()
     ix_geo = other_source_gdf.columns.get_loc("geometry")+1 
-	
-	possible_matches_index = list(other_source_gdf_sindex.intersection(building_geometry.bounds)) # looking for intersecting geometries
-	possible_matches = other_source_gdf.iloc[possible_matches_index]
-	pm = possible_matches[possible_matches.intersects(building_geometry)]
-	pm["area"] = 0.0
-	if (len(pm) == 0): return None# no intersecting features in the other_source_gdf
+    
+    possible_matches_index = list(other_source_gdf_sindex.intersection(building_geometry.bounds)) # looking for intersecting geometries
+    possible_matches = other_source_gdf.iloc[possible_matches_index]
+    pm = possible_matches[possible_matches.intersects(building_geometry)]
+    pm["area"] = 0.0
+    if (len(pm) == 0): return None# no intersecting features in the other_source_gdf
 
-	for row in pm.itertuples(): # for each possible candidate, computing the extension of the area of intersection
-		other_geometry = row[ix_geo]
-		try: overlapping_area = other_geometry.intersection(g).area
-		except: continue
-		pm.at[row.Index, "area"] = overlapping_area
+    for row in pm.itertuples(): # for each possible candidate, computing the extension of the area of intersection
+        other_geometry = row[ix_geo]
+        try: overlapping_area = other_geometry.intersection(g).area
+        except: continue
+        pm.at[row.Index, "area"] = overlapping_area
         
         # sorting the matches based on the extent of the area of intersection
         pm = pm.sort_values(by="area", ascending=False).reset_index()
@@ -152,7 +152,7 @@ def land_use_from_points(buildings_gdf, other_source_gdf, column, land_use_field
     Parameters
     ----------
     buildings_gdf: Polygon GeoDataFrame
-	other_source_gdf: Point GeoDataFrame - The GeoDataFrame wherein looking for land_use attributes
+    other_source_gdf: Point GeoDataFrame - The GeoDataFrame wherein looking for land_use attributes
     column: string, name of the column in buildings_gdf to which assign the land_use descriptor
     land_use_field: name of the column in other_source_gdf, wherein the land_use attribute is stored
    
@@ -160,16 +160,16 @@ def land_use_from_points(buildings_gdf, other_source_gdf, column, land_use_field
     -------
     GeoDataFrame
     """
-	
-	buildings_gdf = buildings_gdf.copy()    
+    
+    buildings_gdf = buildings_gdf.copy()    
     other_source_gdf["nr"] = 1
     buildings_gdf[column] = None
     sindex = other_source_gdf.sindex
-	buildings_gdf[column] = buildings_gdf.apply(lambda row: _assign_land_use_from_points(row["geometry"], other_source_gdf, sindex, land_use_field)
+    buildings_gdf[column] = buildings_gdf.apply(lambda row: _assign_land_use_from_points(row["geometry"], other_source_gdf, sindex, land_use_field))
                
     return buildings_gdf
 
-def _assign_land_use_from_points(building_geometry, other_source_gdf, other_source_gdf_sindex, land_use_field)
+def _assign_land_use_from_points(building_geometry, other_source_gdf, other_source_gdf_sindex, land_use_field):
 
     """
     It assigns land-use attributes to a building, looking for possible matches in "other_source_gdf", a Point GeoDataFrame.
@@ -177,7 +177,7 @@ def _assign_land_use_from_points(building_geometry, other_source_gdf, other_sour
     Parameters
     ----------
     buildings_geometry: Polygon
-	other_source_gdf: Point GeoDataFrame
+    other_source_gdf: Point GeoDataFrame
     other_source_gdf_sindex: Rtree spatial index
     land_use_field: string, name of the column in other_source_gdf wherein the land_use attribute is stored
    
@@ -186,12 +186,12 @@ def _assign_land_use_from_points(building_geometry, other_source_gdf, other_sour
     GeoDataFrame
     """
 
-	possible_matches_index = list(other_source_gdf_sindex.intersection(g.bounds))
-	possible_matches = other_source_gdf.iloc[possible_matches_index]
-	pm = possible_matches[possible_matches.intersects(building_geometry)]
-	
-	if (len(pm)==0): return None # no intersecting features in the other_source_gdf
-	else:
-	# counting nr of features
-		pm.groupby([land_use_field],as_index=False)["nr"].sum().sort_values(by="nr", ascending=False).reset_index()
-		return use[land_use_field].loc[0]
+    possible_matches_index = list(other_source_gdf_sindex.intersection(g.bounds))
+    possible_matches = other_source_gdf.iloc[possible_matches_index]
+    pm = possible_matches[possible_matches.intersects(building_geometry)]
+    
+    if (len(pm)==0): return None # no intersecting features in the other_source_gdf
+    else:
+    # counting nr of features
+        pm.groupby([land_use_field],as_index=False)["nr"].sum().sort_values(by="nr", ascending=False).reset_index()
+        return use[land_use_field].loc[0]
