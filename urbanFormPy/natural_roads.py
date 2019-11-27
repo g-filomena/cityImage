@@ -4,11 +4,13 @@ import community
 from shapely.geometry import Point, LineString, Polygon, MultiPolygon, mapping, MultiLineString
 pd.set_option("precision", 10)
 
-    """
-    The concet of natural road regards the cognitive perception/representation of road entities, regardless changes in names or
-    interruptions. Rather, different street segments are "mentally merged" according to continuity rules (here based on the deflection
-    angle and the egoistic choice process).
-    """
+import .angles as af
+
+"""
+The concet of natural road regards the cognitive perception/representation of road entities, regardless changes in names or
+interruptions. Rather, different street segments are "mentally merged" according to continuity rules (here based on the deflection
+angle and the egoistic choice process).
+"""
 	
 def identify_natural_roads(nodes_gdf, edges_gdf, tolerance = 45): 
     """
@@ -23,7 +25,7 @@ def identify_natural_roads(nodes_gdf, edges_gdf, tolerance = 45):
     
     Returns
     -------
-    GeoDataFrames
+    Tuple of GeoDataFrames
     """
    
     if (not nodes_simplified(edges_gdf)) | (not edges_simplified(edges_gdf)): 
@@ -44,7 +46,7 @@ def identify_natural_roads(nodes_gdf, edges_gdf, tolerance = 45):
         _natural_roads(row.Index, naturalID, "to", nodes_gdf, edges_gdf, tolerance = tolerance) 
         naturalID = naturalID + 1
                                             
-    return(nodes_gdf, edges_gdf)
+    return nodes_gdf, edges_gdf
 	
 def _natural_roads(streetID, naturalID, direction, nodes_gdf, edges_gdf, tolerance = 45): 
     """
@@ -86,7 +88,7 @@ def _natural_roads(streetID, naturalID, direction, nodes_gdf, edges_gdf, toleran
 		else: towards = "to"
 
         # measuring deflection angle, adding it to the dictionary, if lower than tolerance degrees
-        deflection = uf.ang_geoline(line_geometry, line_geometry_connector, degree = True, deflection = True)
+        deflection = af.angle_line_geometries((line_geometry, line_geometry_connector, degree = True, deflection = True)
         if (deflection >= tolerance): continue
         else:
             angles[connector.Index] = deflection # dictionary with streetID and angle
@@ -106,7 +108,6 @@ def _natural_roads(streetID, naturalID, direction, nodes_gdf, edges_gdf, toleran
         _natural_roads(matchID, naturalID, directions_dict[matchID], nodes_gdf, edges_gdf)                    
         return                                                                            
 
-    
 
 class Error(Exception):
    """Base class for other exceptions"""

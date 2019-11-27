@@ -6,7 +6,8 @@ from shapely.geometry import Point, LineString, Polygon, MultiPolygon, mapping, 
 from shapely.ops import cascaded_union, linemerge, nearest_points
 pd.set_option('precision', 10)
 
-import utilities as uf
+import .angles as af
+import .utilities as uf
 
 """
 This set of functions is designed for extracting the computational Image of The City.
@@ -26,7 +27,7 @@ def reset_index_gdf(nodes_gdf, edges_gdf):
    
     Returns
     -------
-    GeoDataFrames
+    tuple GeoDataFrames
     """
     
     edges_gdf = edges_gdf.rename(columns = {'u':'old_u', 'v':'old_v'})
@@ -44,7 +45,7 @@ def reset_index_gdf(nodes_gdf, edges_gdf):
     edges_gdf = edges_gdf.reset_index(drop=True)
     edges_gdf['streetID'] = edges_gdf.index.values.astype(int)
     
-    return(nodes_gdf, edges_gdf)
+    return nodes_gdf, edges_gdf
 
 ## Cleaning functions ###############
 
@@ -58,7 +59,7 @@ def duplicate_nodes(nodes_gdf, edges_gdf):
    
     Returns
     -------
-    GeoDataFrames
+    tuple GeoDataFrames
     """
     # the index of nodes_gdf has to be nodeID
     if list(nodes_gdf.index.values) != list(nodes_gdf.nodeID.values): nodes_gdf.index =  nodes_gdf.nodeID
@@ -83,7 +84,7 @@ def duplicate_nodes(nodes_gdf, edges_gdf):
             edges_gdf.loc[edges_gdf.u == node,'u'] = index
             edges_gdf.loc[edges_gdf.v == node,'v'] = index
         
-    return(new_nodes, edges_gdf)
+    return new_nodes, edges_gdf
     
 
 def fix_dead_ends(nodes_gdf, edges_gdf):
@@ -96,7 +97,7 @@ def fix_dead_ends(nodes_gdf, edges_gdf):
    
     Returns
     -------
-    GeoDataFrames
+    tuple GeoDataFrames
     """
     nodes_gdf =  nodes_gdf.copy()
     edges_gdf = edges_gdf.copy()
@@ -113,7 +114,7 @@ def fix_dead_ends(nodes_gdf, edges_gdf):
     edges_gdf = edges_gdf[~edges_gdf['u'].isin(to_delete_list)]
     edges_gdf = edges_gdf[~edges_gdf['v'].isin(to_delete_list)]
 
-    return(nodes_gdf, edges_gdf)
+    return nodes_gdf, edges_gdf
 
 def is_nodes_simplified(edges_gdf):
     """
@@ -136,7 +137,7 @@ def is_nodes_simplified(edges_gdf):
     if len(to_edit) == 0: return(simplified)
     simplified = False
             
-    return(simplified)
+    return simplified
 
 def is_edges_simplified(edges_gdf):
     """
@@ -158,7 +159,7 @@ def is_edges_simplified(edges_gdf):
     dd = dict(edges_gdf['code'].value_counts())
     dd = {k: v for k, v in dd.items() if v > 1}
     if len(dd) > 0: simplified = False
-    return(simplified)
+    return simplified
 
 def simplify_graph(nodes_gdf, edges_gdf, update_densities = False, densities_column = None):
     """
@@ -167,7 +168,7 @@ def simplify_graph(nodes_gdf, edges_gdf, update_densities = False, densities_col
      
     Parameters
     ----------
-    nodes_gdf, edges_gdf: GeoDataFrames, nodes and street segments
+    nodes_gdf, edges_gdf: GeoDataFrames
 	update_densities: boolean
 	densities_column: string
    
@@ -236,7 +237,7 @@ def simplify_graph(nodes_gdf, edges_gdf, update_densities = False, densities_col
         edges_gdf.drop(index_second, axis = 0, inplace = True)
         nodes_gdf.drop(nodeID, axis = 0, inplace = True)
     
-    return(nodes_gdf, edges_gdf)
+    return nodes_gdf, edges_gdf
 
 
 def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_islands = True, same_uv_edges = True, update_densities = False, densities_column = None):
@@ -254,7 +255,7 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_i
     
     Parameters
     ----------
-    nodes_gdf, edges_gdf: GeoDataFrames, nodes and street segments
+    nodes_gdf, edges_gdf: GeoDataFrames
     dead_ends: boolean
 	remove_disconnected_islands: boolean
 	same_uv_edges: boolean
@@ -263,7 +264,7 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_i
    
     Returns
     -------
-    GeoDataFrames
+    tuple GeoDataFrames
     """
     
     nodes_gdf, edges_gdf = nodes_gdf.copy(), edges_gdf.copy()		
@@ -329,7 +330,7 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_i
 					if connector.Index == ix_line: continue
 					line_geometry_connector, ix_line_connector = connector[ix_geo], connector.Index 
 					
-					# if this edge is 30% longer than the edge identified in the outer loop, delete it
+					# if this edge is x% longer than the edge identified in the outer loop, delete it
 					if (line_geometry_connector.length > (line_geometry.length * 1.30)): pass
 					# else draw a center-line, replace the geometry of the outer-loop segment with the CL, drop the segment of the inner-loop
 					else:
@@ -371,7 +372,7 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_i
     del edges_gdf.index.name
     print("Done after ", cycle, " cleaning cycles")  
     
-    return(nodes_gdf, edges_gdf)
+    return nodes_gdf, edges_gdf
 
 def correct_edges(nodes_gdf, edges_gdf):
     """
@@ -387,11 +388,11 @@ def correct_edges(nodes_gdf, edges_gdf):
     GeoDataFrame
     """
 
-    edges_gdf['geometry'] = edges_gdf.apply(lambda row: update_line_geometry_coords(row['u'], row['v'], nodes_gdf, row['geometry']), axis=1)
+    edges_gdf['geometry'] = edges_gdf.apply(lambda row: _update_line_geometry_coords(row['u'], row['v'], nodes_gdf, row['geometry']), axis=1)
                                             
-    return(edges_gdf)
+    return edges_gdf
 
-def update_line_geometry_coords(u, v, nodes_gdf, old_line_geometry):
+def _update_line_geometry_coords(u, v, nodes_gdf, line_geometry):
     """
     It supports the correct_edges function checks that the edges coordinates are consistent with their relative u and v nodes'coordinates.
     It can be necessary to run the function after having cleaned the network.
@@ -400,14 +401,13 @@ def update_line_geometry_coords(u, v, nodes_gdf, old_line_geometry):
     ----------
 	u, v: integer values
     nodes_gdf: GeoDataFrames
-	old_line_geometry: LineString
+	line_geometry: LineString
    
     Returns
     -------
     LineString
     """
-    
-    line_coords = old_line_geometry.coords
+    line_coords = line_geometry.coords
     line_coords[0] = (nodes_gdf.loc[u]['x'], nodes_gdf.loc[u]['y'])
     line_coords[-1] = (nodes_gdf.loc[v]['x'], nodes_gdf.loc[v]['y'])
     new_line_geometry = (LineString([coor for coor in line_coords]))

@@ -5,12 +5,15 @@
 # License: MIT, see full license in LICENSE.txt
 ################################################################################
 
-from .graph import *
-from .simplify import *
+from .angles import*
 from .centrality import *
+from .clean_network import *
+from .community import*
+from .graph import *
+from .land_use_classification import*
 from .natural_roads import *
 from .landmarks_functions import *
-from .landmarks_integration_functions import *
+from .natural_roads import*
 from .plotting import *
 from .utilities import *
 

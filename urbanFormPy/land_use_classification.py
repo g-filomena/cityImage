@@ -4,13 +4,6 @@ from shapely.ops import cascaded_union, linemerge
 from scipy.sparse import linalg
 pd.set_option("precision", 10)
 
-import utilities as uf
-
-"""
-
-
-"""
-
 def classify_land_use(buildings_gdf, land_use):
     """
     The function reclassifies land-use descriptors in a land-use field according to the categorisation presented below. 
@@ -81,7 +74,7 @@ def classify_land_use(buildings_gdf, land_use):
     buildings_gdf[land_use][buildings_gdf[land_use].str.contains("residential") | buildings_gdf[land_use].str.contains("Condominium") | buildings_gdf[land_use].str.contains("Residential")] = "residential"
     buildings_gdf[land_use][buildings_gdf[land_use].str.contains("commercial") | buildings_gdf[land_use].str.contains("Commercial")] = "commercial"
     
-    return(buildings_gdf)
+    return buildings_gdf
 
 def land_use_from_polygons(buildings_gdf, other_source_gdf, column, land_use_field):
 
@@ -107,7 +100,7 @@ def land_use_from_polygons(buildings_gdf, other_source_gdf, column, land_use_fie
     sindex = other_source_gdf.sindex
 	buildings_gdf[column] = buildings_gdf.apply(lambda row: _assign_land_use_from_polygons(row["geometry"], other_source_gdf, sindex, land_use_field)
 	
-	return(buildings_gdf)
+	return buildings_gdf
 	
 def _assign_land_use_from_polygons(building_geometry, other_source_gdf, other_source_gdf_sindex, land_use_field)
 
@@ -144,7 +137,7 @@ def _assign_land_use_from_polygons(building_geometry, other_source_gdf, other_so
         # sorting the matches based on the extent of the area of intersection
         pm = pm.sort_values(by="area", ascending=False).reset_index()
         # assigning the match land-use category if the area of intersection covers at least 60% of the building's area
-        if (pm["area"].loc[0] > (g.area * 0.59)): return pm[land_use_field].loc[0]
+        if (pm["area"].loc[0] >= (g.area * 0.60)): return pm[land_use_field].loc[0]
 
         else: continue
         

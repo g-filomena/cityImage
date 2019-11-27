@@ -5,7 +5,7 @@ from shapely.geometry import Point, LineString, Polygon, MultiPolygon, mapping, 
 from shapely.ops import cascaded_union, linemerge, nearest_points
 pd.set_option("precision", 10)
 
-import utilities as uf
+import .utilities as uf
    
 ## Centrality functions ###############
 
@@ -280,11 +280,6 @@ def local_centrality(G, measure, weight, radius = , normalized = False):
 		cm[n] = c
     
 	return cb	
-
-
-	
-	
-	
 	
 class Error(Exception):
 	"""Base class for other exceptions"""

@@ -4,7 +4,7 @@ from shapely.ops import cascaded_union, linemerge
 from scipy.sparse import linalg
 pd.set_option("precision", 10)
 
-import utilities as uf
+import .utilities as uf
 
 """
 This set of functions is designed for extracting the computational Image of The City.
@@ -12,7 +12,7 @@ Computational landmarks can be extracted employing the following functions (see 
 
 """
         
-def select_buildings(buildings, area_to_clip, height_field, base_field = None, area_obstructions = None):
+def get_buildings_from_SHP(path, epsg, case_study_area = None, obstructions_area = None, height_field = None, base_field = None, distance_from_center = 1000):
 
     """    
     The function take a sets of buildings, returns two smaller GDFs of buildings: the case-study area, plus a larger area containing other 
@@ -21,42 +21,103 @@ def select_buildings(buildings, area_to_clip, height_field, base_field = None, a
             
     Parameters
     ----------
-    city_buildings, area_to_clip: GeoDataFrames
-    height_field, base_field: strings height and base fields name in the original data-source
-    area_obstructions: GeoDataFrame
+    path: string
+    epsg: int
+	case_study_area: Polygon
+	obstructions_area: Polygon
+    height_field, base_field: str 
+		height and base fields name in the original data-source
+	distance_from_center: float
+	
+    Returns
+    -------
+    tuple of GeoDataFrames
+    """   
+	
+	# trying reading buildings footprints shapefile from directory
+    city_buildings = gpd.read_file(path).to_crs(epsg=epsg)	
+	
+	# computing area, reassigning columns
+    city_buildings["area"] = city_buildings["geometry"].area
+    if height_field != None: city_buildings["height"] = city_buildings[height_field]
+    if (base_field == None): 
+		city_buildings["base"] = 0.0
+		if height_field != None: city_buildings["height_r"] = city_buildings["height"]
+    else: city_buildings["base"] = city_buildings[base_field]
+		if height_field != None: city_buildings["height_r"] = city_buildings["height"]+city_buildings["base"] # relative_height
+		
+    # dropping small buildings and buildings with null height
+    city_buildings = city_buildings[city_buildings["area"] >= 200]
+    if height_field != None: city_buildings = city_buildings[city_buildings["height"] >= 1]
+    city_buildings = city_buildings[["height", "height_r", "base","geometry", "area"]]
+    
+    # assigning ID
+    city_buildings["buildingID"] = city_buildings.index.values.astype(int)
+    
+	# check if case_study_area is defined
+	if (case_study_area == None): case_study_area = city_buildings.geometry.unary_union.centroid.buffer(distance_from_center)
+    # obtaining obstructions
+    if  (obstructions_area == None): obstructions_area = case_study_area.buffer(800)
+    obstructions_gdf = city_buildings[city_buildings.geometry.within(obstructions_area)]
+        
+    # clipping buildings in the case-study area
+    buildings_gdf = city_buildings[city_buildings.geometry.within(area_to_clip.geometry.loc[0])]
+
+    return buildings_gdf, obstructions_gdf
+	
+def get_buildings_from_OSM(list_places, distance_from_center = 1000)
+
+    """    
+    The function downloads and cleans buildings footprint geometries and create as many buildings GeoDataFrames as the number of places specified in the list "list_places".
+	The function exploits OSMNx functions for downloading the data as well as for projecting it.
+	The land use classification for each building is extracted. Only relevant columns are kept.
+	
+	"list_places""  is used to indicate names of case-study cities.
+	"distance_from_center" regulates the extension of the area within wich the building are extracted from.
+	
+            
+    Parameters
+    ----------
+    list_places: str list 
+    distance_from_center: float
     
     Returns
     -------
-    GeoDataFrames
+    list of GeoDataFrames
     """   
-    # computing area, reassigning columns
-    city_buildings["area"] = city_buildings["geometry"].area
-    city_buildings["height"] = city_buildings[height_field]
-    if (base is None): city_buildings["base"] = 0
-    else: city_buildings["base"] = city_buildings[base]
-    
-    # dropping small buildings and buildings with null height
-    city_buildings = city_buildings[city_buildings["area"] > 199]
-    city_buildings = city_buildings[city_buildings["height"] >= 1]
-    city_buildings = city_buildings[["height", "base","geometry", "area"]]
-    
-    # creating ID
-    city_buildings["buildingID"] = city_buildings.index.values.astype(int)
-    
-    # clipping obstructions
-    if  (area_obstructions is None): area_obstructions = area_to_clip.geometry.loc[0].buffer(800)
-    else: area_obstructions = area_obstructions.geometry.loc[0]
-        
-    city_buildings = city_buildings[(city_buildings["area"] > 199) & (city_buildings["height"] >= 1)]
-    obstructions = city_buildings[city_buildings.geometry.within(area_obstructions)]
-        
-    # clipping buildings in the case-study area
-    study_area_buildings = city_buildings[city_buildings.geometry.within(area_to_clip.geometry.loc[0])]
-    study_area_buildings["r_height"] = study_area_buildings["height"] + study_area_buildings["base"] # relative_height
+	
+    buildings_gdfs = []
+	# 'height', 'building_height'
+    columns_to_keep = ['amenity', 'building', 'geometry', 'historic','land_use']
+    for city in list_places:
 
-    return(study_area_buildings, obstructions)
-   
-def structural_properties(buildings_gdf, obstructions_gdf = None, street_gdf, radius = 150):
+        tmp = ox.footprints.footprints_from_address(address = city, distance = distance_from_center, footprint_type = 'building', retain_invalid = False)
+        tmp_proj = ox.projection.project_gdf(tmp)
+
+        tmp_proj['land_use'] = None
+        for column in tmp_proj.columns: 
+            if column.startswith('building:use:'): tmp_proj.loc[pd.notnull(tmp_proj[column]), 'land_use'] = column[13:]
+            if column not in coluns_to_keep: tmp_proj.drop(column, axis = 1, inplace = True)
+
+        tmp_proj = tmp_proj[~tmp_proj['geometry'].is_empty]
+        tmp_proj['building'].replace('yes', np.nan, inplace = True)
+        tmp_proj['building'][tmp_proj['building'].isnull()] = tmp_proj['amenity']
+        tmp_proj['land_use'][tmp_proj['land_use'].isnull()] = tmp_proj['building']
+        tmp_proj['land_use'][tmp_proj['land_use'].isnull()] = 'residential'
+
+        tmp_proj = tmp_proj[['geometry', 'cult', 'land_use']]
+        tmp_proj['area'] = tmp_proj.geometry.area
+		tmp_proj = tmp_proj['area' >= 200] 
+		
+        # reset index
+        tmp_proj = tmp_proj.reset_index(drop = True)
+        tmp_proj['buildingID'] = tmp_proj.index.values.astype('int')
+
+        buildings_gdfs.append(tmp_proj) 
+		
+	return buildings_gdfs
+	
+def structural_properties(buildings_gdf, obstructions_gdf, street_gdf, max_expansion_distance = 300, distance_along = 50, radius = 150):
 
     """
     The function computes the structural properties of each building properties.
@@ -70,8 +131,9 @@ def structural_properties(buildings_gdf, obstructions_gdf = None, street_gdf, ra
      
     Parameters
     ----------
-    buildings_gdf, obstructions_gdf: Polygon GeoDataFrames
+    buildings_gdf: Polygon GeoDataFrame
 	street_gdf: LineString GeoDataFrame
+	obstructions_gdf: Polygon GeoDataFrame
     radius: float
 	max_expansion_distance: float
 	distance_along: float
@@ -80,7 +142,6 @@ def structural_properties(buildings_gdf, obstructions_gdf = None, street_gdf, ra
     -------
     GeoDataFrame
     """
-	if obstructions_gdf == None: obstructions_gdf = buildings_gdf
     # spatial index
     sindex = obstructions_gdf.sindex
     street_network = street_gdf.geometry.unary_union
@@ -113,11 +174,11 @@ def _number_neighbours(building_geometry, obstructions_gdf, obstructions_sindex,
     int
     """
         
-		buffer = building_geometry.buffer(radius)
-		possible_neigh_index = list(obstructions_sindex.intersection(buffer.bounds))
-        possible_neigh = obstructions_gdf.iloc[possible_neigh_index]
-        precise_neigh = possible_neigh[possible_neigh.intersects(buffer)]
-        return len(precise_neigh)
+	buffer = building_geometry.buffer(radius)
+	possible_neigh_index = list(obstructions_sindex.intersection(buffer.bounds))
+	possible_neigh = obstructions_gdf.iloc[possible_neigh_index]
+	precise_neigh = possible_neigh[possible_neigh.intersects(buffer)]
+	return len(precise_neigh)
 
 def _advance_visibility(building_geometry, obstructions_gdf, obstructions_sindex, max_expansion_distance = 600, distance_along = 20):
 
@@ -199,7 +260,7 @@ def _advance_visibility(building_geometry, obstructions_gdf, obstructions_sindex
 	
 	return poly_vis.area
 	
-def visibility_score(buildings_gdf, sight_lines):
+def visibility_score(buildings_gdf, sight_lines = pd.DataFrame({'a' : []}))
 
     """
     The function calculates a 3d visibility score making use of precomputed 3d sight lines.
@@ -222,7 +283,7 @@ def visibility_score(buildings_gdf, sight_lines):
 	#facade area (roughly computed)
 	buildings_gdf["fac"] = buildings_gdf.apply(lambda row: _facade_area(row["geometry"], row["height"]), axis = 1)
 	
-	if sight_lines == None: return buildings_gdf
+	if sight_lines.empty: return buildings_gdf
 	
 	# 3d visibility
 	sight_lines = sight_lines.copy()
@@ -367,8 +428,6 @@ def cultural_score_from_OSM(building_gdf)
 		
     return buildings_gdf
 
-
-
 def pragmatic_score(buildings_gdf, radius = 200):
 
     """
@@ -391,7 +450,6 @@ def pragmatic_score(buildings_gdf, radius = 200):
 	buildings_gdf["prag"] = buildings_gdf.apply(lambda row: _compute_prag_min(row.geometry, row.land_use, sindex, radius), axis = 1))
 	
 	return buildings_gdf
-	
 	
 def _compute_pragmatic_meaning_building(building_geometry, building_land_use, buildings_gdf_sindex, radius)
 
