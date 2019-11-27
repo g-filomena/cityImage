@@ -3,23 +3,23 @@ channels:
   - defaults
   - conda-forge
 dependencies:
-  - geopandas=>0.6
-  - numpy=>1.17
-  - pandas=>0.25
-  - pip=>19.3
-  - python=>3.7
-  - requests=>2.22
-  - rtree=>0.8
-  - seaborn=>0.9.
-  - setuptools=>41.4
-  - shapely=>1.6
-  - wheel=>0.33
+  - geopandas>=0.6
+  - numpy>=1.17
+  - pandas>=0.25
+  - pip>=19.3
+  - python>=3.7
+  - requests>=2.22
+  - rtree>=0.8
+  - seaborn>=0.9.
+  - setuptools>=41.4
+  - shapely>=1.6
+  - wheel>=0.33
   - pip:
-    - descartes=>1.1
-    - matplotlib=>3.1
-    - networkx=>2.4
-    - osmnx=>0.10
-    - pysal=>2.1
-    - python-louvain=>0.13
-    - twine=>3.0.0
+    - descartes>=1.1
+    - matplotlib>=3.1
+    - networkx>=2.4
+    - osmnx>=0.10
+    - pysal>=2.1
+    - python-louvain>=0.13
+    - twine>=3.0.0
 
