@@ -102,7 +102,7 @@ def plot_points(gdf, column = None, classes = 7, ms = 0.9, ms_col = None, scheme
         gdf.plot(ax = ax, column = column, cmap = cmap, s = ms, scheme = scheme, legend = legend, classification_kwds={'bins':bins}, alpha = 1)
     # other schemes
     elif scheme != None: gdf.plot(ax = ax, column = column, k = classes, cmap = cmap, s = ms, scheme = scheme, legend = legend, alpha = 1)
-    if legend: generate_legend(ax, black_background)
+    if legend: _generate_legend(ax, black_background)
     plt.show() 
                 
 def plot_lines(gdf, column = None, classes = 7, lw = 1.1, scheme = "Natural_Breaks", bins = None, cmap = "Greys_r", 
@@ -189,7 +189,7 @@ def plot_lines(gdf, column = None, classes = 7, lw = 1.1, scheme = "Natural_Brea
     elif scheme != None: gdf.plot(ax = ax, column = column, k = classes, cmap = cmap, linewidth = lw, scheme = scheme, legend = legend)
 
 
-    if legend: generate_lenged(ax, black_background)
+    if legend: _generate_legend(ax, black_background)
                 
     plt.show()
         
@@ -256,7 +256,7 @@ def plot_polygons(gdf, column = None, classes = 7, scheme = None, bins = None, c
         gdf.plot(ax = ax, column = column, cmap = cmap, scheme = scheme, legend = legend, classification_kwds={'bins':bins})
     # other schemes
     elif scheme != None: gdf.plot(ax = ax, column = column, k = classes, cmap = cmap,  scheme = scheme, legend = legend)
-    if legend: _generate_lenged(ax, black_background)
+    if legend: _generate_legend(ax, black_background)
     if (color_bar) & (not legend): _generate_color_bar(cmap, gdf[column], ax, text_color, font_size)
 
     plt.show()    
@@ -394,7 +394,7 @@ def plot_lines_aside(gdf, gdf_c = None, classes = 7, lw = 0.9, columnA = None, c
             gdf.plot(ax = i, column = column[n], k = classes, cmap = cmap, linewidth = lw, scheme = scheme, legend = legend)
         if legend:
             leg = i.get_legend()
-            leg.set_black_backgroundox_to_anchor((0., 0., 0.2, 0.2))
+            leg.set_bbox_to_anchor((0., 0., 0.2, 0.2))
             
     plt.show()
     
@@ -437,8 +437,8 @@ def plot_multiplex(M, multiplex_edges):
     lc = Line3DCollection(lines, linewidths=line_width, alpha=1, color="#ffffff", zorder=1)
 
     west, south, east, north = multiplex_edges.total_bounds
-    black_backgroundox_aspect_ratio = (north - south) / (east - west)*1.5
-    fig_width = fig_height +90 / black_backgroundox_aspect_ratio/1.5
+    bbox_aspect_ratio = (north - south) / (east - west)*1.5
+    fig_width = fig_height +90 / bb_aspect_ratio/1.5
     fig = plt.figure(figsize=(15, 15))
     ax = fig.gca(projection="3d")
     ax.add_collection3d(lc)
@@ -459,7 +459,7 @@ def _generate_legend(ax, black_background):
 
 
     leg = ax.get_legend()  
-    leg.set_black_backgroundox_to_anchor((0., 0., 0.2, 0.2))
+    leg.set_bbox_to_anchor((0., 0., 0.2, 0.2))
     leg.get_frame().set_linewidth(0.0) # remove legend border
     leg.set_zorder(102)
     if black_background: 
