@@ -1,11 +1,6 @@
 # urbanFormPy
-[![DOI](https://zenodo.org/badge/130851801.svg)](https://zenodo.org/badge/latestdoi/130851801)
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/g-filomena/Computational-Image-of-the-City/master)
 
 **A tool for analysing urban legibility and extracting The Computational Image of the City**
-
-
-<img src="image_of_the_city_boston.jpg" alt="Image of the City (© The MIT Press)" />
 
 ## Introduction
 
