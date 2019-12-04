@@ -4,7 +4,8 @@ from shapely.ops import cascaded_union, linemerge
 from scipy.sparse import linalg
 pd.set_option("precision", 10)
 
-import utilities as uf
+from .utilities import *
+from .angles import *
 
 """
 This set of functions is designed for extracting the computational Image of The City.
@@ -66,7 +67,7 @@ def get_buildings_from_SHP(path, epsg, case_study_area = None, obstructions_area
 
     return buildings_gdf, obstructions_gdf
     
-def get_buildings_from_OSM(list_places, distance_from_center = 1000):
+def get_buildings_from_OSM(place, method = "from_address", distance = 1000, epsg = None):
 
     """    
     The function downloads and cleans buildings footprint geometries and create as many buildings GeoDataFrames as the number of places specified in the list "list_places".
@@ -74,50 +75,50 @@ def get_buildings_from_OSM(list_places, distance_from_center = 1000):
     The land use classification for each building is extracted. Only relevant columns are kept.
     
     "list_places""  is used to indicate names of case-study cities.
-    "distance_from_center" regulates the extension of the area within wich the building are extracted from.
+    "distance" regulates the extension of the area within wich the building are extracted from.
     
             
     Parameters
     ----------
-    list_places: str list 
-    distance_from_center: float
+    place: str or tuple 
+    method: str
+    distance: float
+    epsg: int
     
     Returns
     -------
-    list of GeoDataFrames
+    GeoDataFrames
     """   
     
-    buildings_gdfs = []
-    # 'height', 'building_height'
     columns_to_keep = ['amenity', 'building', 'geometry', 'historic','land_use']
-    for city in list_places:
 
-        tmp = ox.footprints.footprints_from_address(address = city, distance = distance_from_center, footprint_type = 'building', retain_invalid = False)
-        tmp_proj = ox.projection.project_gdf(tmp)
-
-        tmp_proj['land_use'] = None
-        for column in tmp_proj.columns: 
-            if column.startswith('building:use:'): tmp_proj.loc[pd.notnull(tmp_proj[column]), 'land_use'] = column[13:]
-            if column not in coluns_to_keep: tmp_proj.drop(column, axis = 1, inplace = True)
-
-        tmp_proj = tmp_proj[~tmp_proj['geometry'].is_empty]
-        tmp_proj['building'].replace('yes', np.nan, inplace = True)
-        tmp_proj['building'][tmp_proj['building'].isnull()] = tmp_proj['amenity']
-        tmp_proj['land_use'][tmp_proj['land_use'].isnull()] = tmp_proj['building']
-        tmp_proj['land_use'][tmp_proj['land_use'].isnull()] = 'residential'
-
-        tmp_proj = tmp_proj[['geometry', 'cult', 'land_use']]
-        tmp_proj['area'] = tmp_proj.geometry.area
-        tmp_proj = tmp_proj['area' >= 200] 
-        
-        # reset index
-        tmp_proj = tmp_proj.reset_index(drop = True)
-        tmp_proj['buildingID'] = tmp_proj.index.values.astype('int')
-
-        buildings_gdfs.append(tmp_proj) 
-        
-    return buildings_gdfs
+    if method == "from_address": buildings_gdf = ox.footprints.footprints_from_address(address = place, distance = distance, footprint_type = 'building', retain_invalid = False)
+    elif method == "from_point": buildings_gdf = ox.footprints.footprints_from_point(point = place, distance = distance, footprint_type= 'building', retain_invalid=False)
     
+    if epsg == None: buildings_gdf = ox.projection.project_gdf(buildings_gdf)
+    else: buildings_gdf.to_crs({'init': epsg})
+
+    buildings_gdf['land_use'] = None
+    for column in buildings_gdf.columns: 
+        if column.startswith('building:use:'): buildings_gdf.loc[pd.notnull(buildings_gdf[column]), 'land_use'] = column[13:]
+        if column not in coluns_to_keep: buildings_gdf.drop(column, axis = 1, inplace = True)
+
+    buildings_gdf = buildings_gdf[~buildings_gdf['geometry'].is_empty]
+    buildings_gdf['building'].replace('yes', np.nan, inplace = True)
+    buildings_gdf['building'][buildings_gdf['building'].isnull()] = buildings_gdf['amenity']
+    buildings_gdf['land_use'][buildings_gdf['land_use'].isnull()] = buildings_gdf['building']
+    buildings_gdf['land_use'][buildings_gdf['land_use'].isnull()] = 'residential'
+
+    buildings_gdf = buildings_gdf[['geometry', 'cult', 'land_use']]
+    buildings_gdf['area'] = buildings_gdf.geometry.area
+    buildings_gdf = buildings_gdf['area' >= 200] 
+    
+    # reset index
+    buildings_gdf = buildings_gdf.reset_index(drop = True)
+    buildings_gdf['buildingID'] = buildings_gdf.index.values.astype('int')  
+    
+    return buildings_gdf
+        
 def structural_properties(buildings_gdf, obstructions_gdf, street_gdf, max_expansion_distance = 300, distance_along = 50, radius = 150):
 
     """
@@ -152,7 +153,7 @@ def structural_properties(buildings_gdf, obstructions_gdf, street_gdf, max_expan
     buildings_gdf["road"] =  buildings_gdf.apply(lambda row: row["geometry"].distance(street_network), axis = 1)
     # 2d advance visibility
     buildings_gdf["2dvis"] = buildings_gdf.apply(lambda row: _advance_visibility(row["geometry"], obstructions_gdf, sindex, max_expansion_distance = max_expansion_distance,
-								distance_along = distance_along), axis = 1)
+                                distance_along = distance_along), axis = 1)
     # neighbours
     buildings_gdf["neigh"] = buildings_gdf.apply(lambda row: _number_neighbours(row["geometry"], obstructions_gdf, sindex, radius = radius), axis = 1)
     
@@ -222,7 +223,7 @@ def _advance_visibility(building_geometry, obstructions_gdf, obstructions_sindex
     
     # creating lines all around the building till a defined distance
     while(i <= 360):
-        coords = uf.get_coord_angle([origin.x, origin.y], max_expansion_distance = max_expansion_distance, angle = i)
+        coords = get_coord_angle([origin.x, origin.y], max_expansion_distance = max_expansion_distance, angle = i)
         line = LineString([origin, Point(coords)])
         
         # finding actual obstacles to this line
@@ -319,7 +320,7 @@ def visibility_score(buildings_gdf, sight_lines = pd.DataFrame({'a' : []})):
     visibility["mean_dist"].fillna((tmp["mean_dist"].min()), inplace = True) # average distance sigh_lines to each buildings
     visibility["n_slines"].fillna((tmp["n_slines"].min()), inplace = True) # number of sigh_lines to each buildings
     col = ["max_dist", "mean_dist_dist", "n_slines"]                     
-    for i in col: uf.scaling_columnDF(visibility, i)
+    for i in col: scaling_columnDF(visibility, i)
     # computing the 3d visibility score
     visibility["3dvis"] = tmp["max_dist_sc"]*0.5+tmp["mean_dist_sc"]*0.25+tmp["n_slines_sc"]*0.25
 
@@ -512,11 +513,11 @@ def compute_global_scores(buildings_gdf, g_cW, g_iW):
                                                                      
     for i in col: 
         if buildings_gdf[i].max() == 0.0: buildings_gdf[i+"_sc"] = 0.0
-        else: uf.scaling_columnDF(buildings_gdf, i)
+        else: scaling_columnDF(buildings_gdf, i)
     
     for i in col_inverse: 
         if buildings_gdf[i].max() == 0.0: buildings_gdf[i+"_sc"] = 0.0
-        else: uf.scaling_columnDF(buildings_gdf, i, inverse = True) 
+        else: scaling_columnDF(buildings_gdf, i, inverse = True) 
   
     # computing scores   
     buildings_gdf["vScore"] = buildings_gdf["fac_sc"]*g_iW["fac"] + buildings_gdf["height_sc"]*g_iW["height"] + buildings_gdf["3dvis"]*g_iW["3dvis"]
@@ -526,7 +527,7 @@ def compute_global_scores(buildings_gdf, g_cW, g_iW):
     col = ["vScore", "sScore"]
     for i in col: 
         if buildings_gdf[i].max() == 0.0: buildings_gdf[i+"_sc"] = 0.0
-        else: uf.scaling_columnDF(buildings_gdf, i)
+        else: scaling_columnDF(buildings_gdf, i)
     
     buildings_gdf["cScore"] = buildings_gdf["cult_sc"]
     buildings_gdf["pScore"] = buildings_gdf["prag_sc"]
@@ -535,7 +536,7 @@ def compute_global_scores(buildings_gdf, g_cW, g_iW):
     buildings_gdf["gScore"] = (buildings_gdf["vScore_sc"]*g_cW["vScore"] + buildings_gdf["sScore_sc"]*g_cW["sScore"] + 
                                buildings_gdf["cScore"]*g_cW["cScore"] + buildings_gdf["pScore"]*g_cW["pScore"])
 
-    uf.scaling_columnDF(buildings_gdf, "gScore")
+    scaling_columnDF(buildings_gdf, "gScore")
     
     return buildings_gdf
 
@@ -577,7 +578,7 @@ def compute_local_scores(buildings_gdf, l_cW, l_iW, radius = 1500):
    
     # recomputing the scores per each building in relation to its neighbours, in an area whose extent is regulated by the parameter "radius"
     buildings_gdf["lScore"] = buildings_gdf.apply(lambda row: _building_local_score(row["geometry"], row["buildingID"], buildings_gdf, sinde, radius), axis = 1)
-    uf.scaling_columnDF(buildings_gdf, "lScore")
+    scaling_columnDF(buildings_gdf, "lScore")
     return buildings_gdf
     
 def _building_local_score(building_geometry, buildingID, buildings_gdf, buildings_gdf_sindex,l_cW, l_iW, radius):
@@ -606,8 +607,8 @@ def _building_local_score(building_geometry, buildingID, buildings_gdf, building
     pm = possible_matches[possible_matches.intersects(buffer)]
     
     # rescaling the values 
-    for i in col: uf.scaling_columnDF(pm, i) 
-    for i in col_inverse: uf.scaling_columnDF(pm, i, inverse = True)
+    for i in col: scaling_columnDF(pm, i) 
+    for i in col_inverse: scaling_columnDF(pm, i, inverse = True)
     
     # and recomputing scores
     pm["vScore_l"] =  pm["fac_sc"]*l_iW["fac"] + pm["height_sc"]*l_iW["height"] + pm["3dvis"]*l_iW["3dvis"]
@@ -616,7 +617,7 @@ def _building_local_score(building_geometry, buildingID, buildings_gdf, building
     pm["pScore_l"] = pm["prag_sc"]
     
     col_rs = ["vScore_l", "sScore_l"]
-    for i in col_rs: uf.scaling_columnDF(pm, i)
+    for i in col_rs: scaling_columnDF(pm, i)
     pm["lScore"] =  pm["vScore_l_sc"]*l_cW["vScore"] + pm["sScore_l_sc"]*l_cW["sScore"] + pm["cScore_l"]*l_cW["cScore"] + pm["pScore_l"]*l_cW["pScore"]
     # return the so obtined score
     return float("{0:.3f}".format(pm["lScore"].loc[buildingID]))

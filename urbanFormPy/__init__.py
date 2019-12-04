@@ -7,14 +7,14 @@
 
 from .angles import *
 from .centrality import *
-from .clean_network import *
-from .community import *
+from .cleaning_network import *
 from .graph import *
-from .land_use_classification import*
+from .landmarks import *
+from .landmarks_integration import *
+from .land_use import*
 from .natural_roads import *
-from .landmarks_functions import *
-from .natural_roads import*
 from .plotting import *
+from .regions import *
 from .utilities import *
 
 __version__ = '0.10'

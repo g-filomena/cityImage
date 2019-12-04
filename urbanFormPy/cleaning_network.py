@@ -1,68 +1,37 @@
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 import networkx as nx, matplotlib.cm as cm, pandas as pd, numpy as np, geopandas as gpd
+from shapely.geometry import Point, LineString
 
-from shapely.geometry import Point, LineString, Polygon, MultiPolygon, mapping, MultiLineString
-from shapely.ops import cascaded_union, linemerge, nearest_points
 pd.set_option('precision', 10)
 
+from .graph import*
 from .utilities import *
 
 """
-This set of functions is designed for extracting the computational Image of The City.
-Nodes, paths and districts are extracted with street network analysis, employing the primal and the dual graph representations.
-While the use of the terms "nodes" and "edges" can be cause confusion between the graph component and the Lynch components, 
-nodes and edges are here used instead of vertexes and links to be consistent with NetworkX definitions.
-(See notebook '1_Nodes_paths_districts.ipynb' for usages and pipeline).
+This set of functions is designed for cleaning street network's GeoDataFrame (nodes, edges), by taking care of dead_ends, duplicate geometries, same vertexes edges and so on.
 
 """
 
-def reset_index_gdf(nodes_gdf, edges_gdf):
-    """
-    The function simply resets the indexes of the two dataframes.
-     
-    Parameters
-    ----------
-    nodes_gdf, edges_gdf: GeoDataFrames, nodes and street segments
-   
-    Returns
-    -------
-    tuple GeoDataFrames
-    """
-    
-    edges_gdf = edges_gdf.rename(columns = {'u':'old_u', 'v':'old_v'})
-    nodes_gdf['old_nodeID'] = nodes_gdf.index.values.astype('int64')
-    nodes_gdf = nodes_gdf.reset_index(drop = True)
-    nodes_gdf['nodeID'] = nodes_gdf.index.values.astype('int64')
-    
-    edges_gdf = pd.merge(edges_gdf, nodes_gdf[['old_nodeID', 'nodeID']], how='left', left_on="old_u", right_on="old_nodeID")
-    edges_gdf = edges_gdf.rename(columns = {'nodeID':'u'})
-    edges_gdf = pd.merge(edges_gdf, nodes_gdf[['old_nodeID', 'nodeID']], how='left', left_on="old_v", right_on="old_nodeID")
-    edges_gdf = edges_gdf.rename(columns = {'nodeID':'v'})
-
-    edges_gdf.drop(['old_u', 'old_nodeID_x', 'old_nodeID_y', 'old_v'], axis = 1, inplace = True)
-    nodes_gdf.drop(['old_nodeID', 'index'], axis = 1, inplace = True, errors = 'ignore')
-    edges_gdf = edges_gdf.reset_index(drop=True)
-    edges_gdf['streetID'] = edges_gdf.index.values.astype(int)
-    
-    return nodes_gdf, edges_gdf
-
-## Cleaning functions ###############
-
 def duplicate_nodes(nodes_gdf, edges_gdf):
+
     """
-    The function checks the existencce of double nodes through the network, on the basis of geometry
+    The function checks the existencce of duplicate nodes through the network, on the basis of geometry
      
     Parameters
     ----------
-    nodes_gdf, edges_gdf: GeoDataFrames, nodes and street segments
+    nodes_gdf: Point GeoDataFrame
+        nodes (junctions) GeoDataFrame
+    edges_gdf: LineString GeoDataFrame
+        street segments GeoDataFrame
    
     Returns
     -------
-    tuple GeoDataFrames
+    tuple of GeoDataFrames
     """
+    
     # the index of nodes_gdf has to be nodeID
-    if list(nodes_gdf.index.values) != list(nodes_gdf.nodeID.values): nodes_gdf.index =  nodes_gdf.nodeID
+    if list(nodes_gdf.index.values) != list(nodes_gdf.nodeID.values): nodes_gdf.index = nodes_gdf.nodeID
     nodes_gdf, edges_gdf =  nodes_gdf.copy(), edges_gdf.copy()
     
     # detecting duplicate geometries
@@ -88,17 +57,22 @@ def duplicate_nodes(nodes_gdf, edges_gdf):
     
 
 def fix_dead_ends(nodes_gdf, edges_gdf):
+
     """
     The function removes dead-ends. In other words, it eliminates nodes from where only one segment originates, and the relative segment.
      
     Parameters
     ----------
-    nodes_gdf, edges_gdf: GeoDataFrames, nodes and street segments
+    nodes_gdf: Point GeoDataFrame
+        nodes (junctions) GeoDataFrame
+    edges_gdf: LineString GeoDataFrame
+        street segments GeoDataFrame
    
     Returns
     -------
-    tuple GeoDataFrames
+    tuple of GeoDataFrames
     """
+    
     nodes_gdf =  nodes_gdf.copy()
     edges_gdf = edges_gdf.copy()
     
@@ -117,12 +91,14 @@ def fix_dead_ends(nodes_gdf, edges_gdf):
     return nodes_gdf, edges_gdf
 
 def is_nodes_simplified(edges_gdf):
+
     """
     The function checks the presence of pseudo-junctions, by using the edges_gdf geodataframe.
      
     Parameters
     ----------
-    edges_gdf: GeoDataFrame, street segments
+    edges_gdf: LineString GeoDataFrame
+        street segments
    
     Returns
     -------
@@ -140,12 +116,14 @@ def is_nodes_simplified(edges_gdf):
     return simplified
 
 def is_edges_simplified(edges_gdf):
+
     """
     The function checks the presence of possible duplicate geometries in the edges_gdf geodataframe.
      
     Parameters
     ----------
-    edges_gdf: GeoDataFrame, street segments
+    edges_gdf: LineString GeoDataFrame
+        street segments
    
     Returns
     -------
@@ -162,19 +140,25 @@ def is_edges_simplified(edges_gdf):
     return simplified
 
 def simplify_graph(nodes_gdf, edges_gdf, update_densities = False, densities_column = None):
+
     """
     The function identify pseudo-nodes, namely nodes that represent intersection between only 2 segments.
     The segments are merged and the node is removed from the nodes_gdf geodataframe.
      
     Parameters
     ----------
-    nodes_gdf, edges_gdf: GeoDataFrames
+    nodes_gdf: Point GeoDataFrame
+        nodes (junctions) GeoDataFrame
+    edges_gdf: LineString GeoDataFrame
+        street segments GeoDataFrame
     update_densities: boolean
+        it indicates whether the user wants to keep track of densities which are stored on the original network
     densities_column: string
+        it indicates the column where the density data is stored
    
     Returns
     -------
-    GeoDataFrames
+    tuple of GeoDataFrames
     """
     
     nodes_gdf, edges_gdf = nodes_gdf.copy(), edges_gdf.copy()
@@ -196,7 +180,7 @@ def simplify_graph(nodes_gdf, edges_gdf, update_densities = False, densities_col
         if len(tmp) == 1: continue # possible dead end
         
         # dead end identified
-        index_first, index_second = tmp.iloc[0].streetID, tmp.iloc[1].streetID # first segment index
+        index_first, index_second = tmp.iloc[0].edgeID, tmp.iloc[1].edgeID # first segment index
         
         # Identifying the relationship between the two segments.
         # New node_u and node_v are assigned accordingly. A list of ordered coordinates is obtained for 
@@ -241,6 +225,7 @@ def simplify_graph(nodes_gdf, edges_gdf, update_densities = False, densities_col
 
 
 def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_islands = True, same_uv_edges = True, update_densities = False, densities_column = None):
+
     """
     It calls a series of functions (see above) to clean and remove dubplicate geometries or possible parallel short edges.
     It handles:
@@ -255,16 +240,25 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_i
     
     Parameters
     ----------
-    nodes_gdf, edges_gdf: GeoDataFrames
+    nodes_gdf: Point GeoDataFrame
+        nodes (junctions) GeoDataFrame
+    edges_gdf: LineString GeoDataFrame
+        street segments GeoDataFrame
     dead_ends: boolean
+        if true remove dead ends
     remove_disconnected_islands: boolean
+        if true checks the existence of disconnected islands within the network and deletes corresponding graph components
     same_uv_edges: boolean
+        if true, it considers as duplicates couple of edges with same vertexes but different geometry. If one of the edges is 30% longer than the other, the longer is deleted; 
+        otherwise a center line is built to replace the same_uv_edges.
     update_densities: boolean
+        it indicates whether the user wants to keep track of densities which are stored on the original network
     densities_column: string
+        it indicates the column where the density data is stored
    
     Returns
     -------
-    tuple GeoDataFrames
+    tuple of GeoDataFrames
     """
     
     nodes_gdf, edges_gdf = nodes_gdf.copy(), edges_gdf.copy()       
@@ -277,7 +271,7 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_i
     nodes_gdf['x'], nodes_gdf['y'] = list(zip(*[(r.coords[0][0], r.coords[0][1]) for r in nodes_gdf.geometry]))
     edges_gdf = edges_gdf[edges_gdf['u'] != edges_gdf['v']] #eliminate node-lines or loops
     
-    nodes_gdf, edges_gdf = double_nodes(nodes_gdf, edges_gdf)
+    nodes_gdf, edges_gdf = duplicate_nodes(nodes_gdf, edges_gdf)
     edges_gdf.sort_index(inplace = True)  
     edges_gdf['code'], edges_gdf['coords'] = None, None
     
@@ -318,12 +312,12 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_i
         if same_uv_edges:
             dd = dict(edges_gdf['code'].value_counts())
             dd = {k: v for k, v in dd.items() if v > 1} # keeping u-v combinations that appear more than once
-            # iterate through possible double edges for each specific combination of possible duplicates
+            # iterate through possible duplicate edges for each specific combination of possible duplicates
             for key,_ in dd.items():
                 tmp = edges_gdf[edges_gdf.code == key].copy()
                 # sorting the temporary GDF by length, the shortest is then used as a term of comparison
                 tmp.sort_values(['length'], ascending = True, inplace = True)
-                line_geometry, ix_line =tmp.iloc[0]['geometry'], tmp.iloc[0].streetID
+                line_geometry, ix_line =tmp.iloc[0]['geometry'], tmp.iloc[0].edgeID
                 
                 # iterate through all the other edges with same u-v nodes                                
                 for connector in tmp.itertuples():
@@ -334,7 +328,7 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_i
                     if (line_geometry_connector.length > (line_geometry.length * 1.30)): pass
                     # else draw a center-line, replace the geometry of the outer-loop segment with the CL, drop the segment of the inner-loop
                     else:
-                        cl = uf.center_line(line_geometry, line_geometry_connector)
+                        cl = center_line(line_geometry, line_geometry_connector)
                         edges_gdf.at[ix_line,'geometry'] = cl
                     
                     if edges_gdf.loc[ix_line_connector]['pedestrian'] == 1: edges_gdf.at[ix_line,'pedestrian'] = 1 
@@ -357,7 +351,7 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_i
     edges_gdf = correct_edges(nodes_gdf, edges_gdf) # correct edges coordinates
      
     # check if there are disconnected islands and remove nodes and edges belongings to these islands.
-    if detect_islands:
+    if remove_disconnected_islands:
         Ng = graph_fromGDF(nodes_gdf, edges_gdf, 'nodeID')
         if not nx.is_connected(Ng):  
             largest_component = max(nx.connected_components(Ng), key=len)
@@ -368,20 +362,24 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_i
             nodes_gdf.drop(to_drop, axis = 0 , inplace = True)
             edges_gdf = edges_gdf[(edges_gdf.u.isin(nodes_gdf.nodeID)) & (edges_gdf.v.isin(nodes_gdf.nodeID))]   
 
-    edges_gdf.set_index('streetID', drop = False, inplace = True, append = False)
+    edges_gdf.set_index('edgeID', drop = False, inplace = True, append = False)
     del edges_gdf.index.name
     print("Done after ", cycle, " cleaning cycles")  
     
     return nodes_gdf, edges_gdf
 
 def correct_edges(nodes_gdf, edges_gdf):
+
     """
     The function adjusts the edges LineString coordinates consistently with their relative u and v nodes' coordinates.
     It might be necessary to run the function after having cleaned the network.
      
     Parameters
     ----------
-    nodes_gdf, edges_gdf: GeoDataFrames, nodes and street segments
+    nodes_gdf: Point GeoDataFrame
+        nodes (junctions) GeoDataFrame
+    edges_gdf: LineString GeoDataFrame
+        street segments GeoDataFrame
    
     Returns
     -------
@@ -393,21 +391,28 @@ def correct_edges(nodes_gdf, edges_gdf):
     return edges_gdf
 
 def _update_line_geometry_coords(u, v, nodes_gdf, line_geometry):
+
     """
     It supports the correct_edges function checks that the edges coordinates are consistent with their relative u and v nodes'coordinates.
     It can be necessary to run the function after having cleaned the network.
     
     Parameters
     ----------
-    u, v: integer values
-    nodes_gdf: GeoDataFrames
+    u: int
+        the nodeID of the from node of the geometry
+    v: int
+        the nodeID of the to node of the geometry
+    nodes_gdf: Point GeoDataFrame
+        nodes (junctions) GeoDataFrame 
     line_geometry: LineString
-   
+        a street segment geometry
+        
     Returns
     -------
     LineString
     """
-    line_coords = line_geometry.coords
+    
+    line_coords = list(line_geometry.coords)
     line_coords[0] = (nodes_gdf.loc[u]['x'], nodes_gdf.loc[u]['y'])
     line_coords[-1] = (nodes_gdf.loc[v]['x'], nodes_gdf.loc[v]['y'])
     new_line_geometry = (LineString([coor for coor in line_coords]))

@@ -7,11 +7,11 @@ pd.set_option("precision", 10)
 
     
 def scaling_columnDF(df, i, inverse = False):
-    
     """
     It rescales the values in a dataframe"s from 0 to 1
     
     Parameters
+    ----------
     df: pandas dataframe
     i: string (column name)
     ----------
@@ -26,8 +26,8 @@ def dict_to_df(list_dict, list_col):
     """
     It takes a list of dictionaries and merge them in a df, as columns.
     
-    ----------
     Parameters
+    ----------
     list_dict: list of dictionaries
     list_col: list of str
     
@@ -47,8 +47,8 @@ def center_line(line_geometryA, line_geometryB):
     """
     Given two lines, it constructs the corresponding center line
     
-    ----------
     Parameters
+    ----------
     line_geometryA, line_geometryB: LineString
     
     Returns:
@@ -85,8 +85,8 @@ def distance_geometry_gdf(geometry, gpd):
     Given a geometry and a GeoDataFrame, it returns the minimum distance between the geometry and the GeoDataFrame. 
     It provides also the index of the closest geometry in the GeoDataFrame
     
-    ----------
     Parameters
+    ----------
     geometry: Point, LineString or Polygon
     gpd: GeoDataFrame
     
@@ -107,8 +107,8 @@ def merge_lines(line_geometries):
     """
     Given a list of line_geometries wich are connected by common to and from vertexes, the function infers the sequence, based on the coordinates and return a merged LineString feature.
     
-    ----------
     Parameters
+    ----------
     line_geometries: list of LineString
     
     Returns:
@@ -143,27 +143,7 @@ def merge_lines(line_geometries):
     if reverse: coords.reverse()
     return LineString([coor for coor in coords])
             
-    
-def merge_disconnected_lines(line_geometries):
-    """
-    Given a list of line_geometries wich are disconnected, the function infers the sequence, based on the coordinates and return a merged LineString feature.
-    
-    ----------
-    Parameters
-    line_geometries: list of LineString
-    
-    Returns:
-    ----------
-    LineString
-    """
-    
-    new_line = []
-    for n, i in enumerate(list_lines):
-        coords = list(i.coords)
-        if n < len(list_lines)-1: coords.append(list_lines[n+1].coords[-1])
-        new_line = new_line + coords
-    
-    return LineString([coor for coor in new_line])
+
 
             
             

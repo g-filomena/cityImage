@@ -25,8 +25,8 @@ def angle_line_geometries(line_geometryA, line_geometryB, degree = False, deflec
     """
     Given two LineStrings it computes the deflection angle between them. Returns value in degrees or radians.
     
-    ----------
     Parameters
+    ----------
     line_geometryA: LineString
     line_geometryB: LineString
     degree: boolean

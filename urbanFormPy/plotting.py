@@ -20,8 +20,8 @@ Plotting functions
     
     
 def plot_points(gdf, column = None, classes = 7, ms = 0.9, ms_col = None, scheme = "Natural_Breaks", bins = None,
-                cmap = "Greys_r", title = "Plot", legend = False, color_bar = False, black_background = True, fig_size = 15, line_back = pd.DataFrame({"a" : []})):
-        
+                cmap = "Greys_r", title = "Plot", legend = False, color_bar = False, black_background = True, fig_size = 15, 
+				gdf_base_map = pd.DataFrame({"a" : []})):
     """
     It creates a plot from a Point GeoDataFrame. 
     It plots the distribution over value and geographical space of variable "column" using "scheme". 
@@ -55,7 +55,7 @@ def plot_points(gdf, column = None, classes = 7, ms = 0.9, ms_col = None, scheme
         black background or white
     fig_size: float
         size figure extent
-    line_back: LineString GeoDataFrame
+    gdf_base_map: LineString GeoDataFrame
         If provided, it is used as background/base map for visualisation purposes
     
     """
@@ -77,9 +77,9 @@ def plot_points(gdf, column = None, classes = 7, ms = 0.9, ms_col = None, scheme
     fig.suptitle(title, color = text_color, fontsize=font_size)
 
     # background (e.g. street network)
-    if not line_back.empty: 
-        if black_background: line_back.plot(ax = ax, color = "white", linewidth = 1.1, alpha = 0.3)
-        else: line_back.plot(ax = ax, color = "black", linewidth = 1.1, alpha = 0.3)
+    if not gdf_base_map.empty: 
+        if black_background: gdf_base_map.plot(ax = ax, color = "white", linewidth = 1.1, alpha = 0.3)
+        else: gdf_base_map.plot(ax = ax, color = "black", linewidth = 1.1, alpha = 0.3)
     
     if column != None: gdf.sort_values(by = column,  ascending = True, inplace = True) 
     # markers size from column is provided
@@ -105,9 +105,8 @@ def plot_points(gdf, column = None, classes = 7, ms = 0.9, ms_col = None, scheme
     if legend: _generate_legend(ax, black_background)
     plt.show() 
                 
-def plot_lines(gdf, column = None, classes = 7, lw = 1.1, scheme = "Natural_Breaks", bins = None, cmap = "Greys_r", 
-               title = "Plot", legend = False, color_bar = False, black_background = True, fig_size = 15):
-               
+def plot_lines(gdf, column = None, classes = 7, lw = 1.1, scheme = None, bins = None, cmap = "Greys_r", 
+               title = "Plot", legend = False, color_bar = False, black_background = True, fig_size = 15):  
     """
     It creates a plot from a lineString GeoDataFrame. 
     When column and scheme are not "None" it plots the distribution over value and geographical space of variable "column using scheme
@@ -160,18 +159,17 @@ def plot_lines(gdf, column = None, classes = 7, lw = 1.1, scheme = "Natural_Brea
         rect.set_facecolor("white")
     font_size = fig_size+5 # font-size     
     fig.suptitle(title, color = text_color, fontsize=font_size)
+    if column != None: gdf.sort_values(by = column, ascending = True, inplace = True)  
     
     # plain plot:
     if (column == None) & (scheme == None):
         if black_background: gdf.plot(ax = ax, linewidth = lw, color = "white")
         else: gdf.plot(ax = ax, linewidth = lw, color = "black")
     
-    if column != None: gdf.sort_values(by = column, ascending = True, inplace = True)  
-    
     # categorigal plot
-    if (column != None) & (scheme == None):
+    elif (column != None) & (scheme == None):
         # boolean map
-        if cmap == None & classes == 2: 
+        if (cmap == None) & (classes == 2): 
             colors = ["white", "red"]
             gdf.plot(ax = ax, categorical = True, column = column, color = colors, linewidth = lw, legend = legend) 
         # categorical map
@@ -187,14 +185,11 @@ def plot_lines(gdf, column = None, classes = 7, lw = 1.1, scheme = "Natural_Brea
         gdf.plot(ax = ax, column = column, cmap = cmap, linewidth = lw, scheme = scheme, legend = legend, classification_kwds={'bins':bins})
     # other schemes
     elif scheme != None: gdf.plot(ax = ax, column = column, k = classes, cmap = cmap, linewidth = lw, scheme = scheme, legend = legend)
-
-
     if legend: _generate_legend(ax, black_background)
                 
     plt.show()
         
 def plot_polygons(gdf, column = None, classes = 7, scheme = None, bins = None, cmap = "Greens_r", title =  "Plot", legend = False, color_bar = False, black_background = True,  fig_size = 15):
-
     """
     It creates a plot from a Polygon GeoDataFrame. 
     When column and scheme are not "None" it plots the distribution over value and geographical space of variable "column using scheme
@@ -456,7 +451,6 @@ def plot_multiplex(M, multiplex_edges):
     return(fig)
   
 def _generate_legend(ax, black_background):
-
 
     leg = ax.get_legend()  
     leg.set_bbox_to_anchor((0., 0., 0.2, 0.2))

@@ -5,6 +5,7 @@ from shapely.geometry import Point, LineString, Polygon, MultiPolygon, mapping, 
 pd.set_option("precision", 10)
 
 from .angles import *
+from .cleaning_network import *
 
 """
 The concet of natural road regards the cognitive perception/representation of road entities, regardless changes in names or
@@ -28,12 +29,12 @@ def identify_natural_roads(nodes_gdf, edges_gdf, tolerance = 45):
     Tuple of GeoDataFrames
     """
    
-    if (not nodes_simplified(edges_gdf)) | (not edges_simplified(edges_gdf)): 
+    if (not is_nodes_simplified(edges_gdf)) | (not is_edges_simplified(edges_gdf)): 
         raise StreetNetworkError("The street network is not simplified")
 
-    edges_gdf.index = edges_gdf.streetID
+    edges_gdf.index = edges_gdf.edgeID
     nodes_gdf.index = nodes_gdf.nodeID
-    del edges.index.name
+    del edges_gdf.index.name
     del nodes_gdf.index.name
     
     edges_gdf["naturalID"] = 0
@@ -46,9 +47,9 @@ def identify_natural_roads(nodes_gdf, edges_gdf, tolerance = 45):
         _natural_roads(row.Index, naturalID, "to", nodes_gdf, edges_gdf, tolerance = tolerance) 
         naturalID = naturalID + 1
                                             
-    return nodes_gdf, edges_gdf
+    return edges_gdf
     
-def _natural_roads(streetID, naturalID, direction, nodes_gdf, edges_gdf, tolerance = 45): 
+def _natural_roads(edgeID, naturalID, direction, nodes_gdf, edges_gdf, tolerance = 45): 
     """
     This function takes a direction "to" or "fr" and two GeoDataFrames, one for roads one for nodes (or junctions).
     Since this function works only for one segment at the time, in one direction, it has to be executed in a for loop
@@ -56,7 +57,7 @@ def _natural_roads(streetID, naturalID, direction, nodes_gdf, edges_gdf, toleran
     
     Parameters
     ----------
-    streetID: int, next road to examine
+    edgeID: int, next road to examine
     naturalID: int, current naturalID 
     direction: string, {"to", "fr"}
     nodes_gdf, edges_gdf : GeoDataFrames
@@ -68,9 +69,9 @@ def _natural_roads(streetID, naturalID, direction, nodes_gdf, edges_gdf, toleran
     ix_geo = edges_gdf.columns.get_loc("geometry")+1
     ix_u, ix_v = edges_gdf.columns.get_loc("u")+1, edges_gdf.columns.get_loc("v")+1
     ix_nID = edges_gdf.columns.get_loc("naturalID")+1
-    to_node, from_node = edges_gdf.loc[streetID]["u"], edges_gdf.loc[streetID]["v"]
+    to_node, from_node = edges_gdf.loc[edgeID]["u"], edges_gdf.loc[edgeID]["v"]
     
-    line_geometry = edges_gdf.loc[streetID]["geometry"]
+    line_geometry = edges_gdf.loc[edgeID]["geometry"]
       
     # continue from the to_node or from the from_node    
     if (direction == "to"): intersecting = edges_gdf[(edges_gdf["u"] == to_node) | (edges_gdf["v"] == to_node)]
@@ -79,32 +80,32 @@ def _natural_roads(streetID, naturalID, direction, nodes_gdf, edges_gdf, toleran
     
     # check all possible deflection angles with the intersecting roads identified
     for connector in intersecting.itertuples():
-        if ((streetID == connector.Index) | (connector[ix_nID] > 0)): continue # already processed
+        if ((edgeID == connector.Index) | (connector[ix_nID] > 0)): continue # already processed
         to_node_connector, from_node_connector = connector[ix_u], connector[ix_v]
-        line_geometry_connector = row_connector[ix_geo]
+        line_geometry_connector = connector[ix_geo]
 
         # where to go next, in case?
         if (to_node == from_node_connector) | (from_node == from_node_connector): towards = "to"
         else: towards = "to"
 
         # measuring deflection angle, adding it to the dictionary, if lower than tolerance degrees
-        deflection = af.angle_line_geometries(line_geometry, line_geometry_connector, degree = True, deflection = True)
+        deflection = angle_line_geometries(line_geometry, line_geometry_connector, degree = True, deflection = True)
         if (deflection >= tolerance): continue
         else:
-            angles[connector.Index] = deflection # dictionary with streetID and angle
-            directions_dict[connector.Index] = towards # dictionary with streetID and direction
+            angles[connector.Index] = deflection # dictionary with edgeID and angle
+            directions_dict[connector.Index] = towards # dictionary with edgeID and direction
     
     # No natural continuations
     if len(angles) == 0:
-        edges_gdf.set_value(streetID, "naturalID", naturalID)
+        edges_gdf.set_value(edgeID, "naturalID", naturalID)
         return
    
     # selecting the best continuation and continuing in its direction
     else:
         angles_sorted = sorted(angles, key = angles.get)                              
-        # taking the streetID of the segment which form the gentlest angle with the segment examined
+        # taking the edgeID of the segment which form the gentlest angle with the segment examined
         matchID = angles_sorted[0] 
-        edges_gdf.set_value(streetID, "naturalID", naturalID)
+        edges_gdf.set_value(edgeID, "naturalID", naturalID)
         _natural_roads(matchID, naturalID, directions_dict[matchID], nodes_gdf, edges_gdf)                    
         return                                                                            
 

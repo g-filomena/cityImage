@@ -5,13 +5,16 @@ from scipy.sparse import linalg
 pd.set_option("precision", 10)
 
 def classify_land_use(buildings_gdf, land_use):
+
     """
     The function reclassifies land-use descriptors in a land-use field according to the categorisation presented below. 
      
     Parameters
     ----------
     buildings_gdf: Polygon GeoDataFrame
-    land_use: string, the land use field
+		the buildings GeoDataFrame
+    land_use: string
+		the land use field in the buildings_gdf
    
     Returns
     -------
@@ -79,14 +82,18 @@ def classify_land_use(buildings_gdf, land_use):
 def land_use_from_polygons(buildings_gdf, other_source_gdf, column, land_use_field):
 
     """
-    It assigns land-use attributes to buildings in "buildings_gdf", looking for possible matches in "other_source_gdf" a Polygon GeoDataFrame
+    It assigns land-use attributes to buildings in a buildings GeoDataFrame, looking for possible matches in "other_source_gdf", a Polygon GeoDataFrame
     Possible matches here means the buildings in "other_source_gdf" whose area of interesection with the examined building (y), covers at least
     60% of the building's (y) area. The best match is chosen. 
      
     Parameters
     ----------
-    buildings_gdf, other_source_gdf: Polygon GeoDataFrames - "other_source_gdf" is the GeoDataFrame wherein looking for land_use attributes
-    column: string, name of the column in buildings_gdf to which assign the land_use descriptor
+    buildings_gdf: Polygon GeoDataFrame
+	
+	other_source_gdf: Polygon GeoDataFrame
+		the GeoDataFrame wherein looking for land_use attributes
+    column: str
+		name of the column in buildings_gdf to which assign the land_use descriptor
     land_use_field: string, name of the column in other_source_gdf wherein the land_use attribute is stored
    
     Returns
