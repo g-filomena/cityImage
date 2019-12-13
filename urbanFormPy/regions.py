@@ -6,7 +6,7 @@ from shapely.geometry import Point, LineString, Polygon, MultiPolygon, mapping, 
 from shapely.ops import cascaded_union, linemerge, nearest_points
 pd.set_option("precision", 10)
 
-from .graph import*
+from .graph import *
 from .utilities import *
 
 def identify_regions(dual_graph, edges_graphB, weight = None):

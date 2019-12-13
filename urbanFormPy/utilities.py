@@ -105,7 +105,7 @@ def distance_geometry_gdf(geometry, gpd):
 def merge_lines(line_geometries):
 
     """
-    Given a list of line_geometries wich are connected by common to and from vertexes, the function infers the sequence, based on the coordinates and return a merged LineString feature.
+    Given a list of line_geometries wich are connected by common to and from vertexes, the function infers the sequence, based on the coordinates, and return a merged LineString feature.
     
     Parameters
     ----------

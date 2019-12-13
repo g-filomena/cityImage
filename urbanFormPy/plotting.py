@@ -174,7 +174,7 @@ def plot_lines(gdf, column = None, classes = 7, lw = 1.1, scheme = None, bins = 
             gdf.plot(ax = ax, categorical = True, column = column, color = colors, linewidth = lw, legend = legend) 
         # categorical map
         else: 
-            cmap='tab20b'
+            if cmap == None: cmap ='tab20b'
             gdf.plot(ax = ax, categorical = True, column = column, cmap = cmap, linewidth = lw, legend = legend) 
     # user defined bins
     elif scheme == "User_Defined":
@@ -370,11 +370,11 @@ def plot_lines_aside(gdf, gdf_c = None, classes = 7, lw = 0.9, columnA = None, c
         
         # boolean map
         if (columns[n] != None) & (scheme == None): 
-            if cmap == None & classes == 2: 
+            if (cmap == None) & (classes == 2): 
                 colors = ["white", "red"]
                 gdf.plot(ax = i, categorical = True, column = columns[n], color = colors, linewidth = lw, legend = legend)
             else:
-                cmap='tab20b'
+                if cmap == None: cmap ='tab20b'
                 gdf.plot(ax = i, categorical = True, column = columns[n], cmap='tab20b', linewidth = lw, legend = legend)
             
         # user defined bins

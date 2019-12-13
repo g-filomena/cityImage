@@ -8,14 +8,30 @@ math functions for angle computations
 readapted for LineStrings from Abhinav Ramakrishnan answer in https://stackoverflow.com/a/28261304/7375309
 """
     
-def euclidean_distance(xs, ys, xt, yt):
-    """ xs stands for x source and xt for x target """
-    return sqrt((xs - xt)**2 + (ys - yt)**2)
-
-def dot(vA, vB):
+def _dot(vA, vB):
     return vA[0]*vB[0]+vA[1]*vB[1]
         
 def get_coord_angle(origin, distance, angle):
+    """
+
+    The function returns the coordinates of the line starting from a tuple of coordinates, which forms with the y axis an angle in degree of a certain magnitude,
+    given the distance from the origin.
+        
+    Parameters
+    ----------
+    origin: tuple of float
+        tuple of coordinates
+    line_geometryB: LineString
+    degree: boolean
+        If True returns value in degree, otherwise in radians
+    deflection: boolean
+        If True computes angle of incidence between the two lines, otherwise angle between vectors
+    angular_change: boolean
+
+    Returns:
+    ----------
+    float
+    """
 
     (disp_x, disp_y) = (distance * math.sin(math.radians(angle)), distance * math.cos(math.radians(angle)))
     return (origin[0] + disp_x, origin[1] + disp_y)
@@ -28,13 +44,19 @@ def angle_line_geometries(line_geometryA, line_geometryB, degree = False, deflec
     Parameters
     ----------
     line_geometryA: LineString
+        the first line
     line_geometryB: LineString
+        the other line; it must share a vertex with line_geometryA
     degree: boolean
-        If True returns value in degree, otherwise in radians
+        if True it returns value in degree, otherwise in radians
     deflection: boolean
-        If True computes angle of incidence between the two lines, otherwise angle between vectors
+        if True it computes angle of incidence between the two lines, otherwise angle between vectors
     angular_change: boolean
-
+        LineStrings are formed by two vertexes "from" and to". Within the function, four vertexes (2 per line) are considered; two of them are equal and shared between the lines.
+        The common vertex is used to compute the angle, along with another vertex per line. If True it computes angle of incidence between the two lines, on the basis of the vertex in common and the second following
+        (intermediate, if existing) vertexes forming each of the line. For example, if the line_geometryA has 3 vertexes composing its geometry, from, to and an intermediate one, the latter is used to compute 
+        the angle along with the one which is shared with line_geometryB. When False, the angle is computed by using exclusively from and to nodes, without considering intermediate vertexes which form the line geometries.
+        
     Returns:
     ----------
     float
@@ -100,7 +122,7 @@ def angle_line_geometries(line_geometryA, line_geometryB, degree = False, deflec
             lineA = ((x_destinationA, y_destinationA), (x_originA, y_originA))
             lineB = ((x_destinationB, y_destinationB), (x_originB, y_originB))
 
-        elif (x_destinationA, y_destinationA) == (y_originB, y_originB):
+        elif (x_destinationA, y_destinationA) == (x_originB, y_originB):
             lineA = ((x_destinationA, y_destinationA), (x_originA, y_originA))
             lineB = ((y_originB, y_originB), (x_destinationB, y_destinationB))
 
@@ -108,7 +130,7 @@ def angle_line_geometries(line_geometryA, line_geometryB, degree = False, deflec
             lineA = ((x_originA, y_originA), (x_destinationA, y_destinationA))
             lineB = ((x_originB, y_originB), (x_destinationB, y_destinationB))
 
-        elif (x_originA, y_originA) == (y_destinationB, y_destinationB):
+        elif (x_originA, y_originA) == (x_destinationB, y_destinationB):
             lineA = ((x_originA, y_originA), (x_destinationA, y_destinationA))
             lineB = ((x_destinationB, y_destinationB),(x_originB, y_originB)) 
         # no common vertex   
@@ -120,10 +142,10 @@ def angle_line_geometries(line_geometryA, line_geometryB, degree = False, deflec
     
     try:
         # Get dot prod
-        dot_prod = dot(vA, vB)
+        dot_prod = _dot(vA, vB)
         # Get magnitudes
-        magA = dot(vA, vA)**0.5
-        magB = dot(vB, vB)**0.5
+        magA = _dot(vA, vA)**0.5
+        magB = _dot(vB, vB)**0.5
         # Get cosine value
         cos_ = dot_prod/magA/magB
         # Get angle in radians and then convert to degrees
