@@ -6,6 +6,7 @@ from shapely.ops import cascaded_union, linemerge, nearest_points
 pd.set_option("precision", 10)
 
 from .utilities import *
+from .graph import *
    
 ## Centrality functions ###############
 
@@ -82,7 +83,7 @@ def straightness_centrality(G, weight, normalized = True):
             straightness_centrality[n] = 0.0
 
     return straightness_centrality
-	
+    
 def _euclidean_distance(xs, ys, xt, yt):
     """ xs stands for x source and xt for x target """
     return sqrt((xs - xt)**2 + (ys - yt)**2)
@@ -99,7 +100,7 @@ def weight_nodes(nodes_gdf, service_points_gdf, G, name, radius = 400):
     G: networkx multigraph
     name: string, attribute name
     radius: float, distance around the node within looking for point features (services)
-	
+    
     Returns
     -------
     networkx multidigraph
@@ -279,6 +280,47 @@ def local_centrality(G, measure, weight, radius = 400, normalized = False):
         cm[n] = c
     
     return cm
+    
+def append_nodes_metrics(nodes_gdf, dicts, column_names):   
+    
+    if not "nodeID" in nodes_gdf.columns: nodes_gdf["nodeID"] = nodes_gdf.index.values.astype("int64")
+    tmp = dict_to_df(dicts, column_names)
+    nodes_gdf = pd.merge(nodes_gdf, tmp, left_on = "nodeID", right_index = True, how = 'left')
+    
+    return nodes_gdf
+    
+    
+def append_edges_metrics(edges_gdf, graph, dicts, column_names):
+    
+    edgesID = {}
+    for i, g in graph.edges(): edgesID[(i,g)] = graph[i][g]['edgeID']
+    missing_values = [item for item in list(edges_gdf.index) if item not in list(edgesID.values())]
+    
+    dicts.append(edgesID)
+    column_names.append("edgeID")
+    
+    tmp = dict_to_df(dicts, column_names)
+    tmp.edgeID = tmp.edgeID.astype(int)
+    edges_gdf = pd.merge(edges_gdf, tmp, on = 'edgeID', how = 'left')
+    edges_gdf.index = edges_gdf.edgeID
+    del edges_gdf.index.name
+    
+    # handling possible missing values (happens with self-loops)
+    for metric in column_names:
+        if metric == "edgeID": continue
+        for i in missing_values: edges_gdf.at[i, metric] = 0.0
+    
+    return edges_gdf
+    
+def append_dual_edges_metrics(edges_gdf, dual_graph, dict_metric, name_metric): 
+    
+    dictionary = up.dual_id_dict(dict_metric, dual_graph, 'edgeID')
+    tmp = up.dict_to_df([dictionary], [name_metric])
+    edges_gdf = pd.merge(edges_gdf, tmp, left_on = "edgeID", right_index = True, how = 'left')
+    edges_gdf.index = edges_gdf.edgeID
+    del edges_gdf.index.name
+    
+    return edges_gdf
     
 class Error(Exception):
     """Base class for other exceptions"""

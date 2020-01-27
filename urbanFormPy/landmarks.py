@@ -23,12 +23,17 @@ def get_buildings_from_SHP(path, epsg, case_study_area = None, obstructions_area
     Parameters
     ----------
     path: string
+    
     epsg: int
+    
     case_study_area: Polygon
+    
     obstructions_area: Polygon
+    
     height_field, base_field: str 
         height and base fields name in the original data-source
-    distance_from_center: float
+    
+    distance: float
     
     Returns
     -------
@@ -81,8 +86,11 @@ def get_buildings_from_OSM(place, method = "from_address", distance = 1000, epsg
     Parameters
     ----------
     place: str or tuple 
+    
     method: str
+    
     distance: float
+    
     epsg: int
     
     Returns
@@ -119,7 +127,7 @@ def get_buildings_from_OSM(place, method = "from_address", distance = 1000, epsg
     
     return buildings_gdf
         
-def structural_properties(buildings_gdf, obstructions_gdf, street_gdf, max_expansion_distance = 300, distance_along = 50, radius = 150):
+def structural_score(buildings_gdf, obstructions_gdf, street_gdf, max_expansion_distance = 300, distance_along = 50, radius = 150):
 
     """
     The function computes the structural properties of each building properties.
@@ -134,10 +142,15 @@ def structural_properties(buildings_gdf, obstructions_gdf, street_gdf, max_expan
     Parameters
     ----------
     buildings_gdf: Polygon GeoDataFrame
+    
     street_gdf: LineString GeoDataFrame
+    
     obstructions_gdf: Polygon GeoDataFrame
+    
     radius: float
+    
     max_expansion_distance: float
+    
     distance_along: float
    
     Returns
@@ -168,8 +181,11 @@ def _number_neighbours(building_geometry, obstructions_gdf, obstructions_sindex,
     Parameters
     ----------
     building_geometry: Polygon
+    
     obstructions_gdf: Polygon GeoDataFrame
+    
     obstructions_sindex: Rtree Spatial Index
+    
     radius: float
    
     Returns
@@ -271,6 +287,7 @@ def visibility_score(buildings_gdf, sight_lines = pd.DataFrame({'a' : []})):
     Parameters
     ----------
     buildings_gdf: Polygon GeoDataFrame
+    
     sight_lines: LineString GeoDataFrame
    
     Returns
@@ -285,7 +302,6 @@ def visibility_score(buildings_gdf, sight_lines = pd.DataFrame({'a' : []})):
         
     #facade area (roughly computed)
     buildings_gdf["fac"] = buildings_gdf.apply(lambda row: _facade_area(row["geometry"], row["height"]), axis = 1)
-    
     if sight_lines.empty: return buildings_gdf
     
     # 3d visibility
@@ -345,7 +361,7 @@ def _facade_area(building_geometry, building_height):
     """
     
     envelope = building_geometry.envelope
-    coords = mapping(t)["coordinates"][0]
+    coords = mapping(envelope)["coordinates"][0]
     d = [(Point(coords[0])).distance(Point(coords[1])), (Point(coords[1])).distance(Point(coords[2]))]
     width = min(d)
     return width*building_height
@@ -510,7 +526,9 @@ def compute_global_scores(buildings_gdf, g_cW, g_iW):
     # scaling
     col = ["3dvis", "fac", "height", "area","2dvis", "cult", "prag"]
     col_inverse = ["neigh", "road"]
-                                                                     
+    
+    if "height" not in buildings_gdf.columns: buildings_gdf['height'] = 0.0
+    
     for i in col: 
         if buildings_gdf[i].max() == 0.0: buildings_gdf[i+"_sc"] = 0.0
         else: scaling_columnDF(buildings_gdf, i)

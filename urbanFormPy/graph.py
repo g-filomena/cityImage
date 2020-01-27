@@ -20,7 +20,7 @@ This set of functions handles interoperations between GeoDataFrames and graphs. 
     
 ## Graph preparation functions ###############
     
-def get_network_fromOSM(download_type, place, network_type = "all", epsg = None, distance = 7000, fix_topology = True): 
+def get_network_fromOSM(download_type, place, network_type = "all", epsg = None, distance = 7000, fix_topology = False): 
 
     """
     The function downloads and creates a simplified OSMNx graph for a selected area. 
@@ -39,8 +39,8 @@ def get_network_fromOSM(download_type, place, network_type = "all", epsg = None,
         epsg of the area considered; if None OSMNx is used for the projection
     distance: float
         it is used only if download_type == "distance from address"
-	fix_topology: boolean
-		if True it breaks lines at intersections with other lines in the streets GeoDataFrame, apart from segments categorised as bridges in OSM
+    fix_topology: boolean
+        if True it breaks lines at intersections with other lines in the streets GeoDataFrame, apart from segments categorised as bridges in OSM
         
     Returns
     -------
@@ -72,13 +72,13 @@ def get_network_fromOSM(download_type, place, network_type = "all", epsg = None,
         nodes_gdf = nodes.drop(["highway", "ref"], axis=1, errors = "ignore")
         # getting rid of OSMid and preparing geodataframes
         nodes_gdf.index = nodes_gdf.osmid.astype("int64")
-        reset_index_street_network_gdfs(nodes_gdf, edges_gdf)    
+        nodes_gdf, edges_gdf = reset_index_street_network_gdfs(nodes_gdf, edges_gdf)    
         
     else: # when topology needs to be fixed
         edges_gdf = fix_network_topology(edges_gdf)
-		if epsg == None: 
-			edges_gdf = ox.projection.project_gdf(edges_gdf)
-			epsg = edges_gdf.crs['init'][5:] # extract epsg
+        if epsg == None: 
+            edges_gdf = ox.projection.project_gdf(edges_gdf)
+            epsg = edges_gdf.crs['init'][5:] # extract epsg
         nodes_gdf = _obtain_nodes_gdf(edges_gdf, epsg)
         nodes_gdf, edges_gdf =_join_by_coordinates(nodes_gdf, edges_gdf)
         
@@ -99,7 +99,7 @@ def get_network_fromOSM(download_type, place, network_type = "all", epsg = None,
     nodes_gdf['height'] = 2 # this will be used for 3d visibility analysis
     return nodes_gdf, edges_gdf
 
-def get_network_fromSHP(path, epsg, case_study_area = None, distance_from_center = 0, dict_columns = {}, fix_topology = False):
+def get_network_fromSHP(path, epsg, case_study_area = None, radius = 0, dict_columns = {}, fix_topology = False):
     
     """
     The function loads a vector lines shapefile from a specified directory, along with the epsg coordinate code.
@@ -115,14 +115,14 @@ def get_network_fromSHP(path, epsg, case_study_area = None, distance_from_center
         epsg of the area considered 
     case_study_area: Polygon
         the polygon representing the extension of the case-study area, if not provided the 2 following parameters are used to extract the street network
-    distance_from_center: float
+    radius: float
         it is employed, when the case_study_area polygon is not provided, to determine the extension of the area of interest
     dict_columns: dict
         it should be structured as: {"roadType_field": "highway",  "direction_field": "oneway", "speed_field": None, "name_field": "name"}
         Replace the items with the field names in the input data (if the relative attributes are relevant and existing)
-	fix_topology: boolean
-		if True it breaks lines at intersections with other lines in the streets GeoDataFrame, apart from segments categorised as bridges in OSM
-	
+    fix_topology: boolean
+        if True it breaks lines at intersections with other lines in the streets GeoDataFrame, apart from segments categorised as bridges in OSM
+    
     Returns
     -------
     tuple of GeoDataFrames
@@ -133,9 +133,9 @@ def get_network_fromSHP(path, epsg, case_study_area = None, distance_from_center
         
     # using a buffer to clip the area of study
     if case_study_area != None: edges_gdf = edges_gdf[edges_gdf.geometry.within(case_study_area)]
-    if distance_from_center > 0:
+    elif radius > 0:
         cn = edges_gdf.geometry.unary_union.centroid
-        buffer = cn.buffer(distance_from_center) 
+        buffer = cn.buffer(radius) 
         edges_gdf = edges_gdf[edges_gdf.geometry.within(buffer)]
         
     edges_gdf["from"] = None
@@ -170,13 +170,42 @@ def get_network_fromSHP(path, epsg, case_study_area = None, distance_from_center
     
     return nodes_gdf, edges_gdf
     
+def _obtain_nodes_gdf(edges_gdf, epsg):
+
+    """
+    It obtains the nodes GeoDataFrame from the unique coordinates pairs in the edges_gdf GeoDataFrame.
+        
+    Parameters
+    ----------
+    edges_gdf: LineString GeoDataFrame
+        street segments GeoDataFrame
+    epsg: int
+        epsg of the area considered 
+    Returns
+    -------
+    Point GeoDataFrames
+    """
+    
+    edges_gdf["from"] = edges_gdf.apply(lambda row: row.geometry.coords[0], axis = 1)
+    edges_gdf["to"] = edges_gdf.apply(lambda row: row.geometry.coords[-1], axis = 1)
+    unique_nodes_tmp = list(edges_gdf["to"].unique()) + list(edges_gdf["from"].unique())
+    unique_nodes = list(set(unique_nodes_tmp))
+    #preparing nodes geodataframe
+    nodes_data = pd.DataFrame.from_records(unique_nodes, columns=["x", "y"]).astype("float")
+    geometry = [Point(xy) for xy in zip(nodes_data.x, nodes_data.y)]
+    crs = {'init': 'epsg:' + str(epsg)}
+    nodes_gdf = gpd.GeoDataFrame(nodes_data, crs=crs, geometry=geometry)
+    nodes_gdf.reset_index(drop=True, inplace = True)
+    
+    return nodes_gdf
+    
 def _join_by_coordinates(nodes_gdf, edges_gdf):
 
     """
     The function merge the u-v nodes information, from the nodes GeoDataFrame, with the edges_gdf GeoDataFrame.
-	The process exploits coordinates pairs of the edges for finding the relative nodes in the nodes GeoDataFrame.
+    The process exploits coordinates pairs of the edges for finding the relative nodes in the nodes GeoDataFrame.
     
-	Parameters
+    Parameters
     ----------
     nodes_gdf: Point GeoDataFrame
         nodes (junctions) GeoDataFrame
@@ -203,35 +232,6 @@ def _join_by_coordinates(nodes_gdf, edges_gdf):
     nodes_gdf.drop(["coordinates"], axis = 1, inplace = True)
     
     return nodes_gdf, edges_gdf
-	
-def _obtain_nodes_gdf(edges_gdf, epsg):
-
-    """
-    It obtains the nodes GeoDataFrame from the unique coordinates pairs in the edges_gdf GeoDataFrame.
-	    
-	Parameters
-    ----------
-    edges_gdf: LineString GeoDataFrame
-        street segments GeoDataFrame
-	epsg: int
-        epsg of the area considered 
-    Returns
-    -------
-    Point GeoDataFrames
-    """
-    
-    edges_gdf["from"] = edges_gdf.apply(lambda row: row.geometry.coords[0], axis = 1)
-    edges_gdf["to"] = edges_gdf.apply(lambda row: row.geometry.coords[-1], axis = 1)
-    unique_nodes_tmp = list(edges_gdf["to"].unique()) + list(edges_gdf["from"].unique())
-    unique_nodes = list(set(unique_nodes_tmp))
-    #preparing nodes geodataframe
-    nodes_data = pd.DataFrame.from_records(unique_nodes, columns=["x", "y"]).astype("float")
-    geometry = [Point(xy) for xy in zip(nodes_data.x, nodes_data.y)]
-    crs = {'init': 'epsg:' + str(epsg)}
-    nodes_gdf = gpd.GeoDataFrame(nodes_data, crs=crs, geometry=geometry)
-    nodes_gdf.reset_index(drop=True, inplace = True)
-    
-    return nodes_gdf
 
 def reset_index_street_network_gdfs(nodes_gdf, edges_gdf):
     """
@@ -263,6 +263,8 @@ def reset_index_street_network_gdfs(nodes_gdf, edges_gdf):
     nodes_gdf.drop(["old_nodeID", "index"], axis = 1, inplace = True, errors = "ignore")
     edges_gdf = edges_gdf.reset_index(drop=True)
     edges_gdf["edgeID"] = edges_gdf.index.values.astype(int)
+    
+    return nodes_gdf, edges_gdf
 
 ## Obtaining graphs ###############
 
@@ -376,7 +378,7 @@ def dual_gdf(nodes_gdf, edges_gdf, epsg):
     """
     
     if list(edges_gdf.index.values) != list(edges_gdf.edgeID.values): 
-        edges_gdf.index =  edges_gdf.edgeID
+        edges_gdf.index = edges_gdf.edgeID
         del edges_gdf.index.name
     
     # computing centroids                                       
@@ -506,9 +508,9 @@ def fix_network_topology(edges_gdf):
 
     """
     The function breaks lines at intersections, in the edges_gdf GeoDataFrame. 
-	The interesections may not be corrently represented prior to the analysis. Lines are therefore split and the intersection coordinate is 
-	added to the sequence of coordinates in the considered edges.
-	As a consequence, new geometries may be creadeted and added in the edges_gdf GeoDataFrame.
+    The interesections may not be corrently represented prior to the analysis. Lines are therefore split and the intersection coordinate is 
+    added to the sequence of coordinates in the considered edges.
+    As a consequence, new geometries may be creadeted and added in the edges_gdf GeoDataFrame.
             
     Parameters
     ----------
@@ -526,14 +528,14 @@ def fix_network_topology(edges_gdf):
     ix_geo = edges_gdf.columns.get_loc("geometry")+1
     restart = True
     ix_bridge = 0
-	
-	# taking into account bridges, which are not supposed to be split at intersections 
+    
+    # taking into account bridges, which are not supposed to be split at intersections 
     if "bridge" in edges_gdf.columns:
-        edges_gdf["bridge"].fillna(0, inplace = Trye)
+        edges_gdf["bridge"].fillna(0, inplace = True)
         ix_bridge = edges_gdf.columns.get_loc("bridge")+1
     last = 0
-	
-	# starting
+    
+    # starting
     while restart:
         restart = False
 
@@ -543,8 +545,8 @@ def fix_network_topology(edges_gdf):
             if (ix_bridge > 0) & (row[ix_bridge] != 0): continue # bridges are not checked
             pm = pm = edges_gdf[edges_gdf.geometry.intersects(row[ix_geo].buffer(1))] # find possible intersecting other lines..
             if len(pm) == 0: continue
-			
-			#..iterating through them
+            
+            #..iterating through them
             for other_edge in pm.itertuples():
                 if other_edge.Index == row.Index: continue
                 if not (row[ix_geo].intersects(other_edge[ix_geo]) | row[ix_geo].touches(other_edge[ix_geo])): continue # no intersection
@@ -557,7 +559,7 @@ def fix_network_topology(edges_gdf):
                 if intersection.geom_type == 'Point': # just a single intersection
                     coordsI =  intersection.coords
                     # don't need to fix when:
-					# the line considered is ok. The intersection is on u or v. The other line will be fixed later, if necessary
+                    # the line considered is ok. The intersection is on u or v. The other line will be fixed later, if necessary
                     if (coordsA[-1] == coordsI[0]) | (coordsA[0] == coordsI[0]): continue 
                     # fix:
                     else: 
@@ -599,10 +601,10 @@ def split_line_at_Point(line_geometry, intersection):
 
     """
     The function checks whether a Point's coordinate are part of the sequence of coordinates of a LineString.
-	When this has been ascerted or fixed, the LineString line_geometry is split at the Point
-	           
-	The input intersection, must be an actual intersection.
-	           
+    When this has been ascerted or fixed, the LineString line_geometry is split at the Point
+               
+    The input intersection, must be an actual intersection.
+               
     Parameters
     ----------
     line_geometry: LineString
@@ -635,10 +637,10 @@ def split_line_at_MultiPoint(line_geometry, intersection):
 
     """
     The function checks whether the coordinates of Point(s) in a Point Collections coordinate are part of the sequence of coordinates of a LineString.
-	When this has been ascerted or fixed, the LineString line_geometry is split at each of the intersecting points in the collection.
-	
-	The input intersection, must be an actual intersection.
-	           
+    When this has been ascerted or fixed, the LineString line_geometry is split at each of the intersecting points in the collection.
+    
+    The input intersection, must be an actual intersection.
+               
     Parameters
     ----------
     line_geometry: LineString

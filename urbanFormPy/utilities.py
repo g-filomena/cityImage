@@ -95,7 +95,7 @@ def distance_geometry_gdf(geometry, gpd):
     tuple
     """
     gpd = gpd.copy()
-    gpd["dist"] = gpd.apply(lambda row: point.distance(row.geometry),axis=1)
+    gpd["dist"] = gpd.apply(lambda row: geometry.distance(row.geometry),axis=1)
     geoseries = gpd.loc[gpd["dist"].argmin()]
     distance  = geoseries.dist
     index = geoseries.name

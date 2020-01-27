@@ -138,10 +138,10 @@ def is_edges_simplified(edges_gdf):
     dd = dict(edges_gdf['code'].value_counts())
     dd = {k: v for k, v in dd.items() if v > 1}
     if len(dd) > 0: simplified = False
-	
+    
     return simplified
 
-def simplify_graph(nodes_gdf, edges_gdf, update_densities = False, densities_column = None):
+def simplify_graph(nodes_gdf, edges_gdf):
 
     """
     The function identify pseudo-nodes, namely nodes that represent intersection between only 2 segments.
@@ -153,10 +153,6 @@ def simplify_graph(nodes_gdf, edges_gdf, update_densities = False, densities_col
         nodes (junctions) GeoDataFrame
     edges_gdf: LineString GeoDataFrame
         street segments GeoDataFrame
-    update_densities: boolean
-        it indicates whether the user wants to keep track of densities which are stored on the original network
-    densities_column: string
-        it indicates the column where the density data is stored
    
     Returns
     -------
@@ -175,6 +171,7 @@ def simplify_graph(nodes_gdf, edges_gdf, update_densities = False, densities_col
     to_edit_list = list(to_edit.keys())
     
     for nodeID in to_edit_list:
+
         tmp = edges_gdf[(edges_gdf['u'] == nodeID) | (edges_gdf['v'] == nodeID)].copy()    
         if len(tmp) == 0: 
             nodes_gdf.drop(nodeID, axis = 0, inplace = True)
@@ -205,9 +202,6 @@ def simplify_graph(nodes_gdf, edges_gdf, update_densities = False, densities_col
             edges_gdf.at[index_first,'v'] = edges_gdf.loc[index_second]['u']
             line_coordsA, line_coordsB = list(tmp.iloc[0]['geometry'].coords), list(tmp.iloc[1]['geometry'].coords)
 
-        if update_densities:
-            edges_gdf.at[index_first, densities_column] = max([edges_gdf.loc[index_first][densities_column], edges_gdf.loc[index_second][densities_column]])
-
         # checking that none edges with node_u == node_v have been created, if yes: drop them
         if edges_gdf.loc[index_first].u == edges_gdf.loc[index_first].v: 
             edges_gdf.drop([index_first, index_second], axis = 0, inplace = True)
@@ -218,7 +212,8 @@ def simplify_graph(nodes_gdf, edges_gdf, update_densities = False, densities_col
         new_line = line_coordsA + line_coordsB
         merged_line = LineString([coor for coor in new_line]) 
         edges_gdf.at[index_first, 'geometry'] = merged_line
-        if edges_gdf.loc[index_second]['pedestrian'] == True: edges_gdf.at[index_first, 'pedestrian'] = 1        
+        if 'highway' in edges_gdf.columns: 
+            if edges_gdf.loc[index_second]['pedestrian'] == True: edges_gdf.at[index_first, 'pedestrian'] = 1        
         # dropping the second segment, as the new geometry was assigned to the first edge
         edges_gdf.drop(index_second, axis = 0, inplace = True)
         nodes_gdf.drop(nodeID, axis = 0, inplace = True)
@@ -226,7 +221,7 @@ def simplify_graph(nodes_gdf, edges_gdf, update_densities = False, densities_col
     return nodes_gdf, edges_gdf
 
 
-def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_islands = True, same_uv_edges = True, self_loops = False, update_densities = False, densities_column = None):
+def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_islands = True, same_uv_edges = True, self_loops = False):
 
     """
     It calls a series of functions (see above) to clean and remove dubplicate geometries or possible parallel short edges.
@@ -236,10 +231,7 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_i
         - disconnected islands (optional)
         - edges with different geometry (optional);
         - dead-ends (optional);
-        
-    If the researcher has assigned specific values to edges (e.g. densities of pedestrians, vehicular traffic or similar) please allow the function to combine
-    the relative densities values during the cleaning process.
-    
+           
     Parameters
     ----------
     nodes_gdf: Point GeoDataFrame
@@ -253,10 +245,6 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_i
     same_uv_edges: boolean
         if true, it considers as duplicates couple of edges with same vertexes but different geometry. If one of the edges is 20% longer than the other, the longer is deleted; 
         otherwise a center line is built to replace the same_uv_edges.
-    update_densities: boolean
-        it indicates whether the user wants to keep track of densities which are stored on the original network
-    densities_column: string
-        it indicates the column where the density data is stored
    
     Returns
     -------
@@ -266,6 +254,9 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_i
     nodes_gdf, edges_gdf = nodes_gdf.copy(), edges_gdf.copy()       
     nodes_gdf.set_index('nodeID', drop = False, inplace = True, append = False)
     del nodes_gdf.index.name
+    edges_gdf.set_index('edgeID', drop = False, inplace = True, append = False)
+    del edges_gdf.index.name
+    
 
     nodes_gdf['x'], nodes_gdf['y'] = list(zip(*[(r.coords[0][0], r.coords[0][1]) for r in nodes_gdf.geometry]))
     edges_gdf.sort_index(inplace = True)  
@@ -330,10 +321,8 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_i
                     else:
                         cl = center_line(line_geometry, line_geometry_connector)
                         edges_gdf.at[ix_line,'geometry'] = cl
-                        if edges_gdf.loc[ix_line_connector]['pedestrian'] == 1: edges_gdf.at[ix_line,'pedestrian'] = 1 
-                        if update_densities: 
-                            if densities_column == None: raise columnError('The column name referring to the densities value was not provided')
-                            edges_gdf.at[ix_line, densities_column] =  edges_gdf.loc[ix_line][densities_column] + edges_gdf.loc[ix_line_connector][densities_column]
+                        if 'highway' in edges_gdf.columns:
+                            if edges_gdf.loc[ix_line_connector]['pedestrian'] == 1: edges_gdf.at[ix_line,'pedestrian'] = 1 
                     edges_gdf.drop(ix_line_connector, axis = 0, inplace = True)
                         
         
@@ -343,14 +332,14 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_i
         
         # remove dead-ends and simplify the graph                           
         if dead_ends: nodes_gdf, edges_gdf = fix_dead_ends(nodes_gdf, edges_gdf)
-        nodes_gdf, edges_gdf = simplify_graph(nodes_gdf, edges_gdf, update_densities = update_densities, densities_column = densities_column)  
+        nodes_gdf, edges_gdf = simplify_graph(nodes_gdf, edges_gdf)  
     
     nodes_gdf['x'], nodes_gdf['y'] = list(zip(*[(r.coords[0][0], r.coords[0][1]) for r in nodes_gdf.geometry]))
     edges_gdf.drop(['code', 'coords', 'tmp'], axis = 1, inplace = True, errors = 'ignore') # remove temporary columns
     nodes_gdf['nodeID'] = nodes_gdf.nodeID.astype(int)
     edges_gdf = correct_edges(nodes_gdf, edges_gdf) # correct edges coordinates
     edges_gdf['length'] = edges_gdf['geometry'].length
-	
+    
     # check if there are disconnected islands and remove nodes and edges belongings to these islands.
     if remove_disconnected_islands:
         Ng = graph_fromGDF(nodes_gdf, edges_gdf, 'nodeID')
