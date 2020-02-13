@@ -46,7 +46,7 @@ def duplicate_nodes(nodes_gdf, edges_gdf):
         # readjusting edges' nodes too, accordingly
         for node in to_edit:
             geo = nodes_gdf.loc[node].geometry
-            tmp = new_nodes[new_nodes.geomety == geo]
+            tmp = new_nodes[new_nodes.geometry == geo]
             index = tmp.iloc[0].nodeID
             
             # assigning the unique index to edges
@@ -75,9 +75,9 @@ def fix_dead_ends(nodes_gdf, edges_gdf):
     
     nodes_gdf =  nodes_gdf.copy()
     edges_gdf = edges_gdf.copy()
-    
     dd_u = dict(edges_gdf['u'].value_counts())
     dd_v = dict(edges_gdf['v'].value_counts())
+    
     dd = {k: dd_u.get(k, 0) + dd_v.get(k, 0) for k in set(dd_u) | set(dd_v)}
     to_delete = {k: v for k, v in dd.items() if v == 1}
     if len(to_delete) == 0: return(nodes_gdf, edges_gdf)
@@ -85,8 +85,7 @@ def fix_dead_ends(nodes_gdf, edges_gdf):
     # removing edges and nodes
     to_delete_list = list(to_delete.keys())
     nodes_gdf.drop(to_delete_list, axis = 0 , inplace = True)
-    edges_gdf = edges_gdf[~edges_gdf['u'].isin(to_delete_list)]
-    edges_gdf = edges_gdf[~edges_gdf['v'].isin(to_delete_list)]
+    edges_gdf = edges_gdf[(~edges_gdf['u'].isin(to_delete_list)) & (~edges_gdf['v'].isin(to_delete_list))]
 
     return nodes_gdf, edges_gdf
 
@@ -201,6 +200,7 @@ def simplify_graph(nodes_gdf, edges_gdf):
         else: # (tmp.iloc[0]['v'] == tmp.iloc[1]['v']) 
             edges_gdf.at[index_first,'v'] = edges_gdf.loc[index_second]['u']
             line_coordsA, line_coordsB = list(tmp.iloc[0]['geometry'].coords), list(tmp.iloc[1]['geometry'].coords)
+            line_coordsB.reverse()
 
         # checking that none edges with node_u == node_v have been created, if yes: drop them
         if edges_gdf.loc[index_first].u == edges_gdf.loc[index_first].v: 
@@ -253,9 +253,9 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_i
     
     nodes_gdf, edges_gdf = nodes_gdf.copy(), edges_gdf.copy()       
     nodes_gdf.set_index('nodeID', drop = False, inplace = True, append = False)
-    del nodes_gdf.index.name
+    nodes_gdf.index.name = None
     edges_gdf.set_index('edgeID', drop = False, inplace = True, append = False)
-    del edges_gdf.index.name
+    edges_gdf.index.name = None
     
 
     nodes_gdf['x'], nodes_gdf['y'] = list(zip(*[(r.coords[0][0], r.coords[0][1]) for r in nodes_gdf.geometry]))
@@ -270,6 +270,7 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_i
         pedestrian = ['footway', 'pedestrian', 'living_street', 'path']
         edges_gdf['pedestrian'][edges_gdf.highway.isin(pedestrian)] = 1
     
+    if dead_ends: nodes_gdf, edges_gdf = fix_dead_ends(nodes_gdf, edges_gdf)
     cycle = 0
     
     while ((not is_edges_simplified(edges_gdf)) | (not is_nodes_simplified(edges_gdf)) | (cycle == 0)):
@@ -330,8 +331,7 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_i
         to_keep = list(set(list(edges_gdf['u'].unique()) + list(edges_gdf['v'].unique())))
         nodes_gdf = nodes_gdf[nodes_gdf['nodeID'].isin(to_keep)]
         
-        # remove dead-ends and simplify the graph                           
-        if dead_ends: nodes_gdf, edges_gdf = fix_dead_ends(nodes_gdf, edges_gdf)
+        # simplify the graph                           
         nodes_gdf, edges_gdf = simplify_graph(nodes_gdf, edges_gdf)  
     
     nodes_gdf['x'], nodes_gdf['y'] = list(zip(*[(r.coords[0][0], r.coords[0][1]) for r in nodes_gdf.geometry]))
@@ -353,7 +353,7 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_i
             edges_gdf = edges_gdf[(edges_gdf.u.isin(nodes_gdf.nodeID)) & (edges_gdf.v.isin(nodes_gdf.nodeID))]   
 
     edges_gdf.set_index('edgeID', drop = False, inplace = True, append = False)
-    del edges_gdf.index.name
+    edges_gdf.index.name = None
     print("Done after ", cycle, " cleaning cycles")  
     
     return nodes_gdf, edges_gdf

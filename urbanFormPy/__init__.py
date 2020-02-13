@@ -6,6 +6,7 @@
 ################################################################################
 
 from .angles import *
+from .barriers import *
 from .centrality import *
 from .cleaning_network import *
 from .graph import *
@@ -16,5 +17,7 @@ from .natural_roads import *
 from .plotting import *
 from .regions import *
 from .utilities import *
+from .simplification import *
+
 
 __version__ = '0.10'

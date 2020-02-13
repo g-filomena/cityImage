@@ -104,12 +104,12 @@ def get_buildings_from_OSM(place, method = "from_address", distance = 1000, epsg
     elif method == "from_point": buildings_gdf = ox.footprints.footprints_from_point(point = place, distance = distance, footprint_type= 'building', retain_invalid=False)
     
     if epsg == None: buildings_gdf = ox.projection.project_gdf(buildings_gdf)
-    else: buildings_gdf.to_crs({'init': epsg})
+    else: buildings_gdf = buildings_gdf.to_crs({'init': epsg})
 
     buildings_gdf['land_use'] = None
     for column in buildings_gdf.columns: 
         if column.startswith('building:use:'): buildings_gdf.loc[pd.notnull(buildings_gdf[column]), 'land_use'] = column[13:]
-        if column not in coluns_to_keep: buildings_gdf.drop(column, axis = 1, inplace = True)
+        if column not in columns_to_keep: buildings_gdf.drop(column, axis = 1, inplace = True)
 
     buildings_gdf = buildings_gdf[~buildings_gdf['geometry'].is_empty]
     buildings_gdf['building'].replace('yes', np.nan, inplace = True)
@@ -117,7 +117,7 @@ def get_buildings_from_OSM(place, method = "from_address", distance = 1000, epsg
     buildings_gdf['land_use'][buildings_gdf['land_use'].isnull()] = buildings_gdf['building']
     buildings_gdf['land_use'][buildings_gdf['land_use'].isnull()] = 'residential'
 
-    buildings_gdf = buildings_gdf[['geometry', 'cult', 'land_use']]
+    buildings_gdf = buildings_gdf[['geometry', 'historic', 'land_use']]
     buildings_gdf['area'] = buildings_gdf.geometry.area
     buildings_gdf = buildings_gdf['area' >= 200] 
     
@@ -230,7 +230,7 @@ def _advance_visibility(building_geometry, obstructions_gdf, obstructions_sindex
     # identifying obstructions in an area of x (max_expansion_distance) mt around the building
     possible_obstacles_index = list(obstructions_sindex.intersection(origin.buffer(max_expansion_distance).bounds))
     possible_obstacles = obstructions_gdf.iloc[possible_obstacles_index]
-    possible_obstacles = obstructions_gdf[obstructions_gdf.geometry != row[ix_geo]]
+    possible_obstacles = obstructions_gdf[obstructions_gdf.geometry != buildings_geometry]
     possible_obstacles = obstructions_gdf[~obstructions_gdf.geometry.within(no_holes)]
 
     start = 0.0
@@ -585,7 +585,7 @@ def compute_local_scores(buildings_gdf, l_cW, l_iW, radius = 1500):
     
     buildings_gdf = buildings_gdf.copy()
     buildings_gdf.index = buildings_gdf.buildingID
-    del buildings_gdf.index.name
+    buildings_gdf.index.name = None
     
     spatial_index = buildings_gdf.sindex # spatial index
     buildings_gdf["lScore"] = 0.0

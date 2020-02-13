@@ -288,7 +288,7 @@ def graph_fromGDF(nodes_gdf, edges_gdf, nodeID = "nodeID"):
     """
 
     nodes_gdf.set_index(nodeID, drop = False, inplace = True, append = False)
-    del nodes_gdf.index.name
+    nodes_gdf.index.name = None
     G = nx.Graph()   
     G.add_nodes_from(nodes_gdf.index)
     attributes = nodes_gdf.to_dict()
@@ -330,7 +330,7 @@ def multiGraph_fromGDF(nodes_gdf, edges_gdf, nodeID):
     """
     
     nodes_gdf.set_index(nodeID, drop = False, inplace = True, append = False)
-    del nodes_gdf.index.name
+    nodes_gdf.index.name = None
     
     Mg = nx.MultiGraph()   
     Mg.add_nodes_from(nodes_gdf.index)
@@ -379,7 +379,7 @@ def dual_gdf(nodes_gdf, edges_gdf, epsg):
     
     if list(edges_gdf.index.values) != list(edges_gdf.edgeID.values): 
         edges_gdf.index = edges_gdf.edgeID
-        del edges_gdf.index.name
+        edges_gdf.index.name = None
     
     # computing centroids                                       
     centroids_gdf = edges_gdf.copy()
@@ -400,7 +400,7 @@ def dual_gdf(nodes_gdf, edges_gdf, epsg):
     nodes_dual = gpd.GeoDataFrame(centroids_data, crs=crs, geometry=centroids_gdf["centroid"])
     nodes_dual["x"], nodes_dual["y"] = [x.coords.xy[0][0] for x in centroids_gdf["centroid"]], [y.coords.xy[1][0] for y in centroids_gdf["centroid"]]
     nodes_dual.index =  nodes_dual.edgeID
-    del nodes_dual.index.name
+    nodes_dual.index.name = None
     
     # creating fictious links between centroids
     edges_dual = pd.DataFrame(columns=["u","v", "geometry", "length"])
@@ -451,7 +451,7 @@ def dual_graph_fromGDF(nodes_dual, edges_dual):
     """
    
     nodes_dual.set_index("edgeID", drop = False, inplace = True, append = False)
-    del nodes_dual.index.name
+    nodes_dual.index.name = None
     edges_dual.u = edges_dual.u.astype(int)
     edges_dual.v = edges_dual.v.astype(int)
     

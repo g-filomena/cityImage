@@ -1,4 +1,5 @@
 import math
+import numpy as np
 from math import sqrt
 from shapely.geometry import Point, LineString, MultiLineString
 
@@ -61,9 +62,7 @@ def angle_line_geometries(line_geometryA, line_geometryB, degree = False, deflec
     ----------
     float
     """
-    
-    if angular_change: deflection = True
-        
+           
     # extracting coordinates and createing lines
     coordsA = list(line_geometryA.coords)
     x_originA, y_originA = float("{0:.10f}".format(coordsA[0][0])), float("{0:.10f}".format(coordsA[0][1]))
@@ -78,26 +77,26 @@ def angle_line_geometries(line_geometryA, line_geometryB, degree = False, deflec
     x_second_lastB, y_second_lastB  = float("{0:.10f}".format(coordsB[-2][0])), float("{0:.10f}".format(coordsB[-2][1]))
     
     if angular_change:
-        if ((x_destinationA, y_destinationA) == (x_destinationB, y_destinationB)):
+        if (x_destinationA, y_destinationA) == (x_destinationB, y_destinationB):
             lineA = ((x_second_lastA, y_second_lastA), (x_destinationA, y_destinationA))
             lineB = ((x_destinationB, y_destinationB), (x_second_lastB, y_second_lastB))
 
-        elif ((x_destinationA, y_destinationA) == (x_originB, y_originB)):
+        elif (x_destinationA, y_destinationA) == (x_originB, y_originB):
             lineA = ((x_second_lastA, y_second_lastA), (x_destinationA, y_destinationA))
             lineB = ((x_originB, y_originB), (x_secondB, y_secondB))
 
-        elif ((x_originA, y_originA) == (x_originB, y_originB)):
+        elif (x_originA, y_originA) == (x_originB, y_originB):
             lineA = ((x_secondA, y_secondA), (x_originA, y_originA))
             lineB = ((x_originB, y_originB), (x_secondB, y_secondB))
 
-        elif ((x_originA, y_originA) == (x_destinationB, y_destinationB)):
+        elif (x_originA, y_originA) == (x_destinationB, y_destinationB):
             lineA = ((x_secondA, y_secondA), (x_originA, y_originA))
             lineB = ((x_destinationB, y_destinationB), (x_second_lastB, y_second_lastB))
         # no common vertex      
         else:  raise AngleError("The lines do not intersect! provide lines wich have a common vertex")
     
     # deflection on the entire lines
-    elif (deflection) & (not angular_change):
+    elif deflection:
         if (x_destinationA, y_destinationA) == (x_destinationB, y_destinationB):
             lineA = ((x_originA, y_originA), (x_destinationA, y_destinationA))
             lineB = ((x_destinationB, y_destinationB), (x_originB, y_originB))
@@ -124,9 +123,9 @@ def angle_line_geometries(line_geometryA, line_geometryB, degree = False, deflec
 
         elif (x_destinationA, y_destinationA) == (x_originB, y_originB):
             lineA = ((x_destinationA, y_destinationA), (x_originA, y_originA))
-            lineB = ((y_originB, y_originB), (x_destinationB, y_destinationB))
+            lineB = ((x_originB, y_originB), (x_destinationB, y_destinationB))
 
-        elif (x_originA, y_originA) == (y_originB, y_originB):
+        elif (x_originA, y_originA) == (x_originB, y_originB):
             lineA = ((x_originA, y_originA), (x_destinationA, y_destinationA))
             lineB = ((x_originB, y_originB), (x_destinationB, y_destinationB))
 
@@ -159,6 +158,50 @@ def angle_line_geometries(line_geometryA, line_geometryB, degree = False, deflec
         
     if degree: return angle_deg
     else: return angle_rad
+    
+def difference_angle_line_geometries(line_geometryA, line_geometryB):
+    
+    """
+    Given two LineStrings it computes the deflection angle between them. Returns value in degrees or radians.
+    
+    Parameters
+    ----------
+    line_geometryA: LineString
+        the first line
+    line_geometryB: LineString
+        the other line; it must share a vertex with line_geometryA
+    degree: boolean
+        if True it returns value in degree, otherwise in radians
+    deflection: boolean
+        if True it computes angle of incidence between the two lines, otherwise angle between vectors
+    angular_change: boolean
+        LineStrings are formed by two vertexes "from" and to". Within the function, four vertexes (2 per line) are considered; two of them are equal and shared between the lines.
+        The common vertex is used to compute the angle, along with another vertex per line. If True it computes angle of incidence between the two lines, on the basis of the vertex in common and the second following
+        (intermediate, if existing) vertexes forming each of the line. For example, if the line_geometryA has 3 vertexes composing its geometry, from, to and an intermediate one, the latter is used to compute 
+        the angle along with the one which is shared with line_geometryB. When False, the angle is computed by using exclusively from and to nodes, without considering intermediate vertexes which form the line geometries.
+        
+    Returns:
+    ----------
+    float
+    """
+           
+    # extracting coordinates and createing lines
+    coordsA = list(line_geometryA.coords)
+    x_originA, y_originA = float("{0:.10f}".format(coordsA[0][0])), float("{0:.10f}".format(coordsA[0][1]))
+    x_destinationA, y_destinationA = float("{0:.10f}".format(coordsA[-1][0])), float("{0:.10f}".format(coordsA[-1][1]))
+    
+    coordsB = list(line_geometryB.coords)
+    x_originB, y_originB = float("{0:.10f}".format(coordsB[0][0])), float("{0:.10f}".format(coordsB[0][1]))
+    x_destinationB, y_destinationB  = float("{0:.10f}".format(coordsB[-1][0])), float("{0:.10f}".format(coordsB[-1][1]))
+    
+    if x_originA == x_destinationA: angle_A = np.pi/2
+    else: angle_A = np.arctan((y_destinationA-y_originA)/(x_destinationA-x_originA))  
+    if x_originB == x_destinationB: angle_B = np.pi/2  
+    else: angle_B = np.arctan((y_destinationB-y_originB)/(x_destinationB-x_originB)) 
+    difference_angle = math.degrees(angle_A)%360 - math.degrees(angle_B)%360 
+        
+    return difference_angle
+        
     
 class Error(Exception):
     """Base class for other exceptions"""
