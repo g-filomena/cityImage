@@ -44,8 +44,9 @@ def straightness_centrality(G, weight, normalized = True):
 
     Parameters
     ----------
-    G: networkx multigraph
-    weight: string, edges weight
+    G: NetworkX graph
+    weight: string, 
+        edges weight
     normalized: boolean
     
     Returns
@@ -97,32 +98,35 @@ def weight_nodes(nodes_gdf, service_points_gdf, G, name, radius = 400):
     ----------
     nodes_gdf: Point GeoDataFrame
     service_points_gdf: Point GeoDataFrame
-    G: networkx multigraph
-    name: string, attribute name
-    radius: float, distance around the node within looking for point features (services)
+    G: NetworkX graph
+    name: string
+        attribute name
+    radius: float
+        distance around the node within looking for point features (services)
     
     Returns
     -------
-    networkx multidigraph
+    NetworkX graph
     """
     nodes_gdf[name] = None
     sindex = service_points_gdf.sindex
     
-    nodes_gdf[name] = nodes_gdf.apply(lambda row: _count_services_around_node(row["geometry"], service_points_gdf, sindex, radius = radius), axis=1)
+    nodes_gdf[name] = nodes_gdf.apply(lambda row: _services_around_node(row["geometry"], service_points_gdf, sindex, radius = radius), axis=1)
     for n in G.nodes(): G.nodes[n][name] = nodes_gdf[name].loc[n]
     
     return G
     
-def _count_services_around_node(node_geometry, service_points_gdf, service_points_gdf_sindex, radius):
+def _services_around_node(node_geometry, service_points_gdf, service_points_gdf_sindex, radius):
     """
-    The functions supports the weight_nodes function.
+    It supports the weight_nodes function.
     
     Parameters
     ----------
     node_geometry: Point geometry
     service_points_gdf: Point GeoDataFrame
-    service_points_gdf_sindex = Rtree Spatial Index
-    radius: float, distance around the node within looking for point features (services)
+    service_points_gdf_sindex: Rtree Spatial Index
+    radius: float
+        distance around the node within looking for point features (services)
     
     Returns
     -------
@@ -148,11 +152,14 @@ def reach_centrality(G, weight, radius, attribute):
 
     Parameters
     ----------
-    G: networkx multigraph
-    weight: string, edges weight
-    radius: float, distance from node within looking for other reachable nodes
-    attribute: string, node attribute used to compute reach centralily. It indicates the importance of the node 
-    (e.g. number of services in 50mt buffer)
+    G: NetworkX graph
+    weight: string
+        edges weight
+    radius: float
+        distance from node within looking for other reachable nodes
+    attribute: string
+        node attribute used to compute reach centralily. It indicates the importance of the node 
+        (e.g. number of services in 50mt buffer)
     
     Returns
     -------
@@ -182,16 +189,17 @@ def reach_centrality(G, weight, radius, attribute):
     return reach_centrality
     
     
-def rescale_centrality(nodes_gdf, measure = "Bc", radius = 400):
+def rescale_centrality(nodes_gdf, measure, radius = 400):
     """
-    The measure rescales precomputed betweenness centrality values (see networkX) within a certain radius around each node.
-    Pleas indicate the value to rescalue through the parameter "measure".
+    The measure rescales precomputed centrality values (see NetworkX) within a certain radius around each node.
+    Indicate the value to rescalue through the parameter "measure".
 
     Parameters
     ----------
     nodes_gdf: Point GeoDataFrame
     measure: string
-    radius: float, distance from node within wich rescaling the betweenness centrality value
+    radius: float
+        distance from node within wich rescaling the betweenness centrality value
     
     Returns
     -------
@@ -201,25 +209,27 @@ def rescale_centrality(nodes_gdf, measure = "Bc", radius = 400):
     nodes_gdf = nodes_gdf.copy()
     if measure not in nodes_gdf.columns: raise columnError("The column name provided was not found in the nodes GeoDataFrame")
     spatial_index = nodes_gdf.sindex # spatial index
-    nodes_gdf[measure+"_"+str(radius)] = nodes_gdf.apply(lambda row: _rescale_node_bc(row.Index, nodes_gdf, sindex, radius = radius, measure = measure), axis=1)
+    nodes_gdf[measure+"_"+str(radius)] = nodes_gdf.apply(lambda row: _rescale_centrality(row.Index, nodes_gdf, sindex, radius = radius, measure = measure), axis=1)
         
     return nodes_gdf
 
-def _rescale_node_centrality(nodeID, nodes_gdf, nodes_gdf_sindex, radius, measure):
+def _rescale_centrality(nodeID, nodes_gdf, nodes_gdf_sindex, radius, measure):
     """
-    The functions supports the local_betweenness function.
+    It supports the rescale_centrality function.
     Parameters
     ----------
     nodeID: integer
     nodes_gdf: Point GeoDataFrame
     nodes_gdf_sindex = Rtree Spatial Index
-    radius: float, distance around the node within looking for other nodes
+    radius: float
+        distance around the node within looking for other nodes
     measure: string
     
     Returns
     -------
     float value
     """
+    
     node_geometry = nodes_gdf.loc[nodeID].geometry
     buffer = node_geometry.buffer(radius)
     possible_matches_index = list(sindex.intersection(buffer.bounds))
@@ -229,7 +239,7 @@ def _rescale_node_centrality(nodeID, nodes_gdf, nodes_gdf_sindex, radius, measur
         
     return precise_matches[measure+"_sc"].loc[nodeID]
 
-def centrality(G, measure, weight, normalized = False):
+def centrality(G, measure, nodes_gdf, weight, normalized = False):
     """"
     The function computes betweenness centrality at the local level.
       
@@ -237,63 +247,78 @@ def centrality(G, measure, weight, normalized = False):
     ----------
     G: Networkx graph
     weight: string, edges weight
+    nodes_gdf: Point GeoDataFrame
     radius: float, distance from node, within local betweenness is computed  
     
     Returns
     -------
     dictionary
     """     
-
-    if measure == "betweenness_centrality": c = nx.betweenness_centrality(G, weight = weight, normalized=normalized)
-    elif measure == "straightness_centrality": c = straightness_centrality(G, weight = weight, normalized=normalized)
-    elif measure == "closeness_centrality": c = nx.closeness_centrality(G, weight = weight, normalized=normalized)
-    elif measure == "information_centrality": c = nx.current_flow_betweenness_centrality(G, weight = weight, solver ="lu", normalized=normalized) 
+    
+    if measure == "betweenness_centrality": 
+        c = nx.betweenness_centrality(G, weight = weight, normalized=normalized)
+    elif measure == "straightness_centrality": 
+        c = straightness_centrality(G, weight = weight, normalized=normalized)
+    elif measure == "closeness_centrality": 
+        c = nx.closeness_centrality(G, weight = weight, normalized=normalized)
+    elif measure == "information_centrality": 
+        c = nx.current_flow_betweenness_centrality(G, weight = weight, solver ="lu", normalized=normalized) 
+    raise nameError("The name provided is not a valid centrality name associated with a function")
     
     return c
     
     
-def local_centrality(G, measure, weight, radius = 400, normalized = False):
-    """
-    The function computes betweenness centrality at the local level.
+# def local_centrality(G, measure, weight, radius = 400, normalized = False):
+    # """
+    # The function computes betweenness centrality at the local level.
+      
+    # Parameters
+    # ----------
+    # G: Networkx graph
+    # weight: string, edges weight
+    # radius: float, distance from node, within local betweenness is computed  
+    
+    # Returns
+    # -------
+    # dictionary
+    # """
+           
+    # path_length = functools.partial(nx.single_source_dijkstra_path_length, weight = weight)
+    # nodes = G.nodes()
+    # cm = {}
+    # coord_nodes = nodes_dict(G)
+
+    # for n in nodes:
+        # G_small = nx.ego_graph(G, n, radius=radius, distance="weight")
+        # if measure == "betweenness_centrality": c = nx.betweenness_centrality(G_small, weight = weight, normalized=normalized)[n]
+        # elif measure == "straightness_centrality": c = straightness_centrality(G_small, weight = weight, normalized=normalized)[n]
+        # elif measure == "closeness_centrality": c = nx.closeness_centrality(G_small, weight = weight, normalized=normalized)[n]
+        # cm[n] = c
+    
+    # return cm
+      
+    
+def append_edges_metrics(edges_gdf, G, dicts, column_names):
+    """"
+    The function attaches edges centrality value at the edges_gdf GeoDataFrame.
       
     Parameters
     ----------
+    edges_gdf: LineString GeoDataFrame
+        street segments GeoDataFrame
     G: Networkx graph
-    weight: string, edges weight
-    radius: float, distance from node, within local betweenness is computed  
+    dicts: list
+        list of dictionaries resulting from centrality measures
+    column_names: list
+        list of strings with desired column names
     
     Returns
     -------
     dictionary
-    """
-           
-    path_length = functools.partial(nx.single_source_dijkstra_path_length, weight = weight)
-    nodes = G.nodes()
-    cm = {}
-    coord_nodes = nodes_dict(G)
-
-    for n in nodes:
-        G_small = nx.ego_graph(G, n, radius=radius, distance="weight")
-        if measure == "betweenness_centrality": c = nx.betweenness_centrality(G_small, weight = weight, normalized=normalized)[n]
-        elif measure == "straightness_centrality": c = straightness_centrality(G_small, weight = weight, normalized=normalized)[n]
-        elif measure == "closeness_centrality": c = nx.closeness_centrality(G_small, weight = weight, normalized=normalized)[n]
-        cm[n] = c
-    
-    return cm
-    
-def append_nodes_metrics(nodes_gdf, dicts, column_names):   
-    
-    if not "nodeID" in nodes_gdf.columns: nodes_gdf["nodeID"] = nodes_gdf.index.values.astype("int64")
-    tmp = dict_to_df(dicts, column_names)
-    nodes_gdf = pd.merge(nodes_gdf, tmp, left_on = "nodeID", right_index = True, how = 'left')
-    
-    return nodes_gdf
-    
-    
-def append_edges_metrics(edges_gdf, graph, dicts, column_names):
+    """    
     
     edgesID = {}
-    for i, g in graph.edges(): edgesID[(i,g)] = graph[i][g]['edgeID']
+    for i, e in G.edges(): edgesID[(i,e)] = G[i][e]['edgeID']
     missing_values = [item for item in list(edges_gdf.index) if item not in list(edgesID.values())]
     
     dicts.append(edgesID)
@@ -303,7 +328,7 @@ def append_edges_metrics(edges_gdf, graph, dicts, column_names):
     tmp.edgeID = tmp.edgeID.astype(int)
     edges_gdf = pd.merge(edges_gdf, tmp, on = 'edgeID', how = 'left')
     edges_gdf.index = edges_gdf.edgeID
-    del edges_gdf.index.name
+    edges_gdf.index.name = None
     
     # handling possible missing values (happens with self-loops)
     for metric in column_names:
@@ -312,15 +337,7 @@ def append_edges_metrics(edges_gdf, graph, dicts, column_names):
     
     return edges_gdf
     
-def append_dual_edges_metrics(edges_gdf, dual_graph, dict_metric, name_metric): 
-    
-    dictionary = up.dual_id_dict(dict_metric, dual_graph, 'edgeID')
-    tmp = up.dict_to_df([dictionary], [name_metric])
-    edges_gdf = pd.merge(edges_gdf, tmp, left_on = "edgeID", right_index = True, how = 'left')
-    edges_gdf.index = edges_gdf.edgeID
-    del edges_gdf.index.name
-    
-    return edges_gdf
+
     
 class Error(Exception):
     """Base class for other exceptions"""
@@ -328,4 +345,8 @@ class Error(Exception):
 class columnError(Error):
     """Raised when a column name is not provided"""
     pass
+class nameError(Error):
+    """Raised when a not supported or not existing centrality name is input"""
+    pass
+
     

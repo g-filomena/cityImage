@@ -198,7 +198,12 @@ def difference_angle_line_geometries(line_geometryA, line_geometryB):
     else: angle_A = np.arctan((y_destinationA-y_originA)/(x_destinationA-x_originA))  
     if x_originB == x_destinationB: angle_B = np.pi/2  
     else: angle_B = np.arctan((y_destinationB-y_originB)/(x_destinationB-x_originB)) 
-    difference_angle = math.degrees(angle_A)%360 - math.degrees(angle_B)%360 
+    angle_A = math.degrees(angle_A)%360
+    angle_B = math.degrees(angle_B)%360
+    
+    if angle_A > 180: angle_A = angle_A-180
+    if angle_B > 180: angle_B = angle_B-180
+    difference_angle = abs(angle_A - angle_B)
         
     return difference_angle
         

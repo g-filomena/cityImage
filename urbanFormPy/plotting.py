@@ -7,6 +7,8 @@ import matplotlib.patches as mpatches
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
 import pylab
+from matplotlib.colors import LinearSegmentedColormap
+import colorsys
 
 pd.set_option("precision", 10)
 
@@ -19,9 +21,10 @@ Plotting functions
 ## Plotting
     
     
-def plot_points(gdf, column = None, classes = 7, ms = 0.9, ms_col = None, scheme = "Natural_Breaks", bins = None,
-                cmap = "Greys_r", title = "Plot", legend = False, color_bar = False, black_background = True, fig_size = 15, 
-				gdf_base_map = pd.DataFrame({"a" : []})):
+def plot_points(gdf, column = None, classes = 7, ms = 0.9, ms_col = None, scheme = None, bins = None, color = None,
+                cmap = "Greys_r", title = "Plot", legend = False, color_bar = False, black_background = True,
+                fig_size = 15, gdf_base_map = pd.DataFrame({"a" : []}), base_map_color = None, base_map_alpha = 0.4,
+                base_map_lw = 1.1, base_map_ms = 2.0):
     """
     It creates a plot from a Point GeoDataFrame. 
     It plots the distribution over value and geographical space of variable "column" using "scheme". 
@@ -78,8 +81,15 @@ def plot_points(gdf, column = None, classes = 7, ms = 0.9, ms_col = None, scheme
 
     # background (e.g. street network)
     if not gdf_base_map.empty: 
-        if black_background: gdf_base_map.plot(ax = ax, color = "white", linewidth = 1.1, alpha = 0.3)
-        else: gdf_base_map.plot(ax = ax, color = "black", linewidth = 1.1, alpha = 0.3)
+        if gdf_base_map.iloc[0].geometry.geom_type == 'LineString':
+            if black_background: gdf_base_map.plot(ax = ax, color = base_map_color, linewidth = base_map_lw, alpha = base_map_alpha)
+            else: gdf_base_map.plot(ax = ax, color = base_map_color, linewidth = base_map_lw, alpha = base_map_alpha)
+        if gdf_base_map.iloc[0].geometry.geom_type == 'Point':
+            if black_background: gdf_base_map.plot(ax = ax, color = base_map_color, markersize = base_map_ms, alpha = base_map_alpha)
+            else: gdf_base_map.plot(ax = ax, color = base_map_color, markersize = base_map_ms, alpha = base_map_alpha)
+        if gdf_base_map.iloc[0].geometry.geom_type == 'Polygon':
+            if black_background: gdf_base_map.plot(ax = ax, color = base_map_color, alpha = base_map_alpha)
+            else: gdf_base_map.plot(ax = ax, color = base_map_color, alpha = base_map_alpha)
     
     if column != None: gdf.sort_values(by = column,  ascending = True, inplace = True) 
     # markers size from column is provided
@@ -87,26 +97,40 @@ def plot_points(gdf, column = None, classes = 7, ms = 0.9, ms_col = None, scheme
     
     # plain plot:
     if (column == None) & (scheme == None):
-        if black_background: gdf.plot(ax = ax, s = ms, color = "white")
-        else: gdf.plot(ax = ax, s = ms, color = "black")
+        if black_background: 
+            if color == None: color = 'white'
+            gdf.plot(ax = ax, markersize = ms, color = color)
+        else: 
+            if color == None: color = 'blue'
+            gdf.plot(ax = ax, markersize = ms, color = color)
+    
     # categorical map
     elif (column != None) & (scheme == None):
-        cmap='tab20b'
-        gdf.plot(ax = ax, column = column, categorical = True, cmap = cmap, k = classes, s = ms, legend = legend, alpha = 1)    
+        if cmap == None: cmap = 'tab20b'
+        gdf.plot(ax = ax, column = column, categorical = True, cmap = cmap, k = classes, markersize = ms, 
+                legend = legend, alpha = 1)    
+    
     # user defined bins
     elif scheme == "User_Defined":
-        gdf.plot(ax = ax, column = column, cmap = cmap, s = ms, scheme = scheme, legend = legend, classification_kwds={'bins':bins}, alpha = 1)
+        gdf.plot(ax = ax, column = column, cmap = cmap, markersize = ms, scheme = scheme, legend = legend, 
+                 classification_kwds={'bins':bins}, alpha = 1)
     # Lynch's bins - only for variables from 0 to 1
     elif scheme == "Lynch_Breaks":  
         bins = [0.125, 0.25, 0.5, 0.75, 1.00]
-        gdf.plot(ax = ax, column = column, cmap = cmap, s = ms, scheme = scheme, legend = legend, classification_kwds={'bins':bins}, alpha = 1)
+        gdf.plot(ax = ax, column = column, cmap = cmap, markersize = ms, scheme = scheme, legend = legend, 
+                classification_kwds={'bins':bins}, alpha = 1)
     # other schemes
-    elif scheme != None: gdf.plot(ax = ax, column = column, k = classes, cmap = cmap, s = ms, scheme = scheme, legend = legend, alpha = 1)
+    elif scheme != None: gdf.plot(ax = ax, column = column, k = classes, cmap = cmap, markersize = ms, 
+            scheme = scheme,legend = legend, alpha = 1)
     if legend: _generate_legend(ax, black_background)
+    
     plt.show() 
                 
-def plot_lines(gdf, column = None, classes = 7, lw = 1.1, scheme = None, bins = None, cmap = "Greys_r", 
-               title = "Plot", legend = False, color_bar = False, black_background = True, fig_size = 15):  
+def plot_lines(gdf, column = None, classes = 7, lw = 1.1, scheme = None, bins = None, color = None, cmap = "Greys_r", 
+               title = "Plot", legend = False, color_bar = False, black_background = True,                 
+               fig_size = 15, gdf_base_map = pd.DataFrame({"a" : []}), base_map_color = None, base_map_alpha = 0.4,
+               base_map_lw = 1.1, base_map_ms = 2.0):
+    
     """
     It creates a plot from a lineString GeoDataFrame. 
     When column and scheme are not "None" it plots the distribution over value and geographical space of variable "column using scheme
@@ -161,10 +185,22 @@ def plot_lines(gdf, column = None, classes = 7, lw = 1.1, scheme = None, bins = 
     fig.suptitle(title, color = text_color, fontsize=font_size)
     if column != None: gdf.sort_values(by = column, ascending = True, inplace = True)  
     
+    # background (e.g. street network)
+    if not gdf_base_map.empty: 
+        if gdf_base_map.iloc[0].geometry.geom_type == 'LineString':
+            if black_background: gdf_base_map.plot(ax = ax, color = base_map_color, linewidth = base_map_lw, alpha = base_map_alpha)
+            else: gdf_base_map.plot(ax = ax, color = base_map_color, linewidth = base_map_lw, alpha = base_map_alpha)
+        if gdf_base_map.iloc[0].geometry.geom_type == 'Point':
+            if black_background: gdf_base_map.plot(ax = ax, color = base_map_color, markersize = base_map_ms, alpha = base_map_alpha)
+            else: gdf_base_map.plot(ax = ax, color = base_map_color, markersize = base_map_ms, alpha = base_map_alpha)
+        if gdf_base_map.iloc[0].geometry.geom_type == 'Polygon':
+            if black_background: gdf_base_map.plot(ax = ax, color = base_map_color, alpha = base_map_alpha)
+            else: gdf_base_map.plot(ax = ax, color = base_map_color, alpha = base_map_alpha)
+    
     # plain plot:
     if (column == None) & (scheme == None):
-        if black_background: gdf.plot(ax = ax, linewidth = lw, color = "white")
-        else: gdf.plot(ax = ax, linewidth = lw, color = "black")
+        if black_background: gdf.plot(ax = ax, linewidth = lw, color = color)
+        else: gdf.plot(ax = ax, linewidth = lw, color = color)
     
     # categorigal plot
     elif (column != None) & (scheme == None):
@@ -184,12 +220,15 @@ def plot_lines(gdf, column = None, classes = 7, lw = 1.1, scheme = None, bins = 
         bins = [0.125, 0.25, 0.5, 0.75, 1.00]
         gdf.plot(ax = ax, column = column, cmap = cmap, linewidth = lw, scheme = scheme, legend = legend, classification_kwds={'bins':bins})
     # other schemes
-    elif scheme != None: gdf.plot(ax = ax, column = column, k = classes, cmap = cmap, linewidth = lw, scheme = scheme, legend = legend)
+    elif scheme != None: 
+        gdf.plot(ax = ax, column = column, k = classes, cmap = cmap, linewidth = lw, scheme = scheme, legend = legend)
     if legend: _generate_legend(ax, black_background)
                 
     plt.show()
         
-def plot_polygons(gdf, column = None, classes = 7, scheme = None, bins = None, cmap = "Greens_r", title =  "Plot", legend = False, color_bar = False, black_background = True,  fig_size = 15):
+def plot_polygons(gdf, column = None, classes = 7, scheme = None, bins = None, color = None, cmap = "Greens_r", alpha = 1.0, title =  "Plot", legend = False, 
+                color_bar = False, black_background = True,  fig_size = 15, gdf_base_map = pd.DataFrame({"a" : []}),
+                base_map_color = None, base_map_alpha = 0.4, base_map_lw = 1.1, base_map_ms = 2.0):
     """
     It creates a plot from a Polygon GeoDataFrame. 
     When column and scheme are not "None" it plots the distribution over value and geographical space of variable "column using scheme
@@ -235,29 +274,44 @@ def plot_polygons(gdf, column = None, classes = 7, scheme = None, bins = None, c
         rect.set_facecolor("white")
     font_size = fig_size+5 # font-size   
     fig.suptitle(title, color = text_color, fontsize=font_size)
-
+    
+   
     # plain plot
-    if (column == None) & (scheme == None): gdf.plot(ax = ax, color = "orange")
+    if (column == None) & (scheme == None): gdf.plot(ax = ax, color = "orange",alpha = alpha)
     # categorigal plot
     elif (column != None) & (scheme == None): 
-        cmap='tab20b'
-        gdf.plot(ax = ax, column = column, cmap = cmap, categorical = True, legend = legend)       
+        if cmap == None: cmap='tab20b'
+        gdf.plot(ax = ax, column = column, cmap = cmap, alpha = alpha, categorical = True, legend = legend)       
     # user defined bins
     elif scheme == "User_Defined":
-        gdf.plot(ax = ax, column = column, cmap = cmap, scheme = scheme, legend = legend, classification_kwds={'bins':bins})
+        gdf.plot(ax = ax, column = column, cmap = cmap, alpha = alpha, scheme = scheme, legend = legend, classification_kwds={'bins':bins})
     # Lynch's bins - only for variables from 0 to 1
     elif scheme == "Lynch_Breaks":  
         bins = [0.125, 0.25, 0.5, 0.75, 1.00]
-        gdf.plot(ax = ax, column = column, cmap = cmap, scheme = scheme, legend = legend, classification_kwds={'bins':bins})
+        gdf.plot(ax = ax, column = column, cmap = cmap, alpha = alpha, scheme = scheme, legend = legend, classification_kwds={'bins':bins})
     # other schemes
-    elif scheme != None: gdf.plot(ax = ax, column = column, k = classes, cmap = cmap,  scheme = scheme, legend = legend)
+    elif scheme != None: gdf.plot(ax = ax, column = column, k = classes, cmap = cmap, alpha = alpha,  scheme = scheme, legend = legend)
+
+    # background (e.g. street network)
+
+    if not gdf_base_map.empty: 
+        if gdf_base_map.iloc[0].geometry.geom_type == 'LineString':
+            if black_background: gdf_base_map.plot(ax = ax, color = base_map_color, linewidth = base_map_lw, alpha = base_map_alpha)
+            else: gdf_base_map.plot(ax = ax, color = "black", linewidth = base_map_lw, alpha = base_map_alpha)
+        if gdf_base_map.iloc[0].geometry.geom_type == 'Point':
+            if black_background: gdf_base_map.plot(ax = ax, color = base_map_color, markersize = base_map_ms, alpha = base_map_alpha)
+            else: gdf_base_map.plot(ax = ax, color = "black", markersize = base_map_ms, alpha = base_map_alpha)
+        if gdf_base_map.iloc[0].geometry.geom_type == 'Polygon':
+            if black_background: gdf_base_map.plot(ax = ax, color = base_map_color, alpha = base_map_alpha)
+            else: gdf_base_map.plot(ax = ax, color = base_map_color, alpha = base_map_alpha)
+    
     if legend: _generate_legend(ax, black_background)
     if (color_bar) & (not legend): _generate_color_bar(cmap, gdf[column], ax, text_color, font_size)
 
     plt.show()    
     
     
-def multi_plot_polygons(list_gdfs, list_sub_titles, main_title, column = None, classes = 7, scheme = None, bins = None, 
+def multi_plot_polygons(list_gdfs, list_sub_titles, main_title, column = None, classes = 7, scheme = None, bins = None, alpha = 1.0, 
                         cmap = "Greens_r", legend = False, color_bar = False, black_background = True):
     """
     It creates a series of subplots from a list of polygons GeoDataFrames
@@ -318,26 +372,26 @@ def multi_plot_polygons(list_gdfs, list_sub_titles, main_title, column = None, c
         # subtitles
         ax.set_title(list_sub_titles[n], color = text_color, fontsize = font_size-2)
         # plain plot
-        if (column == None) & (scheme == None): gdf.plot(ax = ax, color = "orange")  # plain map
+        if (column == None) & (scheme == None): gdf.plot(ax = ax, color = "orange", alpha = alpha)  # plain map
         # categorigal plot
         elif (column != None) & (scheme == None): 
-            cmap='tab20b'
-            gdf.plot(ax = ax, column = column, cmap = cmap, categorical = True, legend = legend)       
+            if cmap == None: cmap = 'tab20b'
+            gdf.plot(ax = ax, column = column, cmap = cmap, categorical = True, legend = legend, alpha = alpha)       
         # user defined bins
         elif scheme == "User_Defined":
-            gdf.plot(ax = ax, column = column, cmap = cmap, scheme = scheme, legend = legend, classification_kwds={'bins':bins})
+            gdf.plot(ax = ax, column = column, cmap = cmap, scheme = scheme, legend = legend, alpha = alpha, classification_kwds={'bins':bins})
         # Lynch's bins - only for variables from 0 to 1
         elif scheme == "Lynch_Breaks":  
             bins = [0.125, 0.25, 0.5, 0.75, 1.00]
-            gdf.plot(ax = ax, column = column, cmap = cmap, scheme = scheme, legend = legend, classification_kwds={'bins':bins})    
+            gdf.plot(ax = ax, column = column, cmap = cmap, scheme = scheme, legend = legend, alpha = alpha, classification_kwds={'bins':bins})    
         # all other schemes
-        elif scheme != None: gdf.plot(ax = ax, column = column, k = classes, cmap = cmap,  scheme = scheme, legend = legend)
+        elif scheme != None: gdf.plot(ax = ax, column = column, k = classes, cmap = cmap, alpha = alpha, scheme = scheme, legend = legend)
 
     plt.subplots_adjust(top = 0.88, hspace= 0.025)
     plt.show()  
     
-def plot_lines_aside(gdf, gdf_c = None, classes = 7, lw = 0.9, columnA = None, columnB = None, title = "Plot", 
-                     scheme = "fisher_jenks", bins = None, cmap = "Greys_r", legend = False, black_background = True, fig_size = 15):
+def plot_lines_aside(gdf, gdf_c = None, classes = 7, lw = 0.9, columnA = None, columnB = None, title = "Plot", color = 'Black',
+                     scheme = None, bins = None, cmap = "Greys_r", legend = False, black_background = True, fig_size = 15):
     
     # background black or white - basic settings 
     
@@ -362,20 +416,23 @@ def plot_lines_aside(gdf, gdf_c = None, classes = 7, lw = 0.9, columnA = None, c
         rect.set_facecolor("white")
     font_size = fig_size+5 # font-size   
     fig.suptitle(title, color = text_color, fontsize=font_size)
-        
+            
     if columnA != None: gdf.sort_values(by = columnA, ascending = True, inplace = True) 
     for n, i in enumerate([ax1, ax2]):
         if (n == 1) & (columnB != None): gdf.sort_values(by = columnB, ascending = True, inplace = True)  
         i.set_aspect("equal")
         
+        # single color map
+        if (columns[n] == None) & (scheme == None): gdf.plot(ax = i, color = color, linewidth = lw)
+        
         # boolean map
-        if (columns[n] != None) & (scheme == None): 
+        elif (columns[n] != None) & (scheme == None): 
             if (cmap == None) & (classes == 2): 
                 colors = ["white", "red"]
                 gdf.plot(ax = i, categorical = True, column = columns[n], color = colors, linewidth = lw, legend = legend)
             else:
                 if cmap == None: cmap ='tab20b'
-                gdf.plot(ax = i, categorical = True, column = columns[n], cmap='tab20b', linewidth = lw, legend = legend)
+                gdf.plot(ax = i, categorical = True, column = columns[n], cmap=cmap, linewidth = lw, legend = legend)
             
         # user defined bins
         elif scheme == "User_Defined":
@@ -397,7 +454,7 @@ def plot_lines_aside(gdf, gdf_c = None, classes = 7, lw = 0.9, columnA = None, c
 def plot_multiplex(M, multiplex_edges):
     node_Xs = [float(node["x"]) for node in M.nodes.values()]
     node_Ys = [float(node["y"]) for node in M.nodes.values()]
-    node_Zs = np.array([float(node["z"])*2000 for node in M.node.values()])
+    node_Zs = np.array([float(node["z"])*2000 for node in M.nodes.values()])
     node_size = []
     size = 1
     node_color = []
@@ -471,6 +528,54 @@ def _generate_color_bar(cmap, series, ax, text_color, font_size):
     color_bar.ax.set_yticklabels(["min", "max"])
     plt.setp(plt.getp(color_bar.ax.axes, "yticklabels"), color = text_color, fontsize=(font_size-5))             
             
+# Generate random colormap
+def rand_cmap(nlabels, type_color ='bright', first_color_black=True, last_color_black=False):
+    """
+    Creates a random colormap to be used together with matplotlib. Useful for segmentation tasks
+    :param nlabels: Number of labels (size of colormap)
+    :param type: 'bright' for strong colors, 'soft' for pastel colors
+    :param first_color_black: Option to use first color as black, True or False
+    :param last_color_black: Option to use last color as black, True or False
+    :return: colormap for matplotlib
+    """
 
+    import numpy as np
 
+    if type_color not in ('bright', 'soft'): type_color = 'bright'
+    
+    # Generate color map for bright colors, based on hsv
+    if type_color == 'bright':
+        randHSVcolors = [(np.random.uniform(low=0.0, high=0.8),
+                          np.random.uniform(low=0.2, high=0.8),
+                          np.random.uniform(low=0.9, high=0.8)) for i in range(nlabels)]
+
+        # Convert HSV list to RGB
+        randRGBcolors = []
+        for HSVcolor in randHSVcolors:
+            randRGBcolors.append(colorsys.hsv_to_rgb(HSVcolor[0], HSVcolor[1], HSVcolor[2]))
+
+        if first_color_black:
+            randRGBcolors[0] = [0, 0, 0]
+
+        if last_color_black:
+            randRGBcolors[-1] = [0, 0, 0]
+
+        random_colormap = LinearSegmentedColormap.from_list('new_map', randRGBcolors, N=nlabels)
+
+    # Generate soft pastel colors, by limiting the RGB spectrum
+    if type_color == 'soft':
+        low = 0.6
+        high = 0.95
+        randRGBcolors = [(np.random.uniform(low=low, high=high),
+                          np.random.uniform(low=low, high=high),
+                          np.random.uniform(low=low, high=high)) for i in range(nlabels)]
+
+        if first_color_black:
+            randRGBcolors[0] = [0, 0, 0]
+
+        if last_color_black:
+            randRGBcolors[-1] = [0, 0, 0]
+        random_colormap = LinearSegmentedColormap.from_list('new_map', randRGBcolors, N=nlabels)
+
+    return random_colormap
     

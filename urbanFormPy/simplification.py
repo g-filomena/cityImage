@@ -1,11 +1,14 @@
+import warnings
+warnings.simplefilter(action='ignore')
+
 import pandas as pd, numpy as np, geopandas as gpd
 import math
 from math import sqrt
-from shapely.geometry import Point, LineString, Polygon, MultiPolygon, mapping, MultiLineString
-from shapely.ops import cascaded_union, linemerge, nearest_points, polygonize_full
-import warnings
+from shapely.geometry import Point, LineString, Polygon, MultiPolygon, MultiPoint, mapping, MultiLineString
+from shapely.ops import cascaded_union, linemerge, nearest_points, polygonize, split, polygonize_full, unary_union
+
 pd.set_option('precision', 10)
-warnings.simplefilter(action='ignore', category=FutureWarning)
+pd.options.mode.chained_assignment = None
 
 import statistics
 import ast
@@ -14,18 +17,10 @@ from .utilities import *
 from .cleaning_network import *
 from .angles import *
 
-def is_perpendicular(line_geometry_A, line_geometry_B):
-    
-    angle = angle_line_geometries(line_geometry_A, line_geometry_B, degree = True)
-    if ((angle >= 70) & (angle <= 110)): 
-        if is_parallel(line_geometry_A, line_geometry_B, hard = False): return False 
-        else: return True
-    else: return False
-
 def is_parallel(line_geometry_A, line_geometry_B, hard = False):
     
     difference_angle = difference_angle_line_geometries(line_geometry_A, line_geometry_B)
-    if (difference_angle <= 20) & (difference_angle >= -20): return True
+    if (difference_angle <= 30): return True
         
     line_coordsA = list(line_geometry_A.coords)
     line_coordsB = list(line_geometry_B.coords)
@@ -70,11 +65,7 @@ def is_continuation(ix_lineA, ix_lineB, edges_gdf):
     line_geometry_A = edges_gdf.loc[ix_lineA]['geometry']
     line_geometry_B = edges_gdf.loc[ix_lineB]['geometry']
     if is_parallel(line_geometry_A, line_geometry_B, hard = True): return True
-    
-    if nameA == nameB: 
-        if not is_perpendicular(line_geometry_A, line_geometry_B): return True
-        else: return False
-    if not is_perpendicular(line_geometry_A, line_geometry_B): return True
+    if (nameA == nameB) & (is_parallel(line_geometry_A, line_geometry_B, hard = False)): return True
     else: return False
 
 
@@ -116,13 +107,12 @@ def simplify_dual_lines_junctions(nodes_gdf, edges_gdf, max_difference_length = 
     GeoDataFrames
     """
     
-    nodes_gdf.set_index('nodeID', drop = False, inplace = True, append = False)
-    nodes_gdf.index.name = None
-    edges_gdf.set_index('edgeID', drop = False, inplace = True, append = False)
-    edges_gdf.index.name = None
+    nodes_gdf.index, edges_gdf.index = nodes_gdf.nodeID, edges_gdf.edgeID
+    nodes_gdf.index.name, edges_gdf.index.name = None, None
     nodes_gdf, edges_gdf = nodes_gdf.copy(), edges_gdf.copy()
    
     edges_gdf['name'][edges_gdf.name.isnull()] = None
+    edges_gdf = edges_gdf.where(pd.notnull(edges_gdf), None)
     original_edges_gdf = edges_gdf.copy()
        
     ix_geo = edges_gdf.columns.get_loc("geometry")+1  
@@ -133,19 +123,18 @@ def simplify_dual_lines_junctions(nodes_gdf, edges_gdf, max_difference_length = 
     # the original geometries and edges are iterated and examined;
     for row in original_edges_gdf.itertuples():
         if row.Index in processed: continue  
-    
+        
         for r in [ix_u, ix_v]:
             found = False
             possible_matches = original_edges_gdf[(original_edges_gdf['u'] == row[r]) | (original_edges_gdf['v'] == row[r])].copy()
             possible_matches.drop(row.Index, axis = 0, inplace = True)
             possible_matches = possible_matches[~possible_matches.index.isin(processed)]
             
-            # first check
-            for connector in possible_matches.itertuples(): 
-                if (not is_continuation(row.Index, connector.Index, edges_gdf)) | (connector[ix_geo].length > row[ix_geo].length):
-                    possible_matches.drop(connector.Index, axis = 0, inplace = True)
-                    continue
-
+            possible_matches = possible_matches[possible_matches.geometry.length <  row[ix_geo].length]
+            possible_matches['continuation'] = False
+            possible_matches['continuation'] = possible_matches.apply(lambda c: is_continuation(row.Index, c.name, edges_gdf), axis = 1)
+            possible_mathces = possible_matches[possible_matches.continuation == True]
+            
             if len(possible_matches) == 0: continue
             if r == ix_u: 
                 direction = 'v'
@@ -155,10 +144,11 @@ def simplify_dual_lines_junctions(nodes_gdf, edges_gdf, max_difference_length = 
                 to_reach = row[ix_u]           
                     
             for connector in possible_matches.itertuples():
+                
                 if connector[ix_u] == row[r]: search = connector[ix_v]  
                 else: search = connector[ix_u]
 
-                nodes_encountered = [search]
+                nodes_traversed = [search]
                 lines_traversed = [connector[ix_geo]]
                 lines = [connector.Index]
                 next_line = False # to determine when moving to the next candidate
@@ -197,7 +187,7 @@ def simplify_dual_lines_junctions(nodes_gdf, edges_gdf, max_difference_length = 
                     distA = nodes_gdf.loc[search].geometry.distance(nodes_gdf.loc[to_reach].geometry)
                     distB = nodes_gdf.loc[other].geometry.distance(nodes_gdf.loc[to_reach].geometry)
 
-                    if (search in nodes_encountered) | (distB < distA):           
+                    if (search in nodes_traversed) | (distB < distA):           
                         next_line = True
                         continue
                     elif search == to_reach:
@@ -206,7 +196,7 @@ def simplify_dual_lines_junctions(nodes_gdf, edges_gdf, max_difference_length = 
                         found = True
                         break
                     else: 
-                        nodes_encountered.append(search)
+                        nodes_traversed.append(search)
                         lines_traversed.append(next_possible_matches.iloc[0].geometry)
                         lines.append(next_possible_matches.iloc[0].name)
                         last_line = next_possible_matches.iloc[0].name
@@ -228,16 +218,16 @@ def simplify_dual_lines_junctions(nodes_gdf, edges_gdf, max_difference_length = 
             processed.append(row.Index)
             if "pedestrian" in edges_gdf.columns:
                 if len(edges_gdf.loc[lines][edges_gdf.pedestrian == 1]) > 0: edges_gdf.at[row.Index, 'pedestrian'] = 1
-            if direction == 'u': nodes_encountered.reverse()
-            
+            if direction == 'u': nodes_traversed.reverse()
             # interpolate nodes encountered along the parallel lines
-            interpolate(u, v, cl, nodes_encountered, lines, nodes_gdf, edges_gdf, row.Index)
+            interpolate_on_centre_line(row.Index, cl, nodes_gdf, edges_gdf, u, v, nodes_traversed)
+
             edges_gdf.drop(lines, axis = 0, inplace = True) 
             break
             
     # correct the coordinates and clean the network
     edges_gdf = correct_edges(nodes_gdf, edges_gdf)
-    nodes_gdf, edges_gdf = clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_islands = False, same_uv_edges = True, self_loops = True)
+    nodes_gdf, edges_gdf = clean_network(nodes_gdf, edges_gdf, dead_ends = True, remove_disconnected_islands = False, same_uv_edges = True, self_loops = True)
     
     return(nodes_gdf, edges_gdf)
 
@@ -264,12 +254,10 @@ def simplify_complex_junctions(nodes_gdf, edges_gdf):
     GeoDataFrames
     """
     
-    nodes_gdf.set_index('nodeID', drop = False, inplace = True, append = False)
-    nodes_gdf.index.name = None
-    edges_gdf.set_index('edgeID', drop = False, inplace = True, append = False)
-    edges_gdf.index.name = None
-    
+    nodes_gdf.index, edges_gdf.index = nodes_gdf.nodeID, edges_gdf.edgeID
+    nodes_gdf.index.name, edges_gdf.index.name = None, None
     nodes_gdf, edges_gdf = nodes_gdf.copy(), edges_gdf.copy()
+    
     edges_gdf['name'][edges_gdf.name.isnull()] = None
     original_edges_gdf = edges_gdf.copy()
     
@@ -342,13 +330,13 @@ def simplify_complex_junctions(nodes_gdf, edges_gdf):
 
                 if intersection.geom_type == 'Point': # check if the center line reaches the connector
                     last = intersection.coords[0]
-                    line = split_line_interpolation(intersection, cl)[0]
+                    line = split_line_at_interpolation(intersection, cl)[0]
                     nodes_gdf.at[ix_node, 'geometry'] = intersection
                     
                     if code == 'u': edges_gdf.at[row.Index,'geometry'] = line[1]
                     else: edges_gdf.at[row.Index,'geometry'] = line[0]
                     
-                    line = split_line_interpolation(intersection, connector_geometry)[0]
+                    line = split_line_at_interpolation(intersection, connector_geometry)[0]
                     edges_gdf.at[connector.name, 'geometry'] = line[0]
                     edges_gdf.at[connector.name, 'v'] = ix_node
                     edges_gdf.at[ix_edge, 'u'] = ix_node
@@ -376,32 +364,27 @@ def simplify_complex_junctions(nodes_gdf, edges_gdf):
             if found: break
                         
     edges_gdf = correct_edges(nodes_gdf, edges_gdf)
-    nodes_gdf, edges_gdf = clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_islands = False, same_uv_edges = True, self_loops = True) 
+    nodes_gdf, edges_gdf = clean_network(nodes_gdf, edges_gdf, dead_ends = True, remove_disconnected_islands = False, same_uv_edges = True, self_loops = True) 
     return(nodes_gdf, edges_gdf)
 
 
 
 def dissolve_roundabouts(nodes_gdf, edges_gdf, max_length_segment = 80, angle_tolerance = 40):
 
-    nodes_gdf.set_index('nodeID', drop = False, inplace = True, append = False)
-    nodes_gdf.index.name = None
-    edges_gdf.set_index('edgeID', drop = False, inplace = True, append = False)
-    edges_gdf.index.name = None
-    
+    nodes_gdf.index, edges_gdf.index = nodes_gdf.nodeID, edges_gdf.edgeID
+    nodes_gdf.index.name, edges_gdf.index.name = None, None
     nodes_gdf, edges_gdf = nodes_gdf.copy(), edges_gdf.copy()
+    
     ix_geo = edges_gdf.columns.get_loc("geometry")+1  
     ix_u, ix_v = edges_gdf.columns.get_loc("u")+1, edges_gdf.columns.get_loc("v")+1
 
     processed_segments = []
     processed_nodes = []
-    
-    dd_u, dd_v = dict(edges_gdf['u'].value_counts()), dict(edges_gdf['v'].value_counts())
-    dd = {k: dd_u.get(k, 0) + dd_v.get(k, 0) for k in set(dd_u) | set(dd_v)}
-    
-    # editing the ones which only connect two edges
-    to_edit = {k: v for k, v in dd.items() if v == 3}
+       
+    # editing the ones which only connect three edges
+    to_edit = {k: v for k, v in nodes_degree(edges_gdf).items() if v == 3}
     if len(to_edit) == 0: return(nodes_gdf, edges_gdf)
-    to_edit_gdf = nodes_gdf[nodes_gdf.nodeID.isin(to_edit)]
+    to_edit_gdf = nodes_gdf[nodes_gdf.nodeID.isin(list(to_edit.keys()))]
     
     
     for node in to_edit_gdf.itertuples():
@@ -484,6 +467,10 @@ def dissolve_roundabouts(nodes_gdf, edges_gdf, max_length_segment = 80, angle_to
                 if last_vertex == node.Index:
                     lm = linemerge(edges_gdf.loc[i].geometry for i in sequence_segments)
                     roundabout = polygonize_full(lm)[0]
+                    if len(roundabout) == 0:
+                        not_a_roundabout = True
+                        break
+                    
                     centroid = roundabout.centroid
                     distances = [nodes_gdf.loc[i].geometry.distance(centroid) for i in sequence_nodes]
                     shortest, longest, mean = min(distances), max(distances), statistics.mean(distances) 
@@ -509,18 +496,13 @@ def dissolve_roundabouts(nodes_gdf, edges_gdf, max_length_segment = 80, angle_to
             if found: break
             
     edges_gdf = correct_edges(nodes_gdf, edges_gdf)
-    nodes_gdf, edges_gdf = clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_islands = False, same_uv_edges = True, self_loops = True)         
+    nodes_gdf, edges_gdf = clean_network(nodes_gdf, edges_gdf, dead_ends = True, remove_disconnected_islands = False, same_uv_edges = True, self_loops = True)         
      
             
     return nodes_gdf, edges_gdf
                     
 
-            # envelope = building_geometry.envelope
-            # coords = mapping(t)["coordinates"][0]
-            # d = [(Point(coords[0])).distance(Point(coords[1])), (Point(coords[1])).distance(Point(coords[2]))]
-            # width = min(d)
-
-def extract_centroids(nodes_gdf, edges_gdf, radius = 10):   
+def identify_clusters(nodes_gdf, edges_gdf, radius = 10):   
     
     """
     This function simplifies complex junctions as trinagular-like junctions formed mainly by secondary links.
@@ -540,13 +522,17 @@ def extract_centroids(nodes_gdf, edges_gdf, radius = 10):
     GeoDataFrames
     """   
     
+    nodes_gdf.index, edges_gdf.index = nodes_gdf.nodeID, edges_gdf.edgeID
+    nodes_gdf.index.name, edges_gdf.index.name = None, None
     nodes_gdf, edges_gdf = nodes_gdf.copy(), edges_gdf.copy()
-    
-    buffered_nodes = nodes_gdf.buffer(radius).unary_union
+  
+    to_ignore = {k: v for k, v in nodes_degree(edges_gdf).items() if v == 1}
+    tmp_nodes_gdf = nodes_gdf[~nodes_gdf.nodeID.isin(list(to_ignore.keys()))].copy() #ignoring dead-ends
+    buffered_nodes = tmp_nodes_gdf.buffer(radius).unary_union
     if isinstance(buffered_nodes, Polygon): buffered_nodes = [buffered_nodes]
         
     buffered_nodes_geoS = gpd.GeoSeries(list(buffered_nodes))
-    buffered_nodes_df =  pd.concat([buffered_nodes_geoS.rename('geometry'), pd.Series(buffered_nodes_geoS.index).rename('code')], axis=1)
+    buffered_nodes_df =  pd.concat([buffered_nodes_geoS.rename('geometry'), pd.Series(buffered_nodes_geoS.index).rename('clusterID')], axis=1)
 
     buffered_nodes_gdf = gpd.GeoDataFrame(buffered_nodes_df, geometry = buffered_nodes_df.geometry)
     buffered_nodes_gdf['area']= buffered_nodes_gdf['geometry'].area
@@ -555,30 +541,39 @@ def extract_centroids(nodes_gdf, edges_gdf, radius = 10):
     clusters_gdf = buffered_nodes_gdf[buffered_nodes_gdf["area"] > (radius*radius*3.14159)]
     clusters_gdf['x'], clusters_gdf['y'] = (clusters_gdf.geometry.centroid.x, clusters_gdf.geometry.centroid.y)
     clusters_gdf.index += nodes_gdf.index.max()+1
-    clusters_gdf['code'] = clusters_gdf.index
+    clusters_gdf['clusterID'] = clusters_gdf.index
     
-    nodes_gdf['cluster'] = None
-
     # set cluster column values
+    nodes_gdf["cluster"] = None
     nodes_gdf["cluster"] = nodes_gdf.apply(lambda row: _assign_cluster_nodes(row["geometry"], clusters_gdf), axis = 1)
+    nodes_gdf = nodes_gdf.where(pd.notnull(nodes_gdf), None)
+    nodes_gdf.loc[nodes_gdf.nodeID.isin(list(to_ignore.keys())), "cluster"] = None
+    
+    clusters_counts = dict(nodes_gdf['cluster'].value_counts())
+    clusters_gdf['degree'] = 0
+    clusters_gdf['degree'] = clusters_gdf['clusterID'].map(clusters_counts)
+    
     geometry = clusters_gdf['centroid']
     data = clusters_gdf.drop(['centroid', 'geometry'], axis=1)
-    clusters_gdf = gpd.GeoDataFrame(data, crs=nodes_gdf.crs, geometry=geometry)
-    edges_gdf = assign_cluster_edges(nodes_gdf, edges_gdf)
+    clusters_gdf = gpd.GeoDataFrame(data, crs= nodes_gdf.crs, geometry=geometry)
+    edges_gdf = _assign_cluster_edges(nodes_gdf, edges_gdf, clusters_gdf)
     
     return(nodes_gdf, edges_gdf, clusters_gdf)
  
-def _assign_cluster_nodes(node_geometry, cluster_gdf):
+def _assign_cluster_nodes(node_geometry, clusters_gdf): #ok
         
     ix_geo = clusters_gdf.columns.get_loc("geometry")+1
-    ix_code = clusters_gdf.columns.get_loc("code")+1
+    ix_cluster = clusters_gdf.columns.get_loc("clusterID")+1
     
     tmp = clusters_gdf[clusters_gdf["geometry"].intersects(node_geometry.buffer(1))]
     if len(tmp) == 0: return None
     for cluster in tmp.itertuples():
-        if node_geometry.within(cluster[ix_geo]): return cluster[ix_code]
+        if node_geometry.within(cluster[ix_geo]): return int(cluster[ix_cluster])
 
-def assign_cluster_edges(nodes_gdf, edges_gdf):
+def _assign_cluster_edges(nodes_gdf, edges_gdf, clusters_gdf):
+    
+    nodes_gdf.set_index('nodeID', drop = False, append = False, inplace = True)
+    nodes_gdf.index.name = None
     
     edges_gdf.drop(['nodeID_x', 'nodeID_y','clus_uR', 'clus_vR', 'clus_u', 'clus_v'], axis = 1, inplace = True, errors = 'ignore')
     edges_gdf = pd.merge(edges_gdf, nodes_gdf[['cluster', 'nodeID']], how = 'left', left_on= "u", right_on = "nodeID")
@@ -587,25 +582,23 @@ def assign_cluster_edges(nodes_gdf, edges_gdf):
     edges_gdf = edges_gdf.rename(columns = {'cluster':'clus_v'})  
     edges_gdf.set_index('edgeID', drop = False, append = False, inplace = True)
     edges_gdf.index.name = None
-    
+
     edges_gdf['clus_uR'], edges_gdf['clus_vR'] = None, None
     ix_clus_u, ix_clus_v  = edges_gdf.columns.get_loc("clus_u")+1, edges_gdf.columns.get_loc("clus_v")+1
     ix_clus_uR, ix_clus_vR = edges_gdf.columns.get_loc("clus_uR")+1, edges_gdf.columns.get_loc("clus_vR")+1
    
     # assigning cluster
-    tmp = edges_gdf[(edges_gdf['clus_u'].isnull()) | (edges_gdf['clus_v'].isnull())].copy()
-    for row in tmp.itertuples():
-        if row[ix_clus_u] is None:
-            cluster = indirect_cluster(nodes_gdf, edges_gdf, row.Index, 'u')[0]
-            edges_gdf.at[row.Index, 'clus_uR'] = cluster
-        if row[ix_clus_v] is None:
-            cluster = indirect_cluster(nodes_gdf, edges_gdf, row.Index, 'v')[0]
-            edges_gdf.at[row.Index, 'clus_vR'] = cluster
-    
+    tmp = edges_gdf[(edges_gdf['clus_u'].isnull())].copy()
+    edges_gdf['clus_uR'] = tmp.apply(lambda row: indirect_cluster(nodes_gdf, edges_gdf, clusters_gdf, row['edgeID'],
+                                            'u')[0], axis = 1)
+    tmp = edges_gdf[(edges_gdf['clus_v'].isnull())].copy()
+    edges_gdf['clus_vR'] = tmp.apply(lambda row: indirect_cluster(nodes_gdf, edges_gdf, clusters_gdf, row['edgeID'],
+                                            'v')[0], axis = 1)
+    edges_gdf = edges_gdf.where(pd.notnull(edges_gdf), None)
     edges_gdf.drop(['nodeID_x', 'nodeID_y'], axis = 1, inplace = True, errors = 'ignore')       
     return(edges_gdf)
-
-def indirect_cluster(nodes_gdf, edges_gdf, ix_line, search_dir):
+   
+def indirect_cluster(nodes_gdf, edges_gdf, clusters_gdf, ix_line, search_dir, specific_cluster = False, desired_cluster = None):
     
     ix_geo = edges_gdf.columns.get_loc("geometry")+1
     ix_name = edges_gdf.columns.get_loc("name")+1
@@ -627,21 +620,34 @@ def indirect_cluster(nodes_gdf, edges_gdf, ix_line, search_dir):
         possible_matches = edges_gdf[(edges_gdf.u == u) | (edges_gdf.v == u)].copy()
      
     possible_matches.drop(ix_line, axis = 0, inplace = True)
-    nodes_encountered = []
+    nodes_traversed = []
     lines_traversed = []
+    clusters_traversed = []
     last_line = ix_line
 
     found = False
+    distance_start = 0.0
+
+    if specific_cluster:
+        cluster_geometry = clusters_gdf.loc[desired_cluster].geometry
+        distance_start = cluster_geometry.distance(nodes_gdf.loc[coming_from].geometry)
+    
     while not found:
-        if len(possible_matches) == 0: return(None, None, None, None, None)
-      
-        if len(possible_matches) > 1:
+        if len(possible_matches) == 0: return(None, None, None, None, None, None)
+        if specific_cluster:
+            if cluster_geometry.distance(nodes_gdf.loc[coming_from].geometry) > distance_start:
+                return(None, None, None, None, None, None)
+
+        possible_matches.drop(last_line, axis = 0, errors = "ignore", inplace = True)
+        if len(possible_matches) > 0:
             possible_matches['angle'] = 0.0
             for connector in possible_matches.itertuples():
-                    angle = angle_line_geometries(edges_gdf.loc[last_line].geometry, connector[ix_geo], deflection = True, degree = True)
-                    possible_matches.at[connector.Index, 'angle'] = angle
-            possible_matches.sort_values(by = 'angle', ascending = True, inplace = True)    
+                angle = angle_line_geometries(edges_gdf.loc[last_line].geometry, connector[ix_geo], deflection = True, degree = True)
+                possible_matches.at[connector.Index, 'angle'] = angle
             
+            possible_matches.sort_values(by = 'angle', ascending = True, inplace = True)   
+            
+        if len(possible_matches) == 0: return(None, None, None, None, None, None)    
         for connector in possible_matches.itertuples():
             if not is_continuation(last_line, connector.Index, edges_gdf):
                 possible_matches.drop(connector.Index, axis = 0, inplace = True)
@@ -655,7 +661,7 @@ def indirect_cluster(nodes_gdf, edges_gdf, ix_line, search_dir):
                     coming_from = vCP
                     distance_to = nodes_gdf.loc[vCP].geometry.distance(nodes_gdf.loc[other_node].geometry)
                     distance_from = nodes_gdf.loc[uCP].geometry.distance(nodes_gdf.loc[other_node].geometry)
-                    if (vCP in nodes_encountered) | (distance_to < distance_from):
+                    if (vCP in nodes_traversed) | (distance_to < distance_from):
                         possible_matches = possible_matches[0:0]
                         break
                 else: 
@@ -663,46 +669,54 @@ def indirect_cluster(nodes_gdf, edges_gdf, ix_line, search_dir):
                     coming_from = uCP
                     distance_to = nodes_gdf.loc[uCP].geometry.distance(nodes_gdf.loc[other_node].geometry)
                     distance_from = nodes_gdf.loc[vCP].geometry.distance(nodes_gdf.loc[other_node].geometry)
-                    if (uCP in nodes_encountered) | (distance_to < distance_from):
+                    if (uCP in nodes_traversed) | (distance_to < distance_from):
                         possible_matches = possible_matches[0:0]
                         break
                                     
-                if cluster is None:
+                if (cluster == None) | ((specific_cluster) & (cluster != desired_cluster)):
                     lines_traversed.append(connector.Index)
                     last_line = connector.Index
 
                     if vCP == coming_from:
                         possible_matches = edges_gdf[(edges_gdf.u == vCP) | (edges_gdf.v == vCP) ].copy()
-                        nodes_encountered.append(uCP) 
+                        nodes_traversed.append(uCP) 
                         line_coords = line_coords + list(connector[ix_geo].coords)
                     else:
                         possible_matches = edges_gdf[(edges_gdf.u == uCP) | (edges_gdf.v == uCP)].copy()
-                        nodes_encountered.append(vCP)
+                        nodes_traversed.append(vCP)
                         tmp = list(connector[ix_geo].coords)
                         tmp.reverse()
                         line_coords = line_coords + tmp
+                    if (specific_cluster) & (cluster != None): clusters_traversed.append(cluster)
                     break
                 
-                else:
+                elif (cluster != None) | ((specific_cluster) & (cluster == desired_cluster)):
                     found = True
                     lines_traversed.append(connector.Index)
                     
                     if vCP == coming_from:
-                        nodes_encountered.append(uCP)
+                        nodes_traversed.append(uCP)
                         last_node = vCP
                         line_coords = line_coords + list(connector[ix_geo].coords)
                     else: 
-                        nodes_encountered.append(vCP)
+                        nodes_traversed.append(vCP)
                         last_node = uCP
                         tmp = list(connector[ix_geo].coords)
                         tmp.reverse()
                         line_coords = line_coords + tmp
-                    break
-    
-    merged_line = LineString([coor for coor in line_coords])   
-    return(cluster, merged_line, lines_traversed, nodes_encountered, last_node)
+                    break    
+    merged_line = LineString([coor for coor in line_coords])  
+    if ((len(clusters_traversed) == 0) & (specific_cluster)):
+        for n in nodes_traversed:
+            if nodes_gdf.loc[n].cluster != None: clusters_traversed.append(nodes_gdf.loc[n].cluster)
+            
+    return(cluster, merged_line, lines_traversed, nodes_traversed, last_node, clusters_traversed)
         
-def center_line_cluster(line_geometry_A, line_geometry_B, nodes_gdf, clusters_gdf, cluster_from, cluster_to, one_cluster = False): 
+def center_line_cluster(line_geometries, nodes_gdf, clusters_gdf, cluster_from, cluster_to, one_cluster = False): #ok
+    
+    line_geometry_A = line_geometries[0]
+    line_geometry_B = line_geometries[1]
+    if line_geometry_A.centroid.distance(line_geometry_B.centroid)> 100: return None
     
     if one_cluster: coord_from = (nodes_gdf.loc[cluster_from]['x'], nodes_gdf.loc[cluster_from]['y'])
     else: coord_from = (clusters_gdf.loc[cluster_from]['x'], clusters_gdf.loc[cluster_from]['y'])
@@ -732,70 +746,7 @@ def center_line_cluster(line_geometry_A, line_geometry_B, nodes_gdf, clusters_gd
         
     return center_line
 
-def center_line_cluster_four(list_lines, nodes_gdf, clusters_gdf, cluster_from, cluster_to): #rev
-    
-    coord_from = (clusters_gdf.loc[cluster_from]['x'], clusters_gdf.loc[cluster_from]['y'])
-    coord_to = (clusters_gdf.loc[cluster_to]['x'], clusters_gdf.loc[cluster_to]['y'])
-    
-    list_coords = []
-    for i in list_lines: list_coords.append(list(i.coords))
-    
-    # no need to reverse lines, as they should arrive already in the same order      
-    # different number of vertexes, connect the line
-    
-    for line in list_coords:
-        for other_line in list_coords:
-            if line == other_line: continue               
-            while len(line) > len(other_line):
-                index = int(len(line)/2)
-                del line[index]    
-
-    new_line = list_coords[0]
-    for n, i in enumerate(list_coords[0]):       
-        pairs = [coor[n] for coor in list_coords]
-        pairs = list(set(pairs))
-        
-        maxDistance = 0
-        for point in pairs:
-            for other_point in pairs:
-                if point == other_point: continue
-                distance = Point(point).distance(Point(other_point))
-                if distance > maxDistance:
-                    furthest = [point, other_point]
-                    maxDistance = distance
-                    
-        if len(pairs) == 2:
-            link = LineString([coor for coor in [pairs[0], pairs[1]]])
-        
-        elif len(pairs) == 3:
-            second = [x for x in pairs if x not in furthest]
-            link = LineString([coor for coor in [furthest[0], second[0], furthest[1]]])
-        else:
-            # find second
-            maxDistance = 0.0
-            last = None
-            
-            for point in pairs:
-                if point in furthest: continue
-                distance = Point(point).distance(Point(furthest[0]))
-                if distance > maxDistance:
-                    maxDistance = distance
-                    last = point   
-                    
-            second = [x for x in pairs if x not in furthest]
-            second.remove(last)
-            link = LineString([coor for coor in [furthest[0], second[0], last, furthest[1]]])
-        
-        np = link.centroid.coords[0]      
-        new_line[n] = np
-        
-    new_line[0] = coord_from
-    new_line[-1] = coord_to
-    center_line = LineString([coor for coor in new_line])           
-        
-    return center_line
-
-def split_line_interpolation(point, line_geometry):
+def split_line_at_interpolation(point, line_geometry): #ok
     
     line_coords = list(line_geometry.coords)
     starting_point = Point(line_coords[0])
@@ -826,68 +777,56 @@ def split_line_interpolation(point, line_geometry):
         line_geometry_B = LineString([coor for coor in new_line_B])
     
     return((line_geometry_A, line_geometry_B), np)
-
-def interpolate(first_node, last_node, center_line, list_nodes, list_lines, nodes_gdf, edges_gdf, ix_line):
-   
-    line_geometry = center_line    
-    new_index = ix_line
-    
-    for counter, node in enumerate(list_nodes):
-        point = nodes_gdf.loc[node].geometry
-        lines, np = split_line_interpolation(point, line_geometry)
-              
-        # adjusting node coordinates
-        nodes_gdf.at[node, 'x'] = np.coords[0][0]
-        nodes_gdf.at[node, 'y'] = np.coords[0][1]
-        nodes_gdf.at[node, 'geometry'] = np
-        
-        #first part of the segment
-        if counter == 0: edges_gdf.at[new_index, 'u'] = first_node
-        edges_gdf.at[new_index, 'geometry'] = lines[0]
-        edges_gdf.at[new_index, 'v'] = node
-        
-        # second part of the segment
-        new_index = max(edges_gdf.index)+1
-        edges_gdf.loc[new_index] = edges_gdf.loc[ix_line]
-        edges_gdf.at[new_index, 'geometry'] = lines[1]
-        edges_gdf.at[new_index, 'u'] = node
-        edges_gdf.at[new_index, 'v'] = last_node
-        edges_gdf.at[new_index, 'edgeID'] = new_index
-        line_geometry = lines[1]
-                                                                                                         
-
-def interpolate_multi(first_node, last_node, center_line, list_nodes, list_lines, nodes_gdf, edges_gdf, ix_line):
-
+                                                                                                       
+def interpolate_on_centre_line(ix_line, center_line, nodes_gdf, edges_gdf,  first_node, last_node, nodes_traversed, 
+                                clusters_gdf = None, clusters_traversed = []):
+       
     line_geometry = center_line   
     new_index = ix_line                                                                                        
     distances = {}
-    lines_distances = {}
     
-    for node in list_nodes:
-        distance = nodes_gdf.loc[node]['geometry'].project(Point(center_line.coords[0])) #rev!
-        distances[node] = distance
-                                                                                                         
-    for line in list_lines:
-        distance = edges_gdf.loc[line]['geometry'].project(Point(center_line.coords[-1])) #rev!
-        lines_distances[line] = distance                                                                                                   
+    if len(clusters_traversed)> 0: nodes_traversed = nodes_traversed + clusters_traversed
+    for node in nodes_traversed:
+        if node in clusters_traversed: node_geometry = clusters_gdf.loc[node]['geometry']
+        else: node_geometry = nodes_gdf.loc[node]['geometry']
+        np = nearest_points(node_geometry, center_line)[1]
+        distance = center_line.project(np)
+        distances[node] = distance                                                                                               
 
     distances_sorted = sorted(distances.items(), key=lambda kv: kv[1])               
-    lines_distances_sorted = sorted(lines_distances.items(), key=lambda kv: kv[1])
-                                                                                                         
+                                                                                                    
     for counter, node in enumerate(distances_sorted):
         
         node = distances_sorted[counter][0]
-        point = nodes_gdf.loc[node].geometry
-        result, np = split_line_interpolation(point, gline)
-        
-        #first part of the segment, adjusting node coordinates
+        if node in clusters_traversed: point = clusters_gdf.loc[node].geometry
+        else: point = nodes_gdf.loc[node].geometry
+        result, np = split_line_at_interpolation(point, line_geometry)
+            
+        if node in clusters_traversed:
+            clusters_gdf.at[node, 'x'] = np.coords[0][0]
+            clusters_gdf.at[node, 'y'] = np.coords[0][1]
+            clusters_gdf.at[node, 'geometry'] = np
+            if counter == 0: edges_gdf.at[new_index, 'u'] = first_node
+            continue
+            
         nodes_gdf.at[node, 'x'] = np.coords[0][0]
         nodes_gdf.at[node, 'y'] = np.coords[0][1]
-        nodes_gdf.at[node, 'geometry'] = np
+        nodes_gdf.at[node, 'geometry'] = np 
+        
+        #first part of the segment, adjusting node coordinates        
+        tmp = edges_gdf[(edges_gdf.u == node) | (edges_gdf.v == node)].copy()
+        tmp.drop(ix_line, axis = 0, inplace = True, errors = 'ignore')
+        
+        # for ix, row in tmp.iterrows():
+            # tmp_line_coords = list(row['geometry'].coords)
+            # if row['u'] == node: tmp_line_coords.insert(1,nodes_gdf.loc[node]['geometry'].coords[0]) 
+            # if row['v'] == node: tmp_line_coords.insert(-1,nodes_gdf.loc[node]['geometry'].coords[0]) 
+            # edges_gdf.at[ix, 'geometry'] = LineString([coor for coor in tmp_line_coords])
         
         if counter == 0: edges_gdf.at[new_index, 'u'] = first_node
         edges_gdf.at[new_index, 'geometry'] = result[0]
         edges_gdf.at[new_index, 'v'] = node
+        edges_gdf.at[new_index, 'new_geo'] = True
           
         # second part of the segment
         new_index = max(edges_gdf.index)+1
@@ -897,66 +836,157 @@ def interpolate_multi(first_node, last_node, center_line, list_nodes, list_lines
         edges_gdf.at[new_index, 'u'] = node
         edges_gdf.at[new_index, 'v'] = last_node
         edges_gdf.at[new_index, 'edgeID'] = new_index
-        gline = result[1]                                       
+        edges_gdf.at[new_index, 'new_geo'] = True
+        line_geometry = result[1]                                       
                                                                          
-def merge_two(ix_lineA, ix_lineB, line_geometry_A, line_geometry_B, nodes_gdf, edges_gdf, clusters_gdf, cluster, goal, direction):
+def dissolve_dual_lines(ix_lines, line_geometries, nodes_gdf, edges_gdf, clusters_gdf, cluster, goal, first_node, last_node, 
+                        nodes_traversed, direction, one_cluster = False, clusters_traversed = []):
     
-    # some pre criteria
-    if (((line_geometry_A.centroid.distance(line_geometry_B.centroid) > 18) & 
-       (edges_gdf.loc[ix_lineA]['name'] != edges_gdf.loc[ix_lineB]['name'])) | 
-        ((line_geometry_A.length > line_geometry_B.length*1.50) | (line_geometry_B.length > line_geometry_A.length*1.50))):
-        return None
-
-    cl = center_line_cluster(line_geometry_A, line_geometry_B, nodes_gdf, clusters_gdf, cluster, goal)
+    ix_lineA = ix_lines[0]
+    ix_lineB = ix_lines[1]
+    line_geometry_A = line_geometries[0]
+    line_geometry_B = line_geometries[1]
+    if len(nodes_traversed)> 0: interpolation = True
+    else: interpolation = False
     
-    if direction == 'u':
+    if not one_cluster:
+        if ((edges_gdf.loc[ix_lineA]['name'] != None) & (edges_gdf.loc[ix_lineB]['name'] != None) & 
+                    (edges_gdf.loc[ix_lineA]['name'] != edges_gdf.loc[ix_lineB]['name'])): return None
+    if ((line_geometry_A.length > line_geometry_B.length*1.50) | (line_geometry_B.length > line_geometry_A.length*1.50)): return None
+    
+    if not one_cluster:    
+        if (Point(line_geometry_A.coords[0]).distance(Point(line_geometry_A.coords[0])) >
+                    Point(line_geometry_A.coords[0]).distance(Point(line_geometry_B.coords[-1]))):
+            dist_SS = Point(line_geometry_A.coords[0]).distance(Point(line_geometry_B.coords[-1]))
+            dist_EE = Point(line_geometry_A.coords[-1]).distance(Point(line_geometry_B.coords[0]))
+        else:
+            dist_SS = Point(line_geometry_A.coords[0]).distance(Point(line_geometry_B.coords[0]))
+            dist_EE = Point(line_geometry_A.coords[-1]).distance(Point(line_geometry_B.coords[-1]))
+            
+        if (dist_SS > dist_EE*1.50) | (dist_EE > dist_SS*1.50): return None
+    
+    if one_cluster: cl = center_line_cluster(line_geometries, nodes_gdf, clusters_gdf, first_node, goal, one_cluster)
+    else: cl = center_line_cluster(line_geometries, nodes_gdf, clusters_gdf, cluster, goal)
+    if cl == None: return None
+    
+    if (direction == 'u') & (not interpolation):
         line_coords = list(cl.coords)
         line_coords.reverse() 
         cl = LineString([coor for coor in line_coords])
     
+    if interpolation:
+        interpolate_on_centre_line(ix_lineA, cl, nodes_gdf, edges_gdf, first_node, last_node, nodes_traversed, clusters_gdf, clusters_traversed)
+        return 'processed'
+    
+    edges_gdf.at[ix_lineA, 'new_geo'] = True
     edges_gdf.at[ix_lineA, 'geometry'] = cl
     return 'processed'
 
-    
-def merge_two_inter(ix_lineA, ix_lineB, line_geometry_A, line_geometry_B, nodes_gdf, edges_gdf, clusters_gdf, cluster, goal, 
-                               starting_node, last_node, list_nodes, list_lines, multi = False):
-    # the center line is built in relation to the variable cluster as 'u', or from_node --> to_node
-    if (((line_geometry_A.centroid.distance(line_geometry_B.centroid) > 18) & 
-       (edges_gdf.loc[ix_lineA]['name'] != edges_gdf.loc[ix_lineB]['name'])) | 
-        ((line_geometry_A.length > line_geometry_B.length*1.50) | (line_geometry_B.length > line_geometry_A.length*1.50))):
-        return None
-    
-    cl = center_line_cluster(line_geometry_A, line_geometry_B, nodes_gdf, clusters_gdf, cluster, goal)
-    if multi: interpolate_multi(starting_node, last_node, cl, 
-                                        list_nodes, list_lines, nodes_gdf, edges_gdf, ix_lineA)
-    else: interpolate(starting_node, last_node, cl, list_nodes, list_lines, nodes_gdf, edges_gdf, ix_lineA) 
-    return 'processed'
 
-def find_central(dict_lines, nodes_gdf, clusters_gdf, cluster, goal):
+def dissolve_multiple_dual_lines(ix_lines, line_geometries, nodes_gdf, edges_gdf, clusters_gdf, cluster, goal, first_node, last_node, 
+                                nodes_traversed, direction, one_cluster = False, clusters_traversed = []):
+      
+    dict_lines = dict(zip(ix_lines, line_geometries))
     secondary_lines = []
     max_dist = 0
     
-    if len(dict_lines)%2 != 0:                                                        
-        for key, value in dict_lines.items():
-            for keyC, valueC in dict_lines.items():
-                if key == keyC: continue
-                distance = (value.centroid).distance(valueC.centroid)
+    if len(nodes_traversed)> 0: interpolation = True
+    else: interpolation = False
+    
+    for line in dict_lines.values():
+        for other_line in dict_lines.values():
+            if line == other_line: continue
+            if line.length > other_line.length * 1.50: return None     
+    
+    if (len(dict_lines)%2 == 0):
+        while len(dict_lines) > 2:
+            distances = {}
+            for key, line in dict_lines.items():
+                cumulative_distance = 0.0
+                for other_key, other_line in dict_lines.items():
+                    if key == other_key: continue
+                    mid_point = line.interpolate(0.5, normalized = True)
+                    other_mid_point = other_line.interpolate(0.5, normalized = True)
+                    distance = mid_point.distance(other_mid_point)
+                    cumulative_distance += distance
+                    
+                mean_distance = cumulative_distance/len(dict_lines)
+                distances[key] = mean_distance
+            distances = {k: v for k, v in sorted(distances.items(), key=lambda item: item[1])}
+            to_remove = list(distances.keys())[-2:]
+            for key in to_remove: del dict_lines[key]
+            
+        line_geometries = list(dict_lines.values())
+        
+        if one_cluster: cl = center_line_cluster(line_geometries, nodes_gdf, clusters_gdf, first_node, goal, one_cluster = True)
+        else: cl = center_line_cluster(line_geometries, nodes_gdf, clusters_gdf, cluster, goal)
+        
+    elif len(dict_lines)%2 != 0:   
+        
+        while len(dict_lines) > 3:
+            distances = {}
+            for key, line in dict_lines.items():
+                cumulative_distance = 0.0
+                for other_key, other_line in dict_lines.items():
+                    if key == other_key: continue
+                    mid_point = line.interpolate(0.5, normalized = True)
+                    other_mid_point = other_line.interpolate(0.5, normalized = True)
+                    distance = mid_point.distance(other_mid_point)
+                    cumulative_distance += distance
+                    
+                mean_distance = cumulative_distance/len(dict_lines)
+                distances[key] = mean_distance
+            distances = {k: v for k, v in sorted(distances.items(), key=lambda item: item[1])}
+            to_remove = list(distances.keys())[-2:]
+            for key in to_remove: del dict_lines[key]
+
+        for key, line in dict_lines.items():
+            for other_key, other_line in dict_lines.items():
+                if key == other_key: continue
+                mid_point = line.interpolate(0.5, normalized = True)
+                other_mid_point = other_line.interpolate(0.5, normalized = True)
+                distance = mid_point.distance(other_mid_point)
                 if distance > max_dist: 
                     max_dist = distance
-                    secondary_lines = [key, keyC]
+                    secondary_lines = [key, other_key]
 
-        central = [x for x in list(dict_lines.keys()) if x not in secondary_lines][0]  
-        geo_central = dict_lines[central]
+        ix_central = [x for x in list(dict_lines.keys()) if x not in secondary_lines][0]
+        cl = dict_lines[ix_central]
     
-    else:
-        geo_central = center_line_cluster_four(list(dict_lines.values()), nodes_gdf, clusters_gdf, cluster, goal)                         
-        central, secondary_lines = None, None
-       
-    return(central, secondary_lines, geo_central)
+    if (direction == 'u') & (not interpolation):
+        line_coords = list(cl.coords)
+        line_coords.reverse() 
+        cl = LineString([coor for coor in line_coords])
+
+    if interpolation:
+        interpolate_on_centre_line(ix_lines[0], cl, nodes_gdf, edges_gdf, first_node, last_node, nodes_traversed, clusters_gdf, clusters_traversed) 
+    else: 
+        edges_gdf.at[ix_lines[0], 'geometry'] = cl
+        edges_gdf.at[ix_lines[0], 'new_geo'] = True
+        
+    return 'processed'    
   
+def is_possible_dual(ix_lineA, ix_lineB, edges_gdf, processed, one_cluster = False):
+    
+    line_geometry_A = edges_gdf.loc[ix_lineA].geometry
+    line_geometry_B = edges_gdf.loc[ix_lineB].geometry
+    
+    if ix_lineB in processed: return False
+    if not one_cluster:
+        if ((edges_gdf.loc[ix_lineA].u == edges_gdf.loc[ix_lineB].u) | (edges_gdf.loc[ix_lineA].u == edges_gdf.loc[ix_lineB].v)
+            | (edges_gdf.loc[ix_lineA].v == edges_gdf.loc[ix_lineB].u) | (edges_gdf.loc[ix_lineA].v == edges_gdf.loc[ix_lineB].v)): return False
+        if not is_parallel(line_geometry_A, line_geometry_B, hard = True): return False
+    else: 
+        if is_continuation(ix_lineA, ix_lineB, edges_gdf): return False
+
+    return True
+ 
 
 def simplify_dual_lines(nodes_gdf, edges_gdf, clusters_gdf):
-    nodes_gdf, edges_gdf = nodes_gdf.copy(), edges_gdf.copy()
+    
+    nodes_gdf.index, edges_gdf.index, clusters_gdf.index = nodes_gdf.nodeID, edges_gdf.edgeID, clusters_gdf.clusterID
+    nodes_gdf.index.name, edges_gdf.index.name, clusters_gdf.index.name = None, None, None
+    nodes_gdf, edges_gdf, clusters_gdf = nodes_gdf.copy(), edges_gdf.copy(), clusters_gdf.copy()
     
     ix_geo = edges_gdf.columns.get_loc("geometry")+1
     ix_u, ix_v  = edges_gdf.columns.get_loc("u")+1, edges_gdf.columns.get_loc("v")+1
@@ -968,467 +998,211 @@ def simplify_dual_lines(nodes_gdf, edges_gdf, clusters_gdf):
     ################################ FROM NODES TO CLUSTERED JUNCTIONS
     
     clusters_gdf['keep'] = False
-    original_edges_gdf = edges_gdf.copy()  
+    edges_gdf['new_geo'] = False
+    edges_gdf['forced_cluster'] = False
+    original_nodes_gdf, original_edges_gdf, original_clusters_gdf = nodes_gdf.copy(), edges_gdf.copy(), clusters_gdf.copy()
     processed = []
     to_drop = []
-    list_cluster = clusters_gdf.index.values.tolist() 
+    
     
     print('Simplifying dual lines: First part - clusters')
-
+    clusters_gdf.sort_values(by = 'degree', ascending = False, inplace = True)
+    list_cluster = clusters_gdf.index.values.tolist() 
+    
     for cluster in list_cluster:
-           
         edges_tmp = original_edges_gdf[((original_edges_gdf.clus_u == cluster) | (original_edges_gdf.clus_v == cluster))].copy()
         edges_tmp = edges_tmp[edges_tmp.clus_u != edges_tmp.clus_v].copy()
-        
+        edges_tmp.sort_values(by = 'length', ascending = False, inplace = True)
         if len(edges_tmp) == 1: continue
-        for row in edges_tmp.itertuples():
-            if row.Index in processed: continue  
-            pDL = edges_tmp.copy() 
+
+        for road in edges_tmp.itertuples():          
+            if road.Index in processed: continue
+            possible_dual_lines = edges_tmp.copy() 
+            edges_gdf['forced_cluster'] = False
             
             # disregard unparallel lines 
-            for rowC in pDL.itertuples():
-                if row.Index == rowC.Index: continue
-                elif rowC.Index in processed: pDL.drop(rowC.Index, axis = 0, inplace = True)
-                elif ((row[ix_u] == rowC[ix_u]) | (row[ix_u] == rowC[ix_v]) |  (row[ix_v] == rowC[ix_v]) |
-                (row[ix_v] == rowC[ix_u])): pDL.drop(rowC.Index, axis = 0, inplace = True)
-                elif is_continuation(row.Index, rowC.Index, original_edges_gdf): continue
-                else: 
-                    pDL.drop(rowC.Index, axis = 0, inplace = True)            
+            possible_dual_lines['candidate'] = True
+            possible_dual_lines['candidate'] = possible_dual_lines.apply(lambda r: is_possible_dual(road.Index, r['edgeID'], original_edges_gdf, 
+                                                        processed), axis = 1)
+            possible_dual_lines.at[road.Index, 'candidate' ] = True
+            possible_dual_lines = possible_dual_lines[possible_dual_lines.candidate == True]
+            if len(possible_dual_lines) < 2: continue
+            possible_dual_lines['dir'] = 'v'
 
-            # does the line considered in the loop reach a cluster? if not straight away, at some point?
-            pDL['dir'] = 'v'
-            # orientate everything from "u" to "v"
-            
-            for rowC in pDL.itertuples():
-                if rowC[ix_clus_v] == cluster:
-                    line_coords = list(rowC[ix_geo].coords)
+            # orientate everything from "u" to "v" in relation to the cluster
+            for candidate in possible_dual_lines.itertuples():
+
+                if candidate[ix_clus_v] == cluster:
+                    line_coords = list(candidate[ix_geo].coords)
                     line_coords.reverse() 
-                    new_gline = LineString([coor for coor in line_coords])
-                    old_u = rowC[ix_u]
-                    old_clus_u = rowC[ix_clus_u]
-                    old_clus_uR = rowC[ix_clus_uR]
-
-                    pDL.at[rowC.Index,'geometry'] = new_gline
-                    pDL.at[rowC.Index,'u']  = rowC[ix_v]
-                    pDL.at[rowC.Index,'v'] = old_u
-                    pDL.at[rowC.Index,'clus_u'] = rowC[ix_clus_v]
-                    pDL.at[rowC.Index,'clus_v'] = old_clus_u
-                    pDL.at[rowC.Index,'clus_uR'] = rowC[ix_clus_vR]
-                    pDL.at[rowC.Index,'clus_vR'] = old_clus_uR
-                    pDL.at[rowC.Index, 'dir'] = 'u' # indicates original dir
-     
-            if pDL.loc[row.Index]['clus_v'] != None: pDL_goal = pDL.loc[row.Index]['clus_v']
-            else: pDL_goal = pDL.loc[row.Index]['clus_vR']
-            if (pDL_goal == None) | (pDL_goal == cluster): continue
-            for rowC in pDL.itertuples():
-                if rowC[ix_clus_v] != None: secondary_goal = rowC[ix_clus_v]
-                else: secondary_goal = rowC[ix_clus_vR]
-                if (secondary_goal != pDL_goal): pDL.drop(rowC.Index, axis = 0, inplace = True)
+                    new_line_geometry = LineString([coor for coor in line_coords])
+                    old_u = candidate[ix_u]
+                    old_clus_u, old_clus_uR = candidate[ix_clus_u], candidate[ix_clus_uR]
+                    
+                    possible_dual_lines.at[candidate.Index,'geometry'] = new_line_geometry
+                    possible_dual_lines.at[candidate.Index,'u']  = candidate[ix_v]
+                    possible_dual_lines.at[candidate.Index,'v'] = old_u
+                    possible_dual_lines.at[candidate.Index,'clus_u'] = candidate[ix_clus_v]
+                    possible_dual_lines.at[candidate.Index,'clus_v'] = old_clus_u
+                    possible_dual_lines.at[candidate.Index,'clus_uR'] = candidate[ix_clus_vR]
+                    possible_dual_lines.at[candidate.Index,'clus_vR'] = old_clus_uR
+                    possible_dual_lines.at[candidate.Index, 'dir'] = 'u' # indicates original dir
+            
+            # does the line considered in the loop reach a cluster? if not straight away, at some point?            
+            if possible_dual_lines.loc[road.Index]['clus_v'] != None: goal = possible_dual_lines.loc[road.Index]['clus_v']
+            else: goal = possible_dual_lines.loc[road.Index]['clus_vR']
+            if (goal == None) | (goal == cluster): continue
+            
+            for candidate in possible_dual_lines.itertuples():
+                
+                if candidate[ix_clus_v] != None: secondary_goal = candidate[ix_clus_v]
+                else: secondary_goal = candidate[ix_clus_vR]
+                if secondary_goal != goal: 
+                    direction = possible_dual_lines.at[candidate.Index, 'dir']
+                    forced_cluster = indirect_cluster(original_nodes_gdf, original_edges_gdf, original_clusters_gdf, candidate.Index, direction, 
+                                specific_cluster = True, desired_cluster = goal)[0]     
+                    if forced_cluster == goal:
+                        possible_dual_lines.at[candidate.Index, 'forced_cluster'] = True
+                        possible_dual_lines.at[candidate.Index, 'clus_vR'] = forced_cluster
+                        possible_dual_lines.at[candidate.Index, 'clus_v'] = None
+                    else: possible_dual_lines.drop(candidate.Index, axis = 0, inplace = True)
             
             done = False
-            ######################################################## OPTION 1
-            while (not done):
+
+            lines_traversed = []
+            if len(possible_dual_lines) == 1: continue # no parallel streets to row.Index 
+            
+
+            line_geometries = [possible_dual_lines.iloc[i]['geometry'] for i in range(0, len(possible_dual_lines))]       
+            ix_lines = [possible_dual_lines.iloc[i].edgeID for i in range(0, len(possible_dual_lines))]  
+            c_u = [possible_dual_lines.iloc[i]['clus_u'] for i in range(0, len(possible_dual_lines))]
+            c_v = [possible_dual_lines.iloc[i]['clus_v'] for i in range(0, len(possible_dual_lines))]
+            u =  [possible_dual_lines.iloc[i]['u'] for i in range(0, len(possible_dual_lines))] 
+            v =  [possible_dual_lines.iloc[i]['v'] for i in range(0, len(possible_dual_lines))]
+            forced_cluster =  [possible_dual_lines.iloc[i]['forced_cluster'] for i in range(0, len(possible_dual_lines))]
+            drs = [possible_dual_lines.iloc[i]['dir'] for i in range(0, len(possible_dual_lines))] 
+            list_nodes_traversed = [[] for i in range(0, len(possible_dual_lines))]
+            list_lines_traversed = [[] for i in range(0, len(possible_dual_lines))]
+            list_clusters_traversed = [[] for i in range(0, len(possible_dual_lines))] 
+            last_node, nodes_traversed, lines_traversed, clusters_traversed = None, [], [], []
+            
+            ######################################################## 
+            ## OPTION 1: they all reach another cluster:
+
+            if all(x == c_v[0] for x in c_v) & (not None in c_v):
+                if len(possible_dual_lines) == 2:
+                    merged = dissolve_dual_lines(ix_lines, line_geometries, nodes_gdf, edges_gdf, clusters_gdf, cluster, goal, u[0], last_node,
+                                                        nodes_traversed, drs[0])
+                else:
+                    merged = dissolve_multiple_dual_lines(ix_lines, line_geometries, nodes_gdf, edges_gdf, clusters_gdf, cluster, goal, u[0], 
+                                    last_node, nodes_traversed, drs[0])
+                if merged is None: 
+                    # print('OPTION 1 -- NOT COMPLETED after having attempted to dissolve')
+                    continue 
+                done = True
+                # print('OPTION 1 - COMPLETED')
+            
+            ######################################################## 
+            ## OPTION 2: at least one does not reach the cluster:    
+            
+            elif None in c_v:
+                # pre-check 
+                if len(possible_dual_lines) > 2:
+                    all_checked = False
+                    
+                    while not all_checked:
+                        all_checked = True
+                        for n, line in enumerate(line_geometries):
+                            for nn, other_line in enumerate(line_geometries):
+                                if n >= nn : continue
+                                if ((line.coords[0] == other_line.coords[0]) | (line.coords[0] == other_line.coords[-1]) |
+                                    (line.coords[-1] == other_line.coords[0]) | (line.coords[-1] == other_line.coords[-1])):
+                                    if line.length > other_line.length: to_remove = n
+                                    elif line.length < other_line.length: to_remove = nn
+                                    else: continue
+                                    for ll in [c_u, c_v, u, v, drs, line_geometries, ix_lines, list_nodes_traversed, list_lines_traversed, 
+                                        list_clusters_traversed, forced_cluster]: del ll[to_remove]
+                                    all_checked = False
+                                    break
+                            if not all_checked: break
+                            
+                if len(ix_lines) < 2: 
+                    # print('OPTION 2 -- NOT COMPLETED issues with lengths')
+                    continue
+                    
                 
-                if len(pDL) == 1: break # no parallel streets to row.Index 
-                if len(pDL) > 4: 
-                    break
-                    print("cannot handle this set")
-                    
-                ######################################################## OPTION 2
-
-                elif len(pDL) == 2:
-
-                    list_nodes = []
-                    c_u, c_uC = pDL.iloc[0]['clus_u'], pDL.iloc[1]['clus_u']
-                    c_v, c_vC, = pDL.iloc[0]['clus_v'], pDL.iloc[1]['clus_v']
-                    u, uC =  pDL.iloc[0]['u'], pDL.iloc[1]['u']
-                    v, vC = pDL.iloc[0]['v'], pDL.iloc[1]['v']
-                    dr, drC = pDL.iloc[0]['dir'], pDL.iloc[1]['dir']
-                    gline, glineC = pDL.iloc[0]['geometry'], pDL.iloc[1]['geometry']
-                    ix_line, ix_lineC  = pDL.iloc[0].name, pDL.iloc[1].name
-                    lines = [ix_line, ix_lineC]
-
-                    ######################################################## 
-                    ## SUB-OPTION 1: they all reach another cluster:
-
-                    if (c_v == c_vC) & (c_v != None):
-                        lines_traversed = []
-                        goal = c_v
-                        
-                        if (gline.length > glineC.length*1.50) & (glineC.length > gline.length*1.50):
-                            print(ix_line, ix_lineC, 'not COMPLETED: OPTION 2 - SECTION 2')
-                            break
-                        
-                        p = merge_two(ix_line, ix_lineC, gline, glineC, nodes_gdf, edges_gdf, clusters_gdf, cluster, goal, dr)
-                        if p is None: 
-                            print(ix_line, ix_lineC, 'not COMPLETED: OPTION 2 - SECTION 1')
-                            break
-                        print(ix_line, ix_lineC, 'OPTION 2 - SECTION 1')
-                        to_drop = to_drop + [ix_lineC]
-
-                    ######################################################## 
-                    ## SUB-OPTION 2: only one reaches another cluster:
-
-                    elif (c_v != None) | (c_vC != None):
-                        if c_v != None: 
-                            goal = c_v
-                            found, glineC, lines_t, list_nodes, vC = indirect_cluster(nodes_gdf, original_edges_gdf, ix_lineC, drC)
-                            lines_t.insert(0, ix_lineC)
-                            last_node = vC                          
-                        else: 
-                            goal = c_vC
-                            found, gline, lines_t, list_nodes, v = indirect_cluster(nodes_gdf, original_edges_gdf, ix_line, dr)
-                            lines_t.insert(0, ix_line)
-                            last_node = v
-                        
-                        if (gline.length > glineC.length*1.50) & (glineC.length > gline.length*1.50):
-                            print(ix_line, ix_lineC, 'not COMPLETED: OPTION 2 - SECTION 2')
-                            break
-                            
-                        lines_traversed = lines_t
-              
-                        p = merge_two_inter(ix_line, ix_lineC, gline, glineC, nodes_gdf, edges_gdf, clusters_gdf,
-                                     cluster, goal, u, last_node, list_nodes, lines_traversed)
-                        if p is None: 
-                            print(ix_line, ix_lineC, 'not COMPLETED: OPTION 2 - SECTION 2')
-                            break
-                            
-                        print(ix_line, ix_lineC, 'OPTION 2 - SECTION 2')
-                        to_drop = to_drop + lines_t + [ix_lineC, ix_line]
-                        to_drop = list(filter(lambda a: a != ix_line, to_drop))
-
-                    ####################################################### 
-                    # SUB-OPTION 3: none reaches a cluster directly; comparing the first reached cluster
-                    else: 
-                        goal, gline, lines_t, nodes_en, v = indirect_cluster(nodes_gdf, original_edges_gdf, ix_line, dr)
-                        goalC, glineC, lines_tC, nodes_enC, vC = indirect_cluster(nodes_gdf, original_edges_gdf, ix_lineC, drC)  
-                        common = list(set(lines_t).intersection(lines_tC))
-                        if len(common) > 0: break
-                        list_nodes = nodes_en + nodes_enC                       
-                        lines_traversed = lines_t + lines_tC
-                                            
-                        # last node does not matter, as it will be reassigned to the relative cluster
-                        p = merge_two_inter(ix_line, ix_lineC, gline, glineC, nodes_gdf, edges_gdf, clusters_gdf, 
-                                          cluster, goal, u, v, list_nodes, lines_traversed, multi = True)
-                        if p is None: 
-                            print(ix_line, ix_lineC, 'not COMPLETED: OPTION 2 - SECTION 3')
-                            break
-                            
-                        to_drop = to_drop + lines_tC + lines_t
-                        to_drop = list(filter(lambda a: a != ix_line, to_drop))
-                        print(ix_line, ix_lineC, 'OPTION 2 - SECTION 3') 
-                          
-                    clusters = [cluster, goal]    
-                    between = (
-                            list(original_edges_gdf.index[(original_edges_gdf.u.isin(list_nodes)) & (original_edges_gdf.v.isin(list_nodes))])+
-                            list(original_edges_gdf.index[(original_edges_gdf.clus_u.isin(clusters)) & (original_edges_gdf.v.isin(list_nodes))])+
-                            list(original_edges_gdf.index[(original_edges_gdf.clus_v.isin(clusters)) & (original_edges_gdf.u.isin(list_nodes))])+ 
-                            list(original_edges_gdf.index[(original_edges_gdf.clus_uR.isin(clusters)) & (original_edges_gdf.v.isin(list_nodes))])+
-                            list(original_edges_gdf.index[(original_edges_gdf.clus_vR.isin(clusters)) & (original_edges_gdf.u.isin(list_nodes))]))
-                    
-                    between = list(set(between)-set(lines_traversed)-set(lines))     
-                    to_drop = to_drop + between  
-                    processed = processed + [ix_line] + to_drop
-                    clusters_gdf.at[clusters, 'keep'] =  True
-                    if len(original_edges_gdf.loc[processed][original_edges_gdf.pedestrian == 1]) > 0: edges_gdf.at[ix_line, 'pedestrian'] = 1
-#                     edges_gdf.drop(to_drop, axis = 0, inplace = True, errors = 'ignore')
-                    done = True
-
-                ####################################################### OPTION 3
-
-                elif len(pDL) == 3:
-                    list_nodes = []
-                    c_u, c_uC, c_uCC = pDL.iloc[0]['clus_u'], pDL.iloc[1]['clus_u'], pDL.iloc[2]['clus_u']
-                    c_v, c_vC, c_vCC = pDL.iloc[0]['clus_v'], pDL.iloc[1]['clus_v'], pDL.iloc[2]['clus_v']
-                    u, uC, uCC =  pDL.iloc[0]['u'], pDL.iloc[1]['u'], pDL.iloc[2]['u']
-                    v, vC, vCC = pDL.iloc[0]['v'], pDL.iloc[1]['v'], pDL.iloc[2]['v']
-                    if (uC == uCC) | (uC == vCC) | (vC == uCC) | (vC == vCC): break
-                    dr, drC, drCC = pDL.iloc[0]['dir'], pDL.iloc[1]['dir'], pDL.iloc[2]['dir']
-                    gline, glineC, glineCC = pDL.iloc[0]['geometry'], pDL.iloc[1]['geometry'], pDL.iloc[2]['geometry']
-                    ix_line, ix_lineC, ix_lineCC  = pDL.iloc[0].name, pDL.iloc[1].name, pDL.iloc[2].name            
-                    lines = [ix_line, ix_lineC, ix_lineCC]
-                    ######################################################## 
-                    ## SUB-OPTION 1: they all reach another cluster (the same)
-                    
-                    if ((c_v == c_vC) & (c_v == c_vCC) & (c_v != None)):
-                        goal = c_v
-
-                        # checking length
-                        if (gline.length > glineC.length*1.50) & (gline.length > glineCC.length*1.50):
-                            pDL.drop(ix_line, axis = 0, inplace = True)
-                        elif (glineC.length > gline.length*1.50) & (glineC.length > glineCC.length*1.50):
-                            pDL.drop(ix_lineC, axis = 0, inplace = True)
-                        elif (glineCC.length > gline.length*1.50) & (glineCC.length > glineC.length*1.50):
-                            pDL.drop(ix_lineC, axis = 0, inplace = True)
-                        else:  
-                            dict_lines = {ix_line: gline, ix_lineC: glineC, ix_lineCC: glineCC}
-                            
-                            print(ix_line, ix_lineC, ix_lineCC, 'OPTION 3 - SECTION 1')
-                            ix_line, secondary = find_central(dict_lines, nodes_gdf, clusters_gdf, cluster, goal)[0:2]
-                            to_drop = to_drop + secondary
-                            done = True
-                            # no need to change geometry here
-
-                    ########################################################  
-                    ## SUB-OPTION 2: two reach another cluster:   
-                    
-                    elif (((c_v == c_vC) & (c_v != None))| ((c_v == c_vCC) & (c_v != None)) | ((c_vC == c_vCC) & (c_vC != None))):
-
-                        if (c_v == c_vC) & (c_v != None):
-                            goal, glineCC, lines_t, list_nodes, last_node = indirect_cluster(nodes_gdf, original_edges_gdf, ix_lineCC, drCC)
-                            ix = ix_line
-
-                        elif (c_v == c_vCC) & (c_v != None):
-                            goal, glineC, lines_t, list_nodes, last_node = indirect_cluster(nodes_gdf, original_edges_gdf, ix_lineC, drC)
-                            ix = ix_line
-
-                        elif (c_vC == c_vCC) & (c_vC != None):
-                            goal, gline, lines_t, list_nodes, last_node = indirect_cluster(nodes_gdf, original_edges_gdf, ix_line, dr)
-                            ix = ix_lineC
-                          
-                        if (gline.length > glineC.length*1.50) & (gline.length > glineCC.length*1.50):
-                            pDL.drop(ix_line, axis = 0, inplace = True)
-                        elif (glineC.length > gline.length*1.50) & (glineC.length > glineCC.length*1.50):
-                            pDL.drop(ix_lineC, axis = 0, inplace = True)
-                        elif (glineCC.length > gline.length*1.50) & (gline.length > glineC.length*1.50):
-                            pDL.drop(ix_lineCC, axis = 0, inplace = True)
-                        else:
-                            dict_lines = {ix_line: gline, ix_lineC: glineC, ix_lineCC: glineCC}
-                            ix_central, secondary_lines, cl = find_central(dict_lines, nodes_gdf, clusters_gdf, cluster, goal)
-                            
-                            to_drop = to_drop + secondary_lines + lines_t + [ix_central]
-                            to_drop = list(filter(lambda a: a != ix, to_drop))
-
-                            lines_traversed = lines_t                                                                 
-                            interpolate(u, last_node, cl, list_nodes, lines_traversed, nodes_gdf, edges_gdf, ix)                           
-                            done = True
-                            print(ix_line, ix_lineC, ix_lineCC, 'OPTION 3 - SECTION 2')
-                            ix_line = ix
-                            
-                    ########################################################  
-                    ## SUB-OPTION 3: only one reaches a cluster:
-
-                    elif (c_v != None)| (c_vC != None) | (c_vCC != None):
-
-                        only_two = False # a line connects from the existing main lines to the cluster
-
-                        if (c_v != None):
-                            if (uC == u) | (uCC == u): only_two = True
-                            else:
-                                goalC, glineC, lines_tC, nodes_enC, last_node = indirect_cluster(nodes_gdf, original_edges_gdf, ix_lineC, drC)
-                                goalCC, glineCC, lines_tCC, nodes_enCC, last_nodeCC = indirect_cluster(nodes_gdf, original_edges_gdf, ix_lineCC, drCC)
-                                lines_t, nodes_en = [], []
-                                goal = c_v
-                        elif (c_vC != None):
-                            if (u == uC) | (uCC == uC): only_two = True
-                            else:
-                                goal, gline, lines_t, nodes_en, last_node = indirect_cluster(nodes_gdf, original_edges_gdf, ix_line, dr)
-                                goalCC, glineCC, lines_tCC, nodes_enCC, last_nodeCC = indirect_cluster(nodes_gdf, original_edges_gdf, ix_lineCC, drCC)
-                                lines_tC, nodes_enC = [], []
-                                goal = c_vC
-                        else:
-                            if (u == uCC) | (uC == uCC): only_two = True
-                            else:
-                                goal, gline, lines_t, nodes_en, last_node = indirect_cluster(nodes_gdf, original_edges_gdf, ix_line, dr)
-                                goalC, glineC, lines_tC, nodes_enC, last_nodeC = indirect_cluster(nodes_gdf, original_edges_gdf, ix_lineC, drC) 
-                                lines_tCC, nodes_enCC = [], []
-                                goal = c_vCC
-
-                        if only_two:          
-                            
-                            if c_v != None:
-                                goal = c_v
-                                if uC == u:
-                                    found, glineC, lines_t, list_nodes, last_node = indirect_cluster(nodes_gdf, original_edges_gdf, ix_lineCC, drCC)
-                                else: #uCC = u 
-                                    found, glineC, lines_t, list_nodes, last_node = indirect_cluster(nodes_gdf, original_edges_gdf, ix_lineC, drC)
-                                
-                                if (gline.length > glineC.length*1.50) | (glineC.length > gline.length*1.50): break
-                                cl = center_line_cluster(gline, glineC, nodes_gdf, clusters_gdf, cluster, goal)
-                                to_drop = to_drop + lines_t +[ix_lineC, ix_lineCC]
-
-                            elif c_vC != None:
-                                goal = c_vC
-                                if u == uC: # use CC
-                                    found, gline,lines_t,list_nodes,last_node=indirect_cluster(nodes_gdf, original_edges_gdf,ix_lineCC,drCC)
-                                else: #uCC = uC # use --
-                                    found, gline,lines_t,list_nodes,last_node = indirect_cluster(nodes_gdf, original_edges_gdf,ix_line,dr)
-                          
-                                if (gline.length > glineC.length*1.50) | (glineC.length > gline.length*1.50): break
-                                cl = center_line_cluster(glineC, glineC, nodes_gdf, clusters_gdf, cluster, goal)
-                                ix_line = ix_lineC
-                                to_drop = to_drop + lines_t +[ix_line, ix_lineCC]
-
-                            elif c_vCC != None:
-                                goal = c_vCC
-                                if u == uCC: #use C
-                                    found, glineC, lines_t, list_nodes, last_node = indirect_cluster(nodes_gdf, original_edges_gdf,ix_lineC,drC)
-                                    last_node = v
-
-                                else: # uC = uCC #use --
-                                    found, glineC, lines_t, list_nodes, last_node = indirect_cluster(nodes_gdf, original_edges_gdf,ix_line,dr)
-                                    last_node = vC  
-                                
-                                if (gline.length > glineC.length*1.50) | (glineC.length > gline.length*1.50): break
-                                cl = center_line_cluster(glineCC, glineC, nodes_gdf, clusters_gdf, cluster, goal)
-                                ix_line = ix_lineCC
-                                to_drop = to_drop + lines_t +[ix_line, ix_lineC]
-                            
-                            to_drop = list(filter(lambda a: a != ix_line, to_drop))
-                            edges_gdf.at[ix_line, 'counts'] = edges_gdf.loc[ix_line].counts + to_add
-                            lines_traversed = lines_t
-                                          
-                            interpolate(u, last_node, cl, list_nodes, lines_traversed, nodes_gdf, edges_gdf, ix_line)             
-                            processed = processed + [ix_line] + to_drop
-                            done = True
-                            print(ix_line, ix_lineC, ix_lineCC, 'OPTION 3 - SECTION 3 - SUBSECTION2')
-                        
-                        else:
-                            if (gline.length > glineC.length*1.50) & (gline.length > glineCC.length*1.50):
-                                pDL.drop(ix_line, axis = 0, inplace = True)
-                            elif (glineC.length > gline.length*1.50) & (glineC.length > glineCC.length*1.50):
-                                pDL.drop(ix_lineC, axis = 0, inplace = True)
-                            elif (glineCC.length > gline.length*1.50) & (glineCC.length > glineC.length*1.50):
-                                pDL.drop(ix_lineCC, axis = 0, inplace = True)
-                            else:
-                                # exclude the 2 lines furter away                          
-                                list_nodes = nodes_en + nodes_enC + nodes_enCC
-                                dict_lines = {ix_line: gline, ix_lineC: glineC, ix_lineCC: glineCC}
-                                
-                                print(ix_line, ix_lineC, ix_lineCC, 'OPTION 3 - SECTION 3')
-                                ix_central, secondary_lines, cl = find_central(dict_lines, nodes_gdf, clusters_gdf, cluster, goal)
-                                ix_line = ix_central
-                                to_drop = to_drop + secondary_lines + lines_t + lines_tC + lines_tCC
-                                lines_traversed = lines_t + lines_tC + lines_tCC
- 
-                                to_drop = list(filter(lambda a: a != ix_line, to_drop))
-                                interpolate_multi(u, last_node, cl, list_nodes, lines_traversed, nodes_gdf, edges_gdf, ix_line)
-                                done = True
-                                
-                                
-                    ########################################################  
-                    ## SUB-OPTION 4: none reaches a cluster:
-                    else: 
-                        goal, gline, lines_t, nodes_en, last_node = indirect_cluster(nodes_gdf, original_edges_gdf, ix_line, dr)
-                        goalC, glineC, lines_tC, nodes_enC, last_nodeC = indirect_cluster(nodes_gdf, original_edges_gdf, ix_lineC, drC)
-                        goalCC, glineCC, lines_tCC, nodes_enCC, last_nodeCC = indirect_cluster(nodes_gdf, original_edges_gdf, ix_lineCC, drCC)
-                        
-                        if (gline.length > glineC.length*1.50) & (gline.length > glineCC.length*1.50):
-                            pDL.drop(ix_line, axis = 0, inplace = True)
-                        elif (glineC.length > gline.length*1.50) & (glineC.length > glineCC.length*1.50):
-                            pDL.drop(ix_lineC, axis = 0, inplace = True)
-                        elif (glineCC.length > gline.length*1.50) & (glineCC.length > glineC.length*1.50):
-                            pDL.drop(ix_lineCC, axis = 0, inplace = True)
-                        
-                        else:
-                            # exclude the 2 lines furter away  
-                            list_nodes = nodes_en + nodes_enC + nodes_enCC   
-                            print(ix_line, ix_lineC, ix_lineCC, 'OPTION 3 - SECTION 4')
-                            dict_lines = {ix_line: gline, ix_lineC: glineC, ix_lineCC: glineCC}
-                            ix_central, secondary_lines, cl = find_central(dict_lines, nodes_gdf, clusters_gdf, cluster, goal)
-                            ix_line = ix_central
-                            to_drop = to_drop + secondary_lines + lines_t + lines_tC + lines_tCC
-                            lines_traversed = lines_t + lines_tC + lines_tCC
-                                                                
-                            to_drop = list(filter(lambda a: a != ix_line, to_drop))  
-                            interpolate_multi(u, last_node, cl, list_nodes, lines_traversed, nodes_gdf, edges_gdf, ix_line)
-                            done = True
-                    
-                    if not done: pass
-                    else:
-                        clusters = [cluster, goal]
-                        between = (
-                        list(original_edges_gdf.index[(original_edges_gdf.u.isin(list_nodes)) & (original_edges_gdf.v.isin(list_nodes))])+
-                        list(original_edges_gdf.index[(original_edges_gdf.clus_u.isin(clusters)) & (original_edges_gdf.v.isin(list_nodes))])+
-                        list(original_edges_gdf.index[(original_edges_gdf.clus_v.isin(clusters)) & (original_edges_gdf.u.isin(list_nodes))])+ 
-                        list(original_edges_gdf.index[(original_edges_gdf.clus_uR.isin(clusters))& (original_edges_gdf.v.isin(list_nodes))])+
-                        list(original_edges_gdf.index[(original_edges_gdf.clus_vR.isin(clusters)) & (original_edges_gdf.u.isin(list_nodes))]))
-                        
-                        between = list(set(between)-set(lines_traversed)-set(lines))     
-                        to_drop = to_drop + between
-                        to_drop = list(filter(lambda a: a != ix_line, to_drop))
-                        
-                        processed = processed + [ix_line] + to_drop
-                        clusters_gdf.at[clusters, 'keep'] = True
-                        if len(original_edges_gdf.loc[processed][original_edges_gdf.pedestrian == 1]) > 0:
-                            edges_gdf.at[ix_line, 'pedestrian'] = 1
-#                         edges_gdf.drop(to_drop, axis = 0, inplace = True, errors = 'ignore')
+                for n, c in enumerate(c_v):
+                    specific_cluster, desired_cluster = False, None
+                    if c is None:
+                        if forced_cluster[n]:
+                           specific_cluster = True
+                           desired_cluster = goal
+                           
+                        _, line_geometries[n], list_lines_traversed[n], list_nodes_traversed[n], last_node, list_clusters_traversed[n] = indirect_cluster(
+                                    original_nodes_gdf, original_edges_gdf, original_clusters_gdf, ix_lines[n], drs[n], specific_cluster = specific_cluster, 
+                                    desired_cluster = desired_cluster)
                 
-                ######################################################## OPTION 1
-                elif len(pDL) >3:
+                if len(possible_dual_lines) > 2:
+                    all_checked = False
                     
-#                     c_u = [pDL.iloc[i]['clus_u'] for i in range(0, len(pDL)+1)]
-#                     c_v = [pDL.iloc[i]['clus_v'] for i in range(0, len(pDL)+1)]
-#                     u =  [pDL.iloc[i]['u'] for i in range(0, len(pDL)+1)]   
-#                     v =  [pDL.iloc[i]['v'] for i in range(0, len(pDL)+1)] 
-#                     dr = [pDL.iloc[i]['dr'] for i in range(0, len(pDL)+1)] 
-#                     gline = [pDL.iloc[i]['geometry'] for i in range(0, len(pDL)+1)]       
-#                     ix_lines = [pDL.iloc[i].name for i in range(0, len(pDL)+1)]      
-#                     nodes_en = [[] for i in range(0, len(pDL)+1)]
-#                     lines_t = [[] for i in range(0, len(pDL)+1)]    
-                    c_u,c_uC,c_uCC,c_uCCC = pDL.iloc[0]['clus_u'],pDL.iloc[1]['clus_u'],pDL.iloc[2]['clus_u'],pDL.iloc[3]['clus_u']
-                    c_v,c_vC,c_vCC,c_vCCC = pDL.iloc[0]['clus_v'],pDL.iloc[1]['clus_v'],pDL.iloc[2]['clus_v'], pDL.iloc[3]['clus_v']
-                    u, uC,uCC, uCCC =  pDL.iloc[0]['u'], pDL.iloc[1]['u'], pDL.iloc[2]['u'],pDL.iloc[3]['u']
-                    v, vC, vCC, vCCC = pDL.iloc[0]['v'], pDL.iloc[1]['v'], pDL.iloc[2]['v'],pDL.iloc[3]['v']
-                    dr, drC, drCC, drCCC = pDL.iloc[0]['dir'],pDL.iloc[1]['dir'],pDL.iloc[2]['dir'],pDL.iloc[3]['dir']
-                    gline,glineC,glineCC, glineCCC=pDL.iloc[0]['geometry'],pDL.iloc[1]['geometry'],pDL.iloc[2]['geometry'],pDL.iloc[3]['geometry']
-                    ix_line, ix_lineC, ix_lineCC, ix_lineCCC=pDL.iloc[0].name, pDL.iloc[1].name,pDL.iloc[2].name, pDL.iloc[3].name
-                    nodes_en, nodes_enC, nodes_enCC, nodes_enCCC = [],[],[],[]
-                    lines_t, lines_tC,lines_tCC, lines_tCCC = [],[],[],[]
-                    last_node, goal = None, None
-                    
-                    if c_v == None:
-                        goal, gline, lines_t, nodes_en, last_node = indirect_cluster(nodes_gdf, original_edges_gdf, ix_line, dr)
-                        lines_t.insert(0, ix_line)
-                    if c_vC == None:
-                        goal, glineC, lines_tC, nodes_enC, last_node = indirect_cluster(nodes_gdf, original_edges_gdf, ix_lineC, drC)
-                        lines_t.insert(0, ix_lineC)
-                    if c_vCC == None:
-                        goal, glineCC, lines_tCC, nodes_enCC, last_node = indirect_cluster(nodes_gdf, original_edges_gdf, ix_lineCC, drCC)
-                        lines_tC.insert(0, ix_lineCC)
-                    if (c_vCCC == None):
-                        goal, glineCCC, lines_tCCC, nodes_enCCC, last_node = indirect_cluster(nodes_gdf, original_edges_gdf, ix_lineCCC, drCCC)  
-                        lines_tCC.insert(0, ix_lineCCC)
-                   
-                    for i in [c_v, c_vC,c_vCC,c_vCCC]: 
-                        goal = i
-                        if goal != None: break
-                        
-                        
-                    if last_node == None: last_node = v
-                    dict_lines = {ix_line: gline, ix_lineC: glineC, ix_lineCC: glineCC, ix_lineCCC: glineCCC}
-                    cl = find_central(dict_lines, nodes_gdf, clusters_gdf, cluster, goal)[2]
+                    while not all_checked:
+                        all_checked = True
+                        for n, i in enumerate(list_lines_traversed):
+                            for nn, ii in enumerate(list_lines_traversed):
+                                if n >= nn: continue 
+                                if len(list(set(i).intersection(ii))) > 0: 
+                                    for ll in [c_u, c_v, u, v, drs, line_geometries, ix_lines, list_nodes_traversed, list_lines_traversed,
+                                                list_clusters_traversed, forced_cluster]: 
+                                        del ll[nn]
+                                    all_checked = False
+                                    break
+                            if not all_checked: break
 
-                    list_nodes = nodes_en + nodes_enC + nodes_enCC+nodes_enCCC 
-                    lines_traversed = lines_t + lines_tC + lines_tCC + lines_tCCC
+                if len(ix_lines) < 2: 
+                    # print('OPTION 2 -- NOT COMPLETED common vertexes other lines')
+                    continue
+                
+                # last node does not matter, as it will be reassigned to the relative cluster
+                nodes_traversed = [item for items in list_nodes_traversed for item in items if item is not None]
+                lines_traversed = [item for items in list_lines_traversed for item in items if item is not None]
+                clusters_traversed = [item for items in list_clusters_traversed for item in items if item is not None]
+                
+                if len(possible_dual_lines) == 2:
+                    common = list(set(list_lines_traversed[0]).intersection(list_lines_traversed[1]))
+                    if len(common) > 0:
+                        # print('OPTION 2 -- NOT COMPLETED, common traversed lines')
+                        continue
+                    else: 
+                        merged = dissolve_dual_lines(ix_lines, line_geometries, nodes_gdf, edges_gdf, clusters_gdf, cluster, goal, u[0], last_node, 
+                                                    nodes_traversed, drs[0], clusters_traversed = clusters_traversed)
+                else:
+                    merged = dissolve_multiple_dual_lines(ix_lines, line_geometries, nodes_gdf, edges_gdf, clusters_gdf, cluster, goal, u[0], last_node,
+                                                nodes_traversed, drs[0], clusters_traversed = clusters_traversed)
+                if merged is None:
+                    # print('OPTION 2 -- NOT COMPLETED, after having attempted to dissolve')
+                    continue
+                    
+                done = True
+                # print('OPTION 2 - COMPLETED')
 
-                    to_drop = to_drop + lines_traversed +[ix_lineC, ix_lineCC, ix_lineCCC]
-                    to_drop = list(filter(lambda a: a != ix_line, to_drop))
-                    
-                    print(ix_line, ix_lineC, ix_lineCC, ix_lineCCC, 'OPTION 4')     
-                    if len(list_nodes) == 0: 
-                        edges_gdf.at[ix_line, 'counts']  = main_count
-                        edges_gdf.at[ix_line, 'geometry']  = cl
-                    else:
-                        interpolate_multi(u, last_node, cl, list_nodes, lines_traversed, nodes_gdf, edges_gdf, ix_line) 
-                    done = True
-                    
-                    clusters = [cluster, goal]
-                    between = (
-                    list(original_edges_gdf.index[(original_edges_gdf.u.isin(list_nodes))&(original_edges_gdf.v.isin(list_nodes))])+
-                    list(original_edges_gdf.index[(original_edges_gdf.clus_u.isin(clusters))&(original_edges_gdf.v.isin(list_nodes))])+
-                    list(original_edges_gdf.index[(original_edges_gdf.clus_v.isin(clusters))&(original_edges_gdf.u.isin(list_nodes))])+ 
-                    list(original_edges_gdf.index[(original_edges_gdf.clus_uR.isin(clusters))&(original_edges_gdf.v.isin(list_nodes))])+
-                    list(original_edges_gdf.index[(original_edges_gdf.clus_vR.isin(clusters))&(original_edges_gdf.u.isin(list_nodes))]))
-                    
-                    between = list(set(between)-set(lines_traversed)-set(lines))                                 
-                    to_drop = to_drop + between
-                    processed = processed + [ix_line] + to_drop
-                    clusters_gdf.at[clusters, 'keep'] = True
+            if not done: pass 
+            else:  
+                clusters = [cluster, goal]
+                between = (
+                        list(original_edges_gdf.index[(original_edges_gdf.u.isin(nodes_traversed)) & (original_edges_gdf.v.isin(nodes_traversed))])+
+                        list(original_edges_gdf.index[(original_edges_gdf.clus_u.isin(clusters)) & (original_edges_gdf.v.isin(nodes_traversed))])+
+                        list(original_edges_gdf.index[(original_edges_gdf.clus_v.isin(clusters)) & (original_edges_gdf.u.isin(nodes_traversed))])+ 
+                        list(original_edges_gdf.index[(original_edges_gdf.clus_uR.isin(clusters)) & (original_edges_gdf.v.isin(nodes_traversed))])+
+                        list(original_edges_gdf.index[(original_edges_gdf.clus_vR.isin(clusters)) & (original_edges_gdf.u.isin(nodes_traversed))]))
+                
 
-                    if len(original_edges_gdf.loc[processed][original_edges_gdf.pedestrian == 1]) > 0:
-                        edges_gdf.at[ix_line, 'pedestrian'] = 1
-    
+                between = list(set(between + lines_traversed + ix_lines)) 
+                to_drop = to_drop + between
+                to_drop = list(filter(lambda a: a != ix_lines[0], to_drop)) 
+                processed = processed + [ix_lines[0]] + to_drop
+                clusters_gdf.at[clusters, 'keep'] =  True
+                if len(original_edges_gdf.loc[processed][original_edges_gdf.pedestrian == 1]) > 0: edges_gdf.at[ix_lines[0], 'pedestrian'] = 1
+
     edges_gdf.drop(to_drop, axis = 0, inplace = True, errors = 'ignore')
     edges_gdf['edgeID'] = edges_gdf.index.values.astype(int)
     nodes_gdf['nodeID'] = nodes_gdf.index.values.astype(int)
@@ -1436,13 +1210,18 @@ def simplify_dual_lines(nodes_gdf, edges_gdf, clusters_gdf):
     return(nodes_gdf, edges_gdf, clusters_gdf)    
 
 
-def simplify_dual_linesNodes(nodes_gdf, edges_gdf, clusters_gdf):
-    nodes_gdf, edges_gdf = nodes_gdf.copy(), edges_gdf.copy()
+def simplify_dual_lines_nodes_to_cluster(nodes_gdf, edges_gdf, clusters_gdf):
+    
+    nodes_gdf.index, edges_gdf.index, clusters_gdf.index = nodes_gdf.nodeID, edges_gdf.edgeID, clusters_gdf.clusterID
+    nodes_gdf.index.name, edges_gdf.index.name, clusters_gdf.index.name = None, None, None
+    nodes_gdf, edges_gdf, clusters_gdf = nodes_gdf.copy(), edges_gdf.copy(), clusters_gdf.copy()
+
     processed = []
     print('Simplifying dual lines: Second part - nodes')
-    edges_gdf = assign_cluster_edges(nodes_gdf, edges_gdf)
+    edges_gdf = _assign_cluster_edges(nodes_gdf, edges_gdf, clusters_gdf)
 
     original_edges_gdf = edges_gdf.copy()
+    original_nodes_gdf = nodes_gdf.copy()
     ix_geo = edges_gdf.columns.get_loc("geometry")+1
     ix_u, ix_v  = edges_gdf.columns.get_loc("u")+1, edges_gdf.columns.get_loc("v")+1
     ix_name = edges_gdf.columns.get_loc("name")+1
@@ -1451,129 +1230,111 @@ def simplify_dual_linesNodes(nodes_gdf, edges_gdf, clusters_gdf):
     ix_clus_uR, ix_clus_vR = edges_gdf.columns.get_loc("clus_uR")+1, edges_gdf.columns.get_loc("clus_vR")+1
     
     clusters_gdf['keep'] = False
+    edges_gdf['new_geo'] = False
     to_drop = []
     
-    for n in nodes_gdf.itertuples():
-        tmp = original_edges_gdf[((original_edges_gdf.u == n[0]) | (original_edges_gdf.v == n[0]))].copy()
-        for row in tmp.itertuples():
-            if row.Index in processed: continue 
-            if row[ix_u] == n[0]:
-                goal = row[ix_clus_v]
-                if goal is None: goal = row[ix_clus_vR]
-            elif row[ix_v] == n[0]:
-                goal = row[ix_clus_u]
-                if goal is None: goal = row[ix_clus_uR]
+    for node in nodes_gdf.itertuples():
+        tmp = original_edges_gdf[((original_edges_gdf.u == node[0]) | (original_edges_gdf.v == node[0]))].copy()
+        
+        for road in tmp.itertuples():
+            if road.Index in processed: continue 
+            if road[ix_u] == node[0]:
+                goal = road[ix_clus_v]
+                if goal is None: goal = road[ix_clus_vR]
+            elif road[ix_v] == node[0]:
+                goal = road[ix_clus_u]
+                if goal is None: goal = road[ix_clus_uR]
             if goal is None: continue
                 
-            pDL = tmp[(tmp.clus_u == goal) | (tmp.clus_uR == goal) 
-                         | (tmp.clus_v == goal) | (tmp.clus_vR == goal)].copy()
-                
-            # orientate everything from "u" to "v"
-            pDL['dir'] = 'v'
-            for g in pDL.itertuples():
-                if g[ix_v] == n[0]:
-                    line_coords = list(g[ix_geo].coords)
+            possible_dual_lines = tmp[(tmp.clus_u == goal) | (tmp.clus_uR == goal) | (tmp.clus_v == goal) | (tmp.clus_vR == goal)].copy()
+            possible_dual_lines['dir'] = 'v'
+            for candidate in possible_dual_lines.itertuples():
+                if candidate[ix_v] == node[0]:
+                    line_coords = list(candidate[ix_geo].coords)
                     line_coords.reverse() 
-                    new_gline = LineString([coor for coor in line_coords])
-                    old_u, old_clus_u, old_clus_uR = g[ix_u], g[ix_clus_u], g[ix_clus_uR]
-                    pDL.at[g[0],'geometry'] = new_gline
-                    pDL.at[g[0],'u'] = g[ix_v]
-                    pDL.at[g[0],'v'] = old_u
-                    pDL.at[g[0],'clus_u'] = g[ix_clus_v]
-                    pDL.at[g[0],'clus_v'] = old_clus_u
-                    pDL.at[g[0],'clus_uR'] = g[ix_clus_vR]
-                    pDL.at[g[0],'clus_vR'] = old_clus_uR
-                    pDL.at[g[0], 'dir'] = 'u' # indicates original dir
+                    new_line_geometry = LineString([coor for coor in line_coords])
+                    old_u, old_clus_u, old_clus_uR = candidate[ix_u], candidate[ix_clus_u], candidate[ix_clus_uR]
+                    possible_dual_lines.at[candidate[0],'geometry'] = new_line_geometry
+                    possible_dual_lines.at[candidate[0],'u'] = candidate[ix_v]
+                    possible_dual_lines.at[candidate[0],'v'] = old_u
+                    possible_dual_lines.at[candidate[0],'clus_u'] = candidate[ix_clus_v]
+                    possible_dual_lines.at[candidate[0],'clus_v'] = old_clus_u
+                    possible_dual_lines.at[candidate[0],'clus_uR'] = candidate[ix_clus_vR]
+                    possible_dual_lines.at[candidate[0],'clus_vR'] = old_clus_uR
+                    possible_dual_lines.at[candidate[0], 'dir'] = 'u' # indicates original dir
                 
-            pDL = pDL[(pDL.clus_v == goal) | (pDL.clus_vR == goal)].copy()
-            pDL = pDL[~pDL.index.isin(processed)]
+            possible_dual_lines = possible_dual_lines[(possible_dual_lines.clus_v == goal) | (possible_dual_lines.clus_vR == goal)].copy()
 
-            ######################################################## OPTION 1
+            done = False
+            if len(possible_dual_lines) == 1: continue # no parallel streets to road.Index          
             
-            if len(pDL) == 1: continue # no parallel streets to row.Index 
-                            
-                ######################################################## OPTION 2
-            list_nodes = []
+            c_u = [possible_dual_lines.iloc[i]['clus_u'] for i in range(0, len(possible_dual_lines))]
+            c_v = [possible_dual_lines.iloc[i]['clus_v'] for i in range(0, len(possible_dual_lines))]
+            u =  [possible_dual_lines.iloc[i]['u'] for i in range(0, len(possible_dual_lines))] 
+            v =  [possible_dual_lines.iloc[i]['v'] for i in range(0, len(possible_dual_lines))] 
+            drs = [possible_dual_lines.iloc[i]['dir'] for i in range(0, len(possible_dual_lines))] 
+            line_geometries = [possible_dual_lines.iloc[i]['geometry'] for i in range(0, len(possible_dual_lines))]       
+            ix_lines = [possible_dual_lines.iloc[i].edgeID for i in range(0, len(possible_dual_lines))]      
+            list_nodes_traversed = [[] for i in range(0, len(possible_dual_lines))]
+            list_lines_traversed = [[] for i in range(0, len(possible_dual_lines))]    
+            last_node, nodes_traversed, lines_traversed = None, [], []
+            # print("node", node.Index, "destination cluster", goal, ix_lines)
+            
+            
+            ######################################################## OPTION 1
+            if all(x == c_v[0] for x in c_v) & (not None in c_v):
                 
-            if len(pDL) == 2:                   
-                c_v, c_vC, = pDL.iloc[0]['clus_v'], pDL.iloc[1]['clus_v']
-                u, uC =  pDL.iloc[0]['u'], pDL.iloc[1]['u']
-                v, vC = pDL.iloc[0]['v'], pDL.iloc[1]['v']
-                gline, glineC = pDL.iloc[0]['geometry'], pDL.iloc[1]['geometry']
-                dr, drC = pDL.iloc[0]['dir'], pDL.iloc[1]['dir']
-                ix_line, ix_lineC  = pDL.iloc[0].name, pDL.iloc[1].name
-                name, nameC = pDL.iloc[0]['name'], pDL.iloc[1]['name']
-                if is_continuation(ix_line, ix_lineC, original_edges_gdf): pass
-                else: continue
+                if len(possible_dual_lines) == 2:
+                    merged = dissolve_dual_lines(ix_lines, line_geometries, nodes_gdf, edges_gdf, clusters_gdf, None, goal, u[0], last_node,
+                                            nodes_traversed, drs[0], one_cluster = True)
+                else:
+                    merged = dissolve_multiple_dual_lines(ix_lines, line_geometries, nodes_gdf, edges_gdf, clusters_gdf, None, goal, u[0], 
+                                    last_node, nodes_traversed, drs[0], one_cluster = True)
+                if merged is None: 
+                    # print('OPTION 1 -- NOT COMPLETED after having attempted to dissolve')
+                    continue 
 
-                ######################################################## 
-                ## SUB-OPTION 1: they all reach another cluster:
-                    
-                if (c_v == c_vC) & (c_v != None):
-                        
-                    goal = c_v
-                    if (gline.length > glineC.length *1.50) | (glineC.length > gline.length *1.50): continue
-                    print(ix_line, ix_lineC, 'sub1 NODE', 'node ', n[0], 'cluster ', goal)
-                    cl = center_line(gline, glineC)
-                    if dr == 'u':
-                        line_coords = list(cl.coords)
-                        line_coords.reverse() 
-                        cl = LineString([coor for coor in line_coords])
-                    
-                    edges_gdf.at[ix_line, 'geometry'] = cl
-                    to_drop = to_drop + [ix_lineC]
+                done = True
+                between = (list(original_edges_gdf.index[(original_edges_gdf.u.isin(nodes_traversed)) & 
+                          (original_edges_gdf.v.isin(nodes_traversed))]))
+                # print('OPTION 1 - COMPLETED')            
+            
+            ######################################################## OPTION 2
+            elif None in c_v:
 
-                ######################################################## 
-                ## SUB-OPTION 2: only one reaches another cluster:
-
-                elif (c_v != None) | (c_vC != None):
-                    if c_v != None: 
-                        goal = c_v
-                        found, glineC, lines_t, list_nodes, vC = indirect_cluster(nodes_gdf, original_edges_gdf, ix_lineC, drC)
-                        lines_t.insert(0, ix_lineC)
-                        ix = ix_line
-                        last_node = vC
+                for n, c in enumerate(c_v):
+                    if c is None:
+                        _, line_geometries[n], list_lines_traversed[n], list_nodes_traversed[n], last_node,_ = indirect_cluster(
+                            original_nodes_gdf, original_edges_gdf, clusters_gdf, ix_lines[n], drs[n])
+        
+                nodes_traversed = [item for items in list_nodes_traversed for item in items if item is not None]
+                lines_traversed = [item for items in list_lines_traversed for item in items if item is not None]
+                if len(possible_dual_lines) == 2:
+                    common = list(set(list_lines_traversed[0]).intersection(list_lines_traversed[1]))
+                    if len(common) > 0:
+                        # print('OPTION 2 -- NOT COMPLETED, common traversed lines')
+                        continue
                     else: 
-                        goal = c_vC
-                        found, gline, lines_t, list_nodes, v = indirect_cluster(nodes_gdf, original_edges_gdf, ix_line, dr)
-                        lines_t.insert(0, ix_line)
-                        ix = ix_lineC
-                        last_node = v
-
-                    if (gline.length > glineC.length *1.50) | (glineC.length > gline.length *1.50): continue  
-                    print(ix_line, ix_lineC, 'sub2 NODE', 'node ', n[0], 'cluster ', goal)    
-                    cl = center_line_cluster(gline, glineC, nodes_gdf, clusters_gdf, u, goal, one_cluster = True)
-                    interpolate(u, last_node, cl, list_nodes, lines_t, nodes_gdf, edges_gdf, ix)                  
-                    to_drop = to_drop + lines_t + [ix_lineC] + [ix_line]
-                    to_drop = list(filter(lambda a: a != ix, to_drop))
-                    ix_line = ix
-
-                ####################################################### 
-                # SUB-OPTION 3: none reaches a cluster directly; comparing the first reached cluster
-                else:  
-                    print(ix_line, ix_lineC, 'sub3 NODE', 'node ', n[0], 'cluster ', goal)    
-                    goal, gline, lines_t, nodes_en, v = indirect_cluster(nodes_gdf, original_edges_gdf, ix_line, dr)
-                    goalC, glineC, lines_tC, nodes_enC, vC = indirect_cluster(nodes_gdf, original_edges_gdf, ix_lineC, drC)    
-                    if (gline.length > glineC.length *1.50) | (glineC.length > gline.length *1.50): continue
-                                        
-                    lines_t.insert(0, ix_line)
-                    lines_t.insert(0, ix_lineC)
-                    # the center line is built in relation to the variable cluster as 'u', or from_node --> to_node
-                    cl =  center_line_cluster(gline, glineC, nodes_gdf, clusters_gdf, u, goal, one_cluster = True)
-                    # last node does not matter, as it will be reassigned to the relative cluster
-                    list_nodes = nodes_en + nodes_enC
-                    lines_traversed = lines_t + lines_tC
-                    interpolate_multi(u, v, cl, list_nodes, lines_traversed, nodes_gdf, edges_gdf, ix_line)
-                    to_drop = to_drop+ lines_t + lines_tC + [ix_lineC]
-                    to_drop = list(filter(lambda a: a != ix_line, to_drop))
-
-                processed = processed + [ix_line] + to_drop
+                        merged = dissolve_dual_lines(ix_lines, line_geometries, nodes_gdf, edges_gdf, clusters_gdf, None, goal, u[0], last_node, 
+                                                    nodes_traversed, drs[0], one_cluster = True)
+                else:
+                    merged = dissolve_multiple_dual_lines(ix_lines, line_geometries, nodes_gdf, edges_gdf, clusters_gdf, None, goal, u[0], last_node,
+                                                nodes_traversed, drs[0], one_cluster = True)
+                if merged is None:
+                    # print('OPTION 2 -- NOT COMPLETED, after having attempted to dissolve')
+                    continue                  
+                    
+                done = True
+                between = (list(original_edges_gdf.index[(original_edges_gdf.u.isin(nodes_traversed)) & 
+                          (original_edges_gdf.v.isin(nodes_traversed))]))
                 
-                if len(original_edges_gdf.loc[processed][original_edges_gdf.pedestrian == 1]) > 0: edges_gdf.at[ix_line, 'pedestrian'] = 1
-#                 edges_gdf.drop(to_drop, axis = 0, inplace = True, errors = 'ignore')
-                clusters_gdf.at[goal, 'keep'] = True
-                continue
-    
+            if not done: continue
+            to_drop = to_drop + lines_traversed + ix_lines + between
+            to_drop = list(filter(lambda a: a != ix_lines[0], to_drop))
+            processed = processed + [ix_lines[0]] + to_drop + lines_traversed + between    
+            clusters_gdf.at[goal, 'keep'] = True
+            if len(original_edges_gdf.loc[processed][original_edges_gdf.pedestrian == 1]) > 0: edges_gdf.at[ix_lines[0], 'pedestrian'] = 1
+
     edges_gdf.drop(to_drop, axis = 0, inplace = True, errors = 'ignore')
     nodes_gdf, edges_gdf = reassign_edges(nodes_gdf, edges_gdf, clusters_gdf)            
     edges_gdf['edgeID'] = edges_gdf.index.values.astype(int)
@@ -1585,62 +1346,70 @@ def reassign_edges(nodes_gdf, edges_gdf, clusters_gdf):
     
     print("Assigning centroids coordinates")
     nodes_gdf, edges_gdf = nodes_gdf.copy(), edges_gdf.copy()
-    edges_gdf = edges_gdf.rename(columns = {'u':'old_u'})
-    edges_gdf = edges_gdf.rename(columns = {'v':'old_v'})
+    edges_gdf = edges_gdf.rename(columns = {'u':'old_u', 'v':'old_v'})
     
     edges_gdf['u'], edges_gdf['v'] = 0, 0
     ix_u, ix_v = edges_gdf.columns.get_loc("u")+1, edges_gdf.columns.get_loc("v")+1 
-    ix_old_u, ix_old_ = edges_gdf.columns.get_loc("old_u")+1, edges_gdf.columns.get_loc("old_v")+1 
+    ix_old_u, ix_old_v = edges_gdf.columns.get_loc("old_u")+1, edges_gdf.columns.get_loc("old_v")+1 
     ix_geo = edges_gdf.columns.get_loc("geometry")+1 
-    
+    ix_changed = edges_gdf.columns.get_loc("new_geo")+1 
     ix_cluster = nodes_gdf.columns.get_loc("cluster")+1 
     ix_x, ix_y = clusters_gdf.columns.get_loc("x")+1, clusters_gdf.columns.get_loc("y")+1
     ix_centroid = clusters_gdf.columns.get_loc("geometry")+1
     ix_check = clusters_gdf.columns.get_loc("keep")+1
     
     for row in edges_gdf.itertuples():
-            
+        
         line_coords = list(row[ix_geo].coords)
         u = nodes_gdf.loc[row[ix_old_u]]["cluster"]
         v = nodes_gdf.loc[row[ix_old_v]]["cluster"]
         old_u = row[ix_old_u]
         old_v = row[ix_old_v]
+        new_geo = row[ix_changed]
         
-        if ((u != None) & (v != None)):  # change starting and ending node in the list of coordinates for the line
-                if ( clusters_gdf.loc[u].keep) & (not clusters_gdf.loc[v].keep): 
+        if (u != None) & (v != None):  # change starting and ending node in the list of coordinates for the line
+                if (not clusters_gdf.loc[u].keep) & (not clusters_gdf.loc[v].keep): 
                     u = old_u
                     v = old_v
                 elif not clusters_gdf.loc[v].keep:
                     v = old_v
                     line_coords[0] = (clusters_gdf.loc[u]['x'], clusters_gdf.loc[u]['y'])
-                elif not clusters_gdf.loc[u].keep: 
+                    # if not new_geo: line_coords.insert(1,nodes_gdf.loc[row[ix_old_u]]['geometry'].coords[0]) 
+                elif not clusters_gdf.loc[u].keep:
                     u = old_u    
                     line_coords[-1] = (clusters_gdf.loc[v]['x'], clusters_gdf.loc[v]['y'])
+                    # if not new_geo: line_coords.insert(-1,nodes_gdf.loc[row[ix_old_v]]['geometry'].coords[0]) 
                 else:
                     line_coords[0] = (clusters_gdf.loc[u]['x'], clusters_gdf.loc[u]['y'])
                     line_coords[-1] = (clusters_gdf.loc[v]['x'], clusters_gdf.loc[v]['y'])
+                    # if not new_geo:
+                        # line_coords.insert(1,nodes_gdf.loc[row[ix_old_u]]['geometry'].coords[0]) 
+                        # line_coords.insert(-1,nodes_gdf.loc[row[ix_old_v]]['geometry'].coords[0]) 
 
-        elif ((u is None) & (v is None)):  # maintain old_u and old_v
-                u = old_u
-                v = old_v
-        elif ((u is None) & (v != None)) : # maintain old_u
-                u = old_u
-                if not clusters_gdf.loc[v].keep: v = old_v
-                else: line_coords[-1] = (clusters_gdf.loc[v]['x'], clusters_gdf.loc[v]['y'])
-
-        else: #(( u =! None) & (v == None) !: # maintain old_v
-                v = old_v
-                if not clusters_gdf.loc[u].keep: u = old_u
-                else: line_coords[0] = (clusters_gdf.loc[u]['x'], clusters_gdf.loc[u]['y'])
-
-        gline = (LineString([coor for coor in line_coords]))
+        elif (u is None) & (v is None):  # maintain old_u and old_v
+            u = old_u
+            v = old_v
+        elif (u is None) & (v != None): # maintain old_u
+            u = old_u
+            if not clusters_gdf.loc[v].keep: v = old_v
+            else: 
+                line_coords[-1] = (clusters_gdf.loc[v]['x'], clusters_gdf.loc[v]['y'])
+                # if not new_geo: line_coords.insert(-1,nodes_gdf.loc[row[ix_old_v]]['geometry'].coords[0]) 
+        elif (u != None) & (v == None): # maintain old_v
+            v = old_v
+            if not clusters_gdf.loc[u].keep: u = old_u
+            else: 
+                line_coords[0] = (clusters_gdf.loc[u]['x'], clusters_gdf.loc[u]['y'])
+                # if not new_geo: line_coords.insert(1,nodes_gdf.loc[row[ix_old_u]]['geometry'].coords[0]) 
+        
+        line_geometry = (LineString([coor for coor in line_coords]))
         if u == v: 
             edges_gdf.drop(row.Index, axis = 0, inplace = True)
             continue
-            
+        
         edges_gdf.at[row.Index,"u"] = u
         edges_gdf.at[row.Index,"v"] = v
-        edges_gdf.at[row.Index,"geometry"] = gline
+        edges_gdf.at[row.Index,"geometry"] = line_geometry
 
     edges_gdf.drop(['old_u', 'old_v'], axis = 1, inplace=True)
     edges_gdf['u'] = edges_gdf['u'].astype(int)
@@ -1648,34 +1417,35 @@ def reassign_edges(nodes_gdf, edges_gdf, clusters_gdf):
     nodes_gdf['x'] = nodes_gdf['x'].astype(float)
     nodes_gdf['y'] = nodes_gdf['y'].astype(float)
        
-    for row in clusters_gdf.itertuples():
-        if not row[ix_check]: continue
-        oldIDs = list(nodes_gdf[nodes_gdf.cluster == row.Index]['oldIDs'])
-        oldIDs = [item for sublist in oldIDs for item in sublist]
+    for cluster in clusters_gdf.itertuples():
+        if not cluster[ix_check]: continue
                
-        nodes_gdf.at[row.Index, 'x'] = row[ix_x]
-        nodes_gdf.at[row.Index, 'y'] = row[ix_y]
-        nodes_gdf.at[row.Index, 'geometry'] = row[ix_centroid]
-        nodes_gdf.at[row.Index, 'nodeID'] = row.Index
-        nodes_gdf.at[row.Index, 'oldIDs'] = oldIDs
-        nodes_gdf.at[row.Index, 'cluster'] = None
-        
+        nodes_gdf.at[cluster.Index, 'x'] = cluster[ix_x]
+        nodes_gdf.at[cluster.Index, 'y'] = cluster[ix_y]
+        nodes_gdf.at[cluster.Index, 'geometry'] = cluster[ix_centroid]
+        nodes_gdf.at[cluster.Index, 'nodeID'] = cluster.Index
+        nodes_gdf.at[cluster.Index, 'cluster'] = None
+    
+    clusters_gdf.index = clusters_gdf.clusterID.astype(int)
     nodes_gdf['nodeID'] = nodes_gdf.nodeID.astype(int)
-    edges_gdf.drop(['clus_u','clus_v', 'clus_uR', 'clus_vR'], axis = 1, inplace = True)
+    nodes_gdf.index = nodes_gdf.nodeID
+    nodes_gdf.index.name = None
+    edges_gdf.drop(['clus_u','clus_v', 'clus_uR', 'clus_vR', 'new_geo', 'forced_cluster'], axis = 1, errors = 'ignore', inplace = True)
     edges_gdf = correct_edges(nodes_gdf, edges_gdf)
-    nodes_gdf, edges_gdf = clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_islands = False, same_uv_edges = True, self_loops = True)
-    print("Done") 
+    nodes_gdf, edges_gdf = clean_network(nodes_gdf, edges_gdf, dead_ends = True, remove_disconnected_islands = False, same_uv_edges = True, self_loops = True)
     return(nodes_gdf, edges_gdf)
           
-def simplify_pipeline(nodes_gdf, edges_gdf, radius = 15):
+def simplify_pipeline(nodes_gdf, edges_gdf, radius = 12):
     
     nodes_gdf, edges_gdf = nodes_gdf.copy(), edges_gdf.copy()
-    nodes_gdf, edges_gdf = clean_network(nodes_gdf, edges_gdf, remove_disconnected_islands = True, same_uv_edges = True, 
-        self_loops = False)
+    nodes_gdf, edges_gdf = clean_network(nodes_gdf, edges_gdf, remove_disconnected_islands = True, same_uv_edges = True, dead_ends = True,
+        self_loops = True)
     nodes_gdf, edges_gdf = simplify_dual_lines_junctions(nodes_gdf, edges_gdf)
     nodes_gdf, edges_gdf = simplify_complex_junctions(nodes_gdf, edges_gdf)
-    nodes_gdf, edges_gdf, clusters, buffers = extract_centroids(nodes_gdf, edges_gdf, radius = radius)
-    nodes_gdf, edges_gdf, clusters = simplify_dual_lines(nodes_gdf, edges_gdf, clusters)
+    nodes_gdf, edges_gdf = dissolve_roundabouts(nodes_gdf, edges_gdf)
+    nodes_gdf, edges_gdf, clusters_gdf = identify_clusters(nodes_gdf, edges_gdf, radius = radius)
+    nodes_gdf, edges_gdf, clusters_gdf = simplify_dual_lines(nodes_gdf, edges_gdf, clusters_gdf)
+    nodes_gdf, edges_gdf = simplify_dual_lines_nodes_to_cluster(nodes_gdf, edges_gdf, clusters_gdf)
     nodes_gdf, edges_gdf = simplify_dual_lines_junctions(nodes_gdf, edges_gdf)
     nodes_gdf, edges_gdf = simplify_complex_junctions(nodes_gdf, edges_gdf)
     

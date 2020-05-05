@@ -60,6 +60,7 @@ def center_line(line_geometryA, line_geometryB):
     line_coordsB = list(line_geometryB.coords)
         
     if ((line_coordsA[0] == line_coordsB[-1]) | (line_coordsA[-1] == line_coordsB[0])): line_coordsB.reverse()  
+    
     if line_coordsA == line_coordsB: center_line = LineString([coor for coor in line_coordsA]) 
     else:
         while len(line_coordsA) > len(line_coordsB):
@@ -77,10 +78,11 @@ def center_line(line_geometryA, line_geometryB):
             
         new_line[0] = line_coordsA[0]
         new_line[-1] = line_coordsA[-1]
+        center_line = LineString([coor for coor in new_line])
 
-    return LineString([coor for coor in new_line])
+    return center_line
 
-def distance_geometry_gdf(geometry, gpd):
+def distance_geometry_gdf(geometry, gdf):
     """
     Given a geometry and a GeoDataFrame, it returns the minimum distance between the geometry and the GeoDataFrame. 
     It provides also the index of the closest geometry in the GeoDataFrame
@@ -88,15 +90,15 @@ def distance_geometry_gdf(geometry, gpd):
     Parameters
     ----------
     geometry: Point, LineString or Polygon
-    gpd: GeoDataFrame
+    gdf: GeoDataFrame
     
     Returns:
     ----------
     tuple
     """
-    gpd = gpd.copy()
-    gpd["dist"] = gpd.apply(lambda row: geometry.distance(row.geometry),axis=1)
-    geoseries = gpd.loc[gpd["dist"].argmin()]
+    gdf = gdf.copy()
+    gdf["dist"] = gdf.apply(lambda row: geometry.distance(row['geometry']),axis=1)
+    geoseries = gdf.iloc[gdf["dist"].argmin()]
     distance  = geoseries.dist
     index = geoseries.name
     return distance, index

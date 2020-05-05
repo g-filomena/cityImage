@@ -5,6 +5,7 @@
 # License: MIT, see full license in LICENSE.txt
 ################################################################################
 
+from .load import*
 from .angles import *
 from .barriers import *
 from .centrality import *
@@ -18,6 +19,8 @@ from .plotting import *
 from .regions import *
 from .utilities import *
 from .simplification import *
-
+from .louvain import *
+from .street_hierarchy import *
+from .transport_network import *
 
 __version__ = '0.10'

@@ -107,6 +107,27 @@ def _natural_roads(edgeID, naturalID, direction, nodes_gdf, edges_gdf, tolerance
         _natural_roads(matchID, naturalID, directions_dict[matchID], nodes_gdf, edges_gdf)                    
         return                                                                            
 
+def type_of_intersection(nodeID, edges_gdf):
+    
+    level_1 = ['primary', 'trunk', 'trunk_link', 'primary_link']
+    level_2 = ['secondary', 'secondary_link']
+    level_3 = ['tertiary', 'tertiary_link', 'unclassified']
+    level_4 = ['residential', 'living_street']
+    pedestrian = ['footway', 'pedestrian', 'service', 'path', 'steps', 'bridleway', 'corridor'] 
+    
+    tmp = edges_gdf[(edges_gdf.u == nodeID) | (edges_gdf.v == nodeID)].copy()
+    if tmp['highway'][tmp['highway'].isin(level_1)].value_counts().sum() >= 3: return 'level_1'
+    elif tmp['highway'][tmp['highway'].isin(level_1)].value_counts().sum() >=2:
+        if tmp['highway'][tmp['highway'].isin(level_2)].value_counts().sum() >= 1: return 'level_2'
+        if tmp['highway'][tmp['highway'].isin(level_3)].value_counts().sum() >= 1: return 'level_3'
+        if tmp['highway'][tmp['highway'].isin(level_4)].value_counts().sum() >= 1: return 'level_4'
+    elif tmp['highway'][tmp['highway'].isin(level_2)].value_counts().sum() >= 3: return 'level_2'
+    elif tmp['highway'][tmp['highway'].isin(level_2)].value_counts().sum() >=2:
+        if tmp['highway'][tmp['highway'].isin(level_3)].value_counts().sum() >= 1: return 'level_3'
+        if tmp['highway'][tmp['highway'].isin(level_4)].value_counts().sum() >= 1: return 'level_4'
+        
+    elif tmp['highway'][tmp['highway'].isin(pedestrian)].value_counts().sum() >= 3: return 'pedestrian'
+    else: return 'unknown'
 
 class Error(Exception):
    """Base class for other exceptions"""
@@ -118,3 +139,7 @@ class epgsError(Error):
    """Raised when epsg code is not provided"""
    pass
     
+
+
+
+	
