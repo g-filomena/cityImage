@@ -6,7 +6,7 @@ from shapely.geometry import Point, LineString, MultiLineString
     
 """
 math functions for angle computations
-readapted for LineStrings from Abhinav Ramakrishnan answer in https://stackoverflow.com/a/28261304/7375309
+readapted for LineStrings from Abhinav Ramakrishnan post in https://stackoverflow.com/a/28261304/7375309
 """
     
 def _dot(vA, vB):
@@ -14,7 +14,6 @@ def _dot(vA, vB):
         
 def get_coord_angle(origin, distance, angle):
     """
-
     The function returns the coordinates of the line starting from a tuple of coordinates, which forms with the y axis an angle in degree of a certain magnitude,
     given the distance from the origin.
         
@@ -38,7 +37,6 @@ def get_coord_angle(origin, distance, angle):
     return (origin[0] + disp_x, origin[1] + disp_y)
 
 def angle_line_geometries(line_geometryA, line_geometryB, degree = False, deflection = False, angular_change = False):
-    
     """
     Given two LineStrings it computes the deflection angle between them. Returns value in degrees or radians.
     
@@ -160,9 +158,8 @@ def angle_line_geometries(line_geometryA, line_geometryB, degree = False, deflec
     else: return angle_rad
     
 def difference_angle_line_geometries(line_geometryA, line_geometryB):
-    
     """
-    Given two LineStrings it computes the deflection angle between them. Returns value in degrees or radians.
+    Given two LineStrings it computes the difference of the angles that they form with the Y-axis. Returns value in degrees or radians.
     
     Parameters
     ----------
@@ -170,16 +167,7 @@ def difference_angle_line_geometries(line_geometryA, line_geometryB):
         the first line
     line_geometryB: LineString
         the other line; it must share a vertex with line_geometryA
-    degree: boolean
-        if True it returns value in degree, otherwise in radians
-    deflection: boolean
-        if True it computes angle of incidence between the two lines, otherwise angle between vectors
-    angular_change: boolean
-        LineStrings are formed by two vertexes "from" and to". Within the function, four vertexes (2 per line) are considered; two of them are equal and shared between the lines.
-        The common vertex is used to compute the angle, along with another vertex per line. If True it computes angle of incidence between the two lines, on the basis of the vertex in common and the second following
-        (intermediate, if existing) vertexes forming each of the line. For example, if the line_geometryA has 3 vertexes composing its geometry, from, to and an intermediate one, the latter is used to compute 
-        the angle along with the one which is shared with line_geometryB. When False, the angle is computed by using exclusively from and to nodes, without considering intermediate vertexes which form the line geometries.
-        
+            
     Returns:
     ----------
     float

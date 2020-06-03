@@ -89,7 +89,7 @@ def _euclidean_distance(xs, ys, xt, yt):
     """ xs stands for x source and xt for x target """
     return sqrt((xs - xt)**2 + (ys - yt)**2)
 
-def weight_nodes(nodes_gdf, service_points_gdf, G, name, radius = 400):
+def weight_nodes(nodes_gdf, services_gdf, G, field_name, radius = 400):
     """
     Given a nodes- and a services/points-geodataframes, the function assigns an attribute to nodes in the graph G (prevously derived from 
     nodes_gdf) based indeed on the amount of features in the services_gdf in a buffer around each node. 
@@ -97,9 +97,10 @@ def weight_nodes(nodes_gdf, service_points_gdf, G, name, radius = 400):
     Parameters
     ----------
     nodes_gdf: Point GeoDataFrame
-    service_points_gdf: Point GeoDataFrame
+        nodes (junctions) GeoDataFrame
+    services_gdf: Point GeoDataFrame
     G: NetworkX graph
-    name: string
+    field_name: string
         attribute name
     radius: float
         distance around the node within looking for point features (services)
@@ -108,23 +109,24 @@ def weight_nodes(nodes_gdf, service_points_gdf, G, name, radius = 400):
     -------
     NetworkX graph
     """
-    nodes_gdf[name] = None
-    sindex = service_points_gdf.sindex
     
-    nodes_gdf[name] = nodes_gdf.apply(lambda row: _services_around_node(row["geometry"], service_points_gdf, sindex, radius = radius), axis=1)
-    for n in G.nodes(): G.nodes[n][name] = nodes_gdf[name].loc[n]
+    nodes_gdf[field_name] = None
+    sindex = services_gdf.sindex
+    
+    nodes_gdf[field_name] = nodes_gdf.apply(lambda row: _services_around_node(row["geometry"], services_gdf, sindex, radius = radius), axis=1)
+    for n in G.nodes(): G.nodes[n][field_name] = nodes_gdf[field_name].loc[n]
     
     return G
     
-def _services_around_node(node_geometry, service_points_gdf, service_points_gdf_sindex, radius):
+def _services_around_node(node_geometry, services_gdf, services_gdf_sindex, radius):
     """
     It supports the weight_nodes function.
     
     Parameters
     ----------
     node_geometry: Point geometry
-    service_points_gdf: Point GeoDataFrame
-    service_points_gdf_sindex: Rtree Spatial Index
+    services_gdf: Point GeoDataFrame
+    services_gdf_sindex: Rtree Spatial Index
     radius: float
         distance around the node within looking for point features (services)
     
@@ -134,8 +136,8 @@ def _services_around_node(node_geometry, service_points_gdf, service_points_gdf_
     """
 
     buffer = node_geometry.buffer(radius)
-    possible_matches_index = list(service_points_gdf_sindex.intersection(buffer.bounds))
-    possible_matches = service_points_gdf.iloc[possible_matches_index]
+    possible_matches_index = list(services_gdf_sindex.intersection(buffer.bounds))
+    possible_matches = services_gdf.iloc[possible_matches_index]
     precise_matches = possible_matches[possible_matches.intersects(buffer)]
     weight = len(precise_matches)
         
@@ -191,12 +193,13 @@ def reach_centrality(G, weight, radius, attribute):
     
 def rescale_centrality(nodes_gdf, measure, radius = 400):
     """
-    The measure rescales precomputed centrality values (see NetworkX) within a certain radius around each node.
-    Indicate the value to rescalue through the parameter "measure".
+    The measure rescales precomputed centrality values within a certain radius around each node.
+    Indicate the value to rescale through the parameter "measure" (column name).
 
     Parameters
     ----------
     nodes_gdf: Point GeoDataFrame
+        nodes (junctions) GeoDataFrame
     measure: string
     radius: float
         distance from node within wich rescaling the betweenness centrality value
@@ -216,10 +219,12 @@ def rescale_centrality(nodes_gdf, measure, radius = 400):
 def _rescale_centrality(nodeID, nodes_gdf, nodes_gdf_sindex, radius, measure):
     """
     It supports the rescale_centrality function.
+    
     Parameters
     ----------
     nodeID: integer
     nodes_gdf: Point GeoDataFrame
+        nodes (junctions) GeoDataFrame
     nodes_gdf_sindex = Rtree Spatial Index
     radius: float
         distance around the node within looking for other nodes
@@ -241,14 +246,17 @@ def _rescale_centrality(nodeID, nodes_gdf, nodes_gdf_sindex, radius, measure):
 
 def centrality(G, measure, nodes_gdf, weight, normalized = False):
     """"
-    The function computes betweenness centrality at the local level.
+    The function computes several node centrality measures.
       
     Parameters
     ----------
     G: Networkx graph
-    weight: string, edges weight
+    measure: string
     nodes_gdf: Point GeoDataFrame
-    radius: float, distance from node, within local betweenness is computed  
+        nodes (junctions) GeoDataFrame
+    weight: string
+        edges weight
+    normalized: boolean
     
     Returns
     -------
@@ -267,7 +275,7 @@ def centrality(G, measure, nodes_gdf, weight, normalized = False):
     
     return c
     
-    
+# TODO: optimise code above  
 # def local_centrality(G, measure, weight, radius = 400, normalized = False):
     # """
     # The function computes betweenness centrality at the local level.

@@ -15,7 +15,6 @@ This set of functions is designed for cleaning street network's GeoDataFrame (no
 """
 
 def duplicate_nodes(nodes_gdf, edges_gdf):
-
     """
     The function checks the existencce of duplicate nodes through the network, on the basis of geometry
      
@@ -58,7 +57,6 @@ def duplicate_nodes(nodes_gdf, edges_gdf):
     
 
 def fix_dead_ends(nodes_gdf, edges_gdf):
-
     """
     The function removes dead-ends. In other words, it eliminates nodes from where only one segment originates, and the relative segment.
      
@@ -88,7 +86,6 @@ def fix_dead_ends(nodes_gdf, edges_gdf):
     return nodes_gdf, edges_gdf
 
 def is_nodes_simplified(nodes_gdf, edges_gdf):
-
     """
     The function checks the presence of pseudo-junctions, by using the edges_gdf geodataframe.
      
@@ -104,7 +101,7 @@ def is_nodes_simplified(nodes_gdf, edges_gdf):
     
     simplified = True
     to_edit = {k: v for k, v in nodes_degree(edges_gdf).items() if v == 2}
-    if 'stationID' in nodes_gdf.columns:
+    if 'stationID' in nodes_gdf.columns: # for transport networks
         to_edit_list = list(to_edit.keys())
         tmp_nodes = nodes_gdf[(nodes_gdf.nodeID.isin(to_edit_list)) & (nodes_gdf.stationID == 999999)].copy()
         to_edit = list(tmp_nodes.nodeID)
@@ -115,7 +112,6 @@ def is_nodes_simplified(nodes_gdf, edges_gdf):
     return simplified
 
 def is_edges_simplified(edges_gdf):
-
     """
     The function checks the presence of possible duplicate geometries in the edges_gdf geodataframe.
      
@@ -141,7 +137,6 @@ def is_edges_simplified(edges_gdf):
     return simplified
 
 def simplify_graph(nodes_gdf, edges_gdf):
-
     """
     The function identify pseudo-nodes, namely nodes that represent intersection between only 2 segments.
     The segments are merged and the node is removed from the nodes_gdf geodataframe.
@@ -213,7 +208,8 @@ def simplify_graph(nodes_gdf, edges_gdf):
         new_line = line_coordsA + line_coordsB
         merged_line = LineString([coor for coor in new_line]) 
         edges_gdf.at[index_first, 'geometry'] = merged_line
-        if 'highway' in edges_gdf.columns: 
+        
+        if 'highway' in edges_gdf.columns: #type of street 
             if edges_gdf.loc[index_second]['pedestrian'] == True: edges_gdf.at[index_first, 'pedestrian'] = 1        
         # dropping the second segment, as the new geometry was assigned to the first edge
         edges_gdf.drop(index_second, axis = 0, inplace = True)
@@ -223,15 +219,16 @@ def simplify_graph(nodes_gdf, edges_gdf):
 
 
 def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_islands = True, same_uv_edges = True, self_loops = False, fix_topology = False):
-
     """
-    It calls a series of functions (see above) to clean and remove dubplicate geometries or possible parallel short edges.
+    It calls a series of functions to clean nodes and edges GeoDataFrames.
     It handles:
         - pseudo-nodes;
         - duplicate-geometries (nodes and edges);
-        - disconnected islands (optional)
-        - edges with different geometry (optional);
-        - dead-ends (optional);
+        - disconnected islands - optional;
+        - edges with different geometry but same nodes - optional;
+        - dead-ends - optional;
+        - self-loops - optional;
+        - toplogy issues - optional;
            
     Parameters
     ----------
@@ -246,6 +243,8 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_i
     same_uv_edges: boolean
         if true, it considers as duplicates couple of edges with same vertexes but different geometry. If one of the edges is 20% longer than the other, the longer is deleted; 
         otherwise a center line is built to replace the same_uv_edges.
+    fix_topology: boolean
+        if true, it breaks lines at intersections with other lines in the streets GeoDataFrame, apart from segments categorised as bridges or tunnels in OSM.
    
     Returns
     -------
@@ -257,7 +256,6 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_i
     nodes_gdf.index.name = None
     edges_gdf.set_index('edgeID', drop = False, inplace = True, append = False)
     edges_gdf.index.name = None
-    
 
     nodes_gdf['x'], nodes_gdf['y'] = list(zip(*[(r.coords[0][0], r.coords[0][1]) for r in nodes_gdf.geometry]))
     edges_gdf.sort_index(inplace = True)  
@@ -273,7 +271,6 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_i
     
     if dead_ends: nodes_gdf, edges_gdf = fix_dead_ends(nodes_gdf, edges_gdf)
     cycle = 0
-    
     
     while (((not is_edges_simplified(edges_gdf)) & same_uv_edges) | (not is_nodes_simplified(nodes_gdf, edges_gdf)) | (cycle == 0)):
 
@@ -302,10 +299,15 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_i
         edges_gdf.drop_duplicates(['tmp'], keep = 'first', inplace = True)
         
         # edges with different geometries but same u-v nodes pairs
-        if same_uv_edges:
-            dd = dict(edges_gdf['code'].value_counts())
-            dd = {k: v for k, v in dd.items() if v > 1} # keeping u-v combinations that appear more than once
-            # iterate through possible duplicate edges for each specific combination of possible duplicates
+        
+        dd = dict(edges_gdf['code'].value_counts())
+        dd = {k: v for k, v in dd.items() if v > 1} # keeping u-v combinations that appear more than once
+        # iterate through possible duplicate edges for each specific combination of possible duplicates
+        if not same_uv_edges:
+            for key,_ in dd.items():
+                tmp = edges_gdf[edges_gdf.code == key]
+                tmp['key'] = range(0, 0+len(tmp))
+        else:
             for key,_ in dd.items():
                 tmp = edges_gdf[edges_gdf.code == key].copy()
                 # sorting the temporary GDF by length, the shortest is then used as a term of comparison
@@ -332,7 +334,6 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_i
         # only keep nodes which are actually used by the edges in the geodataframe
         to_keep = list(set(list(edges_gdf['u'].unique()) + list(edges_gdf['v'].unique())))
         nodes_gdf = nodes_gdf[nodes_gdf['nodeID'].isin(to_keep)]
-        
         if fix_topology: nodes_gdf, edges_gdf = fix_network_topology(nodes_gdf, edges_gdf)
         
         # simplify the graph                           
@@ -362,6 +363,20 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_i
     return nodes_gdf, edges_gdf
 
 def fix_network_topology(nodes_gdf, edges_gdf):
+    """
+    It breaks lines at intersections with other lines in the streets GeoDataFrame, apart from segments categorised as bridges or tunnels in OSM.
+
+    Parameters
+    ----------
+    nodes_gdf: Point GeoDataFrame
+        nodes (junctions) GeoDataFrame
+    edges_gdf: LineString GeoDataFrame
+        street segments GeoDataFrame
+       
+    Returns
+    -------
+    tuple of GeoDataFrames
+    """
     
     nodes_gdf, edges_gdf = nodes_gdf.copy(), edges_gdf.copy()
     union = edges_gdf.unary_union
@@ -373,19 +388,27 @@ def fix_network_topology(nodes_gdf, edges_gdf):
         edges_gdf['bridge'] = edges_gdf['bridge'].where(edges_gdf['bridge'] == '0', 1)
         edges_gdf['bridge'] = edges_gdf['bridge'].astype(int)
     
+    if 'tunnel' in edges_gdf.columns:    
+        tunnel = True
+        edges_gdf['tunnel'].fillna(0, inplace = True)
+        edges_gdf['tunnel'] = edges_gdf['tunnel'].where(edges_gdf['tunnel'] == '0', 1)
+        edges_gdf['tunnel'] = edges_gdf['tunnel'].astype(int)
+        
     old_edges_gdf = edges_gdf.copy()
+    
     for row in old_edges_gdf.itertuples():
         if (bridges):
             if old_edges_gdf.loc[row.Index].bridge != 0: continue # bridges are not checked
-    
+        if (tunnel):
+            if old_edges_gdf.loc[row.Index].tunnel != 0: continue # tunnels are not checked
+        
         line_geometry = old_edges_gdf.loc[row.Index].geometry
         tmp = old_edges_gdf[old_edges_gdf.geometry.intersects(line_geometry)].copy()
         tmp.drop(row.Index, axis = 0, inplace = True)
         
         union = tmp.unary_union
         intersections = line_geometry.intersection(union);
-        if intersections.geom_type == 'Point':
-            intersections = [intersections]
+        if intersections.geom_type == 'Point': intersections = [intersections]
         points = [i for i in intersections if i.geom_type == 'Point']
         new_collection = []
 
@@ -397,7 +420,6 @@ def fix_network_topology(nodes_gdf, edges_gdf):
         geometry_collection = MultiPoint([point.coords[0] for point in new_collection])  
         # including the intersecting geometries in the coordinates sequence of the line and split
         new_line_geometries = split_line_at_MultiPoint(line_geometry, geometry_collection) 
-
 
         for n, line in enumerate(new_line_geometries): # assigning the resulting geometries
             if n == 0: index = row.Index

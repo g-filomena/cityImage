@@ -1,7 +1,10 @@
 import pandas as pd, numpy as np, geopandas as gpd
 import math
 from math import sqrt
-from shapely.geometry import Point, LineString, MultiLineString
+from shapely.geometry import*
+from shapely.ops import*
+from functools import partial
+import pyproj
 
 pd.set_option("precision", 10)
 
@@ -145,11 +148,62 @@ def merge_lines(line_geometries):
     if reverse: coords.reverse()
     return LineString([coor for coor in coords])
             
+def envelope_wgs(gdf):
+    envelope = gdf.unary_union.envelope.buffer(100)
+    coords = mapping(envelope)["coordinates"][0]
+    d = [(Point(coords[0])).distance(Point(coords[1])), (Point(coords[1])).distance(Point(coords[2]))]
+    distance = max(d)
+    project = partial(
+        pyproj.transform,
+        pyproj.Proj(gdf.crs), # source coordinate system
+        pyproj.Proj(init='epsg:4326')) # destination coordinate system
+
+    envelope_wgs = transform(project, envelope)
+    return envelope_wgs            
+            
+def create_hexagon(l, x, y):
+    """
+    Create a hexagon centered on (x, y)
+    :param l: length of the hexagon's edge
+    :param x: x-coordinate of the hexagon's center
+    :param y: y-coordinate of the hexagon's center
+    :return: The polygon containing the hexagon's coordinates
+    """
+    c = [[x + math.cos(math.radians(angle)) * l, y + math.sin(math.radians(angle)) * l] for angle in range(0, 360, 60)]
+
+    return Polygon(c)
 
 
-            
-            
-            
+def create_grid(gdf, side_length = 150):
+    xmin, ymin,xmax,ymax = gdf.total_bounds # lat-long of 2 corners
+    EW = Point(xmin,ymin).distance(Point(xmax,ymin))
+    NS = Point(xmin,ymin).distance(Point(xmin,ymax))
+
+    height = int(side_length*1.73)
+    width = side_length*2
+
+    cols = list(range(int(np.floor(xmin)), int(np.ceil(xmax)), width))
+    rows = list(range(int(np.floor(ymin)), int(np.ceil(ymax)), height))
+    rows.reverse()
+    polygons = []
+    odd = False
+
+    to_reach = cols[-1]
+    x = cols[0]
+    while (x < to_reach):
+        if odd: x = x-side_length/2
+        for y in rows:
+            if odd: y = y-height/2
+            centroid = Polygon([(x,y), (x+side_length, y), (x+side_length, y-side_length), (x, y-side_length)]).centroid       
+            polygons.append(create_hexagon(side_length, centroid.coords[0][0], centroid.coords[0][1] ))
+        
+        if odd: x = x + width-side_length/2
+        else: x = x+width
+        odd = not odd
+
+
+    grid = gpd.GeoDataFrame({'geometry':polygons}, crs = gdf.crs)
+    return grid          
             
             
             

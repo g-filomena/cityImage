@@ -17,7 +17,6 @@ from .angles import *
 ## Obtaining graphs ###############
 
 def graph_fromGDF(nodes_gdf, edges_gdf, nodeID = "nodeID"):
-
     """
     From two GeoDataFrames (nodes and edges), it creates a NetworkX undirected Graph.
        
@@ -63,7 +62,6 @@ def graph_fromGDF(nodes_gdf, edges_gdf, nodeID = "nodeID"):
 
 
 def multiGraph_fromGDF(nodes_gdf, edges_gdf, nodeID):
-
     """
     From two GeoDataFrames (nodes and edges), it creates a NetworkX MultiGraph.
     
@@ -74,7 +72,7 @@ def multiGraph_fromGDF(nodes_gdf, edges_gdf, nodeID):
     edges_gdf: LineString GeoDataFrame
         street segments GeoDataFrame
     nodeID: str
-        column name that indicates the node identifier column (if different from "nodeID")
+        column name that indicates the node identifier column.
     
     Returns
     -------
@@ -110,8 +108,7 @@ def multiGraph_fromGDF(nodes_gdf, edges_gdf, nodeID):
     
 ## Building geo-dataframes for dual graph representation ###############
 
-def dual_gdf(nodes_gdf, edges_gdf, epsg):
-
+def dual_gdf(nodes_gdf, edges_gdf, epsg, oneway = False, angle = None):
     """
     It creates two dataframes that are later exploited to generate the dual graph of a street network. The nodes_dual gdf contains edges 
     centroids; the edges_dual gdf, instead, contains links between the street segment centroids. Those dual edges link real street segments 
@@ -126,7 +123,11 @@ def dual_gdf(nodes_gdf, edges_gdf, epsg):
         street segments GeoDataFrame
     epsg: int
         epsg of the area considered 
-
+    oneway: boolean
+        if true, the function takes into account the direction and therefore it may ignore certain links whereby vehichular movement is not allowed in a certain direction
+    angle: str, {'degree', 'radians'}
+        indicates how to express the angle of deflection
+        
     Returns
     -------
     tuple of GeoDataFrames
@@ -144,10 +145,14 @@ def dual_gdf(nodes_gdf, edges_gdf, epsg):
     # find_intersecting segments and storing them in the centroids gdf
     centroids_gdf['intersecting'] = centroids_gdf.apply(lambda row: list(centroids_gdf.loc[(centroids_gdf['u'] == row['u'])|(centroids_gdf['u'] == row['v'])|
                                                     (centroids_gdf['v'] == row['v'])|(centroids_gdf['v'] == row['u'])].index), axis=1)
-            
+    if oneway:
+        centroids_gdf['intersecting'] = centroids_gdf.apply(lambda row: list(centroids_gdf.loc[(centroids_gdf['u'] == row['v']) | ((centroids_gdf['v'] == row['v']) & (centroids_gdf['oneway'] == 0))].index) 
+                                                if row['oneway'] == 1 else list(centroids_gdf.loc[(centroids_gdf['u'] == row['v']) | ((centroids_gdf['v'] == row['v']) & (centroids_gdf['oneway'] == 0)) | 
+                                                (centroids_gdf['u'] == row['u']) | ((centroids_gdf['v'] == row['u']) & (centroids_gdf['oneway'] == 0))].index), axis = 1)
+    
     # creating vertexes representing street segments (centroids)
     centroids_data = centroids_gdf.drop(['geometry', 'centroid'], axis = 1)
-    if epsg == None: crs = nodes_gdf.crs
+    if epsg is None: crs = nodes_gdf.crs
     else: crs = {'init': 'epsg:' + str(epsg)}
     nodes_dual = gpd.GeoDataFrame(centroids_data, crs=crs, geometry=centroids_gdf['centroid'])
     nodes_dual['x'], nodes_dual['y'] = [x.coords.xy[0][0] for x in centroids_gdf['centroid']],[y.coords.xy[1][0] for y in centroids_gdf['centroid']]
@@ -179,13 +184,13 @@ def dual_gdf(nodes_gdf, edges_gdf, epsg):
     edges_dual = gpd.GeoDataFrame(edges_dual[['u', 'v', 'length']], crs=crs, geometry=edges_dual['geometry'])
     
     # setting angle values in degrees and radians
-    edges_dual['deg'] = edges_dual.apply(lambda row: angle_line_geometries(edges_gdf.loc[row['u']].geometry, edges_gdf.loc[row['v']].geometry, degree = True, deflection = True), axis = 1)
-    edges_dual['rad'] = edges_dual.apply(lambda row: angle_line_geometries(edges_gdf.loc[row['u']].geometry, edges_gdf.loc[row['v']].geometry, degree = False, deflection = True), axis = 1)
+    if (angle is None) | (angle == 'degree') | (angle != 'radians'):
+        edges_dual['deg'] = edges_dual.apply(lambda row: angle_line_geometries(edges_gdf.loc[row['u']].geometry, edges_gdf.loc[row['v']].geometry, degree = True, deflection = True), axis = 1)
+    else: edges_dual['rad'] = edges_dual.apply(lambda row: angle_line_geometries(edges_gdf.loc[row['u']].geometry, edges_gdf.loc[row['v']].geometry, degree = False, deflection = True), axis = 1)
         
     return nodes_dual, edges_dual
 
 def dual_graph_fromGDF(nodes_dual, edges_dual):
-
     """
     The function generates a NetworkX graph from dual-nodes and -edges GeoDataFrames.
             
@@ -203,8 +208,7 @@ def dual_graph_fromGDF(nodes_dual, edges_dual):
    
     nodes_dual.set_index('edgeID', drop = False, inplace = True, append = False)
     nodes_dual.index.name = None
-    edges_dual.u = edges_dual.u.astype(int)
-    edges_dual.v = edges_dual.v.astype(int)
+    edges_dual.u, edges_dual.v  = edges_dual.u.astype(int), edges_dual.v.astype(int)
     
     Dg = nx.Graph()   
     Dg.add_nodes_from(nodes_dual.index)
@@ -232,9 +236,8 @@ def dual_graph_fromGDF(nodes_dual, edges_dual):
     return Dg
 
 def dual_id_dict(dict_values, G, node_attribute):
-
     """
-    It could be used when one deals with a dual graph and wants to link analyses conducted on this representation to the
+    It can be used when one deals with a dual graph and wants to link analyses conducted on this representation to 
     the primal graph. For instance, it takes the dictionary containing the betweennes-centrality values of the
     nodes in the dual graph, and associates these variables to the corresponding edgeID.
     
@@ -260,7 +263,6 @@ def dual_id_dict(dict_values, G, node_attribute):
     return ed_dict
 
 def nodes_degree(edges_gdf):
-    
     """
     It returns a dictionary where keys are nodes identifier (e.g. "nodeID" and values their degree.
     
@@ -277,7 +279,6 @@ def nodes_degree(edges_gdf):
     dd_u = dict(edges_gdf['u'].value_counts())
     dd_v = dict(edges_gdf['v'].value_counts())
     dd = {k: dd_u.get(k, 0) + dd_v.get(k, 0) for k in set(dd_u) | set(dd_v)}
-    
     return dd
     
 

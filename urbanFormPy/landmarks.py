@@ -9,11 +9,11 @@ from .angles import *
 
 """
 This set of functions is designed for extracting the computational Image of The City.
-Computational landmarks can be extracted employing the following functions (see notebooks "2_Landmarks.ipynb" for usages and pipeline).
+Computational landmarks can be extracted employing the following functions.
 
 """
         
-def get_buildings_from_SHP(path, epsg, case_study_area = None, obstructions_area = None, height_field = None, base_field = None, distance_from_center = 1000):
+def get_buildings_fromSHP(path, epsg, case_study_area = None, height_field = None, base_field = None, distance_from_center = 1000):
 
     """    
     The function take a sets of buildings, returns two smaller GDFs of buildings: the case-study area, plus a larger area containing other 
@@ -23,17 +23,15 @@ def get_buildings_from_SHP(path, epsg, case_study_area = None, obstructions_area
     Parameters
     ----------
     path: string
-    
+        path where the file is stored
     epsg: int
-    
+        epsg of the area considered; if None OSMNx is used for the projection
     case_study_area: Polygon
-    
-    obstructions_area: Polygon
-    
+        The Polygon to use for clipping and identifying the case-study area, within the input .shp. If not available, use "distance_from_center"
     height_field, base_field: str 
         height and base fields name in the original data-source
-    
-    distance: float
+    distance_from_center: float
+        so to identify the case-study area on the basis of distance from the center of the input .shp
     
     Returns
     -------
@@ -61,37 +59,37 @@ def get_buildings_from_SHP(path, epsg, case_study_area = None, obstructions_area
     # assigning ID
     city_buildings["buildingID"] = city_buildings.index.values.astype(int)
     
-    # check if case_study_area is defined
-    if (case_study_area == None): case_study_area = city_buildings.geometry.unary_union.centroid.buffer(distance_from_center)
-    # obtaining obstructions
-    if  (obstructions_area == None): obstructions_area = case_study_area.buffer(800)
+    # if case-study area and distance not defined
+    if (case_study_area is None) & (distance_from_center is None):
+        buildings_gdf = city_buildings.copy()
+        obstructions_gdf = buildings_gdf.copy()
+        return buildings_gdf, obstructions_gdf
+    # if case-study area is not defined
+    elif (case_study_area is None): case_study_area = city_buildings.geometry.unary_union.centroid.buffer(distance_from_center)
+    obstructions_area = case_study_area.buffer(distance_from_center)
     obstructions_gdf = city_buildings[city_buildings.geometry.within(obstructions_area)]
-        
+    buildings_gdf = city_buildings[city_buildings.geometry.within(case_study_area)]  
     # clipping buildings in the case-study area
-    buildings_gdf = city_buildings[city_buildings.geometry.within(area_to_clip.geometry.loc[0])]
 
     return buildings_gdf, obstructions_gdf
     
-def get_buildings_from_OSM(place, method = "from_address", distance = 1000, epsg = None):
-
+def get_buildings_fromOSM(place, download_method, epsg = None, distance = 1000):
     """    
-    The function downloads and cleans buildings footprint geometries and create as many buildings GeoDataFrames as the number of places specified in the list "list_places".
+    The function downloads and cleans buildings footprint geometries and create a buildings GeoDataFrames for the area of interest.
     The function exploits OSMNx functions for downloading the data as well as for projecting it.
-    The land use classification for each building is extracted. Only relevant columns are kept.
-    
-    "list_places""  is used to indicate names of case-study cities.
-    "distance" regulates the extension of the area within wich the building are extracted from.
-    
+    The land use classification for each building is extracted. Only relevant columns are kept.   
             
     Parameters
     ----------
-    place: str or tuple 
-    
-    method: str
-    
-    distance: float
-    
+    place: string, tuple
+        name of cities or areas in OSM: when using "from point" please provide a (lat, lon) tuple to create the bounding box around it; when using "distance_from_address"
+        provide an existing OSM address; when using "OSMplace" provide an OSM place name
+    download_method: string, {"from_point", "distance_from_address", "OSMplace"}
+        it indicates the method that should be used for downloading the data.
     epsg: int
+        epsg of the area considered; if None OSMNx is used for the projection
+    distance: float
+        Specify distance from address or point
     
     Returns
     -------
@@ -100,10 +98,12 @@ def get_buildings_from_OSM(place, method = "from_address", distance = 1000, epsg
     
     columns_to_keep = ['amenity', 'building', 'geometry', 'historic','land_use']
 
-    if method == "from_address": buildings_gdf = ox.footprints.footprints_from_address(address = place, distance = distance, footprint_type = 'building', retain_invalid = False)
+    if method == "distance_from_address": buildings_gdf = ox.footprints.footprints_from_address(address = place, distance = distance, footprint_type = 'building', retain_invalid = False)
+    elif method == "OSMplace": ox.footprints.footprints_from_place(place, footprint_type = 'building', retain_invalid = False)
     elif method == "from_point": buildings_gdf = ox.footprints.footprints_from_point(point = place, distance = distance, footprint_type= 'building', retain_invalid=False)
+    else: raise download_error('Provide a download method amongst {"from_point", "distance_from_address", "OSMplace"}')
     
-    if epsg == None: buildings_gdf = ox.projection.project_gdf(buildings_gdf)
+    if epsg is None: buildings_gdf = ox.projection.project_gdf(buildings_gdf)
     else: buildings_gdf = buildings_gdf.to_crs({'init': epsg})
 
     buildings_gdf['land_use'] = None
@@ -127,41 +127,40 @@ def get_buildings_from_OSM(place, method = "from_address", distance = 1000, epsg
     
     return buildings_gdf
         
-def structural_score(buildings_gdf, obstructions_gdf, street_gdf, max_expansion_distance = 300, distance_along = 50, radius = 150):
-
+def structural_score(buildings_gdf, obstructions_gdf, edges_gdf, max_expansion_distance = 300, distance_along = 50, radius = 150):
     """
     The function computes the structural properties of each building properties.
     
     neighbours
-    "radius" research radius for other adjacent buildings.
-    
-    2d advance visibility
-    "max_expansion_distance" indicates up to which distance from the building boundaries the visibility polygon can expand.
-    "distance_along" defines the interval between each line's destination, namely the search angle.
+    "radius" 
+
      
     Parameters
     ----------
     buildings_gdf: Polygon GeoDataFrame
-    
-    street_gdf: LineString GeoDataFrame
-    
+        buildings GeoDataFrame - case study area
+    edges_gdf: LineString GeoDataFrame
+        street segmetns GeoDataFrame
     obstructions_gdf: Polygon GeoDataFrame
-    
-    radius: float
-    
+        obstructions GeoDataFrame  
     max_expansion_distance: float
-    
+        2d advance visibility - it indicates up to which distance from the building boundaries the 2dvisibility polygon can expand.
     distance_along: float
-   
+        2d advance visibility - it defines the interval between each line's destination, namely the search angle.
+    radius: float
+        neighbours - research radius for other adjacent buildings.
+        
     Returns
     -------
     GeoDataFrame
     """
+    
+    buildings_gdf = buildings_gdf.copy()
+    if (obstructions_gdf is None): obstructions_gdf = buildings_gdf.copy()
     # spatial index
     sindex = obstructions_gdf.sindex
-    street_network = street_gdf.geometry.unary_union
-    buildings_gdf = buildings_gdf.copy()
-    
+    street_network = edges_gdf.geometry.unary_union
+
     # distance from road
     buildings_gdf["road"] =  buildings_gdf.apply(lambda row: row["geometry"].distance(street_network), axis = 1)
     # 2d advance visibility
@@ -173,7 +172,6 @@ def structural_score(buildings_gdf, obstructions_gdf, street_gdf, max_expansion_
     return buildings_gdf
     
 def _number_neighbours(building_geometry, obstructions_gdf, obstructions_sindex, radius):
-
     """
     The function computes a buildings" number of neighbours.
     "radius" research radius for other adjacent buildings.
@@ -181,13 +179,11 @@ def _number_neighbours(building_geometry, obstructions_gdf, obstructions_sindex,
     Parameters
     ----------
     building_geometry: Polygon
-    
     obstructions_gdf: Polygon GeoDataFrame
-    
+        obstructions GeoDataFrame  
     obstructions_sindex: Rtree Spatial Index
-    
     radius: float
-   
+        research radius for other adjacent buildings.
     Returns
     -------
     int
@@ -212,9 +208,12 @@ def _advance_visibility(building_geometry, obstructions_gdf, obstructions_sindex
     ----------
     building_geometry: Polygon
     obstructions_gdf: Polygon GeoDataFrame
+        obstructions GeoDataFrame  
     obstructions_sindex: Rtree Spatial Index
     max_expansion_distance: float
+        it indicates up to which distance from the building boundaries the 2dvisibility polygon can expand.
     distance_along: float
+        it defines the interval between each line's destination, namely the search angle.
 
     Returns
     -------
@@ -230,7 +229,7 @@ def _advance_visibility(building_geometry, obstructions_gdf, obstructions_sindex
     # identifying obstructions in an area of x (max_expansion_distance) mt around the building
     possible_obstacles_index = list(obstructions_sindex.intersection(origin.buffer(max_expansion_distance).bounds))
     possible_obstacles = obstructions_gdf.iloc[possible_obstacles_index]
-    possible_obstacles = obstructions_gdf[obstructions_gdf.geometry != buildings_geometry]
+    possible_obstacles = obstructions_gdf[obstructions_gdf.geometry != building_geometry]
     possible_obstacles = obstructions_gdf[~obstructions_gdf.geometry.within(no_holes)]
 
     start = 0.0
@@ -239,7 +238,7 @@ def _advance_visibility(building_geometry, obstructions_gdf, obstructions_sindex
     
     # creating lines all around the building till a defined distance
     while(i <= 360):
-        coords = get_coord_angle([origin.x, origin.y], max_expansion_distance = max_expansion_distance, angle = i)
+        coords = get_coord_angle([origin.x, origin.y], distance = max_expansion_distance, angle = i)
         line = LineString([origin, Point(coords)])
         
         # finding actual obstacles to this line
@@ -251,7 +250,7 @@ def _advance_visibility(building_geometry, obstructions_gdf, obstructions_sindex
         append it to the list of lines
         """
         
-        if len(obstacles > 0):
+        if len(obstacles) > 0:
             t = line.intersection(ob)
             # taking the coordinates
             try: intersection = t[0].coords[0]
@@ -416,7 +415,7 @@ def _compute_cultural_score_building(building_geometry, building_land_use, histo
     possible_matches = historical_elements_gdf.iloc[possible_matches_index]
     pm = possible_matches[possible_matches.intersects(building_geometry)]
 
-    if (score == None): cs = len(pm) # score only based on number of intersecting elements
+    if (score is None): cs = len(pm) # score only based on number of intersecting elements
     elif len(pm) == 0: cs = 0
     else: cs = pm[score].sum() # otherwise sum the scores of the intersecting elements
     
@@ -640,6 +639,12 @@ def _building_local_score(building_geometry, buildingID, buildings_gdf, building
     # return the so obtined score
     return float("{0:.3f}".format(pm["lScore"].loc[buildingID]))
 
+class Error(Exception):
+    """Base class for other exceptions"""
+    pass
 
+class downloadError(Error):
+    """Raised when a wrong download method is provided"""
+    pass
 
 

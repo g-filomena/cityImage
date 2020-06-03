@@ -32,9 +32,9 @@ def identify_regions(dual_graph, edges_gdf, weight = None):
     """
 
     subdvisions = []
-    if weight == None: weight = 'no_weight' #the function requires a string 
+    if weight == None: weight = 'topo' #the function requires a string 
     # extraction of the best partitions
-    partition = best_partition(dual_graph, weight=weight, barrier_field = barrier_field)
+    partition = community.best_partition(dual_graph, weight=weight)
     dct = dual_id_dict(partition, dual_graph, 'edgeID')
     subdvisions.append(dct)
 
@@ -60,18 +60,18 @@ def identify_regions_primal(graph, nodes_graph, weight = None, barrier_field = N
     """
 
     subdvisions = []
-    if weight == None: weight = "no_weight" #the function requires a string 
+    if weight == None: weight = 'topo' #the function requires a string 
     # extraction of the best partitions
     partition = best_partition(graph, weight=weight, barrier_field = barrier_field)
     districts = nodes_graph.copy()
-    districts["p_"+weight] = districts.nodeID.map(partition)
+    districts['p_'+weight] = districts.nodeID.map(partition)
     return districts
 
     
   
                 
 def reset_index_dual_gdfsIG(nodesDual_gdf, edgesDual_gdf):
-    """
+    '''
     The function simply reset the indexes of the two dataframes.
      
     Parameters
@@ -84,7 +84,7 @@ def reset_index_dual_gdfsIG(nodesDual_gdf, edgesDual_gdf):
     Returns
     -------
     tuple of GeoDataFrames
-    """
+    '''
     
     nodesDual_gdf, edgesDual_gdf = nodesDual_gdf.copy(), edgesDual_gdf.copy() 
     nodesDual_gdf = nodesDual_gdf.reset_index(drop = True)
@@ -106,7 +106,7 @@ def reset_index_dual_gdfsIG(nodesDual_gdf, edgesDual_gdf):
     return nodesDual_gdf, edgesDual_gdf
     
 def reset_index_gdfsIG(nodes_gdf, edges_gdf):
-    """
+    '''
     The function simply reset the indexes of the two dataframes.
      
     Parameters
@@ -119,7 +119,7 @@ def reset_index_gdfsIG(nodes_gdf, edges_gdf):
     Returns
     -------
     tuple of GeoDataFrames
-    """
+    '''
     
     nodes_gdf, edges_gdf = nodes_gdf.copy(), edges_gdf.copy()
     nodes_gdf = nodes_gdf.reset_index(drop = True)
@@ -141,7 +141,7 @@ def reset_index_gdfsIG(nodes_gdf, edges_gdf):
 
 def dual_graphIG_fromGDF(nodes_dual, edges_dual):
 
-    """
+    '''
     The function generates a NetworkX graph from dual-nodes and -edges GeoDataFrames.
             
     Parameters
@@ -154,7 +154,7 @@ def dual_graphIG_fromGDF(nodes_dual, edges_dual):
     Returns
     -------
     NetworkX Graph
-    """
+    '''
    
     edges_dual.u = edges_dual.u.astype(int)
     edges_dual.v = edges_dual.v.astype(int)
@@ -186,15 +186,15 @@ def dual_graphIG_fromGDF(nodes_dual, edges_dual):
     ## polygonise
 
     
-def polygonise_partition(edges_gdf, partition_field, method = 'convex_hull'):
+def polygonise_partition(edges_gdf, partition_field, method = None, buffer = 30):
     polygons = []
     partitionIDs = []
-    d = {'geometry' : polygons, 'partitionID' : partitionIDs}
+    d = {'geometry' : polygons, 'districtID' : partitionIDs}
 
     partitions = edges_gdf[partition_field].unique()
     for i in partitions:
         polygon =  polygonize_full(edges_gdf[edges_gdf[partition_field] == i].geometry.unary_union)
-        polygon = unary_union(polygon).buffer(40)
+        polygon = unary_union(polygon).buffer(buffer)
         if method == 'convex_hull': polygons.append(polygon.convex_hull)
         else: polygons.append(polygon)
         partitionIDs.append(i)
@@ -214,7 +214,7 @@ def districts_to_edges_from_nodes(edges_gdf, nodes_gdf, district_field):
     edges_gdf[district_field+'_v'] = 999999
     
     edges_gdf[[district_field+'_uv', district_field+'_u', district_field+'_v']] = edges_gdf.apply(lambda row: _assign_district_to_edge(row['edgeID'], edges_gdf, 
-                        nodes_gdf, district_field), axis = 1)      
+                        nodes_gdf, district_field), axis = 1, result_type= 'expand')      
 
     return edges_gdf
 
@@ -222,7 +222,7 @@ def append_dual_edges_metrics(edges_gdf, dual_graph, dict_metric, name_metric):
     
     dictionary = dual_id_dict(dict_metric, dual_graph, 'edgeID')
     tmp = dict_to_df([dictionary], [name_metric])
-    edges_gdf = pd.merge(edges_gdf, tmp, left_on = "edgeID", right_index = True, how = 'left')
+    edges_gdf = pd.merge(edges_gdf, tmp, left_on = 'edgeID', right_index = True, how = 'left')
     edges_gdf.index = edges_gdf.edgeID
     edges_gdf.index.name = None
     
@@ -249,25 +249,14 @@ def district_to_nodes_from_polygons(node_geometry, polygons_gdf):
     point = node_geometry
     dist = distance_geometry_gdf(point, polygons_gdf)
     return polygons_gdf.loc[dist[1]]['partitionID']
-       
-def geo_adjustment(edgeID, edges_gdf, nodes_gdf):
-    series = edges_gdf.loc[edgeID]
-    district_u = nodes_gdf.loc[series.u].district
-    district_v = nodes_gdf.loc[series.v].district
-    if district_u == district_v: return district_u
-    else:
-        midpoint = series.geometry.interpolate(0.5, normalized = True)
-        if (midpoint.distance(nodes_gdf.loc[series.u].geometry) < 
-           midpoint.distance(nodes_gdf.loc[series.v].geometry)): return district_u
-        else: return district_v
-        
+              
 def find_gateways(nodeID, nodes_gdf, edges_gdf):
     tmp = edges_gdf[(edges_gdf.u == nodeID) | (edges_gdf.v == nodeID)].copy()
     tmp_nodes = nodes_gdf[nodes_gdf.nodeID.isin(tmp.u) | nodes_gdf.nodeID.isin(tmp.v)].copy()
     if (len(tmp_nodes.district.unique()) > 1): return 1
     else: return 0
     
-def check_disconnected(nodes_gdf, edges_gdf):
+def check_disconnected_regions(nodes_gdf, edges_gdf, min_size):
     nodes_gdf = nodes_gdf.copy()
     districts = nodes_gdf.district.unique()
     
@@ -275,12 +264,15 @@ def check_disconnected(nodes_gdf, edges_gdf):
         if district == 999999: continue
         tmp_nodes = nodes_gdf[nodes_gdf.district == district].copy()
         tmp_edges = edges_gdf[edges_gdf.u.isin(tmp_nodes.nodeID) & edges_gdf.v.isin(tmp_nodes.nodeID)].copy()
-        tmp_graph = up.graph_fromGDF(tmp_nodes, tmp_edges, 'nodeID')
+        tmp_graph = graph_fromGDF(tmp_nodes, tmp_edges, 'nodeID')
+        if len(tmp_nodes) < min_size: 
+            nodes_gdf.loc[nodes_gdf.nodeID.isin(tmp_nodes.nodeID), 'district'] = 999999
+            continue
         if not nx.is_connected(tmp_graph): 
             largest_component = max(nx.connected_components(tmp_graph), key=len)
             G = tmp_graph.subgraph(largest_component)
             to_check = [item for item in list(tmp_nodes.nodeID) if item not in list(G.nodes())]
-            nodes_gdf.loc[nodes_gdf.nodeID.isin(to_check), "district"] = 999999
+            nodes_gdf.loc[nodes_gdf.nodeID.isin(to_check), 'district'] = 999999
     
     return nodes_gdf
     
@@ -288,7 +280,7 @@ def check_disconnected(nodes_gdf, edges_gdf):
 def amend_node_membership(nodeID, nodes_gdf, edges_gdf):
     if nodes_gdf.loc[nodeID]['district'] != 999999: return nodes_gdf.loc[nodeID]['district']
     tmp_edges = edges_gdf[(edges_gdf.u == nodeID) | (edges_gdf.v == nodeID)].copy()
-    unique =  list(np.unique(tmp_edges[["u", "v"]].values))
+    unique =  list(np.unique(tmp_edges[['u', 'v']].values))
     unique.remove(nodeID)
     tmp_nodes = nodes_gdf[(nodes_gdf.nodeID.isin(unique)) & (nodes_gdf.district != 999999) ].copy()
     if len(tmp_nodes) == 0: return 999999
@@ -302,5 +294,5 @@ def amend_node_membership(nodeID, nodes_gdf, edges_gdf):
         tmp_nodes = tmp_nodes[tmp_nodes.district.isin(list(districts_sorted[0:2].index))]
         tmp_edges = edges_gdf[((edges_gdf.u == nodeID) & (edges_gdf.v.isin(tmp_nodes.nodeID))) |
                               ((edges_gdf.v == nodeID) & (edges_gdf.u.isin(tmp_nodes.nodeID)))]
-        closest = up.distance_geometry_gdf(nodes_gdf.loc[nodeID].geometry, tmp_nodes)[1]
+        closest = distance_geometry_gdf(nodes_gdf.loc[nodeID].geometry, tmp_nodes)[1]
         return tmp_nodes.loc[closest].district
