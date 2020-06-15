@@ -10,4 +10,4 @@ scipy==1.4.1
 seaborn==0.10.0
 Shapely==1.7.0
 tornado==6.0.4
-Rtree=>0.9.3
+Rtree>=0.9.3

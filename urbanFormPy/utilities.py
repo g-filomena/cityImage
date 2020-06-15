@@ -1,9 +1,9 @@
 import pandas as pd, numpy as np, geopandas as gpd
 import math
 from math import sqrt
-from shapely.geometry import*
-from shapely.ops import*
-from shapely.affinity import *
+from shapely.geometry import LineString, Polygon, 
+from shapely.ops import mapping
+from shapely.affinity import scale
 from functools import partial
 import pyproj
 
