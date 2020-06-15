@@ -6,18 +6,18 @@ import numpy as np
 import geopandas as gpd
 import math
 from math import sqrt
-from shapely.geometry import Point, LineString, Polygon, MultiPolygon, MultiPoint, mapping, MultiLineString
-from shapely.ops import cascaded_union, linemerge, nearest_points, polygonize, split, polygonize_full, unary_union
+from shapely.geometry import Point, LineString, Polygon, MultiPoint
+from shapely.ops import linemerge, nearest_points, split, polygonize_full, unary_union
 
 pd.set_option('precision', 10)
 pd.options.mode.chained_assignment = None
 
 import statistics
 import ast
-from .graph import*
-from .utilities import *
-from .cleaning_network import *
-from .angles import *
+from .graph import nodes_degree,
+from .utilities import center_line, merge_lines
+from .cleaning_network import clean_network, correct_edges
+from .angles import difference_angle_line_geometries, angle_line_geometries
 
 def is_parallel(line_geometry_A, line_geometry_B, hard = False):
     
@@ -1450,23 +1450,23 @@ def reassign_edges(nodes_gdf, edges_gdf, clusters_gdf):
         new_geo = row[ix_changed]
         
         if (u is not None) & (v is not None):  # change starting and ending node in the list of coordinates for the line
-                if (not clusters_gdf.loc[u].keep) & (not clusters_gdf.loc[v].keep): 
-                    u = old_u
-                    v = old_v
-                elif not clusters_gdf.loc[v].keep:
-                    v = old_v
-                    line_coords[0] = (clusters_gdf.loc[u]['x'], clusters_gdf.loc[u]['y'])
-                    # if not new_geo: line_coords.insert(1,nodes_gdf.loc[row[ix_old_u]]['geometry'].coords[0]) 
-                elif not clusters_gdf.loc[u].keep:
-                    u = old_u    
-                    line_coords[-1] = (clusters_gdf.loc[v]['x'], clusters_gdf.loc[v]['y'])
-                    # if not new_geo: line_coords.insert(-1,nodes_gdf.loc[row[ix_old_v]]['geometry'].coords[0]) 
-                else:
-                    line_coords[0] = (clusters_gdf.loc[u]['x'], clusters_gdf.loc[u]['y'])
-                    line_coords[-1] = (clusters_gdf.loc[v]['x'], clusters_gdf.loc[v]['y'])
-                    # if not new_geo:
-                        # line_coords.insert(1,nodes_gdf.loc[row[ix_old_u]]['geometry'].coords[0]) 
-                        # line_coords.insert(-1,nodes_gdf.loc[row[ix_old_v]]['geometry'].coords[0]) 
+            if (not clusters_gdf.loc[u].keep) & (not clusters_gdf.loc[v].keep): 
+                u = old_u
+                v = old_v
+            elif not clusters_gdf.loc[v].keep:
+                v = old_v
+                line_coords[0] = (clusters_gdf.loc[u]['x'], clusters_gdf.loc[u]['y'])
+                # if not new_geo: line_coords.insert(1,nodes_gdf.loc[row[ix_old_u]]['geometry'].coords[0]) 
+            elif not clusters_gdf.loc[u].keep:
+                u = old_u    
+                line_coords[-1] = (clusters_gdf.loc[v]['x'], clusters_gdf.loc[v]['y'])
+                # if not new_geo: line_coords.insert(-1,nodes_gdf.loc[row[ix_old_v]]['geometry'].coords[0]) 
+            else:
+                line_coords[0] = (clusters_gdf.loc[u]['x'], clusters_gdf.loc[u]['y'])
+                line_coords[-1] = (clusters_gdf.loc[v]['x'], clusters_gdf.loc[v]['y'])
+                # if not new_geo:
+                    # line_coords.insert(1,nodes_gdf.loc[row[ix_old_u]]['geometry'].coords[0]) 
+                    # line_coords.insert(-1,nodes_gdf.loc[row[ix_old_v]]['geometry'].coords[0]) 
 
         elif (u is None) & (v is None):  # maintain old_u and old_v
             u = old_u
