@@ -1,7 +1,6 @@
 import osmnx as ox, networkx as nx, pandas as pd, numpy as np, geopandas as gpd
-import functools
 
-from shapely.geometry import Point, LineString, Polygon, MultiPolygon, mapping, MultiLineString
+from shapely.geometry import Point, LineString, Polygon, MultiPolygon, MultiLineString
 from shapely.ops import cascaded_union, linemerge, polygonize, polygonize_full, unary_union, nearest_points
 pd.set_option("precision", 10)
 

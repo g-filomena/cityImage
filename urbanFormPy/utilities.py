@@ -2,7 +2,7 @@ import pandas as pd, numpy as np, geopandas as gpd
 import math
 from math import sqrt
 from shapely.geometry import LineString, Point, Polygon, mapping
-from shapely.ops import 
+from shapely.ops import unary_union, transform
 from shapely.affinity import scale
 from functools import partial
 import pyproj
@@ -162,14 +162,14 @@ def envelope_wgs(gdf):
     envelope_wgs = transform(project, envelope)
     return envelope_wgs            
             
-def create_hexagon(l, x, y):
+def create_hexagon(side_length, x, y):
 
     """
     Create a hexagon centered on (x, y)
     
     Parameters
     ----------
-    l: length of the hexagon's edgeline_geometries: list of LineString
+    side_length: length of the hexagon's edgeline_geometries: list of LineString
     x: x-coordinate of the hexagon's center
     y: y-coordinate of the hexagon's center
     
@@ -179,7 +179,7 @@ def create_hexagon(l, x, y):
     """
     
     
-    c = [[x + math.cos(math.radians(angle)) * l, y + math.sin(math.radians(angle)) * l] for angle in range(0, 360, 60)]
+    c = [[x + math.cos(math.radians(angle)) * side_length, y + math.sin(math.radians(angle)) * side_length] for angle in range(0, 360, 60)]
 
     return Polygon(c)
 

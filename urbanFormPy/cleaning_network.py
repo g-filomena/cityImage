@@ -1,13 +1,13 @@
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
-import networkx as nx, matplotlib.cm as cm, pandas as pd, numpy as np, geopandas as gpd
-from shapely.geometry import Point, LineString, Polygon, MultiPolygon, MultiPoint, mapping, MultiLineString
-from shapely.ops import cascaded_union, linemerge, nearest_points, polygonize, split, polygonize_full, unary_union
 
+import networkx as nx, pandas as pd, numpy as np, geopandas as gpd
+from shapely.geometry import Point, LineString, MultiPoint, MultiLineString
+from shapely.ops import split, unary_union
 pd.set_option('precision', 10)
 
 from .graph import*
-from .utilities import *
+from .utilities import*
 
 """
 This set of functions is designed for cleaning street network's GeoDataFrame (nodes, edges), by taking care of dead_ends, duplicate geometries, same vertexes edges and so on.
