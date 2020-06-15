@@ -1,3 +1,5 @@
+[![CodeFactor](https://www.codefactor.io/repository/github/g-filomena/urbanformpy/badge/master)](https://www.codefactor.io/repository/github/g-filomena/urbanformpy/overview/master)
+
 # cityImage
 
 **A tool for analysing urban legibility and extracting The Computational Image of the City**
