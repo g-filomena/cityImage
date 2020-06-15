@@ -142,7 +142,7 @@ def water_barriers(place, download_method, distance = None, epsg = None):
             cc = canals.unary_union
             rivers = rivers.union(cc)
             
-        except: 
+        except EmptyResponse, e:
             pass
         
         # removing possible duplicates with different tags
@@ -172,7 +172,7 @@ def water_barriers(place, download_method, distance = None, epsg = None):
         rivers = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
         rivers['length'] = rivers['geometry'].length
             
-    except: 
+    except EmptyResponse, e:
         rivers = None
     
     # lakes #########
@@ -206,7 +206,8 @@ def water_barriers(place, download_method, distance = None, epsg = None):
             river_banks = river_banks.to_crs(crs)
             rb = river_banks.unary_union
             lakes = lakes.difference(rb)
-        except: 
+        
+        except EmptyResponse, e:
             pass
         
         # removing possible duplicates with different tags - rivers
@@ -225,7 +226,7 @@ def water_barriers(place, download_method, distance = None, epsg = None):
             rb = river_banks.unary_union
             lakes = lakes.difference(rb)  
             
-        except: 
+        except EmptyResponse, e:
             pass
         
         # removing possible duplicates with different tags - steams
@@ -244,7 +245,7 @@ def water_barriers(place, download_method, distance = None, epsg = None):
             st = steams.unary_union
             lakes = lakes.difference(st)  
         
-        except: 
+        except EmptyResponse, e:
             pass
         
         lakes = linemerge(lakes)
@@ -273,13 +274,14 @@ def water_barriers(place, download_method, distance = None, epsg = None):
             else: features = [waterway]
             df = pd.DataFrame({'geometry': features})
             waterway = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)      
-        except: 
+    
+    except EmptyResponse, e:
             waterway = None
                 
         lakes = lakes[~lakes.intersects(waterway)]
         lakes = lakes[lakes['length'] >=500]
         
-    except: 
+    except EmptyResponse, e:
         lakes = None
     
     # sea
@@ -302,7 +304,7 @@ def water_barriers(place, download_method, distance = None, epsg = None):
         sea['length'] = sea['geometry'].length
         sea = sea[['geometry', 'length']]
         
-    except: 
+    except EmptyResponse, e:
         sea = None
     
     water = rivers.append(lakes)
@@ -374,7 +376,7 @@ def railway_barriers(place, download_method,distance = None, epsg = None, keep_l
             light_railways = light_railways.to_crs(crs)
             lr = light_railways.unary_union
             r = r.difference(lr)
-        except: 
+        except EmptyResponse, e:
             pass
 
     p = polygonize_full(r)
@@ -649,3 +651,15 @@ def get_barriers(place, download_method, distance, epsg):
 
     return barriers_gdf
     
+class EmptyResponse(ValueError):
+   def __init__(self, arg):
+      self.args = arg
+
+
+    
+ class EmptyResponse(ValueError):  # pragma: no cover
+    """Exception for empty overpass response."""
+
+    def __init__(self, *args, **kwargs):
+        """Create exception."""
+        Exception.__init__(self, *args, **kwargs)   
