@@ -1,6 +1,6 @@
 ################################################################################
 # Module: __init__.py
-# Description: urbanFormPy - a package for Street Network Analysis and 
+# Description: cityImage - a package for Street Network Analysis and 
 #               landmarks extractions and integration in the Street Network.
 # License: MIT, see full license in LICENSE.txt
 ################################################################################

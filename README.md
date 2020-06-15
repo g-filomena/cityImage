@@ -1,4 +1,4 @@
-# urbanFormPy
+# cityImage
 
 **A tool for analysing urban legibility and extracting The Computational Image of the City**
 
