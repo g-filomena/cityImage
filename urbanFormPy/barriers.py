@@ -43,7 +43,8 @@ def road_barriers(place, download_method, distance = None, epsg = None, include_
     
     if download_method == 'distance_from_address': 
         roads_graph = ox.graph_from_address(place, network_type = 'drive', distance = distance, simplify = False)
-    elif download_method == 'OSMplace': roads_graph = ox.graph_from_place(place, network_type = 'drive', simplify = False)
+    elif download_method == 'OSMplace':
+        roads_graph = ox.graph_from_place(place, network_type = 'drive', simplify = False)
     else: roads_graph = ox.graph_from_polygon(place, network_type = 'drive', simplify = False)
     
     roads = ox.graph_to_gdfs(roads_graph, nodes=False, edges=True, node_geometry= False, fill_edge_geometry=True)
@@ -113,8 +114,8 @@ def water_barriers(place, download_method, distance = None, epsg = None):
         if download_method == 'distance_from_address': 
             rivers_graph = ox.graph_from_address(place, distance = distance, retain_all = True, truncate_by_edge=False, simplify = False,
                                network_type='none', infrastructure= 'way["waterway" = "river"]' )
-        elif download_method == 'OSMplace': rivers_graph = ox.graph_from_place(place, retain_all = True, truncate_by_edge=False, simplify = False,
-                               network_type='none', infrastructure= 'way["waterway" = "river"]' )
+        elif download_method == 'OSMplace': 
+            rivers_graph = ox.graph_from_place(place, retain_all = True, truncate_by_edge=False, simplify = False, network_type='none', infrastructure= 'way["waterway" = "river"]' )
         else: rivers_graph = ox.graph_from_polygon(place, retain_all = True, truncate_by_edge=False, simplify = False,
                                network_type='none', infrastructure= 'way["waterway" = "river"]') 
 
@@ -247,7 +248,8 @@ def water_barriers(place, download_method, distance = None, epsg = None):
             pass
         
         lakes = linemerge(lakes)
-        if lakes.type != "LineString": features = [i for i in lakes]
+        if lakes.type != "LineString":
+            features = [i for i in lakes]
         else: features = [lakes]
         df = pd.DataFrame({'geometry': features})
         lakes = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
@@ -277,15 +279,16 @@ def water_barriers(place, download_method, distance = None, epsg = None):
         lakes = lakes[~lakes.intersects(waterway)]
         lakes = lakes[lakes['length'] >=500]
         
-    except: lakes = None
+    except: 
+        lakes = None
     
     # sea
     try:
         if download_method == 'distance_from_address': 
             sea_graph = ox.graph_from_address(place, distance = distance, retain_all = True, truncate_by_edge=False, simplify = False,
                            network_type='none', infrastructure= 'way["natural"="coastline"]')
-        elif download_method == 'OSMplace': sea_graph = ox.graph_from_place(place, retain_all = True, truncate_by_edge=False, simplify = False,
-                               network_type='none', infrastructure= 'way["natural"="coastline"]')
+        elif download_method == 'OSMplace': 
+            sea_graph = ox.graph_from_place(place, retain_all = True, truncate_by_edge=False, simplify = False, network_type='none', infrastructure= 'way["natural"="coastline"]')
         else: sea_graph = ox.graph_from_polygon(place, retain_all = True, truncate_by_edge=False, simplify = False,
                                network_type='none', infrastructure= 'way["natural"="coastline"]')
         

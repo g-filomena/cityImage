@@ -100,7 +100,8 @@ def multiGraph_fromGDF(nodes_gdf, edges_gdf, nodeID):
     else: to_ignore = []
     
     for attribute_name in nodes_gdf.columns:
-        if attribute_name in to_ignore: continue 
+        if attribute_name in to_ignore: 
+            continue 
         # only add this attribute to nodes which have a non-null value for it
         attribute_values = {k:v for k, v in attributes[attribute_name].items() if pd.notnull(v)}
         nx.set_node_attributes(Mg, name=attribute_name, values=attribute_values)
