@@ -3,16 +3,16 @@ channels:
   - defaults
   - conda-forge
 dependencies:
-  - numpy=1.18.1=py37h93ca92e_0
-  - numpy-base=1.18.1=py37hc3f5095_1
-  - pandas=1.0.1=py37h47e9c7a_0
-  - pip=20.0.2=py37_1
-  - pyproj=2.4.1=py37hc6484ec_0
-  - python=3.7.6=h60c2a47_2
-  - python-dateutil=2.8.1=py_0
-  - python_abi=3.7=1_cp37m
-  - requests=2.23.0=py37_0
-  - wheel=0.34.2=py37_0
+  - numpy=1.18.1
+  - numpy-base=1.18
+  - pandas=1.0.1
+  - pip=20.0.2
+  - pyproj=2.4.1
+  - python=3.7.6
+  - python-dateutil=2.8.1
+  - python_abi=3.7
+  - requests=2.23.0
+  - wheel=0.34.2
   - pip:
     - geopandas==0.7.0
     - networkx==2.3
