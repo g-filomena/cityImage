@@ -389,7 +389,8 @@ def simplify_complex_junctions(nodes_gdf, edges_gdf):
                 found = True
                 break
                                     
-            if found: break
+            if found: 
+                break
                         
     edges_gdf = correct_edges(nodes_gdf, edges_gdf)
     nodes_gdf, edges_gdf = clean_network(nodes_gdf, edges_gdf, dead_ends = True, remove_disconnected_islands = False, same_uv_edges = True, self_loops = True) 
@@ -923,7 +924,8 @@ def dissolve_dual_lines(ix_lines, line_geometries, nodes_gdf, edges_gdf, cluster
         if (dist_SS > dist_EE*1.50) | (dist_EE > dist_SS*1.50): 
             return None
     
-    if one_cluster: cl = center_line_cluster(line_geometries, nodes_gdf, clusters_gdf, first_node, goal, one_cluster)
+    if one_cluster: 
+        cl = center_line_cluster(line_geometries, nodes_gdf, clusters_gdf, first_node, goal, one_cluster)
     else: cl = center_line_cluster(line_geometries, nodes_gdf, clusters_gdf, cluster, goal)
     if cl == None: 
         return None
@@ -1037,7 +1039,8 @@ def is_possible_dual(ix_lineA, ix_lineB, edges_gdf, processed, one_cluster = Fal
     line_geometry_A = edges_gdf.loc[ix_lineA].geometry
     line_geometry_B = edges_gdf.loc[ix_lineB].geometry
     
-    if ix_lineB in processed: return False
+    if ix_lineB in processed: 
+        return False
     if not one_cluster:
         if ((edges_gdf.loc[ix_lineA].u == edges_gdf.loc[ix_lineB].u) | (edges_gdf.loc[ix_lineA].u == edges_gdf.loc[ix_lineB].v)
             | (edges_gdf.loc[ix_lineA].v == edges_gdf.loc[ix_lineB].u) | (edges_gdf.loc[ix_lineA].v == edges_gdf.loc[ix_lineB].v)): 
@@ -1096,7 +1099,7 @@ def simplify_dual_lines(nodes_gdf, edges_gdf, clusters_gdf):
             possible_dual_lines['candidate'] = possible_dual_lines.apply(lambda r: is_possible_dual(road.Index, r['edgeID'], original_edges_gdf, 
                                                         processed), axis = 1)
             possible_dual_lines.at[road.Index, 'candidate' ] = True
-            possible_dual_lines = possible_dual_lines[possible_dual_lines.candidate == True]
+            possible_dual_lines = possible_dual_lines[possible_dual_lines.candidate]
             if len(possible_dual_lines) < 2: 
                 continue
             possible_dual_lines['dir'] = 'v'
@@ -1190,11 +1193,14 @@ def simplify_dual_lines(nodes_gdf, edges_gdf, clusters_gdf):
                                     continue
                                 if ((line.coords[0] == other_line.coords[0]) | (line.coords[0] == other_line.coords[-1]) |
                                     (line.coords[-1] == other_line.coords[0]) | (line.coords[-1] == other_line.coords[-1])):
-                                    if line.length > other_line.length: to_remove = n
-                                    elif line.length < other_line.length: to_remove = nn
+                                    if line.length > other_line.length: 
+                                        to_remove = n
+                                    elif line.length < other_line.length: 
+                                        to_remove = nn
                                     else: continue
                                     for ll in [c_u, c_v, u, v, drs, line_geometries, ix_lines, list_nodes_traversed, list_lines_traversed, 
-                                        list_clusters_traversed, forced_cluster]: del ll[to_remove]
+                                        list_clusters_traversed, forced_cluster]: 
+                                        del ll[to_remove]
                                     all_checked = False
                                     break
                             if not all_checked: 
@@ -1273,7 +1279,8 @@ def simplify_dual_lines(nodes_gdf, edges_gdf, clusters_gdf):
                 to_drop = list(filter(lambda a: a != ix_lines[0], to_drop)) 
                 processed = processed + [ix_lines[0]] + to_drop
                 clusters_gdf.at[clusters, 'keep'] =  True
-                if len(original_edges_gdf.loc[processed][original_edges_gdf.pedestrian == 1]) > 0: edges_gdf.at[ix_lines[0], 'pedestrian'] = 1
+                if len(original_edges_gdf.loc[processed][original_edges_gdf.pedestrian == 1]) > 0: 
+                    edges_gdf.at[ix_lines[0], 'pedestrian'] = 1
 
     edges_gdf.drop(to_drop, axis = 0, inplace = True, errors = 'ignore')
     edges_gdf['edgeID'] = edges_gdf.index.values.astype(int)
@@ -1313,10 +1320,12 @@ def simplify_dual_lines_nodes_to_cluster(nodes_gdf, edges_gdf, clusters_gdf):
                 continue 
             if road[ix_u] == node[0]:
                 goal = road[ix_clus_v]
-                if goal is None: goal = road[ix_clus_vR]
+                if goal is None: 
+                    goal = road[ix_clus_vR]
             elif road[ix_v] == node[0]:
                 goal = road[ix_clus_u]
-                if goal is None: goal = road[ix_clus_uR]
+                if goal is None: 
+                    goal = road[ix_clus_uR]
             if goal is None: 
                 continue
                 
@@ -1352,9 +1361,7 @@ def simplify_dual_lines_nodes_to_cluster(nodes_gdf, edges_gdf, clusters_gdf):
             ix_lines = [possible_dual_lines.iloc[i].edgeID for i in range(0, len(possible_dual_lines))]      
             list_nodes_traversed = [[] for i in range(0, len(possible_dual_lines))]
             list_lines_traversed = [[] for i in range(0, len(possible_dual_lines))]    
-            last_node, nodes_traversed, lines_traversed = None, [], []
-            # print("node", node.Index, "destination cluster", goal, ix_lines)
-            
+            last_node, nodes_traversed, lines_traversed = None, [], []          
             
             ######################################################## OPTION 1
             if all(x == c_v[0] for x in c_v) & (not None in c_v):
@@ -1441,7 +1448,7 @@ def reassign_edges(nodes_gdf, edges_gdf, clusters_gdf):
         old_v = row[ix_old_v]
         new_geo = row[ix_changed]
         
-        if (u != None) & (v != None):  # change starting and ending node in the list of coordinates for the line
+        if (u is not None) & (v is not None):  # change starting and ending node in the list of coordinates for the line
                 if (not clusters_gdf.loc[u].keep) & (not clusters_gdf.loc[v].keep): 
                     u = old_u
                     v = old_v
@@ -1463,14 +1470,14 @@ def reassign_edges(nodes_gdf, edges_gdf, clusters_gdf):
         elif (u is None) & (v is None):  # maintain old_u and old_v
             u = old_u
             v = old_v
-        elif (u is None) & (v != None): # maintain old_u
+        elif (u is None) & (v is not None): # maintain old_u
             u = old_u
             if not clusters_gdf.loc[v].keep: 
                 v = old_v
             else: 
                 line_coords[-1] = (clusters_gdf.loc[v]['x'], clusters_gdf.loc[v]['y'])
                 # if not new_geo: line_coords.insert(-1,nodes_gdf.loc[row[ix_old_v]]['geometry'].coords[0]) 
-        elif (u != None) & (v == None): # maintain old_v
+        elif (u is not None) & (v == None): # maintain old_v
             v = old_v
             if not clusters_gdf.loc[u].keep: 
                 u = old_u
