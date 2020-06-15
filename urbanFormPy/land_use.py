@@ -139,18 +139,22 @@ def _assign_land_use_from_polygons(building_geometry, other_source_gdf, other_so
     possible_matches = other_source_gdf.iloc[possible_matches_index]
     pm = possible_matches[possible_matches.intersects(building_geometry)]
     pm["area"] = 0.0
-    if (len(pm) == 0): return None# no intersecting features in the other_source_gdf
+    if (len(pm) == 0): 
+        return None# no intersecting features in the other_source_gdf
 
     for row in pm.itertuples(): # for each possible candidate, computing the extension of the area of intersection
         other_geometry = pm.loc[row.Index]['geometry']
-        try: overlapping_area = other_geometry.intersection(g).area
-        except: continue
+        try:
+            overlapping_area = other_geometry.intersection(g).area
+        except: 
+            continue
         pm.at[row.Index, "area"] = overlapping_area
         
         # sorting the matches based on the extent of the area of intersection
         pm = pm.sort_values(by="area", ascending=False).reset_index()
         # assigning the match land-use category if the area of intersection covers at least 60% of the building's area
-        if (pm["area"].loc[0] >= (g.area * 0.60)): return pm[land_use_field].loc[0]
+        if (pm["area"].loc[0] >= (g.area * 0.60)): 
+            return pm[land_use_field].loc[0]
      
     return None
 
@@ -205,7 +209,8 @@ def _assign_land_use_from_points(building_geometry, other_source_gdf, other_sour
     possible_matches = other_source_gdf.iloc[possible_matches_index]
     pm = possible_matches[possible_matches.intersects(building_geometry)]
     
-    if (len(pm)==0): return None # no intersecting features in the other_source_gdf
+    if (len(pm)==0): 
+        return None # no intersecting features in the other_source_gdf
     
     # counting nr of features
     pm.groupby([land_use_field],as_index=False)["nr"].sum().sort_values(by="nr", ascending=False).reset_index()
