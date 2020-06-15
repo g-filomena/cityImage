@@ -1,8 +1,7 @@
 import networkx as nx, pandas as pd, numpy as np, geopandas as gpd
 import functools
 
-from shapely.geometry import Point, LineString, Polygon, MultiPolygon, mapping, MultiLineString
-from shapely.ops import cascaded_union, linemerge, nearest_points
+from shapely.geometry import Point, 
 pd.set_option("precision", 10)
 
 from .utilities import *
@@ -59,7 +58,6 @@ def straightness_centrality(G, weight, normalized = True):
     straightness_centrality = {}
 
     # Initialize dictionary containing all the node id and coordinates
-    # coord_nodes = get_nodes_coords(Node, Session)
     coord_nodes = nodes_dict(G)
 
     for n in nodes:
