@@ -290,7 +290,7 @@ def amend_node_membership(nodeID, nodes_gdf, edges_gdf):
     
     if len(districts_sorted) == 1:  
         return districts_sorted.idxmax()
-    elif districts_sorted.iloc[0] > districts_sorted.iloc[1]: 
+    if districts_sorted.iloc[0] > districts_sorted.iloc[1]: 
         return districts_sorted.idxmax()
     
     tmp_nodes = tmp_nodes[tmp_nodes.district.isin(list(districts_sorted[0:2].index))]

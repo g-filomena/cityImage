@@ -52,7 +52,8 @@ class MultiPlotGrid():
     def __init__(self, fig_size, nrows, ncols, black_background, title):
         
         figsize = (fig_size, fig_size*nrows)
-        if (nrows == 1) & (ncols == 2): figsize = (fig_size, fig_size/2)
+        if (nrows == 1) & (ncols == 2): 
+            figsize = (fig_size, fig_size/2)
             
         fig = plt.figure(figsize=figsize)
         grid = ImageGrid(fig, 111, nrows_ncols=(nrows,ncols), axes_pad= (0.50, 1.00))
@@ -65,7 +66,8 @@ class MultiPlotGrid():
             rect.set_facecolor("white")
         
         font_size = fig_size+5 # font-size   
-        if title is not None: fig.suptitle(title, color = text_color, fontsize=40, fontfamily = 'Times New Roman')    
+        if title is not None: 
+            fig.suptitle(title, color = text_color, fontsize=40, fontfamily = 'Times New Roman')    
         self.fig, self.grid = fig, grid
         self.font_size, self.text_color = font_size, text_color
 
@@ -128,9 +130,11 @@ def plot_points(gdf, column = None, classes = 7, ms = 0.9, ms_col = None, scheme
             if black_background: gdf_base_map.plot(ax = ax, color = base_map_color, alpha = base_map_alpha)
             else: gdf_base_map.plot(ax = ax, color = base_map_color, alpha = base_map_alpha)
     
-    if column != None: gdf.sort_values(by = column,  ascending = True, inplace = True) 
+    if column != None: 
+        gdf.sort_values(by = column,  ascending = True, inplace = True) 
     # markers size from column is provided
-    if (ms_col != None): ms = gdf[ms_col]
+    if (ms_col != None): 
+        ms = gdf[ms_col]
     
     # plain plot:
     if (column == None) & (scheme == None):
@@ -143,7 +147,8 @@ def plot_points(gdf, column = None, classes = 7, ms = 0.9, ms_col = None, scheme
     
     # categorical map
     elif (column != None) & (scheme == None):
-        if cmap == None: cmap =  rand_cmap(len(gdf[column].unique()))
+        if cmap == None: cmap = 
+            rand_cmap(len(gdf[column].unique()))
         gdf.plot(ax = ax, column = column, categorical = True, cmap = cmap, k = classes, markersize = ms, legend = legend, alpha = 1)    
     
     # user defined bins
@@ -155,7 +160,8 @@ def plot_points(gdf, column = None, classes = 7, ms = 0.9, ms_col = None, scheme
         gdf.plot(ax = ax, column = column, cmap = cmap, markersize = ms, scheme = scheme, legend = legend, classification_kwds={'bins':bins}, alpha = 1)
     # other schemes
     elif scheme != None: gdf.plot(ax = ax, column = column, k = classes, cmap = cmap, markersize = ms, scheme = scheme,legend = legend, alpha = 1)
-    if legend: _generate_legend(ax, black_background)
+    if legend: 
+        _generate_legend(ax, black_background)
     
     plt.show() 
                 
@@ -232,7 +238,8 @@ def plot_lines(gdf, column = None, classes = 7, lw = 1.1, scheme = None, bins = 
             gdf.plot(ax = ax, categorical = True, column = column, color = colors, linewidth = lw, legend = legend) 
         # categorical map
         else: 
-            if cmap == None: cmap =  rand_cmap(len(gdf[column].unique()))
+            if cmap == None: 
+                cmap = rand_cmap(len(gdf[column].unique()))
             gdf.plot(ax = ax, categorical = True, column = column, cmap = cmap, linewidth = lw, legend = legend) 
     # user defined bins
     elif scheme == "User_Defined":
@@ -287,10 +294,12 @@ def plot_polygons(gdf, column = None, classes = 7, scheme = None, bins = None, c
     fig, ax = plot.fig, plot.ax
        
     # plain plot
-    if (column == None) & (scheme == None): gdf.plot(ax = ax, color = "orange",alpha = alpha, edgecolor="none")
+    if (column == None) & (scheme == None): 
+        gdf.plot(ax = ax, color = "orange",alpha = alpha, edgecolor="none")
     # categorigal plot
     elif (column != None) & (scheme == None): 
-        if cmap == None: cmap =  rand_cmap(len(gdf[column].unique()))
+        if cmap == None: 
+            cmap = rand_cmap(len(gdf[column].unique()))
         gdf.plot(ax = ax, column = column, cmap = cmap, alpha = alpha, categorical = True, legend = legend, edgecolor="none")  
     # user defined bins
     elif scheme == "User_Defined":
@@ -300,7 +309,8 @@ def plot_polygons(gdf, column = None, classes = 7, scheme = None, bins = None, c
         bins = [0.125, 0.25, 0.5, 0.75, 1.00]
         gdf.plot(ax = ax, column = column, cmap = cmap, scheme = scheme, legend = legend, classification_kwds={'bins':bins}, edgecolor="none")
     # other schemes
-    elif scheme != None: gdf.plot(ax = ax, column = column, k = classes, cmap = cmap, alpha = alpha,  scheme = scheme, legend = legend, edgecolor="none")
+    elif scheme != None: 
+        gdf.plot(ax = ax, column = column, k = classes, cmap = cmap, alpha = alpha,  scheme = scheme, legend = legend, edgecolor="none")
 
     # background (e.g. street network)
 
@@ -315,8 +325,10 @@ def plot_polygons(gdf, column = None, classes = 7, scheme = None, bins = None, c
             if black_background: gdf_base_map.plot(ax = ax, color = base_map_color, alpha = base_map_alpha, edgecolor="none")
             else: gdf_base_map.plot(ax = ax, color = base_map_color, alpha = base_map_alpha, edgecolor="none")
     
-    if legend: _generate_legend(ax, black_background)
-    if (color_bar) & (not legend): generate_color_bar(cmap, gdf[column], ax, text_color, font_size)
+    if legend: 
+        _generate_legend(ax, black_background)
+    if (color_bar) & (not legend): 
+        generate_color_bar(cmap, gdf[column], ax, text_color, font_size)
 
     plt.show()    
 
@@ -374,7 +386,8 @@ def plot_barriers(barriers_gdf, lw = 1.1, title = "Plot", legend = False, black_
     colormap = LinearSegmentedColormap.from_list('new_map', colors, N=4)
     barriers_gdf.plot(ax = ax, categorical = True, column = 'barrier_type', cmap = colormap, linewidth = lw, legend = legend, 
                      label =  'barrier_type') 
-    if legend: _generate_legend(ax, black_background)       
+    if legend: 
+        _generate_legend(ax, black_background)       
     plt.show()  
     
 def multi_plot_polygons(list_gdfs, list_sub_titles, main_title, column = None, classes = 7, scheme = None, bins = None, alpha = 1.0, 
@@ -408,12 +421,15 @@ def multi_plot_polygons(list_gdfs, list_sub_titles, main_title, column = None, c
     """
     
     # inferring number of columns/rows 
-    if len(list_gdf) == 1: nrows, ncols = 1, 1
-    elif len(list_gdf) == 2: nrows, ncols = 1, 2
+    if len(list_gdf) == 1: 
+        nrows, ncols = 1, 1
+    elif len(list_gdf) == 2: 
+        nrows, ncols = 1, 2
     else: 
         ncols = 3
         nrows = int(len(list_gdf)/ncols)
-        if (len(list_gdf)%ncols != 0): nrows = int(nrows)+1
+        if (len(list_gdf)%ncols != 0): 
+            nrows = int(nrows)+1
 
     # fig,ax set up
     multiPlot = MultiPlot(fig_size = fig_size, nrows = nrows, ncols = ncols, black_background = black_background, title = title)
@@ -423,8 +439,10 @@ def multi_plot_polygons(list_gdfs, list_sub_titles, main_title, column = None, c
     for n, ax in enumerate(axes):
         ax.set_aspect("equal")
         ax.set_axis_off()
-        try: gdf = list_gdf[n]
-        except: continue
+        try: 
+            gdf = list_gdf[n]
+        except: 
+            continue
         
         # subtitles
         ax.set_title(list_sub_titles[n], color = text_color, fontsize = font_size-2)
@@ -432,7 +450,8 @@ def multi_plot_polygons(list_gdfs, list_sub_titles, main_title, column = None, c
         if (column is None) & (scheme is None): gdf.plot(ax = ax, color = "orange", alpha = alpha)  # plain map
         # categorigal plot
         elif (column is not None) & (scheme is None): 
-            if cmap is None: cmap = rand_cmap(len(gdf[column].unique()))
+            if cmap is None: 
+                cmap = rand_cmap(len(gdf[column].unique()))
             gdf.plot(ax = ax, column = column, cmap = cmap, categorical = True, legend = legend, alpha = alpha)       
         # user defined bins
         elif scheme == "User_Defined":
@@ -442,7 +461,8 @@ def multi_plot_polygons(list_gdfs, list_sub_titles, main_title, column = None, c
             bins = [0.125, 0.25, 0.5, 0.75, 1.00]
             gdf.plot(ax = ax, column = column, cmap = cmap, scheme = scheme, legend = legend, alpha = alpha, classification_kwds={'bins':bins})    
         # all other schemes
-        elif scheme is not None: gdf.plot(ax = ax, column = column, k = classes, cmap = cmap, alpha = alpha, scheme = scheme, legend = legend)
+        elif scheme is not None: 
+            gdf.plot(ax = ax, column = column, k = classes, cmap = cmap, alpha = alpha, scheme = scheme, legend = legend)
 
     plt.subplots_adjust(top = 0.88, hspace= 0.025)
     plt.show()  
@@ -460,16 +480,21 @@ def plot_lines_grid(gdf, columns = None, title = None, titles = None, fig_size =
 
     for n, ax in enumerate(grid):
         ax.set_aspect("equal")
-        if axis_frame: set_axis_frame(ax, black_background, multiPlot.text_color)
+        if axis_frame: 
+            set_axis_frame(ax, black_background, multiPlot.text_color)
         else: ax.set_axis_off()
         
-        if n > len(columns)-1: continue # when odd nr of columns
+        if n > len(columns)-1: 
+            continue # when odd nr of columns
         ax.set_title(titles[n], loc='center', fontfamily = 'Times New Roman', fontsize = 30, color = multiPlot.text_color,
                     pad = 15)
         
-        if columns[n] is not None: gdf.sort_values(by = columns[n], ascending = True, inplace = True) 
-        if (lw is None) & (scheme is None) & (norm is None): lw = 1.00
-        elif lw is None: lw = [value*lw_factor if value*lw_factor> 1.1 else 1.1 for value in gdf[columns[n]]]
+        if columns[n] is not None: 
+            gdf.sort_values(by = columns[n], ascending = True, inplace = True) 
+        if (lw is None) & (scheme is None) & (norm is None): 
+            lw = 1.00
+        elif lw is None: 
+            lw = [value*lw_factor if value*lw_factor> 1.1 else 1.1 for value in gdf[columns[n]]]
         
         # single color map
         if (columns[n] is None) & (scheme is None): gdf.plot(ax = ax, color = color, linewidth = lw)
@@ -481,7 +506,8 @@ def plot_lines_grid(gdf, columns = None, title = None, titles = None, fig_size =
                 gdf.plot(ax = ax, categorical = True, column = columns[n], color = colors, linewidth = lw, legend = legend,
                          capstyle = 'round', joinstyle = 'round')
             else:
-                if cmap is None: cmap = rand_cmap(len(gdf[column].unique()))
+                if cmap is None: 
+                    cmap = rand_cmap(len(gdf[column].unique()))
                 gdf.plot(ax = ax, categorical = True, column = columns[n], cmap=cmap, linewidth = lw, legend = legend,
                         capstyle = 'round', joinstyle = 'round')
             
@@ -523,7 +549,7 @@ def plot_multiplex(M, multiplex_edges):
     node_color = []
 
     for i, d in M.nodes(data=True):
-        if d["station"] == True:
+        if d["station"]:
             node_size.append(9)
             node_color.append("#ec1a30")
         elif d["z"] == 1:
@@ -541,11 +567,14 @@ def plot_multiplex(M, multiplex_edges):
     for u, v, data in M.edges(data=True):
         xs, ys = data["geometry"].xy
         zs = [M.node[u]["z"]*2000 for i in range(len(xs))]
-        if data["layer"] == "intra_layer": zs = [0, 2000]
+        if data["layer"] == "intra_layer": 
+            zs = [0, 2000]
         
         lines.append([list(a) for a in zip(xs, ys, zs)])
-        if data["layer"] == "intra_layer": line_width.append(0.2)
-        elif data["pedestrian"] == 1: line_width.append(0.1)
+        if data["layer"] == "intra_layer": 
+            line_width.append(0.2)
+        elif data["pedestrian"] == 1: 
+            line_width.append(0.1)
         else: line_width.append(lwidth)
 
     fig_height = 40
@@ -576,7 +605,8 @@ def _generate_legend(ax, black_background):
     leg.set_bbox_to_anchor((0., 0., 0.2, 0.2))
     leg.get_frame().set_linewidth(0.0) # remove legend border
     leg.set_zorder(102)
-    for text in leg.get_texts(): text.set_color("white")
+    for text in leg.get_texts(): 
+        text.set_color("white")
     if not black_background:
         leg.get_frame().set_facecolor('black')
         leg.get_frame().set_alpha(1)
@@ -592,7 +622,8 @@ def generate_grid_colorbar(cmap, fig, grid, nrows, ncols, text_color, font_size,
     ax = grid[0]
     width = ax.get_position().x1*ncols-hr_p-ax.get_position().x0
    
-    if nrows == 1: pos = [ax.get_position().x0+width, ax.get_position().y0, 0.027, ax.get_position().height]
+    if nrows == 1: 
+        pos = [ax.get_position().x0+width, ax.get_position().y0, 0.027, ax.get_position().height]
     elif nrows%2 == 0:
         y0 = (ax.get_position().y0-(ax.get_position().height*(nrows-1))-vr_p)+(nrows/2-0.5)*ax.get_position().height
         pos = [ax.get_position().x0+width, y0, 0.027, ax.get_position().height]
@@ -689,8 +720,10 @@ def set_axis_frame(ax, black_background, text_color):
     ax.xaxis.set_ticklabels([])
     ax.yaxis.set_ticklabels([])
     ax.tick_params(axis= 'both', which= 'both', length=0)
-    for spine in ax.spines: ax.spines[spine].set_color(text_color)
-    if black_background: ax.set_facecolor('black')
+    for spine in ax.spines: 
+        ax.spines[spine].set_color(text_color)
+    if black_background: 
+        ax.set_facecolor('black')
     
 def custom_cmap(from_rgb,to_rgb):
 

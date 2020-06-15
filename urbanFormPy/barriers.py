@@ -57,11 +57,13 @@ def road_barriers(place, download_method, distance = None, epsg = None, include_
     roads["highway"] = [x[0] if isinstance(x, list) else x for x in roads["highway"]]        
     roads.drop(['osmid', 'oneway', 'bridge', 'tunnel'], axis = 1, inplace = True, errors = 'ignore')
     main_types = ['trunk', 'motorway']
-    if include_primary == True: main_types = ['trunk', 'motorway', 'primary']
+    if include_primary: 
+        main_types = ['trunk', 'motorway', 'primary']
     roads = roads[roads.highway.isin(main_types)]
     roads = roads.unary_union
     roads = linemerge(roads)
-    if roads.type != "LineString": features = [i for i in roads]
+    if roads.type != "LineString": 
+        features = [i for i in roads]
     else: features = [roads]
     
     features = [i for i in roads]
@@ -139,7 +141,8 @@ def water_barriers(place, download_method, distance = None, epsg = None):
             cc = canals.unary_union
             rivers = rivers.union(cc)
             
-        except: pass
+        except: 
+            pass
         
         # removing possible duplicates with different tags
         try:
@@ -157,16 +160,19 @@ def water_barriers(place, download_method, distance = None, epsg = None):
             rb = river_banks.unary_union
             rivers = rivers.difference(rb)      
             
-        except: pass
+        except: 
+            pass
     
         rivers = linemerge(rivers)
-        if rivers.type != "LineString": features = [i for i in rivers]
+        if rivers.type != "LineString": 
+            features = [i for i in rivers]
         else: features = [rivers]
         df = pd.DataFrame({'geometry': features})
         rivers = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
         rivers['length'] = rivers['geometry'].length
             
-    except: rivers = None
+    except: 
+        rivers = None
     
     # lakes #########
     
@@ -199,7 +205,8 @@ def water_barriers(place, download_method, distance = None, epsg = None):
             river_banks = river_banks.to_crs(crs)
             rb = river_banks.unary_union
             lakes = lakes.difference(rb)
-        except: pass
+        except: 
+            pass
         
         # removing possible duplicates with different tags - rivers
         try:
@@ -217,7 +224,8 @@ def water_barriers(place, download_method, distance = None, epsg = None):
             rb = river_banks.unary_union
             lakes = lakes.difference(rb)  
             
-        except: pass
+        except: 
+            pass
         
         # removing possible duplicates with different tags - steams
         try:
@@ -235,7 +243,8 @@ def water_barriers(place, download_method, distance = None, epsg = None):
             st = steams.unary_union
             lakes = lakes.difference(st)  
         
-        except: pass
+        except: 
+            pass
         
         lakes = linemerge(lakes)
         if lakes.type != "LineString": features = [i for i in lakes]
@@ -257,11 +266,13 @@ def water_barriers(place, download_method, distance = None, epsg = None):
             waterway = ox.graph_to_gdfs(waterway_graph, nodes=False, edges=True, node_geometry=False, fill_edge_geometry=True)
             waterway = waterway.to_crs(crs)
             waterway = waterway.unary_union
-            if waterway.type != "LineString": features = [i for i in waterway]
+            if waterway.type != "LineString": 
+                features = [i for i in waterway]
             else: features = [waterway]
             df = pd.DataFrame({'geometry': features})
             waterway = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)      
-        except: waterway = None
+        except: 
+            waterway = None
                 
         lakes = lakes[~lakes.intersects(waterway)]
         lakes = lakes[lakes['length'] >=500]
@@ -281,19 +292,22 @@ def water_barriers(place, download_method, distance = None, epsg = None):
         sea = ox.graph_to_gdfs(sea_graph, nodes=False, edges=True, node_geometry= False, fill_edge_geometry=True)
         sea = sea.to_crs(crs)
         sea = linemerge(sea)
-        if sea.type != "LineString": features = [i for i in sea]
+        if sea.type != "LineString": 
+            features = [i for i in sea]
         else: features = [sea]
         df = pd.DataFrame({'geometry': features})
         sea['length'] = sea['geometry'].length
         sea = sea[['geometry', 'length']]
         
-    except: sea = None
+    except: 
+        sea = None
     
     water = rivers.append(lakes)
     water = water.append(sea)
     water = water.unary_union
     water = linemerge(water)
-    if water.type != "LineString": features = [i for i in water]
+    if water.type != "LineString": 
+        features = [i for i in water]
     else: features = [water]
     df = pd.DataFrame({'geometry': features, 'type': ['water'] * len(features)})
     water_barriers = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
@@ -357,13 +371,15 @@ def railway_barriers(place, download_method,distance = None, epsg = None, keep_l
             light_railways = light_railways.to_crs(crs)
             lr = light_railways.unary_union
             r = r.difference(lr)
-        except: pass
+        except: 
+            pass
 
     p = polygonize_full(r)
     railways = unary_union(p).buffer(10).boundary # to simpify a bit
     railways = railways
     railways = linemerge(railways)
-    if railways.type != "LineString": features = [i for i in railways]
+    if railways.type != "LineString": 
+        features = [i for i in railways]
     else: features = [railways]
     df = pd.DataFrame({'geometry': features, 'type': ['railway'] * len(features)})
     railway_barriers = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
@@ -396,7 +412,8 @@ def park_barriers(place, download_method, distance = None, epsg = None, min_area
     crs = {'init': 'epsg:' + str(epsg)}
     if download_method == 'distance_from_address':
         parks_polygon = ox.footprints_from_address(place, distance = distance, footprint_type="leisure", retain_invalid = True)
-    elif download_method == 'OSMplace': parks_polygon = ox.footprints_from_place(place, footprint_type="leisure", retain_invalid = True)
+    elif download_method == 'OSMplace': 
+        parks_polygon = ox.footprints_from_place(place, footprint_type="leisure", retain_invalid = True)
     else: parks_polygon = ox.footprints_from_polygon(place, footprint_type="leisure", retain_invalid = True)
     
     parks_polygon = parks_polygon[parks_polygon.leisure == 'park']
@@ -405,8 +422,10 @@ def park_barriers(place, download_method, distance = None, epsg = None, min_area
     
     for row in parks_polygon.itertuples():
         type_geo = None
-        try: type_geo = row[ix_geo].geom_type
-        except: to_drop.append(row.Index)
+        try: 
+            type_geo = row[ix_geo].geom_type
+        except: 
+            to_drop.append(row.Index)
         
     parks_polygon.drop(to_drop, axis = 0, inplace = True)
     parks_polygon = parks_polygon.to_crs(crs)
@@ -417,7 +436,8 @@ def park_barriers(place, download_method, distance = None, epsg = None, min_area
     pp = polygonize_full(pp)
     parks = unary_union(pp).buffer(10).boundary # to simpify a bit
     parks = linemerge(parks)
-    if parks.type != "LineString": features = [i for i in parks]
+    if parks.type != "LineString": 
+        features = [i for i in parks]
     else: features = [parks]
     features = [i for i in parks]
 
@@ -450,7 +470,7 @@ def along_water(edges_gdf, barriers_gdf):
     edges_gdf['bridge'] = edges_gdf.apply(lambda row: True if len(row['c_rivers']) > 0 else False, axis = 1)
     # excluding bridges
     edges_gdf['a_rivers'] = edges_gdf.apply(lambda row: list(set(row['ac_rivers'])-set(row['c_rivers'])), axis = 1)
-    edges_gdf['a_rivers'] = edges_gdf.apply(lambda row: row['ac_rivers'] if row['bridge'] == False else [], axis = 1)
+    edges_gdf['a_rivers'] = edges_gdf.apply(lambda row: row['ac_rivers'] if not row['bridge'] else [], axis = 1)
     edges_gdf.drop(['ac_rivers', 'c_rivers'], axis = 1, inplace = True)
     
     return edges_gdf
@@ -515,7 +535,8 @@ def barriers_along(ix_line, edges_gdf, barriers_gdf, edges_gdf_sindex, offset = 
     intersecting_barriers = barriers_gdf[barriers_gdf.geometry.intersects(buffer)]
     touching_barriers = barriers_gdf[barriers_gdf.geometry.touches(edges_gdf.loc[ix_line].geometry)]
     intersecting_barriers = intersecting_barriers[~intersecting_barriers.barrierID.isin(list(touching_barriers.barrierID))]
-    if len(intersecting_barriers) == 0: return []
+    if len(intersecting_barriers) == 0: 
+        return []
     
     possible_matches_index = list(edges_gdf_sindex.intersection(buffer.bounds))
     pm = edges_gdf.iloc[possible_matches_index]
@@ -524,10 +545,12 @@ def barriers_along(ix_line, edges_gdf, barriers_gdf, edges_gdf_sindex, offset = 
     for ix, barrier in intersecting_barriers.iterrows():
         midpoint = edges_gdf.loc[ix_line].geometry.interpolate(0.5, normalized = True)
         line = LineString([midpoint, nearest_points(midpoint, barrier['geometry'])[1]])
-        if len(pm[pm.geometry.intersects(line)]) >= 1: continue
-        else: barriers_along.append(barrier['barrierID'])
+        if len(pm[pm.geometry.intersects(line)]) >= 1: 
+            continue
+        barriers_along.append(barrier['barrierID'])
     
-    if len(barriers_along) == 0: return []
+    if len(barriers_along) == 0: 
+        return []
     return barriers_along
     
 
@@ -551,7 +574,8 @@ def _within_parks(line_geometry, park_polygons):
     within = []
     intersecting_parks = park_polygons[park_polygons.geometry.intersects(line_geometry)]
     touching_parks = park_polygons[park_polygons.geometry.touches(line_geometry)]
-    if len(intersecting_parks) == 0: return within
+    if len(intersecting_parks) == 0: 
+        return within
     intersecting_parks = intersecting_parks[~intersecting_parks.barrierID.isin(list(touching_parks.barrierID))]
     within = list(intersecting_parks.barrierID)
     return within
@@ -601,7 +625,8 @@ def _crossing_barriers(line_geometry, barriers_gdf):
     adjacent_barriers = []
     intersecting_barriers = barriers_gdf[barriers_gdf.geometry.intersects(line_geometry)]
     touching_barriers = barriers_gdf[barriers_gdf.geometry.touches(line_geometry)]
-    if len(intersecting_barriers) == 0: return adjacent_barriers
+    if len(intersecting_barriers) == 0: 
+        return adjacent_barriers
     intersecting_barriers = intersecting_barriers[~intersecting_barriers.barrierID.isin(list(touching_barriers.barrierID))]
     adjacent_barriers = list(intersecting_barriers.barrierID)
     return adjacent_barriers
