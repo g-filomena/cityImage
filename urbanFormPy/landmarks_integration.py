@@ -1,4 +1,7 @@
-import pandas as pd, numpy as np, geopandas as gpd, matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np 
+import geopandas as gpd
+
 from shapely.geometry import Point, LineString, Polygon, MultiPolygon, MultiLineString
 from shapely.ops import cascaded_union
 pd.set_option("precision", 10)
@@ -57,7 +60,8 @@ def _find_local_landmarks(node_geometry, buildings_gdf, buildings_gdf_sindex, ra
     possible_matches = buildings_gdf.iloc[possible_matches_index]
     precise_matches = possible_matches[possible_matches.intersects(b)]
     
-    if len(precise_matches) == 0: pass
+    if len(precise_matches) == 0: 
+        pass
     else:
         precise_matches = precise_matches.sort_values(by = "lScore_sc", ascending = False).reset_index()
         precise_matches = precise_matches.round({"lScore_sc":3})
@@ -124,7 +128,8 @@ def _find_anchors(node_geometry, global_landmarks, global_landmarks_sindex, radi
     possible_matches_index = list(global_landmarks_sindex.intersection(b.bounds))
     possible_matches = global_landmarks.iloc[possible_matches_index]
     precise_matches = possible_matches[possible_matches.intersects(b)]
-    if len(precise_matches) == 0: pass
+    if len(precise_matches) == 0: 
+        pass
     else:  
         precise_matches["dist"] = precise_matches.apply(lambda row: node_geometry.distance(row.geometry), axis=1)
         precise_matches = precise_matches.round({"dist":3})
@@ -273,12 +278,15 @@ def _openess_polygon(node_geometry, buildings_gdf_sindex, distance_along, max_di
         line = LineString([node_geometry, Point(coords)])
         obstacles = possible_obstacles[possible_obstacles.crosses(line)]
 
-        if len(obstacles == 0): lineNew = line
+        if len(obstacles) == 0: 
+            lineNew = line
         else:
             ob = cascaded_union(obstacles.geometry)
             t = line.intersection(ob)
-            try: intersection = t[0].coords[0]
-            except: intersection = t.coords[0]
+            try: 
+                intersection = t[0].coords[0]
+            except: 
+                intersection = t.coords[0]
 
             lineNew = LineString([node_geometry, Point(intersection)])
 
@@ -286,7 +294,8 @@ def _openess_polygon(node_geometry, buildings_gdf_sindex, distance_along, max_di
         i = i+distance_along
 
     list_points = [node_geometry]
-    for i in list_lines: list_points.append(Point(i.coords[1]))
+    for i in list_lines: 
+        list_points.append(Point(i.coords[1]))
     list_points.append(node_geometry)
     poly = Polygon([[p.x, p.y] for p in list_points])
     
@@ -340,13 +349,15 @@ def compute_2d_visibility(nodes_gdf, buildings_gdf, max_distance_node_to_buildin
         possible_nodes_index = list(sindex_n.intersection(no_holes.buffer(interval).bounds))
         possible_nodes = nodes_gdf.iloc[possible_nodes_index]
         nodes_around = possible_nodes[possible_nodes.intersects(no_holes.buffer(interval))]
-        if len(nodes_around) == 0: continue
+        if len(nodes_around) == 0: 
+            continue
 
         new_ring = coords.copy()
         distance_so_far = 0
 
         for n, i in enumerate(coords):
-            if (n == 0) | (n == len(coords)-1) : continue
+            if (n == 0) | (n == len(coords)-1) : 
+                continue
             distance = Point(i).distance(Point(coords[n-1]))
             if distance < interval: 
                 distance_so_far = distance_so_far + distance
@@ -373,7 +384,8 @@ def compute_2d_visibility(nodes_gdf, buildings_gdf, max_distance_node_to_buildin
             for coord in new_ring:
                 v = LineString([row_n[ix_geo_n], Point(coord)])
                 if not no_obstacles: 
-                    if v.intersects(union): continue        
+                    if v.intersects(union): 
+                        continue        
                     
                 self_intersection = v.intersection(exteriors)
                 if (self_intersection.geom_type == "Point") | (self_intersection.geom_type == "GeometryCollection"): 

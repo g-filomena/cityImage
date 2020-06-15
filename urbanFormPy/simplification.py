@@ -720,7 +720,7 @@ def indirect_cluster(nodes_gdf, edges_gdf, clusters_gdf, ix_line, search_dir, sp
                         possible_matches = possible_matches[0:0]
                         break
                                     
-                if (cluster == None) | ((specific_cluster) & (cluster != desired_cluster)):
+                if (cluster is None) | ((specific_cluster) & (cluster != desired_cluster)):
                     lines_traversed.append(connector.Index)
                     last_line = connector.Index
 
@@ -837,7 +837,8 @@ def interpolate_on_centre_line(ix_line, center_line, nodes_gdf, edges_gdf,  firs
     new_index = ix_line                                                                                        
     distances = {}
     
-    if len(clusters_traversed)> 0: nodes_traversed = nodes_traversed + clusters_traversed
+    if len(clusters_traversed)> 0:
+        nodes_traversed = nodes_traversed + clusters_traversed
     for node in nodes_traversed:
         if node in clusters_traversed: 
             node_geometry = clusters_gdf.loc[node]['geometry']
@@ -927,7 +928,7 @@ def dissolve_dual_lines(ix_lines, line_geometries, nodes_gdf, edges_gdf, cluster
     if one_cluster: 
         cl = center_line_cluster(line_geometries, nodes_gdf, clusters_gdf, first_node, goal, one_cluster)
     else: cl = center_line_cluster(line_geometries, nodes_gdf, clusters_gdf, cluster, goal)
-    if cl == None: 
+    if cl is None: 
         return None
     
     if (direction == 'u') & (not interpolation):
@@ -1126,7 +1127,7 @@ def simplify_dual_lines(nodes_gdf, edges_gdf, clusters_gdf):
             if possible_dual_lines.loc[road.Index]['clus_v'] is not None: 
                 goal = possible_dual_lines.loc[road.Index]['clus_v']
             else: goal = possible_dual_lines.loc[road.Index]['clus_vR']
-            if (goal == None) | (goal == cluster): 
+            if (goal is None) | (goal == cluster): 
                 continue
             
             for candidate in possible_dual_lines.itertuples():
@@ -1477,7 +1478,7 @@ def reassign_edges(nodes_gdf, edges_gdf, clusters_gdf):
             else: 
                 line_coords[-1] = (clusters_gdf.loc[v]['x'], clusters_gdf.loc[v]['y'])
                 # if not new_geo: line_coords.insert(-1,nodes_gdf.loc[row[ix_old_v]]['geometry'].coords[0]) 
-        elif (u is not None) & (v == None): # maintain old_v
+        elif (u is not None) & (v is None): # maintain old_v
             v = old_v
             if not clusters_gdf.loc[u].keep: 
                 u = old_u

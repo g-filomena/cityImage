@@ -233,7 +233,8 @@ def dual_graph_fromGDF(nodes_dual, edges_dual):
     
     for attribute_name in nodes_dual.columns:
         # only add this attribute to nodes which have a non-null value for it
-        if attribute_name in to_ignore: continue
+        if attribute_name in to_ignore: 
+            continue
         attribute_values = {k:v for k, v in attributes[attribute_name].items() if pd.notnull(v)}
         nx.set_node_attributes(Dg, name=attribute_name, values=attribute_values)
 

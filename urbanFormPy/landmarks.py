@@ -47,7 +47,8 @@ def get_buildings_fromSHP(path, epsg, case_study_area = None, height_field = Non
     
     # computing area, reassigning columns
     city_buildings["area"] = city_buildings["geometry"].area
-    if height_field is not None: city_buildings["height"] = city_buildings[height_field]
+    if height_field is not None: 
+        city_buildings["height"] = city_buildings[height_field]
     if (base_field is None): 
         city_buildings["base"] = 0.0
         if height_field is not None: 
@@ -282,12 +283,14 @@ def _advance_visibility(building_geometry, obstructions_gdf, obstructions_sindex
    
     # creating a polygon of visibility based on the lines and their progression, taking into account the origin Point too    
     list_points = [Point(origin)]
-    for i in list_lines: list_points.append(Point(i.coords[1]))
+    for i in list_lines: 
+        list_points.append(Point(i.coords[1]))
     list_points.append(Point(origin))
     poly = Polygon([[p.x, p.y] for p in list_points])
     
     # subtracting th area of the building and computing the area of the polygon (area of visibility)
-    try: poly_vis = poly.difference(building_geometry)
+    try: 
+        poly_vis = poly.difference(building_geometry)
     except:
         pp = poly.buffer(0)
         poly_vis = pp.difference(building_geometry)      
@@ -313,11 +316,13 @@ def visibility_score(buildings_gdf, sight_lines = pd.DataFrame({'a' : []})):
     buildings_gdf = buildings_gdf.copy()
     buildings_gdf["fac"] = 0.0
     buildings_gdf["3dvis"] = 0.0
-    if "height" not in buildings_gdf.columns: return buildings_gdf
+    if "height" not in buildings_gdf.columns: 
+        return buildings_gdf
         
     #facade area (roughly computed)
     buildings_gdf["fac"] = buildings_gdf.apply(lambda row: _facade_area(row["geometry"], row["height"]), axis = 1)
-    if sight_lines.empty: return buildings_gdf
+    if sight_lines.empty: 
+        return buildings_gdf
     
     # 3d visibility
     sight_lines = sight_lines.copy()
