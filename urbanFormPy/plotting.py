@@ -1,4 +1,7 @@
-import matplotlib as mp, pandas as pd, numpy as np
+import matplotlib as mp
+import pandas as pd
+import numpy as np
+
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.colors as cols
@@ -410,7 +413,7 @@ def multi_plot_polygons(list_gdfs, list_sub_titles, main_title, column = None, c
     else: 
         ncols = 3
         nrows = int(len(list_gdf)/ncols)
-        if (len(list_gdf)%ncols != 0): nrows = int(nrows)+1;
+        if (len(list_gdf)%ncols != 0): nrows = int(nrows)+1
 
     # fig,ax set up
     multiPlot = MultiPlot(fig_size = fig_size, nrows = nrows, ncols = ncols, black_background = black_background, title = title)
@@ -449,7 +452,7 @@ def plot_lines_grid(gdf, columns = None, title = None, titles = None, fig_size =
                     classes = 7, legend = False, color_bar = False):
                           
     nrows, ncols = int(len(columns)/2), 2
-    if (len(columns)%2 != 0): nrows = nrows+1;
+    if (len(columns)%2 != 0): nrows = nrows+1
     multiPlot = MultiPlotGrid(fig_size = fig_size,nrows = nrows, ncols = ncols, black_background = black_background,
                               title = title)
     
@@ -645,9 +648,6 @@ def rand_cmap(nlabels, type_color ='soft'):
     :param last_color_black: Option to use last color as black, True or False
     :return: colormap for matplotlib
     """
-
-    import numpy as np
-
     if type_color not in ('bright', 'soft'): type_color = 'bright'
     
     # Generate color map for bright colors, based on hsv

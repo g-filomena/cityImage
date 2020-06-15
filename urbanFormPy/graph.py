@@ -1,6 +1,11 @@
 import warnings
 warnings.simplefilter(action="ignore", category=FutureWarning)
-import osmnx as ox, networkx as nx, matplotlib.cm as cm, pandas as pd, numpy as np, geopandas as gpd
+import osmnx as ox
+import pandas as pd
+import numpy as np
+import geopandas as gpd
+import networkx as nx
+
 import math
 from math import sqrt
 import ast
@@ -279,9 +284,4 @@ def nodes_degree(edges_gdf):
     dd_u = dict(edges_gdf['u'].value_counts())
     dd_v = dict(edges_gdf['v'].value_counts())
     dd = {k: dd_u.get(k, 0) + dd_v.get(k, 0) for k in set(dd_u) | set(dd_v)}
-    return dd
-    
-
-    
-
- 
+    return dd 

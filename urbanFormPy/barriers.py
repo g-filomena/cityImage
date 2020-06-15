@@ -1,4 +1,7 @@
-import osmnx as ox, networkx as nx, pandas as pd, numpy as np, geopandas as gpd
+import osmnx as ox
+import pandas as pd
+import numpy as np
+import geopandas as gpd
 
 from shapely.geometry import Point, LineString, Polygon, MultiPolygon, MultiLineString
 from shapely.ops import cascaded_union, linemerge, polygonize, polygonize_full, unary_union, nearest_points
@@ -51,7 +54,7 @@ def road_barriers(place, download_method, distance = None, epsg = None, include_
         roads = roads[roads["tunnel"] == 0] 
     
     # resolving lists 
-    roads["highway"] = [x[0] if type(x) == list else x for x in roads["highway"]]        
+    roads["highway"] = [x[0] if isinstance(x, list) else x for x in roads["highway"]]        
     roads.drop(['osmid', 'oneway', 'bridge', 'tunnel'], axis = 1, inplace = True, errors = 'ignore')
     main_types = ['trunk', 'motorway']
     if include_primary == True: main_types = ['trunk', 'motorway', 'primary']

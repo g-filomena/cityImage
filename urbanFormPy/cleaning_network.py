@@ -1,7 +1,11 @@
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-import networkx as nx, pandas as pd, numpy as np, geopandas as gpd
+import networkx as nx
+import pandas as pd
+import numpy as np
+import geopandas as gpd
+
 from shapely.geometry import Point, LineString, MultiPoint, MultiLineString
 from shapely.ops import split, unary_union
 pd.set_option('precision', 10)
@@ -42,16 +46,16 @@ def duplicate_nodes(nodes_gdf, edges_gdf):
     to_edit = list(set(nodes_gdf.index.values.tolist()) - set((new_nodes.index.values.tolist())))
     
     if len(to_edit) == 0: return(nodes_gdf, edges_gdf) 
-    else:
-        # readjusting edges' nodes too, accordingly
-        for node in to_edit:
-            geo = nodes_gdf.loc[node].geometry
-            tmp = new_nodes[new_nodes.geometry == geo]
-            index = tmp.iloc[0].nodeID
-            
-            # assigning the unique index to edges
-            edges_gdf.loc[edges_gdf.u == node,'u'] = index
-            edges_gdf.loc[edges_gdf.v == node,'v'] = index
+    
+    # readjusting edges' nodes too, accordingly
+    for node in to_edit:
+        geo = nodes_gdf.loc[node].geometry
+        tmp = new_nodes[new_nodes.geometry == geo]
+        index = tmp.iloc[0].nodeID
+        
+        # assigning the unique index to edges
+        edges_gdf.loc[edges_gdf.u == node,'u'] = index
+        edges_gdf.loc[edges_gdf.v == node,'v'] = index
         
     return new_nodes, edges_gdf
     
@@ -407,7 +411,7 @@ def fix_network_topology(nodes_gdf, edges_gdf):
         tmp.drop(row.Index, axis = 0, inplace = True)
         
         union = tmp.unary_union
-        intersections = line_geometry.intersection(union);
+        intersections = line_geometry.intersection(union)
         if intersections.geom_type == 'Point': intersections = [intersections]
         points = [i for i in intersections if i.geom_type == 'Point']
         new_collection = []
@@ -548,4 +552,3 @@ class Error(Exception):
 class columnError(Error):
     """Raised when a column name is not provided"""
     pass
-

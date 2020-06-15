@@ -1,10 +1,12 @@
-import networkx as nx, pandas as pd, numpy as np, geopandas as gpd
+import networkx as nx
+import pandas as pd
+import numpy as np
+import geopandas as gpd
 import functools
 import community
 import array
 import numbers
 import warnings
-
 
 from shapely.ops import polygonize_full, polygonize, unary_union
 from shapely.geometry import Point, LineString, Polygon, MultiPolygon, mapping, MultiLineString
@@ -254,7 +256,7 @@ def find_gateways(nodeID, nodes_gdf, edges_gdf):
     tmp = edges_gdf[(edges_gdf.u == nodeID) | (edges_gdf.v == nodeID)].copy()
     tmp_nodes = nodes_gdf[nodes_gdf.nodeID.isin(tmp.u) | nodes_gdf.nodeID.isin(tmp.v)].copy()
     if (len(tmp_nodes.district.unique()) > 1): return 1
-    else: return 0
+    return 0
     
 def check_disconnected_regions(nodes_gdf, edges_gdf, min_size):
     nodes_gdf = nodes_gdf.copy()
@@ -290,9 +292,9 @@ def amend_node_membership(nodeID, nodes_gdf, edges_gdf):
         return districts_sorted.idxmax()
     elif districts_sorted.iloc[0] > districts_sorted.iloc[1]: 
         return districts_sorted.idxmax()
-    else:
-        tmp_nodes = tmp_nodes[tmp_nodes.district.isin(list(districts_sorted[0:2].index))]
-        tmp_edges = edges_gdf[((edges_gdf.u == nodeID) & (edges_gdf.v.isin(tmp_nodes.nodeID))) |
-                              ((edges_gdf.v == nodeID) & (edges_gdf.u.isin(tmp_nodes.nodeID)))]
-        closest = distance_geometry_gdf(nodes_gdf.loc[nodeID].geometry, tmp_nodes)[1]
-        return tmp_nodes.loc[closest].district
+    
+    tmp_nodes = tmp_nodes[tmp_nodes.district.isin(list(districts_sorted[0:2].index))]
+    tmp_edges = edges_gdf[((edges_gdf.u == nodeID) & (edges_gdf.v.isin(tmp_nodes.nodeID))) |
+                          ((edges_gdf.v == nodeID) & (edges_gdf.u.isin(tmp_nodes.nodeID)))]
+    closest = distance_geometry_gdf(nodes_gdf.loc[nodeID].geometry, tmp_nodes)[1]
+    return tmp_nodes.loc[closest].district

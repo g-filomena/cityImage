@@ -1,6 +1,10 @@
 import warnings
 warnings.simplefilter(action="ignore", category=FutureWarning)
-import osmnx as ox, pandas as pd, numpy as np, geopandas as gpd
+
+import osmnx as ox, 
+import pandas as pd
+import numpy as np
+import geopandas as gpd
 import math
 from math import sqrt
 import ast
@@ -76,11 +80,11 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
     edges_gdf["oneway"] *= 1
     
     # resolving lists 
-    edges_gdf["highway"] = [x[0] if type(x) == list else x for x in edges_gdf["highway"]]
-    edges_gdf["name"] = [x[0] if type(x) == list else x for x in edges_gdf["name"]]
-    edges_gdf["lanes"] = [max(x) if type(x) == list else x for x in edges_gdf["lanes"]]
-    edges_gdf["bridge"] = [max(x) if type(x) == list else x for x in edges_gdf["bridge"]]
-    edges_gdf["tunnel"] = [max(x) if type(x) == list else x for x in edges_gdf["tunnel"]]
+    edges_gdf["highway"] = [x[0] if isinstance(x, list) else x for x in edges_gdf["highway"]]
+    edges_gdf["name"] = [x[0] if isinstance(x, list) else x for x in edges_gdf["name"]]
+    edges_gdf["lanes"] = [max(x) if isinstance(x, list) else x for x in edges_gdf["lanes"]]
+    edges_gdf["bridge"] = [max(x) if isinstance(x, list else x for x in edges_gdf["bridge"]]
+    edges_gdf["tunnel"] = [max(x) if isinstance(x, list) else x for x in edges_gdf["tunnel"]]
     
     # finalising geodataframes
     if epsg == None: nodes_gdf, edges_gdf = ox.projection.project_gdf(nodes_gdf), ox.projection.project_gdf(edges_gdf)

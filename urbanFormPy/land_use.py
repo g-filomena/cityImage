@@ -1,4 +1,7 @@
-import pandas as pd, numpy as np, geopandas as gpd, matplotlib.pyplot as plt
+import pandas as pd
+import numpy as np
+import geopandas as gpd
+
 from shapely.geometry import Point, LineString, Polygon, MultiPolygon, mapping, MultiLineString
 from shapely.ops import cascaded_union, linemerge
 from scipy.sparse import linalg
@@ -130,7 +133,6 @@ def _assign_land_use_from_polygons(building_geometry, other_source_gdf, other_so
     GeoDataFrame
     """
     
-    buildings_gdf = buildings_gdf.copy()
     ix_geo = other_source_gdf.columns.get_loc("geometry")+1 
     
     possible_matches_index = list(other_source_gdf_sindex.intersection(building_geometry.bounds)) # looking for intersecting geometries
@@ -149,10 +151,8 @@ def _assign_land_use_from_polygons(building_geometry, other_source_gdf, other_so
         pm = pm.sort_values(by="area", ascending=False).reset_index()
         # assigning the match land-use category if the area of intersection covers at least 60% of the building's area
         if (pm["area"].loc[0] >= (g.area * 0.60)): return pm[land_use_field].loc[0]
-
-        else: continue
-        
-    return buildings_gdf
+     
+    return None
 
 def land_use_from_points(buildings_gdf, other_source_gdf, column, land_use_field):
     """
@@ -206,7 +206,7 @@ def _assign_land_use_from_points(building_geometry, other_source_gdf, other_sour
     pm = possible_matches[possible_matches.intersects(building_geometry)]
     
     if (len(pm)==0): return None # no intersecting features in the other_source_gdf
-    else:
+    
     # counting nr of features
-        pm.groupby([land_use_field],as_index=False)["nr"].sum().sort_values(by="nr", ascending=False).reset_index()
-        return use[land_use_field].loc[0]
+    pm.groupby([land_use_field],as_index=False)["nr"].sum().sort_values(by="nr", ascending=False).reset_index()
+    return use[land_use_field].loc[0]

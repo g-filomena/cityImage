@@ -1,11 +1,15 @@
-import pandas as pd, numpy as np, geopandas as gpd
+import pandas as pd, 
+import numpy as np
+import geopandas as gpd
 import math
+import pyproj
+
 from math import sqrt
 from shapely.geometry import LineString, Point, Polygon, mapping
 from shapely.ops import unary_union, transform
 from shapely.affinity import scale
 from functools import partial
-import pyproj
+
 
 pd.set_option("precision", 10)
 
@@ -22,7 +26,8 @@ def scaling_columnDF(df, i, inverse = False):
     """
     
     df[i+"_sc"] = (df[i]-df[i].min())/(df[i].max()-df[i].min())
-    if (inverse == True): df[i+"_sc"] = 1-(df[i]-df[i].min())/(df[i].max()-df[i].min())
+    if inverse == True: 
+        df[i+"_sc"] = 1-(df[i]-df[i].min())/(df[i].max()-df[i].min())
         
     
 def dict_to_df(list_dict, list_col):
@@ -63,9 +68,11 @@ def center_line(line_geometryA, line_geometryB):
     line_coordsA = list(line_geometryA.coords)
     line_coordsB = list(line_geometryB.coords)
         
-    if ((line_coordsA[0] == line_coordsB[-1]) | (line_coordsA[-1] == line_coordsB[0])): line_coordsB.reverse()  
+    if ((line_coordsA[0] == line_coordsB[-1]) | (line_coordsA[-1] == line_coordsB[0])): 
+        line_coordsB.reverse()  
     
-    if line_coordsA == line_coordsB: center_line = LineString([coor for coor in line_coordsA]) 
+    if line_coordsA == line_coordsB:
+        center_line = LineString([coor for coor in line_coordsA]) 
     else:
         while len(line_coordsA) > len(line_coordsB):
             index = int(len(line_coordsA)/2)
@@ -131,7 +138,8 @@ def merge_lines(line_geometries):
     if first[0] == second[0]: 
         reverse = True
         first.reverse()
-    if first[-1] == second[-1]: second.reverse()
+    if first[-1] == second[-1]: 
+        second.reverse()
     if first[0] == second[-1]:
         first.reverse()
         second.reverse()
@@ -140,13 +148,15 @@ def merge_lines(line_geometries):
     coords = first + second
     last = second
     for n,i in enumerate(line_geometries):
-        if n < 2: continue
+        if n < 2: 
+            continue
         next_coords = list(i.coords)
-        if (next_coords[-1] == last[-1]) :
+        if (next_coords[-1] == last[-1]):
             next_coords.reverse()
             last = next_coords
             
-    if reverse: coords.reverse()
+    if reverse:
+        coords.reverse()
     return LineString([coor for coor in coords])
             
 def envelope_wgs(gdf):
@@ -201,13 +211,15 @@ def create_grid(gdf, side_length = 150):
     to_reach = cols[-1]
     x = cols[0]
     while (x < to_reach):
-        if odd: x = x-side_length/2
+        if odd: 
+            x = x-side_length/2
         for y in rows:
-            if odd: y = y-height/2
+            if odd: 
+                y = y-height/2
             centroid = Polygon([(x,y), (x+side_length, y), (x+side_length, y-side_length), (x, y-side_length)]).centroid       
             polygons.append(create_hexagon(side_length, centroid.coords[0][0], centroid.coords[0][1] ))
-        
-        if odd: x = x + width-side_length/2
+        if odd: 
+            x = x + width-side_length/2
         else: x = x+width
         odd = not odd
 

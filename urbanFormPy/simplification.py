@@ -1,7 +1,9 @@
 import warnings
 warnings.simplefilter(action='ignore')
 
-import pandas as pd, numpy as np, geopandas as gpd
+import pandas as pd
+import numpy as np
+import geopandas as gpd
 import math
 from math import sqrt
 from shapely.geometry import Point, LineString, Polygon, MultiPolygon, MultiPoint, mapping, MultiLineString
@@ -65,9 +67,7 @@ def is_continuation(ix_lineA, ix_lineB, edges_gdf):
     line_geometry_A = edges_gdf.loc[ix_lineA]['geometry']
     line_geometry_B = edges_gdf.loc[ix_lineB]['geometry']
     if is_parallel(line_geometry_A, line_geometry_B, hard = True): return True
-    if (nameA == nameB) & (is_parallel(line_geometry_A, line_geometry_B, hard = False)): return True
-    else: return False
-
+    return ((nameA == nameB) & (is_parallel(line_geometry_A, line_geometry_B, hard = False)))
 
 def simplify_dual_lines_junctions(nodes_gdf, edges_gdf, max_difference_length = 0.40, max_distance_between_lines = 30):
 
@@ -846,9 +846,9 @@ def dissolve_dual_lines(ix_lines, line_geometries, nodes_gdf, edges_gdf, cluster
     ix_lineB = ix_lines[1]
     line_geometry_A = line_geometries[0]
     line_geometry_B = line_geometries[1]
-    if len(nodes_traversed)> 0: interpolation = True
-    else: interpolation = False
-    
+
+    interpolation = len(nodes_traversed) > 0
+
     if not one_cluster:
         if ((edges_gdf.loc[ix_lineA]['name'] != None) & (edges_gdf.loc[ix_lineB]['name'] != None) & 
                     (edges_gdf.loc[ix_lineA]['name'] != edges_gdf.loc[ix_lineB]['name'])): return None
@@ -890,8 +890,7 @@ def dissolve_multiple_dual_lines(ix_lines, line_geometries, nodes_gdf, edges_gdf
     secondary_lines = []
     max_dist = 0
     
-    if len(nodes_traversed)> 0: interpolation = True
-    else: interpolation = False
+    interpolation = len(nodes_traversed) > 0
     
     for line in dict_lines.values():
         for other_line in dict_lines.values():

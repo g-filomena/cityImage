@@ -155,7 +155,7 @@ def angle_line_geometries(line_geometryA, line_geometryB, degree = False, deflec
         angle_rad = 0.0
         
     if degree: return angle_deg
-    else: return angle_rad
+    return angle_rad
     
 def difference_angle_line_geometries(line_geometryA, line_geometryB):
     """

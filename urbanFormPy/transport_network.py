@@ -1,8 +1,11 @@
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
-import networkx as nx, matplotlib.cm as cm, pandas as pd, numpy as np, geopandas as gpd
-from shapely.geometry import Point, LineString, Polygon, MultiPolygon, MultiPoint, mapping, MultiLineString
-from shapely.ops import cascaded_union, linemerge, nearest_points, polygonize, split, polygonize_full, unary_union
+
+import pandas as pd
+import numpy as np
+import geopandas as gpd
+from shapely.geometry import Point, LineString, Polygon, MultiPoint
+from shapely.ops import split, unary_union
 
 pd.set_option('precision', 10)
 
@@ -59,10 +62,12 @@ def get_urban_rail_fromOSM(download_type, place, epsg, distance = 7000):
             gdf = ox.graph_to_gdfs(G, nodes=False, edges=True, node_geometry = False, fill_edge_geometry=True)
             gdf = gdf.to_crs(crs)
             gdf['type'] = tag
-        except: gdf = pd.DataFrame(columns = None)
+        except: 
+            gdf = pd.DataFrame(columns = None)
         edges_gdf = edges_gdf.append(gdf)
     
-    if edges_gdf.empty: return None, None
+    if edges_gdf.empty: 
+        return None, None
      
     edges_gdf = edges_gdf[["geometry", "length", "name", "type", "key", "bridge"]]
     edges_gdf.reset_index(inplace=True, drop=True)
@@ -207,7 +212,7 @@ def simplify_stations(nodes_gdf, edges_gdf):
     for row in edges_gdf.itertuples():
         u,v  = edges_gdf.loc[row.Index].u, edges_gdf.loc[row.Index].v
 
-        if (nodes_gdf.loc[u]['name'] == nodes_gdf.loc[v]['name']) & (nodes_gdf.loc[u]['name'] != None):
+        if (nodes_gdf.loc[u]['name'] == nodes_gdf.loc[v]['name']) & (nodes_gdf.loc[u]['name'] is not None):
             edges_gdf.loc[edges_gdf.u == v, 'u'] = u
             edges_gdf.loc[edges_gdf.v == v, 'v'] = u
             centroid = nodes_gdf.loc[[u,v]].geometry.unary_union.centroid
@@ -233,7 +238,8 @@ def merge_station_nodes(nodes_gdf, edges_gdf):
 
     for row in old_edges_gdf.itertuples():
         u,v  = old_edges_gdf.loc[row.Index].u, old_edges_gdf.loc[row.Index].v
-        if old_edges_gdf.loc[row.Index].geometry.length > 40: continue
+        if old_edges_gdf.loc[row.Index].geometry.length > 40:
+            continue
 
         if ((nodes_gdf.loc[u]['stationID'] != nodes_gdf.loc[v]['stationID']) & 
              ((nodes_gdf.loc[u]['stationID'] == 999999) | (nodes_gdf.loc[v]['stationID'] == 999999))):
@@ -269,7 +275,8 @@ def extend_stations(nodes_gdf, edges_gdf):
     for row in tmp_nodes.itertuples():
         tmp_edges = edges_gdf[edges_gdf.intersects(tmp_nodes.loc[row.Index].geometry.buffer(25))]
         tmp_edges = tmp_edges[(tmp_edges.u != row.Index) & (tmp_edges.v != row.Index)]
-        if len(tmp_edges) == 0: continue
+        if len(tmp_edges) == 0: 
+            continue
         for e in tmp_edges.itertuples():
             lines, point = split_line_at_interpolation(tmp_nodes.loc[row.Index].geometry, edges_gdf.loc[e.Index].geometry)
             

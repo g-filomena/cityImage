@@ -1,4 +1,8 @@
-import pandas as pd, numpy as np, geopandas as gpd, matplotlib.pyplot as plt
+import osmnx as ox
+import pandas as pd
+import numpy as np
+import geopandas as gpd
+
 from shapely.geometry import Point, LineString, Polygon, MultiPolygon, mapping, MultiLineString
 from shapely.ops import cascaded_union, linemerge
 from scipy.sparse import linalg
@@ -65,7 +69,8 @@ def get_buildings_fromSHP(path, epsg, case_study_area = None, height_field = Non
         obstructions_gdf = buildings_gdf.copy()
         return buildings_gdf, obstructions_gdf
     # if case-study area is not defined
-    elif (case_study_area is None): case_study_area = city_buildings.geometry.unary_union.centroid.buffer(distance_from_center)
+    
+    if (case_study_area is None): case_study_area = city_buildings.geometry.unary_union.centroid.buffer(distance_from_center)
     obstructions_area = case_study_area.buffer(distance_from_center)
     obstructions_gdf = city_buildings[city_buildings.geometry.within(obstructions_area)]
     buildings_gdf = city_buildings[city_buildings.geometry.within(case_study_area)]  
@@ -421,7 +426,7 @@ def _compute_cultural_score_building(building_geometry, building_land_use, histo
     
     return cs
 
-def cultural_score_from_OSM(building_gdf):
+def cultural_score_from_OSM(buildings_gdf):
 
     """
     The function computes a cultural score simply based on a binary categorisation. This function exploits the tag "historic" in OSM buildings data.
@@ -439,10 +444,10 @@ def cultural_score_from_OSM(building_gdf):
     
     buildings_gdf = buildings_gdf.copy()    
     buildings_gdf["cult"] = 0
-    if "historic" not in building_gdf.columns: return buildings_gdf
-    building_gdf["historic"][building_gdfj["historic"].isnull()] = 0
-    building_gdf["historic"][building_gdf["historic"] != 0] = 1
-    building_gdf["cult"] = building_gdf["historic"]
+    if "historic" not in buildings_gdf.columns: return buildings_gdf
+    buildings_gdf["historic"][buildings_gdf["historic"].isnull()] = 0
+    buildings_gdf["historic"][buildings_gdf["historic"] != 0] = 1
+    buildings_gdf["cult"] = buildings_gdf["historic"]
         
     return buildings_gdf
 
@@ -646,5 +651,3 @@ class Error(Exception):
 class downloadError(Error):
     """Raised when a wrong download method is provided"""
     pass
-
-
