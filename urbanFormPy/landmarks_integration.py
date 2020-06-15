@@ -199,7 +199,8 @@ def _find_visible_landmarks(nodeID, global_landmarks, sight_lines_to_global_land
     ix_global_landmarks_node = list(sight_node["buildingID"].values.astype(int))
     global_landmarks_from_node = global_landmarks[global_landmarks["buildingID"].isin(ix_global_landmarks_node)] 
     global_landmarks_from_node.sort_values(by = "gScore_sc", ascending = False, inplace = True)
-    if len(global_landmarks_from_node) == 0: pass
+    if len(global_landmarks_from_node) == 0: 
+        pass
     else:
         global_landmarks_list = global_landmarks_from_node["buildingID"].tolist()
         scores_list = global_landmarks_from_node["gScore_sc"].tolist()
@@ -376,7 +377,8 @@ def compute_2d_visibility(nodes_gdf, buildings_gdf, max_distance_node_to_buildin
 
         new_ring = new_ring[:-1]
         no_obstacles = False
-        if (len(obstacles) > 0): union = obstacles.unary_union
+        if (len(obstacles) > 0): 
+            union = obstacles.unary_union
         else: no_obstacles = True
         
         for row_n in nodes_around.itertuples():

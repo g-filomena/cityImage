@@ -11,8 +11,8 @@ from math import sqrt
 import ast
 import functools
 
-from shapely.geometry import*
-from shapely.ops import*
+from shapely.geometry import Point, LineString
+
 pd.set_option("precision", 10)
 pd.options.mode.chained_assignment = None
 

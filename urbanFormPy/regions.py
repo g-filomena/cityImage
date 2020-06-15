@@ -239,7 +239,8 @@ def _assign_district_to_edge(edgeID, edges_gdf, nodes_gdf, district_field):
     district_uv = 999999
     district_u = nodes_gdf.loc[series.u][district_field]
     district_v = nodes_gdf.loc[series.v][district_field]
-    if district_u == district_v: district_uv = district_u
+    if district_u == district_v: 
+        district_uv = district_u
     return district_uv, district_u, district_v
 
    
@@ -286,7 +287,8 @@ def check_disconnected_regions(nodes_gdf, edges_gdf, min_size):
     
   
 def amend_node_membership(nodeID, nodes_gdf, edges_gdf):
-    if nodes_gdf.loc[nodeID]['district'] != 999999: return nodes_gdf.loc[nodeID]['district']
+    if nodes_gdf.loc[nodeID]['district'] != 999999: 
+        return nodes_gdf.loc[nodeID]['district']
     tmp_edges = edges_gdf[(edges_gdf.u == nodeID) | (edges_gdf.v == nodeID)].copy()
     unique =  list(np.unique(tmp_edges[['u', 'v']].values))
     unique.remove(nodeID)

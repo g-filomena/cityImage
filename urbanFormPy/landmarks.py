@@ -110,8 +110,10 @@ def get_buildings_fromOSM(place, download_method, epsg = None, distance = 1000):
 
     if method == "distance_from_address": 
         buildings_gdf = ox.footprints.footprints_from_address(address = place, distance = distance, footprint_type = 'building', retain_invalid = False)
-    elif method == "OSMplace": ox.footprints.footprints_from_place(place, footprint_type = 'building', retain_invalid = False)
-    elif method == "from_point": buildings_gdf = ox.footprints.footprints_from_point(point = place, distance = distance, footprint_type= 'building', retain_invalid=False)
+    elif method == "OSMplace": 
+        ox.footprints.footprints_from_place(place, footprint_type = 'building', retain_invalid = False)
+    elif method == "from_point": 
+        buildings_gdf = ox.footprints.footprints_from_point(point = place, distance = distance, footprint_type= 'building', retain_invalid=False)
     else: raise download_error('Provide a download method amongst {"from_point", "distance_from_address", "OSMplace"}')
     
     if epsg is None:

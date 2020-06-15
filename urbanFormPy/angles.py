@@ -3,7 +3,6 @@ import numpy as np
 from math import sqrt
 from shapely.geometry import Point, LineString, MultiLineString
 
-    
 """
 math functions for angle computations
 readapted for LineStrings from Abhinav Ramakrishnan post in https://stackoverflow.com/a/28261304/7375309
@@ -192,8 +191,10 @@ def difference_angle_line_geometries(line_geometryA, line_geometryB):
     angle_A = math.degrees(angle_A)%360
     angle_B = math.degrees(angle_B)%360
     
-    if angle_A > 180: angle_A = angle_A-180
-    if angle_B > 180: angle_B = angle_B-180
+    if angle_A > 180: 
+        angle_A = angle_A-180
+    if angle_B > 180: 
+        angle_B = angle_B-180
     difference_angle = abs(angle_A - angle_B)
         
     return difference_angle
