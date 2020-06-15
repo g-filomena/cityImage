@@ -15,7 +15,6 @@ pd.set_option("precision", 10)
 
 from .graph import *
 from .utilities import *
-from .louvain import*
 
 def identify_regions(dual_graph, edges_gdf, weight = None):
     """
@@ -34,7 +33,8 @@ def identify_regions(dual_graph, edges_gdf, weight = None):
     """
 
     subdvisions = []
-    if weight == None: weight = 'topo' #the function requires a string 
+    if weight is None: 
+        weight = 'topo' #the function requires a string 
     # extraction of the best partitions
     partition = community.best_partition(dual_graph, weight=weight)
     dct = dual_id_dict(partition, dual_graph, 'edgeID')
@@ -62,7 +62,8 @@ def identify_regions_primal(graph, nodes_graph, weight = None, barrier_field = N
     """
 
     subdvisions = []
-    if weight == None: weight = 'topo' #the function requires a string 
+    if weight is None: 
+        weight = 'topo' #the function requires a string 
     # extraction of the best partitions
     partition = best_partition(graph, weight=weight, barrier_field = barrier_field)
     districts = nodes_graph.copy()
@@ -166,12 +167,14 @@ def dual_graphIG_fromGDF(nodes_dual, edges_dual):
     attributes = nodes_dual.to_dict()
     
     a = (nodes_dual.applymap(type) == list).sum()
-    if len(a[a>0]): to_ignore = a[a>0].index[0]
+    if len(a[a>0]): 
+        to_ignore = a[a>0].index[0]
     else: to_ignore = []
     
     for attribute_name in nodes_dual.columns:
         # only add this attribute to nodes which have a non-null value for it
-        if attribute_name in to_ignore: continue
+        if attribute_name in to_ignore: 
+            continue
         attribute_values = {k:v for k, v in attributes[attribute_name].items() if pd.notnull(v)}
         nx.set_node_attributes(Dg, name=attribute_name, values=attribute_values)
 
@@ -197,7 +200,8 @@ def polygonise_partition(edges_gdf, partition_field, method = None, buffer = 30)
     for i in partitions:
         polygon =  polygonize_full(edges_gdf[edges_gdf[partition_field] == i].geometry.unary_union)
         polygon = unary_union(polygon).buffer(buffer)
-        if method == 'convex_hull': polygons.append(polygon.convex_hull)
+        if method == 'convex_hull': 
+            polygons.append(polygon.convex_hull)
         else: polygons.append(polygon)
         partitionIDs.append(i)
 
@@ -255,7 +259,8 @@ def district_to_nodes_from_polygons(node_geometry, polygons_gdf):
 def find_gateways(nodeID, nodes_gdf, edges_gdf):
     tmp = edges_gdf[(edges_gdf.u == nodeID) | (edges_gdf.v == nodeID)].copy()
     tmp_nodes = nodes_gdf[nodes_gdf.nodeID.isin(tmp.u) | nodes_gdf.nodeID.isin(tmp.v)].copy()
-    if (len(tmp_nodes.district.unique()) > 1): return 1
+    if (len(tmp_nodes.district.unique()) > 1): 
+        return 1
     return 0
     
 def check_disconnected_regions(nodes_gdf, edges_gdf, min_size):
@@ -263,7 +268,8 @@ def check_disconnected_regions(nodes_gdf, edges_gdf, min_size):
     districts = nodes_gdf.district.unique()
     
     for district in districts:
-        if district == 999999: continue
+        if district == 999999: 
+            continue
         tmp_nodes = nodes_gdf[nodes_gdf.district == district].copy()
         tmp_edges = edges_gdf[edges_gdf.u.isin(tmp_nodes.nodeID) & edges_gdf.v.isin(tmp_nodes.nodeID)].copy()
         tmp_graph = graph_fromGDF(tmp_nodes, tmp_edges, 'nodeID')
@@ -285,7 +291,8 @@ def amend_node_membership(nodeID, nodes_gdf, edges_gdf):
     unique =  list(np.unique(tmp_edges[['u', 'v']].values))
     unique.remove(nodeID)
     tmp_nodes = nodes_gdf[(nodes_gdf.nodeID.isin(unique)) & (nodes_gdf.district != 999999) ].copy()
-    if len(tmp_nodes) == 0: return 999999
+    if len(tmp_nodes) == 0: 
+        return 999999
     districts_sorted = tmp_nodes.district.value_counts(sort=True, ascending=False)
     
     if len(districts_sorted) == 1:  
