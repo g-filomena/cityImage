@@ -10,7 +10,7 @@ setup(
     long_description = readme,
     long_description_content_type="text/markdown",
     packages=find_packages(),
-    version="0.11",
+    version="0.12",
     author="Gabriele Filomena",
     author_email="gabriele.filomena@uni-muenster.de",
     install_requires=requirements,

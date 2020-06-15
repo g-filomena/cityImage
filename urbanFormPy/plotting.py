@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.colors as cols
 import matplotlib.patches as mpatches
+import matplotlib.ticker as ticker
 
 from mpl_toolkits.axes_grid1 import make_axes_locatable, ImageGrid
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
@@ -45,16 +46,13 @@ class Plot():
         
 class MultiPlotGrid():
     
-    def __init__(self, fig_size, nrows, ncols, black_background, title, cbar):
+    def __init__(self, fig_size, nrows, ncols, black_background, title):
         
         figsize = (fig_size, fig_size*nrows)
         if (nrows == 1) & (ncols == 2): figsize = (fig_size, fig_size/2)
             
-        if cbar == False: cbar_mode = None
-        else: cbar_mode = "edge"
-        fig = plt.figure(figsize=figsize, frameon = True, edgecolor = 'green')
-        grid = ImageGrid(fig, 111, nrows_ncols=(nrows,ncols), axes_pad= (0.50, 1.00), share_all=True, cbar_location="right", 
-                         cbar_mode=cbar_mode, cbar_size="7%", direction = 'row', cbar_pad= 0.75)
+        fig = plt.figure(figsize=figsize)
+        grid = ImageGrid(fig, 111, nrows_ncols=(nrows,ncols), axes_pad= (0.50, 1.00))
         rect = fig.patch 
         if black_background: 
             text_color = "white"
@@ -67,7 +65,6 @@ class MultiPlotGrid():
         if title is not None: fig.suptitle(title, color = text_color, fontsize=40, fontfamily = 'Times New Roman')    
         self.fig, self.grid = fig, grid
         self.font_size, self.text_color = font_size, text_color
-
 
     
 def plot_points(gdf, column = None, classes = 7, ms = 0.9, ms_col = None, scheme = None, bins = None, color = None,
@@ -298,7 +295,7 @@ def plot_polygons(gdf, column = None, classes = 7, scheme = None, bins = None, c
     # Lynch's bins - only for variables from 0 to 1
     elif scheme == "Lynch_Breaks":  
         bins = [0.125, 0.25, 0.5, 0.75, 1.00]
-        gdf.plot(ax = ax, column = column, cmap = cmap, alpha = alpha, scheme = scheme, legend = legend, classification_kwds={'bins':bins}, edgecolor="none")
+        gdf.plot(ax = ax, column = column, cmap = cmap, scheme = scheme, legend = legend, classification_kwds={'bins':bins}, edgecolor="none")
     # other schemes
     elif scheme != None: gdf.plot(ax = ax, column = column, k = classes, cmap = cmap, alpha = alpha,  scheme = scheme, legend = legend, edgecolor="none")
 
@@ -316,7 +313,7 @@ def plot_polygons(gdf, column = None, classes = 7, scheme = None, bins = None, c
             else: gdf_base_map.plot(ax = ax, color = base_map_color, alpha = base_map_alpha, edgecolor="none")
     
     if legend: _generate_legend(ax, black_background)
-    if (color_bar) & (not legend): _generate_color_bar(cmap, gdf[column], ax, text_color, font_size)
+    if (color_bar) & (not legend): generate_color_bar(cmap, gdf[column], ax, text_color, font_size)
 
     plt.show()    
 
@@ -447,32 +444,29 @@ def multi_plot_polygons(list_gdfs, list_sub_titles, main_title, column = None, c
     plt.subplots_adjust(top = 0.88, hspace= 0.025)
     plt.show()  
     
-def plot_lines_grid(gdf, columns = None, title = None, titles = None, fig_size = 15, black_background = True,
-                    axis_frame = True, color = 'Black', lw = None, cmap = None, scheme = None, bins = None, norm = None,                   
+def plot_lines_grid(gdf, columns = None, title = None, titles = None, fig_size = 15, black_background = True, 
+                    axis_frame = True, color = 'Black', lw = None, lw_factor = None, cmap = None, scheme = None, bins = None, norm = None,                   
                     classes = 7, legend = False, color_bar = False):
                           
-    nrows =  nrows = int(len(columns)/2)
-    multiPlot = MultiPlotGrid(fig_size = fig_size,nrows = nrows, ncols = 2, black_background = black_background,
-                              title = title, cbar = color_bar)    
+    nrows, ncols = int(len(columns)/2), 2
+    if (len(columns)%2 != 0): nrows = nrows+1;
+    multiPlot = MultiPlotGrid(fig_size = fig_size,nrows = nrows, ncols = ncols, black_background = black_background,
+                              title = title)
     
     fig, grid = multiPlot.fig, multiPlot.grid   
 
     for n, ax in enumerate(grid):
+        ax.set_aspect("equal")
+        if axis_frame: set_axis_frame(ax, black_background, multiPlot.text_color)
+        else: ax.set_axis_off()
+        
+        if n > len(columns)-1: continue # when odd nr of columns
+        ax.set_title(titles[n], loc='center', fontfamily = 'Times New Roman', fontsize = 30, color = multiPlot.text_color,
+                    pad = 15)
+        
         if columns[n] is not None: gdf.sort_values(by = columns[n], ascending = True, inplace = True) 
         if (lw is None) & (scheme is None) & (norm is None): lw = 1.00
-        elif lw is None: lw = [value*0.10 if value*0.10 > 1.1 else 1.1 for value in gdf[columns[n]]]
-
-        ax.set_aspect("equal")
-#         
-        if axis_frame:
-            ax.xaxis.set_ticklabels([])
-            ax.yaxis.set_ticklabels([])
-            ax.tick_params(axis= 'both', which= 'both', length=0)
-            for spine in ax.spines: ax.spines[spine].set_color(multiPlot.text_color)
-            if black_background: x.set_facecolor('black')
-        else: ax.set_axis_off()
-            
-        ax.set_title(titles[n], loc='center', fontfamily = 'Times New Roman', fontsize = 30, color = multiPlot.text_color)
+        elif lw is None: lw = [value*lw_factor if value*lw_factor> 1.1 else 1.1 for value in gdf[columns[n]]]
         
         # single color map
         if (columns[n] is None) & (scheme is None): gdf.plot(ax = ax, color = color, linewidth = lw)
@@ -501,21 +495,17 @@ def plot_lines_grid(gdf, columns = None, title = None, titles = None, fig_size =
         
         # all other schemes        
         elif scheme is not None: 
-            gdf.plot(ax = ax, column = columns[n], k = classes, cmap = cmap, linewidth = lw, scheme = scheme, legend = legend)
+            gdf.plot(ax = ax, column = columns[n], k = classes, cmap = cmap, linewidth = lw, scheme = scheme, legend = legend,  
+            capstyle = 'round',  joinstyle = 'round')
         elif norm is not None:
             gdf.plot(ax = ax, column = columns[n], cmap = cmap, norm = norm, linewidth = lw, legend = False, capstyle = 'round',
                     joinstyle = 'round')
-        
-        if color_bar:
-            if (n == nrows): _generate_color_bar(cmap, ax, multiPlot.text_color, multiPlot.font_size, norm = norm, series = gdf[columns[n]])
-            elif (n == nrows-1): pass
-            else: 
-                try: ax.cax.remove()
-                except: pass
-
         if legend:
             leg = ax.get_legend()
             leg.set_bbox_to_anchor((0., 0., 0.2, 0.2))
+    
+    if color_bar:
+        generate_grid_colorbar(cmap, fig, grid, nrows, ncols, multiPlot.text_color, multiPlot.font_size, norm = norm)
             
     return fig
     
@@ -587,19 +577,39 @@ def _generate_legend(ax, black_background):
     if not black_background:
         leg.get_frame().set_facecolor('black')
         leg.get_frame().set_alpha(1)
-            
-def _generate_color_bar(cmap, ax, text_color, font_size, norm = None, series = None):
+ 
+def generate_grid_colorbar(cmap, fig, grid, nrows, ncols, text_color, font_size, norm = None):
     
     if font_size is None: font_size = 20
-    if (norm is None) & (series is not None): norm = plt.Normalize(vmin = series.min(), vmax = series.max()) 
-    elif (norm is None) & (series is None): return
     
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
     sm._A = []
-    cbar = ax.cax.colorbar(sm) 
-    cbar.ax.set_yticklabels([t if t < norm.vmax else "> "+str(t) for t in cbar.ax.get_yticks()])
-    plt.setp(plt.getp(ax.cax.axes, "yticklabels"), size = 2, color = text_color, fontfamily = 'Times New Roman', fontsize=(font_size))
-    
+    vr_p = 1/30.30
+    hr_p = 0.5/30.30
+    ax = grid[0]
+    width = ax.get_position().x1*ncols-hr_p-ax.get_position().x0
+   
+    if nrows == 1: pos = [ax.get_position().x0+width, ax.get_position().y0, 0.027, ax.get_position().height]
+    elif nrows%2 == 0:
+        y0 = (ax.get_position().y0-(ax.get_position().height*(nrows-1))-vr_p)+(nrows/2-0.5)*ax.get_position().height
+        pos = [ax.get_position().x0+width, y0, 0.027, ax.get_position().height]
+    else:
+        ax = grid[nrows-1]
+        pos = [ax.get_position().x0+width, ax.get_position().y0, 0.027, ax.get_position().height]
+
+    cax = fig.add_axes(pos, frameon = False)
+    cax.tick_params(size=0)
+    cb = plt.colorbar(sm, cax=cax)
+    cb.outline.set_visible(False)
+    tick_locator = ticker.MaxNLocator(nbins=5)
+    cb.locator = tick_locator
+    cb.update_ticks()
+    cb.outline.set_visible(False)
+    cax.set_yticklabels([round(t,1) if t < norm.vmax else "> "+str(t) for t in cax.get_yticks()])
+    plt.setp(plt.getp(cax.axes, "yticklabels"), size = 0, color = text_color, fontfamily = 'Times New Roman', fontsize=(font_size))
+
+             
+                 
 def normalize(n, range1, range2):
     delta1 = range1[1] - range1[0]
     delta2 = range2[1] - range2[0]
@@ -644,7 +654,7 @@ def rand_cmap(nlabels, type_color ='soft'):
     if type_color == 'bright':
         randHSVcolors = [(np.random.uniform(low=0.0, high=0.8),
                           np.random.uniform(low=0.2, high=0.8),
-                          np.random.uniform(low=0.7, high=0.9)) for i in range(nlabels)]
+                          np.random.uniform(low=0.9, high=1.0)) for i in range(nlabels)]
 
         # Convert HSV list to RGB
         randRGBcolors = []
@@ -662,12 +672,36 @@ def rand_cmap(nlabels, type_color ='soft'):
                           np.random.uniform(low=low, high=high),
                           np.random.uniform(low=low, high=high)) for i in range(nlabels)]
 
-        if first_color_black:
-            randRGBcolors[0] = [0, 0, 0]
-
-        if last_color_black:
-            randRGBcolors[-1] = [0, 0, 0]
         random_colormap = LinearSegmentedColormap.from_list('new_map', randRGBcolors, N=nlabels)
 
     return random_colormap
+
+def kindlmann():
+
+    kindlmann_list = [(0.00, 0.00, 0.00,1), (0.248, 0.0271, 0.569, 1), (0.0311, 0.258, 0.646,1),
+            (0.019, 0.415, 0.415,1), (0.025, 0.538, 0.269,1), (0.0315, 0.658, 0.103,1),
+            (0.331, 0.761, 0.036,1),(0.768, 0.809, 0.039,1), (0.989, 0.862, 0.772,1),
+            (1.0, 1.0, 1.0)]
+    return LinearSegmentedColormap.from_list('kindlmann', kindlmann_list)
     
+def set_axis_frame(ax, black_background, text_color):
+    
+    ax.xaxis.set_ticklabels([])
+    ax.yaxis.set_ticklabels([])
+    ax.tick_params(axis= 'both', which= 'both', length=0)
+    for spine in ax.spines: ax.spines[spine].set_color(text_color)
+    if black_background: ax.set_facecolor('black')
+    
+def custom_cmap(from_rgb,to_rgb):
+
+    # from color r,g,b
+    r1,g1,b1 = from_rgb
+    # to color r,g,b
+    r2,g2,b2 = to_rgb
+
+    cdict = {'red': ((0, r1, r1), (1, r2, r2)),
+           'green': ((0, g1, g1), (1, g2, g2)),
+           'blue': ((0, b1, b1), (1, b2, b2))}
+
+    cmap = LinearSegmentedColormap('custom_cmap', cdict)
+    return cmap

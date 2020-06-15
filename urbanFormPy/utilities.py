@@ -3,6 +3,7 @@ import math
 from math import sqrt
 from shapely.geometry import*
 from shapely.ops import*
+from shapely.affinity import *
 from functools import partial
 import pyproj
 
@@ -204,8 +205,16 @@ def create_grid(gdf, side_length = 150):
 
     grid = gpd.GeoDataFrame({'geometry':polygons}, crs = gdf.crs)
     return grid          
+    
+def rescale_ranges(n, range1, range2):
+    delta1 = range1[1] - range1[0]
+    delta2 = range2[1] - range2[0]
+    return (delta2 * (n - range1[0]) / delta1) + range2[0]                
             
-            
+def rescale_geometry(original_geometry, factor):
+ 
+    rescaled_geometry = scale(original_geometry, xfact= factor, yfact= factor, zfact=factor, origin='center') 
+    return rescaled_geometry
             
 
 

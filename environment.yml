@@ -3,23 +3,24 @@ channels:
   - defaults
   - conda-forge
 dependencies:
-  - geopandas>=0.6.1
-  - numpy>=1.17
-  - pandas>=0.25.2
-  - pip>=19.3.1
-  - python>=3.7.4
-  - requests>=2.22
-  - rtree>=0.8
-  - seaborn>=0.9.0
-  - setuptools>=41.4
-  - shapely>=1.6.4
-  - wheel>=0.33.6
+  - numpy=1.18.1=py37h93ca92e_0
+  - numpy-base=1.18.1=py37hc3f5095_1
+  - pandas=1.0.1=py37h47e9c7a_0
+  - pip=20.0.2=py37_1
+  - pyproj=2.4.1=py37hc6484ec_0
+  - python=3.7.6=h60c2a47_2
+  - python-dateutil=2.8.1=py_0
+  - python_abi=3.7=1_cp37m
+  - requests=2.23.0=py37_0
+  - wheel=0.34.2=py37_0
   - pip:
-    - descartes>=1.1
-    - matplotlib>=3.1
-    - networkx>=2.4
-    - osmnx>=0.10
-    - pysal>=2.1.0
-    - python-louvain>=0.13
-    - twine>=3.0.0
+    - geopandas==0.7.0
+    - networkx==2.3
+    - osmnx==0.11.4
+    - pysal==2.1.0
+    - python-louvain==0.13
+    - seaborn==0.10.0
+    - shapely==1.7.0
+    - splot==1.1.3
+    - tornado==6.0.3
 

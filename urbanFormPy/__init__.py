@@ -23,4 +23,4 @@ from .louvain import *
 from .street_hierarchy import *
 from .transport_network import *
 
-__version__ = '0.10'
+__version__ = '0.12'
