@@ -1,4 +1,4 @@
-[![CodeFactor](https://www.codefactor.io/repository/github/g-filomena/urbanformpy/badge/master)](https://www.codefactor.io/repository/github/g-filomena/urbanformpy/overview/master)
+[![CodeFactor](https://www.codefactor.io/repository/github/g-filomena/cityimage/badge)](https://www.codefactor.io/repository/github/g-filomena/cityimage)
 
 # cityImage
 
