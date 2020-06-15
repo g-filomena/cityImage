@@ -733,11 +733,11 @@ def indirect_cluster(nodes_gdf, edges_gdf, clusters_gdf, ix_line, search_dir, sp
                         tmp = list(connector[ix_geo].coords)
                         tmp.reverse()
                         line_coords = line_coords + tmp
-                    if (specific_cluster) & (cluster is not): 
+                    if (specific_cluster) & (cluster is not None): 
                         clusters_traversed.append(cluster)
                     break
                 
-                elif (cluster is not) | ((specific_cluster) & (cluster == desired_cluster)):
+                elif (cluster is not None) | ((specific_cluster) & (cluster == desired_cluster)):
                     found = True
                     lines_traversed.append(connector.Index)
                     
@@ -755,7 +755,7 @@ def indirect_cluster(nodes_gdf, edges_gdf, clusters_gdf, ix_line, search_dir, sp
     merged_line = LineString([coor for coor in line_coords])  
     if ((len(clusters_traversed) == 0) & (specific_cluster)):
         for n in nodes_traversed:
-            if nodes_gdf.loc[n].cluster is not:
+            if nodes_gdf.loc[n].cluster is not None:
                 clusters_traversed.append(nodes_gdf.loc[n].cluster)
             
     return(cluster, merged_line, lines_traversed, nodes_traversed, last_node, clusters_traversed)
@@ -905,7 +905,7 @@ def dissolve_dual_lines(ix_lines, line_geometries, nodes_gdf, edges_gdf, cluster
     interpolation = len(nodes_traversed) > 0
 
     if not one_cluster:
-        if ((edges_gdf.loc[ix_lineA]['name'] is not) & (edges_gdf.loc[ix_lineB]['name'] is not) & 
+        if ((edges_gdf.loc[ix_lineA]['name'] is not None) & (edges_gdf.loc[ix_lineB]['name'] is not None) & 
                     (edges_gdf.loc[ix_lineA]['name'] != edges_gdf.loc[ix_lineB]['name'])): 
             return None
     if ((line_geometry_A.length > line_geometry_B.length*1.50) | (line_geometry_B.length > line_geometry_A.length*1.50)): 
@@ -1120,7 +1120,7 @@ def simplify_dual_lines(nodes_gdf, edges_gdf, clusters_gdf):
                     possible_dual_lines.at[candidate.Index, 'dir'] = 'u' # indicates original dir
             
             # does the line considered in the loop reach a cluster? if not straight away, at some point?            
-            if possible_dual_lines.loc[road.Index]['clus_v'] is not: 
+            if possible_dual_lines.loc[road.Index]['clus_v'] is not None: 
                 goal = possible_dual_lines.loc[road.Index]['clus_v']
             else: goal = possible_dual_lines.loc[road.Index]['clus_vR']
             if (goal == None) | (goal == cluster): 

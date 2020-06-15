@@ -91,7 +91,7 @@ def angle_line_geometries(line_geometryA, line_geometryB, degree = False, deflec
             lineA = ((x_secondA, y_secondA), (x_originA, y_originA))
             lineB = ((x_destinationB, y_destinationB), (x_second_lastB, y_second_lastB))
         # no common vertex      
-        else:  raise AngleError("The lines do not intersect! provide lines wich have a common vertex")
+        else: raise AngleError("The lines do not intersect! provide lines wich have a common vertex")
     
     # deflection on the entire lines
     elif deflection:
@@ -154,7 +154,8 @@ def angle_line_geometries(line_geometryA, line_geometryB, degree = False, deflec
         angle_deg = 0.0
         angle_rad = 0.0
         
-    if degree: return angle_deg
+    if degree: 
+        return angle_deg
     return angle_rad
     
 def difference_angle_line_geometries(line_geometryA, line_geometryB):
@@ -182,9 +183,11 @@ def difference_angle_line_geometries(line_geometryA, line_geometryB):
     x_originB, y_originB = float("{0:.10f}".format(coordsB[0][0])), float("{0:.10f}".format(coordsB[0][1]))
     x_destinationB, y_destinationB  = float("{0:.10f}".format(coordsB[-1][0])), float("{0:.10f}".format(coordsB[-1][1]))
     
-    if x_originA == x_destinationA: angle_A = np.pi/2
+    if x_originA == x_destinationA: 
+        angle_A = np.pi/2
     else: angle_A = np.arctan((y_destinationA-y_originA)/(x_destinationA-x_originA))  
-    if x_originB == x_destinationB: angle_B = np.pi/2  
+    if x_originB == x_destinationB: 
+        angle_B = np.pi/2  
     else: angle_B = np.arctan((y_destinationB-y_originB)/(x_destinationB-x_originB)) 
     angle_A = math.degrees(angle_A)%360
     angle_B = math.degrees(angle_B)%360
@@ -198,10 +201,9 @@ def difference_angle_line_geometries(line_geometryA, line_geometryB):
     
 class Error(Exception):
     """Base class for other exceptions"""
-    pass
+    
 class AngleError(Error):
     """Raised when not-intersecting lines are provided for computing angles"""
-    pass
     
     
             
