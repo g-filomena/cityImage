@@ -70,7 +70,65 @@ class MultiPlotGrid():
             fig.suptitle(title, color = text_color, fontsize=40, fontfamily = 'Times New Roman')    
         self.fig, self.grid = fig, grid
         self.font_size, self.text_color = font_size, text_color
-   
+
+def _single_plot(ax, gdf, column = None, scheme = None, bins = None, classes = None, norm = None, cmap = None, color = None, alpha = None, 
+                legend = False, color_bar = False, axis_frame = False, ms = None, ms_col = None, lw = None, lw_factor = None)
+                
+    if column is not None: 
+        gdf.sort_values(by = column,  ascending = True, inplace = True) 
+    
+    # single-colour map
+    if (column is None) & (scheme is None) & (color is None):
+        color = 'red'
+    # categorical map
+    elif (column is not None) & (scheme is None) & (norm is None) & (cmap is None): 
+        cmap = rand_cmap(len(gdf[column].unique()))         
+    # Lynch's bins - only for variables from 0 to 1 
+    elif scheme == "Lynch_Breaks":  
+        bins = [0.125, 0.25, 0.5, 0.75, 1.00]
+        scheme = 'User_Defined'
+        categorical = False
+    elif norm is not None:
+        legend = False
+        color_bar = True
+        categorical = False
+        scheme = None
+    elif ((scheme is not None) | (bins is not None)) & (classes is None):
+        classes = 7   
+    if (scheme is not None) & (cmap is None):
+        cmap = kindlmann()
+    if (scheme is not None) | (norm is not None) | (bins is not None):
+        categorical = False
+        color = None
+        
+    if bins is None: 
+        c_k = {None}
+    else: 
+        c_k = {'bins':bins}
+        scheme = 'User_Defined'
+    
+    if gdf.iloc[0].geometry.geom_type == 'Point':
+        if (ms_col is not None): 
+            ms = gdf[ms_col]
+        else: ms = ms
+        if ms is None:
+            ms = 1.0
+        gdf.plot(ax = ax, column = column, markersize = ms, categorical = categorical, color = color, scheme = scheme, cmap = cmap, norm = norm, alpha = alpha, legend = legend, classification_kwds = c_k) 
+        
+    if gdf.iloc[0].geometry.geom_type == 'Linestring':
+        if (lw is None) & (lw_factor is None): 
+            lw = 1.00
+        else: lw = [value*lw_factor if value*lw_factor> 1.1 else 1.1 for value in gdf[columns[n]]]
+        gdf.plot(ax = ax, column = column, categorical = categorical, color = color, linewidth = lw, scheme = scheme, alpha = alpha, cmap = cmap, norm = norm, alpha = alpha, legend = legend, classification_kwds = c_k
+        capstyle = 'round', joinstyle = 'round'))    
+    if gdf.iloc[0].geometry.geom_type == 'Polygon': 
+        gdf.plot(ax = ax, column = column, categorical = categorical, color = color, scheme = scheme, alpha = alpha, cmap = cmap, norm = norm, alpha = alpha, legend = legend, classification_kwds = c_k
+        capstyle = 'round', joinstyle = 'round'))  
+        
+      
+
+
+ 
 def plot_gdf(gdf, column = None, title = None, black_background = True, fig_size = 15, scheme = None, bins = None, classes = None, norm = None, cmap = None, color = None, alpha = None, 
                 legend = False, color_bar = False, axis_frame = False, ms = None, ms_col = None, lw = None, lw_factor = None, gdf_base_map = pd.DataFrame({"a" : []}), base_map_color = None, base_map_alpha = 0.4,
                 base_map_lw = 1.1, base_map_ms = 2.0, base_map_order = 0):
@@ -133,59 +191,8 @@ def plot_gdf(gdf, column = None, title = None, black_background = True, fig_size
         if gdf_base_map.iloc[0].geometry.geom_type == 'Polygon':
             gdf_base_map.plot(ax = ax, color = base_map_color, alpha = base_map_alpha)
     
-    if column is not None: 
-        gdf.sort_values(by = column,  ascending = True, inplace = True) 
-    
-    # single-colour map
-    if (column is None) & (scheme is None) & (color is None):
-        color = 'red'
-    # categorical map
-    elif (column is not None) & (scheme is None) & (norm is None) & (cmap is None): 
-        cmap = rand_cmap(len(gdf[column].unique()))         
-    # Lynch's bins - only for variables from 0 to 1 
-    elif scheme == "Lynch_Breaks":  
-        bins = [0.125, 0.25, 0.5, 0.75, 1.00]
-        scheme = 'User_Defined'
-        categorical = False
-    elif norm is not None:
-        legend = False
-        color_bar = True
-        categorical = False
-        scheme = None
-    elif ((scheme is not None) | (bins is not None)) & (classes is None):
-        classes = 7   
-    if (scheme is not None) & (cmap is None):
-        cmap = kindlmann()
-    if (scheme is not None) | (norm is not None) | (bins is not None):
-        categorical = False
-        color = None
-        
-    if bins is None: 
-        c_k = {None}
-    else: 
-        c_k = {'bins':bins}
-        scheme = 'User_Defined'
-    
-    if gdf.iloc[0].geometry.geom_type == 'Point':
-        if (ms_col is not None): 
-            ms = gdf[ms_col]
-        else: ms = ms
-        if ms is None:
-            ms = 1.0
-            
-        gdf.plot(ax = ax, column = column, markersize = ms, categorical = categorical, color = color, scheme = scheme, cmap = cmap, norm = norm, alpha = alpha, legend = legend, classification_kwds = c_k) 
-        
-    if gdf.iloc[0].geometry.geom_type == 'Linestring':
-        if (lw is None) & (lw_factor is None): 
-            lw = 1.00
-        else: lw = [value*lw_factor if value*lw_factor> 1.1 else 1.1 for value in gdf[columns[n]]]
-        
-        gdf.plot(ax = ax, column = column, categorical = categorical, color = color, linewidth = lw, scheme = scheme, alpha = alpha, cmap = cmap, norm = norm, alpha = alpha, legend = legend, classification_kwds = c_k
-        capstyle = 'round', joinstyle = 'round'))    
-    if gdf.iloc[0].geometry.geom_type == 'Polygon':    
-        
-        gdf.plot(ax = ax, column = column, categorical = categorical, color = color, scheme = scheme, alpha = alpha, cmap = cmap, norm = norm, alpha = alpha, legend = legend, classification_kwds = c_k
-        capstyle = 'round', joinstyle = 'round'))  
+    _single_plot(ax, gdf, column = column, scheme = scheme, bins = bins, classes = classes, norm = norm, cmap = cmap, color = color, alpha = alpha, 
+                legend = legend, color_bar = color_bar, axis_frame = axis_frame, ms = ms, ms_col = ms_col, lw = lw, lw_factor = lw_factor)
         
     # base map (e.g. street network)
     if (not gdf_base_map.empty) && (base_map_order == 1)
@@ -327,60 +334,8 @@ def plot_gdfs(list_gdfs = None, column = None, titles = None, black_background =
         else: ax.set_axis_off()         
         ax.set_title(titles[n], loc='center', fontfamily = 'Times New Roman', fontsize = 30, color = multiPlot.text_color,  pad = 15)
         
-        if column is not None: 
-            gdf.sort_values(by = column,  ascending = True, inplace = True) 
-        
-        # single-colour map
-        if (column is None) & (scheme is None) & (color is None):
-            color = 'red'
-        # categorical map
-        elif (column is not None) & (scheme is None) & (norm is None) & (cmap is None): 
-            cmap = rand_cmap(len(gdf[column].unique()))         
-        # Lynch's bins - only for variables from 0 to 1 
-        elif scheme == "Lynch_Breaks":  
-            bins = [0.125, 0.25, 0.5, 0.75, 1.00]
-            scheme = 'User_Defined'
-            categorical = False
-        # with normalization
-        elif norm is not None:
-            legend = False
-            color_bar = True
-            categorical = False
-            scheme = None
-        # fix classes
-        elif ((scheme is not None) | (bins is not None)) & (classes is None):
-            classes = 7   
-        
-        if (scheme is not None) & (cmap is None):
-            cmap = kindlmann()
-        if (scheme is not None) | (norm is not None) | (bins is not None):
-            categorical = False
-            color = None
-            
-        if bins is None: 
-            c_k = {None}
-        else: 
-            c_k = {'bins':bins}
-            scheme = 'User_Defined'
-        
-        if gdf.iloc[0].geometry.geom_type == 'Point':
-            if (ms_col is not None): 
-                ms = gdf[ms_col]
-            else: ms = ms
-            if ms is None:
-                ms = 1.0
-            gdf.plot(ax = ax, column = column, markersize = ms, categorical = categorical, color = color, scheme = scheme, cmap = cmap, norm = norm, alpha = alpha, legend = legend, classification_kwds = c_k) 
-            
-        if gdf.iloc[0].geometry.geom_type == 'Linestring':
-            if (lw is None) & (lw_factor is None): 
-                lw = 1.00
-            else: lw = [value*lw_factor if value*lw_factor> 1.1 else 1.1 for value in gdf[columns[n]]]
-            gdf.plot(ax = ax, column = column, categorical = categorical, color = color, linewidth = lw, scheme = scheme, alpha = alpha, cmap = cmap, norm = norm, alpha = alpha, legend = legend, classification_kwds = c_k
-            capstyle = 'round', joinstyle = 'round'))    
-        
-        if gdf.iloc[0].geometry.geom_type == 'Polygon':    
-            gdf.plot(ax = ax, column = column, categorical = categorical, color = color, scheme = scheme, alpha = alpha, cmap = cmap, norm = norm, alpha = alpha, legend = legend, classification_kwds = c_k
-            capstyle = 'round', joinstyle = 'round')) 
+        _single_plot(ax, gdf, column = column, scheme = scheme, bins = bins, classes = classes, norm = norm, cmap = cmap, color = color, alpha = alpha, 
+                legend = legend, color_bar = color_bar, axis_frame = axis_frame, ms = ms, ms_col = ms_col, lw = lw, lw_factor = lw_factor)
                     
         # if legend:
             # leg = ax.get_legend()
@@ -414,34 +369,11 @@ def plot_gdf_grid(gdf = None, columns = None, titles = None, black_background = 
         else: ax.set_axis_off()
             
         ax.set_title(titles[n], loc='center', fontfamily = 'Times New Roman', fontsize = 30, color = multiPlot.text_color,  pad = 15)
-                
-        # single color map
-        if (columns[n] is None) & (scheme is None) & (color is None):
-            color = 'orange'
-        # categorical map
-        elif (columns[n] is not None) & (scheme is None) & (norm is None): 
-            if cmap is None: 
-                cmap = rand_cmap(len(gdf[column].unique()))         
-        # Lynch's bins - only for variables from 0 to 1 
-        elif scheme == "Lynch_Breaks":  
-            bins = [0.125, 0.25, 0.5, 0.75, 1.00]
-            scheme = 'User_Defined'
-        elif norm is not None:
-            legend = False
-            color_bar = True
-        elif (scheme is not None) & (classes is None) & (bins is not None):
-            classes = 7   
         
-        if (scheme is not None) & (cmap is None):
-            cmap = kindlmann()
-        if bins is None: 
-            c_k = {None}
-        else: 
-            c_k = {'bins':bins}
-            scheme = 'User_Defined'
-            
-        gdf.plot(ax = ax, column = columns[n], categorical = categorical, color = color, scheme = scheme, cmap = cmap, norm = norm, alpha = alpha, legend = legend, classification_kwds = c_k)
-                    
+        column = columns[n]
+        _single_plot(ax, gdf, column = column, scheme = scheme, bins = bins, classes = classes, norm = norm, cmap = cmap, color = color, alpha = alpha, 
+            legend = legend, color_bar = color_bar, axis_frame = axis_frame, ms = ms, ms_col = ms_col, lw = lw, lw_factor = lw_factor)
+                            
         # if legend:
             # leg = ax.get_legend()
             # leg.set_bbox_to_anchor((0., 0., 0.2, 0.2))
