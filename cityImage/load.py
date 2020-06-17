@@ -1,7 +1,7 @@
 import warnings
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
-import osmnx as ox, 
+import osmnx as ox 
 import pandas as pd
 import numpy as np
 import geopandas as gpd
@@ -83,7 +83,7 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
     edges_gdf["highway"] = [x[0] if isinstance(x, list) else x for x in edges_gdf["highway"]]
     edges_gdf["name"] = [x[0] if isinstance(x, list) else x for x in edges_gdf["name"]]
     edges_gdf["lanes"] = [max(x) if isinstance(x, list) else x for x in edges_gdf["lanes"]]
-    edges_gdf["bridge"] = [max(x) if isinstance(x, list else x for x in edges_gdf["bridge"]]
+    edges_gdf["bridge"] = [max(x) if isinstance(x, list) else x for x in edges_gdf["bridge"]]
     edges_gdf["tunnel"] = [max(x) if isinstance(x, list) else x for x in edges_gdf["tunnel"]]
     
     # finalising geodataframes

@@ -49,7 +49,7 @@ class Plot():
         
 class MultiPlotGrid():
     
-    def __init__(self, fig_size, nrows, ncols, black_background, title):
+    def __init__(self, fig_size, nrows, ncols, black_background):
         
         figsize = (fig_size, fig_size*nrows)
         if (nrows == 1) & (ncols == 2): 
@@ -66,14 +66,35 @@ class MultiPlotGrid():
             rect.set_facecolor("white")
         
         font_size = fig_size+5 # font-size   
-        if title is not None: 
-            fig.suptitle(title, color = text_color, fontsize=40, fontfamily = 'Times New Roman')    
+        self.fig, self.grid = fig, grid
+        self.font_size, self.text_color = font_size, text_color
+        
+class MultiPlot():
+    
+    
+    def __init__(self, fig_size, nrows, ncols, black_background):
+    
+        figsize = (fig_size, fig_size/2*nrows)          
+        fig, grid = plt.subplots(nrows = nrows, ncols = ncols, figsize=figsize)
+        plt.axis("equal")
+        rect = fig.patch 
+        if black_background: 
+            text_color = "white"
+            rect.set_facecolor("black")
+        else: 
+            text_color = "black"
+            rect.set_facecolor("white")
+        
+        font_size = fig_size+5 # font-size   
         self.fig, self.grid = fig, grid
         self.font_size, self.text_color = font_size, text_color
 
-def _single_plot(ax, gdf, column = None, scheme = None, bins = None, classes = None, norm = None, cmap = None, color = None, alpha = None, 
-                legend = False, color_bar = False, axis_frame = False, ms = None, ms_col = None, lw = None, lw_factor = None)
-                
+def single_plot(ax, gdf, column = None, scheme = None, bins = None, classes = None, norm = None, cmap = None, color = None, alpha = None, 
+                legend = False, color_bar = False, axis_frame = False, ms = None, ms_col = None, lw = None, lw_factor = None):
+    
+    categorical = True
+    if alpha is None:
+        alpha = 1
     if column is not None: 
         gdf.sort_values(by = column,  ascending = True, inplace = True) 
     
@@ -115,19 +136,17 @@ def _single_plot(ax, gdf, column = None, scheme = None, bins = None, classes = N
             ms = 1.0
         gdf.plot(ax = ax, column = column, markersize = ms, categorical = categorical, color = color, scheme = scheme, cmap = cmap, norm = norm, alpha = alpha, legend = legend, classification_kwds = c_k) 
         
-    if gdf.iloc[0].geometry.geom_type == 'Linestring':
+    if gdf.iloc[0].geometry.geom_type == 'LineString':
         if (lw is None) & (lw_factor is None): 
             lw = 1.00
-        else: lw = [value*lw_factor if value*lw_factor> 1.1 else 1.1 for value in gdf[columns[n]]]
-        gdf.plot(ax = ax, column = column, categorical = categorical, color = color, linewidth = lw, scheme = scheme, alpha = alpha, cmap = cmap, norm = norm, alpha = alpha, legend = legend, classification_kwds = c_k
-        capstyle = 'round', joinstyle = 'round'))    
-    if gdf.iloc[0].geometry.geom_type == 'Polygon': 
-        gdf.plot(ax = ax, column = column, categorical = categorical, color = color, scheme = scheme, alpha = alpha, cmap = cmap, norm = norm, alpha = alpha, legend = legend, classification_kwds = c_k
-        capstyle = 'round', joinstyle = 'round'))  
+        elif lw_factor is not None:
+            lw = [value*lw_factor if value*lw_factor> 1.1 else 1.1 for value in gdf[column]]
+        gdf.plot(ax = ax, column = column, categorical = categorical, color = color, linewidth = lw, scheme = scheme, alpha = alpha, cmap = cmap, norm = norm, legend = legend, 
+                classification_kwds = c_k, capstyle = 'round', joinstyle = 'round')
         
-      
-
-
+    if gdf.iloc[0].geometry.geom_type == 'Polygon': 
+        gdf.plot(ax = ax, column = column, categorical = categorical, color = color, scheme = scheme, alpha = alpha, cmap = cmap, norm = norm, legend = legend, classification_kwds = c_k)
+        
  
 def plot_gdf(gdf, column = None, title = None, black_background = True, fig_size = 15, scheme = None, bins = None, classes = None, norm = None, cmap = None, color = None, alpha = None, 
                 legend = False, color_bar = False, axis_frame = False, ms = None, ms_col = None, lw = None, lw_factor = None, gdf_base_map = pd.DataFrame({"a" : []}), base_map_color = None, base_map_alpha = 0.4,
@@ -178,12 +197,9 @@ def plot_gdf(gdf, column = None, title = None, black_background = True, fig_size
     if axis_frame: 
         set_axis_frame(ax, black_background, multiPlot.text_color)
     else: ax.set_axis_off()     
-    
-    if alpha = None:
-        alpha = 1
      
     # base map (e.g. street network)
-    if (not gdf_base_map.empty) && (base_map_order == 0)
+    if (not gdf_base_map.empty) & (base_map_order == 0):
         if gdf_base_map.iloc[0].geometry.geom_type == 'LineString':
             gdf_base_map.plot(ax = ax, color = base_map_color, linewidth = base_map_lw, alpha = base_map_alpha)
         if gdf_base_map.iloc[0].geometry.geom_type == 'Point':
@@ -191,11 +207,11 @@ def plot_gdf(gdf, column = None, title = None, black_background = True, fig_size
         if gdf_base_map.iloc[0].geometry.geom_type == 'Polygon':
             gdf_base_map.plot(ax = ax, color = base_map_color, alpha = base_map_alpha)
     
-    _single_plot(ax, gdf, column = column, scheme = scheme, bins = bins, classes = classes, norm = norm, cmap = cmap, color = color, alpha = alpha, 
+    single_plot(ax, gdf, column = column, scheme = scheme, bins = bins, classes = classes, norm = norm, cmap = cmap, color = color, alpha = alpha, 
                 legend = legend, color_bar = color_bar, axis_frame = axis_frame, ms = ms, ms_col = ms_col, lw = lw, lw_factor = lw_factor)
         
     # base map (e.g. street network)
-    if (not gdf_base_map.empty) && (base_map_order == 1)
+    if (not gdf_base_map.empty) & (base_map_order == 1):
         if gdf_base_map.iloc[0].geometry.geom_type == 'LineString':
             gdf_base_map.plot(ax = ax, color = base_map_color, linewidth = base_map_lw, alpha = base_map_alpha)
         if gdf_base_map.iloc[0].geometry.geom_type == 'Point':
@@ -249,7 +265,7 @@ def plot_barriers(barriers_gdf, lw = 1.1, title = "Plot", legend = False, axis_f
     else: ax.set_axis_off()     
     
     # background (e.g. street network)
-    if (not gdf_base_map.empty) && (base_map_order == 0)
+    if (not gdf_base_map.empty) & (base_map_order == 0):
         if gdf_base_map.iloc[0].geometry.geom_type == 'LineString':
             gdf_base_map.plot(ax = ax, color = base_map_color, linewidth = base_map_lw, alpha = base_map_alpha)
         if gdf_base_map.iloc[0].geometry.geom_type == 'Point':
@@ -266,7 +282,7 @@ def plot_barriers(barriers_gdf, lw = 1.1, title = "Plot", legend = False, axis_f
                      label =  'barrier_type') 
                      
     # background (e.g. street network)
-    if (not gdf_base_map.empty) && (base_map_order == 0)
+    if (not gdf_base_map.empty) & (base_map_order == 0): 
         if gdf_base_map.iloc[0].geometry.geom_type == 'LineString':
             gdf_base_map.plot(ax = ax, color = base_map_color, linewidth = base_map_lw, alpha = base_map_alpha)
         if gdf_base_map.iloc[0].geometry.geom_type == 'Point':
@@ -280,7 +296,7 @@ def plot_barriers(barriers_gdf, lw = 1.1, title = "Plot", legend = False, axis_f
     plt.show()  
     
 def plot_gdfs(list_gdfs = None, column = None, titles = None, black_background = True, fig_size = 15, scheme = None, bins = None, classes = None, norm = None, cmap = None, color = None, alpha = None, 
-                legend = False, color_bar = False, axis_frame = False, ms = None, ms_col = None, lw = None, lw_factor = None)
+                legend = False, color_bar = False, axis_frame = False, ms = None, ms_col = None, lw = None, lw_factor = None): 
                      
     """
     It creates of subplots from a list of polygons GeoDataFrames
@@ -312,29 +328,30 @@ def plot_gdfs(list_gdfs = None, column = None, titles = None, black_background =
         black background or white
     """                 
                      
-    if alpha is None:
-        alpha = 1
-    
-    nrows, ncols = int(len(columns)/2), 2
-    if (len(columns)%2 != 0): nrows = nrows+1
+    nrows, ncols = int(len(list_gdfs)/2), 2
+    if (len(list_gdfs)%2 != 0): nrows = nrows+1
      
-    multiPlot = MultiPlotGrid(fig_size = fig_size, nrows = nrows, ncols = ncols, black_background = black_background, title = title)
+    multiPlot = MultiPlot(fig_size = fig_size, nrows = nrows, ncols = ncols, black_background = black_background)
     fig, grid = multiPlot.fig, multiPlot.grid   
-
+    
+    if nrows > 1: grid = [item for sublist in grid for item in sublist]
     for n, ax in enumerate(grid):
-        
-        if n > len(list_gdfs)-1: 
-            continue # when odd nr of gdfs
-        
-        gdf = list_gdfs[n]
+                
+
     
         ax.set_aspect("equal")
         if axis_frame: 
             set_axis_frame(ax, black_background, multiPlot.text_color)
-        else: ax.set_axis_off()         
-        ax.set_title(titles[n], loc='center', fontfamily = 'Times New Roman', fontsize = 30, color = multiPlot.text_color,  pad = 15)
+        else: ax.set_axis_off()      
+
+        if n > len(list_gdfs)-1: 
+            continue # when odd nr of gdfs    
         
-        _single_plot(ax, gdf, column = column, scheme = scheme, bins = bins, classes = classes, norm = norm, cmap = cmap, color = color, alpha = alpha, 
+        gdf = list_gdfs[n]
+        if titles is not None:
+            ax.set_title(titles[n], loc='center', fontfamily = 'Times New Roman', fontsize = 25, color = multiPlot.text_color,  pad = 15)
+        
+        single_plot(ax, gdf, column = column, scheme = scheme, bins = bins, classes = classes, norm = norm, cmap = cmap, color = color, alpha = alpha, 
                 legend = legend, color_bar = color_bar, axis_frame = axis_frame, ms = ms, ms_col = ms_col, lw = lw, lw_factor = lw_factor)
                     
         # if legend:
@@ -347,31 +364,29 @@ def plot_gdfs(list_gdfs = None, column = None, titles = None, black_background =
     return fig
    
 def plot_gdf_grid(gdf = None, columns = None, titles = None, black_background = True, fig_size = 15, scheme = None, bins = None, classes = None, norm = None, cmap = None, color = None, alpha = None, 
-                legend = False, color_bar = False, axis_frame = False, ms = None, ms_col = None, lw = None, lw_factor = None)
-    
-    if alpha is None:
-        alpha = 1.0
-    
+                legend = False, color_bar = False, axis_frame = False, ms = None, ms_col = None, lw = None, lw_factor = None): 
+       
     nrows, ncols = int(len(columns)/2), 2
     if (len(columns)%2 != 0): nrows = nrows+1
      
-    multiPlot = MultiPlotGrid(fig_size = fig_size, nrows = nrows, ncols = ncols, black_background = black_background, title = title)
+    multiPlot = MultiPlotGrid(fig_size = fig_size, nrows = nrows, ncols = ncols, black_background = black_background)
     fig, grid = multiPlot.fig, multiPlot.grid   
 
     for n, ax in enumerate(grid):
         
-        if n > len(columns)-1: 
-            continue # when odd nr of columns
-    
         ax.set_aspect("equal")
         if axis_frame: 
             set_axis_frame(ax, black_background, multiPlot.text_color)
         else: ax.set_axis_off()
-            
-        ax.set_title(titles[n], loc='center', fontfamily = 'Times New Roman', fontsize = 30, color = multiPlot.text_color,  pad = 15)
+        
+        if n > len(columns)-1: 
+            continue # when odd nr of columns
         
         column = columns[n]
-        _single_plot(ax, gdf, column = column, scheme = scheme, bins = bins, classes = classes, norm = norm, cmap = cmap, color = color, alpha = alpha, 
+        if titles is not None:          
+            ax.set_title(titles[n], loc='center', fontfamily = 'Times New Roman', fontsize = 30, color = multiPlot.text_color,  pad = 15)
+                
+        single_plot(ax, gdf, column = column, scheme = scheme, bins = bins, classes = classes, norm = norm, cmap = cmap, color = color, alpha = alpha, 
             legend = legend, color_bar = color_bar, axis_frame = axis_frame, ms = ms, ms_col = ms_col, lw = lw, lw_factor = lw_factor)
                             
         # if legend:

@@ -1,4 +1,4 @@
-import pandas as pd, 
+import pandas as pd
 import numpy as np
 import geopandas as gpd
 import math

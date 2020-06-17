@@ -14,7 +14,7 @@ pd.options.mode.chained_assignment = None
 
 import statistics
 import ast
-from .graph import nodes_degree,
+from .graph import nodes_degree
 from .utilities import center_line, merge_lines
 from .cleaning_network import clean_network, correct_edges
 from .angles import difference_angle_line_geometries, angle_line_geometries

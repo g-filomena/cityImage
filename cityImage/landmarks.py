@@ -108,13 +108,13 @@ def get_buildings_fromOSM(place, download_method, epsg = None, distance = 1000):
     
     columns_to_keep = ['amenity', 'building', 'geometry', 'historic','land_use']
 
-    if method == "distance_from_address": 
+    if download_method == "distance_from_address": 
         buildings_gdf = ox.footprints.footprints_from_address(address = place, distance = distance, footprint_type = 'building', retain_invalid = False)
-    elif method == "OSMplace": 
+    elif download_method == "OSMplace": 
         ox.footprints.footprints_from_place(place, footprint_type = 'building', retain_invalid = False)
-    elif method == "from_point": 
+    elif download_method == "from_point": 
         buildings_gdf = ox.footprints.footprints_from_point(point = place, distance = distance, footprint_type= 'building', retain_invalid=False)
-    else: raise download_error('Provide a download method amongst {"from_point", "distance_from_address", "OSMplace"}')
+    else: raise downloadError('Provide a download method amongst {"from_point", "distance_from_address", "OSMplace"}')
     
     if epsg is None:
         buildings_gdf = ox.projection.project_gdf(buildings_gdf)
@@ -135,7 +135,7 @@ def get_buildings_fromOSM(place, download_method, epsg = None, distance = 1000):
 
     buildings_gdf = buildings_gdf[['geometry', 'historic', 'land_use']]
     buildings_gdf['area'] = buildings_gdf.geometry.area
-    buildings_gdf = buildings_gdf['area' >= 200] 
+    buildings_gdf = buildings_gdf[buildings_gdf['area'] >= 200] 
     
     # reset index
     buildings_gdf = buildings_gdf.reset_index(drop = True)

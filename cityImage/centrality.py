@@ -1,7 +1,7 @@
 import networkx as nx, pandas as pd, numpy as np, geopandas as gpd
 import functools
 
-from shapely.geometry import Point, 
+from shapely.geometry import Point 
 pd.set_option("precision", 10)
 
 from .utilities import *

@@ -415,7 +415,7 @@ def fix_network_topology(nodes_gdf, edges_gdf):
     old_edges_gdf = edges_gdf.copy()
     
     for row in old_edges_gdf.itertuples():
-        if (bridges) & (old_edges_gdf.loc[row.Index].bridge != 0)
+        if (bridges) & (old_edges_gdf.loc[row.Index].bridge != 0):
             continue # bridges are not checked
         if (tunnel) & (old_edges_gdf.loc[row.Index].tunnel != 0): 
             continue # tunnels are not checked
@@ -427,7 +427,7 @@ def fix_network_topology(nodes_gdf, edges_gdf):
         union = tmp.unary_union
         intersections = line_geometry.intersection(union)
         if intersections.geom_type == 'Point': 
-            = [intersections]
+            intersections = [intersections]
         points = [i for i in intersections if i.geom_type == 'Point']
         new_collection = []
 
