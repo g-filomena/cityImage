@@ -145,7 +145,7 @@ def single_plot(ax, gdf, column = None, scheme = None, bins = None, classes = No
                 classification_kwds = c_k, capstyle = 'round', joinstyle = 'round')
         
     if gdf.iloc[0].geometry.geom_type == 'Polygon': 
-        gdf.plot(ax = ax, column = column, categorical = categorical, color = color, scheme = scheme, alpha = alpha, cmap = cmap, norm = norm, legend = legend, classification_kwds = c_k)
+        gdf.plot(ax = ax, column = column, categorical = categorical, color = color, scheme = scheme, edgecolor = 'none', alpha = alpha, cmap = cmap, norm = norm, legend = legend, classification_kwds = c_k)
         
  
 def plot_gdf(gdf, column = None, title = None, black_background = True, fig_size = 15, scheme = None, bins = None, classes = None, norm = None, cmap = None, color = None, alpha = None, 
@@ -329,7 +329,8 @@ def plot_gdfs(list_gdfs = None, column = None, titles = None, black_background =
     """                 
                      
     nrows, ncols = int(len(list_gdfs)/2), 2
-    if (len(list_gdfs)%2 != 0): nrows = nrows+1
+    if (len(list_gdfs)%2 != 0): 
+        nrows = nrows+1
      
     multiPlot = MultiPlot(fig_size = fig_size, nrows = nrows, ncols = ncols, black_background = black_background)
     fig, grid = multiPlot.fig, multiPlot.grid   
@@ -337,8 +338,6 @@ def plot_gdfs(list_gdfs = None, column = None, titles = None, black_background =
     if nrows > 1: grid = [item for sublist in grid for item in sublist]
     for n, ax in enumerate(grid):
                 
-
-    
         ax.set_aspect("equal")
         if axis_frame: 
             set_axis_frame(ax, black_background, multiPlot.text_color)
@@ -367,7 +366,8 @@ def plot_gdf_grid(gdf = None, columns = None, titles = None, black_background = 
                 legend = False, color_bar = False, axis_frame = False, ms = None, ms_col = None, lw = None, lw_factor = None): 
        
     nrows, ncols = int(len(columns)/2), 2
-    if (len(columns)%2 != 0): nrows = nrows+1
+    if (len(columns)%2 != 0): 
+        nrows = nrows+1
      
     multiPlot = MultiPlotGrid(fig_size = fig_size, nrows = nrows, ncols = ncols, black_background = black_background)
     fig, grid = multiPlot.fig, multiPlot.grid   
@@ -463,6 +463,7 @@ def _generate_legend(ax, black_background):
     leg.set_bbox_to_anchor((0., 0., 0.2, 0.2))
     leg.get_frame().set_linewidth(0.0) # remove legend border
     leg.set_zorder(102)
+    
     for text in leg.get_texts(): 
         text.set_color("white")
     if not black_background:
@@ -471,7 +472,8 @@ def _generate_legend(ax, black_background):
  
 def generate_grid_colorbar(cmap, fig, grid, nrows, ncols, text_color, font_size, norm = None):
     
-    if font_size is None: font_size = 20
+    if font_size is None: 
+        font_size = 20
     
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
     sm._A = []
@@ -519,7 +521,8 @@ def random_colors_list_rgb(nlabels, vmin = 0.8, vmax = 1.0):
 
     # Convert HSV list to RGB
     randRGBcolors = []
-    for HSVcolor in randHSVcolors: randRGBcolors.append(colorsys.hsv_to_rgb(HSVcolor[0], HSVcolor[1], HSVcolor[2]))
+    for HSVcolor in randHSVcolors: 
+        randRGBcolors.append(colorsys.hsv_to_rgb(HSVcolor[0], HSVcolor[1], HSVcolor[2]))
     return  randRGBcolors
     
             

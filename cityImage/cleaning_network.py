@@ -10,8 +10,8 @@ from shapely.geometry import Point, LineString, MultiPoint, MultiLineString
 from shapely.ops import split, unary_union
 pd.set_option('precision', 10)
 
-from .graph import*
-from .utilities import*
+from .graph import graph_fromGDF
+from .utilities import center_line
 
 """
 This set of functions is designed for cleaning street network's GeoDataFrame (nodes, edges), by taking care of dead_ends, duplicate geometries, same vertexes edges and so on.
@@ -35,7 +35,8 @@ def duplicate_nodes(nodes_gdf, edges_gdf):
     """
     
     # the index of nodes_gdf has to be nodeID
-    if list(nodes_gdf.index.values) != list(nodes_gdf.nodeID.values): nodes_gdf.index = nodes_gdf.nodeID
+    if list(nodes_gdf.index.values) != list(nodes_gdf.nodeID.values): 
+        nodes_gdf.index = nodes_gdf.nodeID
     nodes_gdf, edges_gdf =  nodes_gdf.copy(), edges_gdf.copy()
     
     # detecting duplicate geometries
@@ -435,7 +436,8 @@ def fix_network_topology(nodes_gdf, edges_gdf):
             if (p.coords[0] == line_geometry.coords[0]) | (p.coords[0] == line_geometry.coords[-1]): 
                 pass # disregarding the ones which lie on the line's u-v nodes
             else: new_collection.append(p) # only checking the others
-        if len(new_collection) == 0: continue    
+        if len(new_collection) == 0: 
+            continue    
        
         geometry_collection = MultiPoint([point.coords[0] for point in new_collection])  
         # including the intersecting geometries in the coordinates sequence of the line and split
@@ -453,7 +455,7 @@ def fix_network_topology(nodes_gdf, edges_gdf):
             u = Point(line.coords[0])
             v = Point(line.coords[-1])
             try:
-                uID =  nodes_gdf[nodes_gdf.geometry == u].index[0]
+                uID = nodes_gdf[nodes_gdf.geometry == u].index[0]
             except:
                 nodeID = nodes_gdf.index.max()+1
                 nodes_gdf.loc[nodeID] = nodes_gdf.loc[nodeID-1]

@@ -239,6 +239,8 @@ def _advance_visibility(building_geometry, obstructions_gdf, obstructions_sindex
       
     # creating buffer
     origin = building_geometry.centroid
+    if building_geometry.geom_type == 'MultiPolygon':
+        building_geometry = building_geometry.convex_hull
     exteriors = list(building_geometry.exterior.coords)
     no_holes = Polygon(exteriors)
     max_expansion_distance = max_expansion_distance + origin.distance(building_geometry.envelope.exterior)
@@ -492,11 +494,11 @@ def pragmatic_score(buildings_gdf, radius = 200):
     buildings_gdf = buildings_gdf.copy()   
     buildings_gdf["nr"] = 1 # to count
     sindex = buildings_gdf.sindex # spatial index
-    buildings_gdf["prag"] = buildings_gdf.apply(lambda row: _compute_prag_min(row.geometry, row.land_use, sindex, radius), axis = 1)
+    buildings_gdf["prag"] = buildings_gdf.apply(lambda row: _compute_pragmatic_meaning_building(row.geometry, row.land_use, buildings_gdf, sindex, radius), axis = 1)
     
     return buildings_gdf
     
-def _compute_pragmatic_meaning_building(building_geometry, building_land_use, buildings_gdf_sindex, radius):
+def _compute_pragmatic_meaning_building(building_geometry, building_land_use, buildings_gdf, buildings_gdf_sindex, radius):
 
     """
     Compute pragmatic for a single building. It supports the function "pragmatic_meaning" 
@@ -514,13 +516,12 @@ def _compute_pragmatic_meaning_building(building_geometry, building_land_use, bu
     """
 
     buffer = building_geometry.buffer(radius)
-
-    possible_matches_index = list(sindex.intersection(buffer.bounds))
+    possible_matches_index = list(buildings_gdf_sindex.intersection(buffer.bounds))
     possible_matches = buildings_gdf.iloc[possible_matches_index]
     pm = possible_matches [possible_matches.intersects(buffer)]
     neigh = pm.groupby(["land_use"], as_index = True)["nr"].sum() 
+
     Nj = neigh.loc[building_land_use] # nr of neighbours with same land_use
-    
     # Pj = Nj/N
     Pj = 1-(Nj/pm["nr"].sum()) # inverting the value
         
@@ -617,19 +618,16 @@ def compute_local_scores(buildings_gdf, l_cW, l_iW, radius = 1500):
     buildings_gdf.index = buildings_gdf.buildingID
     buildings_gdf.index.name = None
     
-    spatial_index = buildings_gdf.sindex # spatial index
+    sindex = buildings_gdf.sindex # spatial index
     buildings_gdf["lScore"] = 0.0
     buildings_gdf["vScore_l"], buildings_gdf["sScore_l"] = 0.0, 0.0
-                                          
-    col = ["3dvis", "fac", "height", "area","2dvis", "cult","prag"]
-    col_inverse = ["neigh", "road"]
-   
+    
     # recomputing the scores per each building in relation to its neighbours, in an area whose extent is regulated by the parameter "radius"
-    buildings_gdf["lScore"] = buildings_gdf.apply(lambda row: _building_local_score(row["geometry"], row["buildingID"], buildings_gdf, sinde, radius), axis = 1)
+    buildings_gdf["lScore"] = buildings_gdf.apply(lambda row: _building_local_score(row["geometry"], row["buildingID"], buildings_gdf, sindex, l_cW, l_iW, radius), axis = 1)
     scaling_columnDF(buildings_gdf, "lScore")
     return buildings_gdf
     
-def _building_local_score(building_geometry, buildingID, buildings_gdf, buildings_gdf_sindex,l_cW, l_iW, radius):
+def _building_local_score(building_geometry, buildingID, buildings_gdf, buildings_gdf_sindex, l_cW, l_iW, radius):
 
     """
     The function computes landmarkness at the local level for a single building. 
@@ -648,7 +646,10 @@ def _building_local_score(building_geometry, buildingID, buildings_gdf, building
     -------
     GeoDataFrame
     """
-
+                                             
+    col = ["3dvis", "fac", "height", "area","2dvis", "cult","prag"]
+    col_inverse = ["neigh", "road"]
+    
     buffer = building_geometry.buffer(radius)
     possible_matches_index = list(buildings_gdf_sindex.intersection(buffer.bounds))
     possible_matches = buildings_gdf.iloc[possible_matches_index].copy()

@@ -87,7 +87,8 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
     edges_gdf["tunnel"] = [max(x) if isinstance(x, list) else x for x in edges_gdf["tunnel"]]
     
     # finalising geodataframes
-    if epsg == None: nodes_gdf, edges_gdf = ox.projection.project_gdf(nodes_gdf), ox.projection.project_gdf(edges_gdf)
+    if epsg is None: 
+        nodes_gdf, edges_gdf = ox.projection.project_gdf(nodes_gdf), ox.projection.project_gdf(edges_gdf)
     else: nodes_gdf, edges_gdf = nodes_gdf.to_crs(epsg = epsg), edges_gdf.to_crs(epsg = epsg)
     
     nodes_gdf["x"], nodes_gdf["y"] = list(zip(*[(r.coords[0][0], r.coords[0][1]) for r in nodes_gdf.geometry]))
@@ -132,7 +133,8 @@ def get_network_fromSHP(path, epsg, dict_columns = {}, other_columns = []):
     new_columns = ["highway", "oneway", "lanes", "maxspeed","name"]
     if len(dict_columns) > 0:
         for n, (key, value) in enumerate(dict_columns.items()):
-            if (value != None): edges_gdf[new_columns[n]] = edges_gdf[value]
+            if (value is not None): 
+                edges_gdf[new_columns[n]] = edges_gdf[value]
     else: new_columns = []
      
     standard_columns = ["geometry", "from", "to", "key"]
@@ -202,7 +204,8 @@ def join_by_coordinates(nodes_gdf, edges_gdf):
     tuple of GeoDataFrames
     """
     
-    if not "nodeID" in nodes_gdf.columns: nodes_gdf["nodeID"] = nodes_gdf.index.values.astype("int64")
+    if not "nodeID" in nodes_gdf.columns: 
+        nodes_gdf["nodeID"] = nodes_gdf.index.values.astype("int64")
     edges_gdf["from"] = edges_gdf.apply(lambda row: row.geometry.coords[0], axis = 1)
     edges_gdf["to"] = edges_gdf.apply(lambda row: row.geometry.coords[-1], axis = 1)
     nodes_gdf["coordinates"] = list(zip(nodes_gdf.x, nodes_gdf.y))
@@ -253,8 +256,6 @@ def reset_index_street_network_gdfs(nodes_gdf, edges_gdf):
     
 class Error(Exception):
     """Base class for other exceptions"""
-    pass    
-    
+
 class downloadError(Error):
     """Raised when a wrong download method is provided"""
-    pass
