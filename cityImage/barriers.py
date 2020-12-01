@@ -628,7 +628,6 @@ def get_barriers(place, download_method, distance, epsg):
     barriers_gdf['barrierID'] = barriers_gdf.index.astype(int)
 
     return barriers_gdf
-    difference_angle_line_geometries
     
 class EmptyOverpassResponse(ValueError):  # pragma: no cover
     """Exception for empty overpass response."""

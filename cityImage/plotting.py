@@ -567,29 +567,7 @@ def generate_grid_colorbar(cmap, fig, grid, nrows, ncols, text_color, font_size,
         ax = grid[nrows-1]
         pos = [ax.get_position().x0+width, ax.get_position().y0, 0.027, ax.get_position().height]
 
-    cax = fig.add_axes(pos, frameon = False)
-    cax.tick_params(size=0)
-    cb = plt.colorbar(sm, cax=cax)
-    cb.outline.set_visible(False)
-    tick_locator = ticker.MaxNLocator(nbins=ticks)
-    cb.locator = tick_locator
-    cb.update_ticks()
-    cb.outline.set_visible(False)
-    
-    ticks = list(cax.get_yticks())
-    for t in ticks: 
-        if (t == ticks[-1]) & (t != norm.vmax) :
-            ticks[-1] = norm.vmax
-
-    if only_min_max:
-        ticks = [norm.vmin, norm.vmax]
-    cb.set_ticks(ticks)
-    
-    if symbol:
-        cax.set_yticklabels([round(t,1) if t < norm.vmax else "> "+str(round(t,1)) for t in cax.get_yticks()])
-    else: cax.set_yticklabels([round(t,1) for t in cax.get_yticks()])
-    
-    plt.setp(plt.getp(cax.axes, "yticklabels"), size = 0, color = text_color, fontfamily = 'Times New Roman', fontsize=font_size)
+    _set_colorbar(pos, sm, ticks, norm, symbol, text_color, font_size)    
     
 def generate_row_colorbar(cmap, fig, ax, ncols, text_color, font_size, norm = None, ticks = 5, symbol = False, only_min_max = False):
     
@@ -607,7 +585,10 @@ def generate_row_colorbar(cmap, fig, ax, ncols, text_color, font_size, norm = No
     elif ncols > 2:
         width = ax.get_position().x1*(ncols-1)-hr_p*ncols
     pos = [ax.get_position().x0+width, ax.get_position().y0, 0.05, ax.get_position().height]
-
+    _set_colorbar(pos, sm, ticks, norm, symbol, text_color, font_size)    
+    
+    
+def _set_colorbar(pos, sm, ticks, norm, symbol, text_color, font_size)
     cax = fig.add_axes(pos, frameon = False)
     cax.tick_params(size=0)
     cb = plt.colorbar(sm, cax=cax)
@@ -631,8 +612,7 @@ def generate_row_colorbar(cmap, fig, ax, ncols, text_color, font_size, norm = No
     else: cax.set_yticklabels([round(t,1) for t in cax.get_yticks()])
     
     plt.setp(plt.getp(cax.axes, "yticklabels"), size = 0, color = text_color, fontfamily = 'Times New Roman', fontsize=font_size)
-                     
-                     
+             
 def normalize(n, range1, range2):
     delta1 = range1[1] - range1[0]
     delta2 = range2[1] - range2[0]

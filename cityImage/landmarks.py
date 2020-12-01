@@ -161,12 +161,12 @@ def simplify_footprints(buildings_gdf, crs):
 def attach_attributes(buildings_gdf, attributes_gdf, height_field, base_field, land_use_field):
     
     buildings_gdf = buildings_gdf.copy()
-    attributes['area'] = attributes.geometry.area
-    attributes = attributes[attributes.area > 50].copy()
-    attributes[land_use_field] = attributes[land_use_field].where(pd.notnull(attributes[land_use_field]), None)
+    attributes_gdf['area'] = attributes_gdf.geometry.area
+    attributes_gdf = attributes_gdf[attributes_gdf.area > 50].copy()
+    attributes_gdf[land_use_field] = attributes_gdf[land_use_field].where(pd.notnull(attributes_gdf[land_use_field]), None)
     if land_use_field in buildings_gdf:
         buildings_gdf.drop(land_use_field, axis = 1, inplace = True)
-    buildings_gdf = gpd.sjoin(buildings_gdf, attributes[['area', 'geometry', height_field, land_use_field]], how="left", op= 'intersects')
+    buildings_gdf = gpd.sjoin(buildings_gdf, attributes_gdf[['area', 'geometry', height_field, land_use_field]], how="left", op= 'intersects')
     
     buildings_gdf['land_use_raw'] = None
     new_buildings_gdf = buildings_gdf.copy()
