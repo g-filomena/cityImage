@@ -1,4 +1,3 @@
-import matplotlib as mp
 import pandas as pd
 import numpy as np
 
@@ -17,7 +16,7 @@ import colorsys
 
 pd.set_option("precision", 10)
 
-
+from .utilities import scaling_columnDF
 """
 Plotting functions
 
@@ -40,12 +39,12 @@ class Plot():
         else: 
             text_color = "black"
             rect.set_facecolor("white")
-        font_size = fig_size+5 # font-size   
-        fig.suptitle(title, color = text_color, fontsize=font_size)
+        font_size = fig_size*2+5 # font-size
+        fig.suptitle(title, color = text_color, fontsize=font_size, fontfamily = 'Times New Roman')
         
         plt.axis("equal")
-        self.fig = fig
-        self.ax = ax
+        self.fig, self.ax = fig, ax
+        self.font_size, self.text_color = font_size, text_color
         
 class MultiPlotGrid():
     
@@ -72,11 +71,11 @@ class MultiPlotGrid():
 class MultiPlot():
     
     
-    def __init__(self, fig_size, nrows, ncols, black_background):
+    def __init__(self, fig_size, nrows, ncols, black_background, title = None):
     
         figsize = (fig_size, fig_size/2*nrows)          
         fig, grid = plt.subplots(nrows = nrows, ncols = ncols, figsize=figsize)
-        plt.axis("equal")
+
         rect = fig.patch 
         if black_background: 
             text_color = "white"
@@ -85,13 +84,20 @@ class MultiPlot():
             text_color = "black"
             rect.set_facecolor("white")
         
-        font_size = fig_size+5 # font-size   
+        font_size = fig_size*2+5
+        if title is not None:
+            fig.suptitle(title, color = text_color, fontsize = font_size, fontfamily = 'Times New Roman', 
+                         ha = 'center', va = 'center') 
+            fig.subplots_adjust(top=0.92)
+        
+        plt.axis("equal")    
         self.fig, self.grid = fig, grid
         self.font_size, self.text_color = font_size, text_color
 
 def single_plot(ax, gdf, column = None, scheme = None, bins = None, classes = None, norm = None, cmap = None, color = None, alpha = None, 
-                legend = False, color_bar = False, axis_frame = False, ms = None, ms_col = None, lw = None, lw_factor = None):
+                legend = False, axis_frame = False, ms = None, ms_factor = None, lw = None, lw_factor = None,  zorder = 0):
     
+    gdf = gdf.copy()
     categorical = True
     if alpha is None:
         alpha = 1
@@ -106,51 +112,64 @@ def single_plot(ax, gdf, column = None, scheme = None, bins = None, classes = No
         cmap = rand_cmap(len(gdf[column].unique()))         
     # Lynch's bins - only for variables from 0 to 1 
     elif scheme == "Lynch_Breaks":  
+        scaling_columnDF(gdf, column)
+        column = column+"_sc"
         bins = [0.125, 0.25, 0.5, 0.75, 1.00]
         scheme = 'User_Defined'
         categorical = False
     elif norm is not None:
         legend = False
-        color_bar = True
         categorical = False
         scheme = None
-    elif ((scheme is not None) | (bins is not None)) & (classes is None):
+    elif (scheme is not None) & (classes is None) & (bins is None):
         classes = 7   
-    if (scheme is not None) & (cmap is None):
+    if (scheme is not None) & (cmap is None) :
         cmap = kindlmann()
-    if (scheme is not None) | (norm is not None) | (bins is not None):
+    if (scheme is not None) | (norm is not None):
         categorical = False
         color = None
-        
+    
+    if (column is not None) & (not categorical):
+        if (gdf[column].dtype == 'O'):
+            gdf[column] = gdf[column].astype(float)
+    
     if bins is None: 
         c_k = {None}
+        if classes is not None:
+            c_k = {"k" : classes}
     else: 
-        c_k = {'bins':bins}
+        c_k = {'bins':bins, "k" : len(bins)}
         scheme = 'User_Defined'
     
     if gdf.iloc[0].geometry.geom_type == 'Point':
-        if (ms_col is not None): 
-            ms = gdf[ms_col]
-        else: ms = ms
-        if ms is None:
+        if (ms_factor is not None): 
+            # rescale
+            scaling_columnDF(gdf, column)
+            gdf['ms'] = np.where(gdf[column+'_sc'] >= 0.20, gdf[column+'_sc']*ms_factor, 0.40) # marker size
+            ms = gdf['ms']
+        elif ms is None:
             ms = 1.0
-        gdf.plot(ax = ax, column = column, markersize = ms, categorical = categorical, color = color, scheme = scheme, cmap = cmap, norm = norm, alpha = alpha, legend = legend, classification_kwds = c_k) 
+        else: ms = ms
+
+        gdf.plot(ax = ax, column = column, markersize = ms, categorical = categorical, color = color, scheme = scheme, cmap = cmap, norm = norm, alpha = alpha,
+            legend = legend, classification_kwds = c_k, zorder = zorder) 
         
     if gdf.iloc[0].geometry.geom_type == 'LineString':
         if (lw is None) & (lw_factor is None): 
             lw = 1.00
         elif lw_factor is not None:
             lw = [value*lw_factor if value*lw_factor> 1.1 else 1.1 for value in gdf[column]]
-        gdf.plot(ax = ax, column = column, categorical = categorical, color = color, linewidth = lw, scheme = scheme, alpha = alpha, cmap = cmap, norm = norm, legend = legend, 
-                classification_kwds = c_k, capstyle = 'round', joinstyle = 'round')
-        
+        gdf.plot(ax = ax, column = column, categorical = categorical, color = color, linewidth = lw, scheme = scheme, alpha = alpha, cmap = cmap, norm = norm,
+            legend = legend, classification_kwds = c_k, capstyle = 'round', joinstyle = 'round', zorder = zorder) 
+                
     if gdf.iloc[0].geometry.geom_type == 'Polygon': 
-        gdf.plot(ax = ax, column = column, categorical = categorical, color = color, scheme = scheme, edgecolor = 'none', alpha = alpha, cmap = cmap, norm = norm, legend = legend, classification_kwds = c_k)
+        gdf.plot(ax = ax, column = column, categorical = categorical, color = color, scheme = scheme, edgecolor = 'none', alpha = alpha, cmap = cmap,
+            norm = norm, legend = legend, classification_kwds = c_k, zorder = zorder) 
         
  
 def plot_gdf(gdf, column = None, title = None, black_background = True, fig_size = 15, scheme = None, bins = None, classes = None, norm = None, cmap = None, color = None, alpha = None, 
-                legend = False, color_bar = False, axis_frame = False, ms = None, ms_col = None, lw = None, lw_factor = None, gdf_base_map = pd.DataFrame({"a" : []}), base_map_color = None, base_map_alpha = 0.4,
-                base_map_lw = 1.1, base_map_ms = 2.0, base_map_order = 0):
+                legend = False, cbar = False, cbar_ticks = 5, cbar_max_symbol = False, only_min_max = False, axis_frame = False, ms = None, ms_factor = None, lw = None, lw_factor = None, gdf_base_map = pd.DataFrame({"a" : []}), base_map_color = None, base_map_alpha = 0.4,
+                base_map_lw = 1.1, base_map_ms = 2.0, base_map_zorder = 0):
     """
     It creates a plot from a Point GeoDataFrame. 
     It plots the distribution over value and geographical space of variable "column" using "scheme". 
@@ -197,36 +216,38 @@ def plot_gdf(gdf, column = None, title = None, black_background = True, fig_size
     if axis_frame: 
         set_axis_frame(ax, black_background, multiPlot.text_color)
     else: ax.set_axis_off()     
-     
+    zorder = 0
     # base map (e.g. street network)
-    if (not gdf_base_map.empty) & (base_map_order == 0):
+    if (not gdf_base_map.empty):
         if gdf_base_map.iloc[0].geometry.geom_type == 'LineString':
-            gdf_base_map.plot(ax = ax, color = base_map_color, linewidth = base_map_lw, alpha = base_map_alpha)
+            gdf_base_map.plot(ax = ax, color = base_map_color, linewidth = base_map_lw, alpha = base_map_alpha, zorder = base_map_zorder)
         if gdf_base_map.iloc[0].geometry.geom_type == 'Point':
-            gdf_base_map.plot(ax = ax, color = base_map_color, markersize = base_map_ms, alpha = base_map_alpha)
+            gdf_base_map.plot(ax = ax, color = base_map_color, markersize = base_map_ms, alpha = base_map_alpha, zorder = base_map_zorder)
         if gdf_base_map.iloc[0].geometry.geom_type == 'Polygon':
-            gdf_base_map.plot(ax = ax, color = base_map_color, alpha = base_map_alpha)
-    
+            gdf_base_map.plot(ax = ax, color = base_map_color, alpha = base_map_alpha, zorder = base_map_zorder)
+        if base_map_zorder == 0:
+            zorder = 1
+   
     single_plot(ax, gdf, column = column, scheme = scheme, bins = bins, classes = classes, norm = norm, cmap = cmap, color = color, alpha = alpha, 
-                legend = legend, color_bar = color_bar, axis_frame = axis_frame, ms = ms, ms_col = ms_col, lw = lw, lw_factor = lw_factor)
-        
-    # base map (e.g. street network)
-    if (not gdf_base_map.empty) & (base_map_order == 1):
-        if gdf_base_map.iloc[0].geometry.geom_type == 'LineString':
-            gdf_base_map.plot(ax = ax, color = base_map_color, linewidth = base_map_lw, alpha = base_map_alpha)
-        if gdf_base_map.iloc[0].geometry.geom_type == 'Point':
-            gdf_base_map.plot(ax = ax, color = base_map_color, markersize = base_map_ms, alpha = base_map_alpha)
-        if gdf_base_map.iloc[0].geometry.geom_type == 'Polygon':
-            gdf_base_map.plot(ax = ax, color = base_map_color, alpha = base_map_alpha)
-    
+                axis_frame = axis_frame, ms = ms, ms_factor = ms_factor, lw = lw, lw_factor = lw_factor, zorder = zorder, legend = legend)
+
     if legend: 
-        _generate_legend(ax, black_background)
+        _generate_legend_ax(ax, plot.font_size-5, black_background) 
+        
+    if (cbar) & (not legend):
+        if norm is None:
+            min_value = gdf[column].min()
+            max_value = gdf[column].max()
+            norm = plt.Normalize(vmin = min_value, vmax = max_value)
+            
+        generate_row_colorbar(cmap, fig, ax, ncols = 1, text_color = plot.text_color, font_size = plot.font_size, norm = norm, 
+                             ticks = cbar_ticks,symbol = cbar_max_symbol, only_min_max = only_min_max)
     
-    plt.show() 
+    plt.show()    
                 
 def plot_barriers(barriers_gdf, lw = 1.1, title = "Plot", legend = False, axis_frame = False, black_background = True,                 
                fig_size = 15, gdf_base_map = pd.DataFrame({"a" : []}), base_map_color = None, base_map_alpha = 0.4,
-               base_map_lw = 1.1, base_map_ms = 2.0, base_map_order = 0):
+               base_map_lw = 1.1, base_map_ms = 2.0, base_map_zorder = 0):
     
     """
     It creates a plot from a lineString GeoDataFrame. 
@@ -261,17 +282,20 @@ def plot_barriers(barriers_gdf, lw = 1.1, title = "Plot", legend = False, axis_f
     
     ax.set_aspect("equal")
     if axis_frame: 
-        set_axis_frame(ax, black_background, multiPlot.text_color)
+        set_axis_frame(ax, black_background, plot.text_color)
     else: ax.set_axis_off()     
     
+    zorder = 0
     # background (e.g. street network)
-    if (not gdf_base_map.empty) & (base_map_order == 0):
+    if (not gdf_base_map.empty):
         if gdf_base_map.iloc[0].geometry.geom_type == 'LineString':
-            gdf_base_map.plot(ax = ax, color = base_map_color, linewidth = base_map_lw, alpha = base_map_alpha)
+            gdf_base_map.plot(ax = ax, color = base_map_color, linewidth = base_map_lw, alpha = base_map_alpha,zorder = base_map_zorder)
         if gdf_base_map.iloc[0].geometry.geom_type == 'Point':
-            gdf_base_map.plot(ax = ax, color = base_map_color, markersize = base_map_ms, alpha = base_map_alpha)
+            gdf_base_map.plot(ax = ax, color = base_map_color, markersize = base_map_ms, alpha = base_map_alpha, zorder = base_map_zorder)
         if gdf_base_map.iloc[0].geometry.geom_type == 'Polygon':
-            gdf_base_map.plot(ax = ax, color = base_map_color, alpha = base_map_alpha)
+            gdf_base_map.plot(ax = ax, color = base_map_color, alpha = base_map_alpha, zorder = base_map_zorder)
+        if base_map_zorder == 0:
+            zorder = 1
     
     barriers_gdf['barrier_type'] = barriers_gdf['type']
     barriers_gdf.sort_values(by = 'barrier_type', ascending = False, inplace = True)  
@@ -279,24 +303,15 @@ def plot_barriers(barriers_gdf, lw = 1.1, title = "Plot", legend = False, axis_f
     colors = ['green', 'brown', 'grey', 'blue']
     colormap = LinearSegmentedColormap.from_list('new_map', colors, N=4)
     barriers_gdf.plot(ax = ax, categorical = True, column = 'barrier_type', cmap = colormap, linewidth = lw, legend = legend, 
-                     label =  'barrier_type') 
-                     
-    # background (e.g. street network)
-    if (not gdf_base_map.empty) & (base_map_order == 0): 
-        if gdf_base_map.iloc[0].geometry.geom_type == 'LineString':
-            gdf_base_map.plot(ax = ax, color = base_map_color, linewidth = base_map_lw, alpha = base_map_alpha)
-        if gdf_base_map.iloc[0].geometry.geom_type == 'Point':
-            gdf_base_map.plot(ax = ax, color = base_map_color, markersize = base_map_ms, alpha = base_map_alpha)
-        if gdf_base_map.iloc[0].geometry.geom_type == 'Polygon':
-            gdf_base_map.plot(ax = ax, color = base_map_color, alpha = base_map_alpha)                 
+                     label =  'barrier_type', zorder = zorder )             
                      
     if legend: 
-        _generate_legend(ax, black_background)       
+        _generate_legend_ax(ax, plot.font_size-10, black_background)
     
     plt.show()  
     
-def plot_gdfs(list_gdfs = None, column = None, titles = None, black_background = True, fig_size = 15, scheme = None, bins = None, classes = None, norm = None, cmap = None, color = None, alpha = None, 
-                legend = False, color_bar = False, axis_frame = False, ms = None, ms_col = None, lw = None, lw_factor = None): 
+def plot_gdfs(list_gdfs = None, column = None, main_title = None, titles = None, black_background = True, fig_size = 15, scheme = None, bins = None, classes = None, norm = None, cmap = None, color = None, alpha = None, 
+                legend = False, cbar = False, cbar_ticks = 5, cbar_max_symbol = False, only_min_max = False, axis_frame = False, ms = None, ms_factor = None, lw = None, lw_factor = None): 
                      
     """
     It creates of subplots from a list of polygons GeoDataFrames
@@ -332,10 +347,12 @@ def plot_gdfs(list_gdfs = None, column = None, titles = None, black_background =
     if (len(list_gdfs)%2 != 0): 
         nrows = nrows+1
      
-    multiPlot = MultiPlot(fig_size = fig_size, nrows = nrows, ncols = ncols, black_background = black_background)
+    multiPlot = MultiPlot(fig_size = fig_size, nrows = nrows, ncols = ncols, black_background = black_background, title = main_title)
     fig, grid = multiPlot.fig, multiPlot.grid   
+    legend_fig = False
     
-    if nrows > 1: grid = [item for sublist in grid for item in sublist]
+    if nrows > 1: 
+        grid = [item for sublist in grid for item in sublist]
     for n, ax in enumerate(grid):
                 
         ax.set_aspect("equal")
@@ -348,22 +365,37 @@ def plot_gdfs(list_gdfs = None, column = None, titles = None, black_background =
         
         gdf = list_gdfs[n]
         if titles is not None:
-            ax.set_title(titles[n], loc='center', fontfamily = 'Times New Roman', fontsize = 25, color = multiPlot.text_color,  pad = 15)
+            ax.set_title(titles[n], loc='center', fontfamily = 'Times New Roman', fontsize = multiPlot.font_size, color = multiPlot.text_color,  pad = 15)
+            
+        if (n == ncols*nrows/2) & legend & ((scheme == 'User_Defined') | (scheme == 'Lynch_Breaks')):
+            legend_ax = True
+            legend_fig = True
+        elif legend & ((scheme != 'User_Defined') & (scheme != 'Lynch_Breaks')):
+            legend_ax = True
+        else: 
+            legend_ax = False
+            legend_fig = False
         
-        single_plot(ax, gdf, column = column, scheme = scheme, bins = bins, classes = classes, norm = norm, cmap = cmap, color = color, alpha = alpha, 
-                legend = legend, color_bar = color_bar, axis_frame = axis_frame, ms = ms, ms_col = ms_col, lw = lw, lw_factor = lw_factor)
+        single_plot(ax, gdf, column = column, scheme = scheme, bins = bins, classes = classes, norm = norm, cmap = cmap, color = color, alpha = alpha, legend = legend_ax, 
+                    axis_frame = axis_frame, ms = ms, ms_factor = ms_factor, lw = lw, lw_factor = lw_factor)
                     
-        # if legend:
-            # leg = ax.get_legend()
-            # leg.set_bbox_to_anchor((0., 0., 0.2, 0.2))
+        if legend_fig:
+            _generate_legend_fig(ax, nrows, multiPlot.text_color, (multiPlot.font_size-5), black_background)
+        elif legend_ax:
+            _generate_legend_ax(ax, (multiPlot.font_size-15), black_background)
     
-    if color_bar:
-        generate_grid_colorbar(cmap, fig, grid, nrows, ncols, multiPlot.text_color, multiPlot.font_size, norm = norm)
+    if (cbar) & (not legend):
+        if norm is None:
+            min_value = min([gdf[column].min() for gdf in list_gdfs])
+            max_value = max([gdf[column].max() for gdf in list_gdfs])
+            norm = plt.Normalize(vmin = min_value, vmax = max_value)
+        generate_grid_colorbar(cmap, fig, grid, nrows, ncols, multiPlot.text_color,(multiPlot.font_size-5), norm = norm, ticks = cbar_ticks, 
+                              symbol = cbar_max_symbol, only_min_max = only_min_max )
             
     return fig
    
 def plot_gdf_grid(gdf = None, columns = None, titles = None, black_background = True, fig_size = 15, scheme = None, bins = None, classes = None, norm = None, cmap = None, color = None, alpha = None, 
-                legend = False, color_bar = False, axis_frame = False, ms = None, ms_col = None, lw = None, lw_factor = None): 
+                legend = False, cbar = False, cbar_ticks = 5, cbar_max_symbol = False, only_min_max = False, axis_frame = False, ms = None, ms_factor = None, lw = None, lw_factor = None): 
        
     nrows, ncols = int(len(columns)/2), 2
     if (len(columns)%2 != 0): 
@@ -371,7 +403,8 @@ def plot_gdf_grid(gdf = None, columns = None, titles = None, black_background = 
      
     multiPlot = MultiPlotGrid(fig_size = fig_size, nrows = nrows, ncols = ncols, black_background = black_background)
     fig, grid = multiPlot.fig, multiPlot.grid   
-
+    legend_fig = False
+    
     for n, ax in enumerate(grid):
         
         ax.set_aspect("equal")
@@ -384,17 +417,33 @@ def plot_gdf_grid(gdf = None, columns = None, titles = None, black_background = 
         
         column = columns[n]
         if titles is not None:          
-            ax.set_title(titles[n], loc='center', fontfamily = 'Times New Roman', fontsize = 30, color = multiPlot.text_color,  pad = 15)
-                
-        single_plot(ax, gdf, column = column, scheme = scheme, bins = bins, classes = classes, norm = norm, cmap = cmap, color = color, alpha = alpha, 
-            legend = legend, color_bar = color_bar, axis_frame = axis_frame, ms = ms, ms_col = ms_col, lw = lw, lw_factor = lw_factor)
+            ax.set_title(titles[n], loc='center', fontfamily = 'Times New Roman', fontsize = multiPlot.font_size, color = multiPlot.text_color,  pad = 15)
+        
+        if (n == ncols*nrows/2) & legend & ((scheme == 'User_Defined') | (scheme == 'Lynch_Breaks')):
+            legend_ax = True
+            legend_fig = True
+        elif legend & ((scheme != 'User_Defined') & (scheme != 'Lynch_Breaks')):
+            legend_ax = True
+        else: 
+            legend_ax = False
+            legend_fig = False
+        
+        single_plot(ax, gdf, column = column, scheme = scheme, bins = bins, classes = classes, norm = norm, cmap = cmap, color = color, alpha = alpha, legend = legend_ax,
+                    axis_frame = axis_frame, ms = ms, ms_factor = ms_factor, lw = lw, lw_factor = lw_factor)
                             
-        # if legend:
-            # leg = ax.get_legend()
-            # leg.set_bbox_to_anchor((0., 0., 0.2, 0.2))
-    
-    if color_bar:
-        generate_grid_colorbar(cmap, fig, grid, nrows, ncols, multiPlot.text_color, multiPlot.font_size, norm = norm)
+        if legend_fig:
+            _generate_legend_fig(ax, nrows, multiPlot.text_color, multiPlot.font_size-5, black_background)
+        elif legend_ax:
+            _generate_legend_ax(ax, (multiPlot.font_size-5), black_background)
+
+    if (cbar) & (not legend):
+        if norm is None:
+            min_value = min([gdf[column].min() for column in columns])
+            max_value = max([gdf[column].max() for column in columns])
+            norm = plt.Normalize(vmin = min_value, vmax = max_value)
+        generate_grid_colorbar(cmap, fig, grid, nrows, ncols, multiPlot.text_color,multiPlot.font_size-5, norm = norm, ticks = cbar_ticks, 
+                              symbol = cbar_max_symbol, only_min_max = only_min_max)
+
             
     return fig
     
@@ -457,20 +506,43 @@ def plot_multiplex(M, multiplex_edges):
 
     return(fig)
     
-def _generate_legend(ax, black_background):
+def _generate_legend_fig(ax, nrows, text_color, font_size, black_background):
+    
+    leg = ax.get_legend() 
+    plt.setp(leg.texts, family='Times New Roman', fontsize = font_size, color = text_color, va = 'center')
+    if nrows%2 == 0: 
+        leg.set_bbox_to_anchor((2.15, 1.00, 0.33, 0.33))    
+    else: leg.set_bbox_to_anchor((1.15, 0.5, 0.33, 0.33))
+    
+    leg.get_frame().set_linewidth(0.0) # remove legend border
+    leg.set_zorder(102)
+    leg.get_frame().set_facecolor('none')
+    
+    for handle in leg.legendHandles:
+        handle._legmarker.set_markersize(15)
+
+def _generate_legend_ax(ax, font_size, black_background):
 
     leg = ax.get_legend()  
+    if black_background:
+        text_color = 'black'
+    else: text_color = 'white'
+    
+    plt.setp(leg.texts, family='Times New Roman', fontsize = font_size, color = text_color, va = 'center')
     leg.set_bbox_to_anchor((0., 0., 0.2, 0.2))
     leg.get_frame().set_linewidth(0.0) # remove legend border
     leg.set_zorder(102)
     
-    for text in leg.get_texts(): 
-        text.set_color("white")
+    for handle in leg.legendHandles:
+        handle._legmarker.set_markersize(12)
     if not black_background:
         leg.get_frame().set_facecolor('black')
-        leg.get_frame().set_alpha(1)
+        leg.get_frame().set_alpha(0.90)  
+    else:
+        leg.get_frame().set_facecolor('white')
+        leg.get_frame().set_alpha(0.90)  
  
-def generate_grid_colorbar(cmap, fig, grid, nrows, ncols, text_color, font_size, norm = None):
+def generate_grid_colorbar(cmap, fig, grid, nrows, ncols, text_color, font_size, norm = None, ticks = 5, symbol = False, only_min_max = False):
     
     if font_size is None: 
         font_size = 20
@@ -480,7 +552,11 @@ def generate_grid_colorbar(cmap, fig, grid, nrows, ncols, text_color, font_size,
     vr_p = 1/30.30
     hr_p = 0.5/30.30
     ax = grid[0]
-    width = ax.get_position().x1*ncols-hr_p-ax.get_position().x0
+
+    if ncols == 2:
+        width = ax.get_position().x1*ncols-hr_p-ax.get_position().x0
+    elif ncols > 2:
+        width = ax.get_position().x1*(ncols-1)-hr_p*ncols
    
     if nrows == 1: 
         pos = [ax.get_position().x0+width, ax.get_position().y0, 0.027, ax.get_position().height]
@@ -495,12 +571,67 @@ def generate_grid_colorbar(cmap, fig, grid, nrows, ncols, text_color, font_size,
     cax.tick_params(size=0)
     cb = plt.colorbar(sm, cax=cax)
     cb.outline.set_visible(False)
-    tick_locator = ticker.MaxNLocator(nbins=5)
+    tick_locator = ticker.MaxNLocator(nbins=ticks)
     cb.locator = tick_locator
     cb.update_ticks()
     cb.outline.set_visible(False)
-    cax.set_yticklabels([round(t,1) if t < norm.vmax else "> "+str(t) for t in cax.get_yticks()])
-    plt.setp(plt.getp(cax.axes, "yticklabels"), size = 0, color = text_color, fontfamily = 'Times New Roman', fontsize=(font_size))
+    
+    ticks = list(cax.get_yticks())
+    for t in ticks: 
+        if (t == ticks[-1]) & (t != norm.vmax) :
+            ticks[-1] = norm.vmax
+
+    if only_min_max:
+        ticks = [norm.vmin, norm.vmax]
+    cb.set_ticks(ticks)
+    
+    if symbol:
+        cax.set_yticklabels([round(t,1) if t < norm.vmax else "> "+str(round(t,1)) for t in cax.get_yticks()])
+    else: cax.set_yticklabels([round(t,1) for t in cax.get_yticks()])
+    
+    plt.setp(plt.getp(cax.axes, "yticklabels"), size = 0, color = text_color, fontfamily = 'Times New Roman', fontsize=font_size)
+    
+def generate_row_colorbar(cmap, fig, ax, ncols, text_color, font_size, norm = None, ticks = 5, symbol = False, only_min_max = False):
+    
+    if font_size is None: 
+        font_size = 20
+    
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+    sm._A = []
+    vr_p = 1/30.30
+    hr_p = 0.5/30.30
+    
+    width = ax.get_position().x1
+    if ncols == 2:
+        width = ax.get_position().x1*ncols-hr_p-ax.get_position().x0
+    elif ncols > 2:
+        width = ax.get_position().x1*(ncols-1)-hr_p*ncols
+    pos = [ax.get_position().x0+width, ax.get_position().y0, 0.05, ax.get_position().height]
+
+    cax = fig.add_axes(pos, frameon = False)
+    cax.tick_params(size=0)
+    cb = plt.colorbar(sm, cax=cax)
+    cb.outline.set_visible(False)
+    tick_locator = ticker.MaxNLocator(nbins=ticks)
+    cb.locator = tick_locator
+    cb.update_ticks()
+    cb.outline.set_visible(False)
+    
+    ticks = list(cax.get_yticks())
+    for t in ticks: 
+        if (t == ticks[-1]) & (t != norm.vmax) :
+            ticks[-1] = norm.vmax
+
+    if only_min_max:
+        ticks = [norm.vmin, norm.vmax]
+    cb.set_ticks(ticks)
+    
+    if symbol:
+        cax.set_yticklabels([round(t,1) if t < norm.vmax else "> "+str(round(t,1)) for t in cax.get_yticks()])
+    else: cax.set_yticklabels([round(t,1) for t in cax.get_yticks()])
+    
+    plt.setp(plt.getp(cax.axes, "yticklabels"), size = 0, color = text_color, fontfamily = 'Times New Roman', fontsize=font_size)
+                     
                      
 def normalize(n, range1, range2):
     delta1 = range1[1] - range1[0]
@@ -536,7 +667,8 @@ def rand_cmap(nlabels, type_color ='soft'):
     :param last_color_black: Option to use last color as black, True or False
     :return: colormap for matplotlib
     """
-    if type_color not in ('bright', 'soft'): type_color = 'bright'
+    if type_color not in ('bright', 'soft'):
+        type_color = 'bright'
     
     # Generate color map for bright colors, based on hsv
     if type_color == 'bright':
@@ -582,8 +714,11 @@ def set_axis_frame(ax, black_background, text_color):
     if black_background: 
         ax.set_facecolor('black')
     
-def custom_cmap(from_rgb,to_rgb):
-
+def cmap_two_colors(from_rgb,to_rgb):
+    
+    from_rgb = cols.to_rgb(from_rgb)
+    to_rgb = cols.to_rgb(to_rgb) 
+        
     # from color r,g,b
     r1,g1,b1 = from_rgb
     # to color r,g,b
@@ -595,3 +730,9 @@ def custom_cmap(from_rgb,to_rgb):
 
     cmap = LinearSegmentedColormap('custom_cmap', cdict)
     return cmap
+    
+def cmap_three_colors(col1, col2, col3):
+
+    list_colors = [col1, col2, colr3]
+
+    return LinearSegmentedColormap.from_list('red_to green', list_colors)

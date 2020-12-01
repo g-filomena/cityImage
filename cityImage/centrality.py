@@ -1,11 +1,15 @@
-import networkx as nx, pandas as pd, numpy as np, geopandas as gpd
+import networkx as nx
+import pandas as pd
+import numpy as np
+import geopandas as gpd
 import functools
+import math
 
+from math import sqrt
 from shapely.geometry import Point 
 pd.set_option("precision", 10)
 
-from .utilities import *
-from .graph import *
+from .utilities import scaling_columnDF, dict_to_df
    
 ## Centrality functions ###############
 
@@ -112,7 +116,8 @@ def weight_nodes(nodes_gdf, services_gdf, G, field_name, radius = 400):
     sindex = services_gdf.sindex
     
     nodes_gdf[field_name] = nodes_gdf.apply(lambda row: _services_around_node(row["geometry"], services_gdf, sindex, radius = radius), axis=1)
-    for n in G.nodes(): G.nodes[n][field_name] = nodes_gdf[field_name].loc[n]
+    for n in G.nodes(): 
+        G.nodes[n][field_name] = nodes_gdf[field_name].loc[n]
     
     return G
     
@@ -180,7 +185,7 @@ def reach_centrality(G, weight, radius, attribute):
         if len(sp_radium) > 0 and len(G) > 1:
             
             for target in sp_radium:
-                if n != target and target in coord_nodes:
+                if (n != target) & (target in coord_nodes):
                     weight_target = G.nodes[target][attribute]
                     reach = reach + weight_target
             reach_centrality[n] = reach
@@ -208,7 +213,8 @@ def rescale_centrality(nodes_gdf, measure, radius = 400):
     """
     
     nodes_gdf = nodes_gdf.copy()
-    if measure not in nodes_gdf.columns: raise columnError("The column name provided was not found in the nodes GeoDataFrame")
+    if measure not in nodes_gdf.columns: 
+        raise columnError("The column name provided was not found in the nodes GeoDataFrame")
     spatial_index = nodes_gdf.sindex # spatial index
     nodes_gdf[measure+"_"+str(radius)] = nodes_gdf.apply(lambda row: _rescale_centrality(row.Index, nodes_gdf, sindex, radius = radius, measure = measure), axis=1)
         
@@ -242,16 +248,16 @@ def _rescale_centrality(nodeID, nodes_gdf, nodes_gdf_sindex, radius, measure):
         
     return precise_matches[measure+"_sc"].loc[nodeID]
 
-def centrality(G, measure, nodes_gdf, weight, normalized = False):
+def centrality(G, nodes_gdf, measure, weight, normalized = False):
     """"
     The function computes several node centrality measures.
       
     Parameters
     ----------
     G: Networkx graph
-    measure: string
     nodes_gdf: Point GeoDataFrame
         nodes (junctions) GeoDataFrame
+    measure: string
     weight: string
         edges weight
     normalized: boolean
@@ -269,7 +275,8 @@ def centrality(G, measure, nodes_gdf, weight, normalized = False):
         c = nx.closeness_centrality(G, weight = weight, normalized=normalized)
     elif measure == "information_centrality": 
         c = nx.current_flow_betweenness_centrality(G, weight = weight, solver ="lu", normalized=normalized) 
-    raise nameError("The name provided is not a valid centrality name associated with a function")
+    else:
+        raise nameError("The name provided is not a valid centrality name associated with a function")
     
     return c
     
@@ -324,7 +331,8 @@ def append_edges_metrics(edges_gdf, G, dicts, column_names):
     """    
     
     edgesID = {}
-    for i, e in G.edges(): edgesID[(i,e)] = G[i][e]['edgeID']
+    for i, e in G.edges():
+        edgesID[(i,e)] = G[i][e]['edgeID']
     missing_values = [item for item in list(edges_gdf.index) if item not in list(edgesID.values())]
     
     dicts.append(edgesID)
@@ -338,8 +346,10 @@ def append_edges_metrics(edges_gdf, G, dicts, column_names):
     
     # handling possible missing values (happens with self-loops)
     for metric in column_names:
-        if metric == "edgeID": continue
-        for i in missing_values: edges_gdf.at[i, metric] = 0.0
+        if metric == "edgeID": 
+            continue
+        for i in missing_values: 
+            edges_gdf.at[i, metric] = 0.0
     
     return edges_gdf
     
@@ -347,12 +357,10 @@ def append_edges_metrics(edges_gdf, G, dicts, column_names):
     
 class Error(Exception):
     """Base class for other exceptions"""
-    pass
 class columnError(Error):
     """Raised when a column name is not provided"""
-    pass
+
 class nameError(Error):
     """Raised when a not supported or not existing centrality name is input"""
-    pass
 
     

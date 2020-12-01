@@ -138,7 +138,7 @@ def get_network_fromSHP(path, epsg, dict_columns = {}, other_columns = []):
     else: new_columns = []
      
     standard_columns = ["geometry", "from", "to", "key"]
-    edges_gdf = edges_gdf[standard_columns + new_columns+other_columns]
+    edges_gdf = edges_gdf[standard_columns + new_columns + other_columns]
     
     # remove z coordinates, if any
     edges_gdf["geometry"] = edges_gdf.apply(lambda row: LineString([coor for coor in [row["geometry"].coords[i][0:2] for i in range(0, len(row["geometry"].coords))]]), axis = 1)

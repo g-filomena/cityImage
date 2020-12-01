@@ -26,7 +26,7 @@ def scaling_columnDF(df, i, inverse = False):
     """
     
     df[i+"_sc"] = (df[i]-df[i].min())/(df[i].max()-df[i].min())
-    if inverse == True: 
+    if inverse: 
         df[i+"_sc"] = 1-(df[i]-df[i].min())/(df[i].max()-df[i].min())
         
     
@@ -161,16 +161,24 @@ def merge_lines(line_geometries):
             
 def envelope_wgs(gdf):
     envelope = gdf.unary_union.envelope.buffer(100)
-    coords = mapping(envelope)["coordinates"][0]
-    d = [(Point(coords[0])).distance(Point(coords[1])), (Point(coords[1])).distance(Point(coords[2]))]
-    distance = max(d)
+
     project = partial(
         pyproj.transform,
         pyproj.Proj(gdf.crs), # source coordinate system
         pyproj.Proj(init='epsg:4326')) # destination coordinate system
 
     envelope_wgs = transform(project, envelope)
-    return envelope_wgs            
+    return envelope_wgs 
+    
+def convex_hull_wgs(gdf):
+    convex_hull = gdf.unary_union.convex_hull
+    project = partial(
+        pyproj.transform,
+        pyproj.Proj(gdf.crs), # source coordinate system
+        pyproj.Proj(init='epsg:4326')) # destination coordinate system
+
+    convex_hull_wgs = transform(project, convex_hull)
+    return convex_hull_wgs      
             
 def create_hexagon(side_length, x, y):
 

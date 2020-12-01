@@ -42,8 +42,8 @@ def identify_regions(dual_graph, edges_gdf, weight = None):
 
     # saving the data in a geodataframe
     partitions_df = dict_to_df(subdvisions, ['p_'+weight])
-    districts = pd.merge(edges_gdf, partitions_df, left_on = 'edgeID', right_index = True, how= 'left')
-    return districts
+    regions = pd.merge(edges_gdf, partitions_df, left_on = 'edgeID', right_index = True, how= 'left')
+    return regions
     
 def identify_regions_primal(graph, nodes_graph, weight = None, barrier_field = None):
     """
@@ -66,11 +66,9 @@ def identify_regions_primal(graph, nodes_graph, weight = None, barrier_field = N
         weight = 'topo' #the function requires a string 
     # extraction of the best partitions
     partition = best_partition(graph, weight=weight, barrier_field = barrier_field)
-    districts = nodes_graph.copy()
-    districts['p_'+weight] = districts.nodeID.map(partition)
-    return districts
-
-    
+    regions = nodes_graph.copy()
+    regions['p_'+weight] = regions.nodeID.map(partition)
+    return regions
   
                 
 def reset_index_dual_gdfsIG(nodesDual_gdf, edgesDual_gdf):
@@ -224,15 +222,15 @@ def districts_to_edges_from_nodes(edges_gdf, nodes_gdf, district_field):
 
     return edges_gdf
 
-def append_dual_edges_metrics(edges_gdf, dual_graph, dict_metric, name_metric): 
+# def append_dual_edges_metrics(edges_gdf, dual_graph, dict_metric, name_metric): 
     
-    dictionary = dual_id_dict(dict_metric, dual_graph, 'edgeID')
-    tmp = dict_to_df([dictionary], [name_metric])
-    edges_gdf = pd.merge(edges_gdf, tmp, left_on = 'edgeID', right_index = True, how = 'left')
-    edges_gdf.index = edges_gdf.edgeID
-    edges_gdf.index.name = None
+    # dictionary = dual_id_dict(dict_metric, dual_graph, 'edgeID')
+    # tmp = dict_to_df([dictionary], [name_metric])
+    # edges_gdf = pd.merge(edges_gdf, tmp, left_on = 'edgeID', right_index = True, how = 'left')
+    # edges_gdf.index = edges_gdf.edgeID
+    # edges_gdf.index.name = None
     
-    return edges_gdf
+    # return edges_gdf
 
 def _assign_district_to_edge(edgeID, edges_gdf, nodes_gdf, district_field):
     series = edges_gdf.loc[edgeID]
@@ -255,7 +253,7 @@ def district_to_nodes_from_edges(node_geometry, edges_gdf, sindex):
 def district_to_nodes_from_polygons(node_geometry, polygons_gdf):
     point = node_geometry
     dist = distance_geometry_gdf(point, polygons_gdf)
-    return polygons_gdf.loc[dist[1]]['partitionID']
+    return polygons_gdf.loc[dist[1]]['districtID']
               
 def find_gateways(nodeID, nodes_gdf, edges_gdf):
     tmp = edges_gdf[(edges_gdf.u == nodeID) | (edges_gdf.v == nodeID)].copy()
@@ -264,7 +262,7 @@ def find_gateways(nodeID, nodes_gdf, edges_gdf):
         return 1
     return 0
     
-def check_disconnected_regions(nodes_gdf, edges_gdf, min_size):
+def check_disconnected_districts(nodes_gdf, edges_gdf, min_size = 10):
     nodes_gdf = nodes_gdf.copy()
     districts = nodes_gdf.district.unique()
     

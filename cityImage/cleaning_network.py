@@ -10,7 +10,7 @@ from shapely.geometry import Point, LineString, MultiPoint, MultiLineString
 from shapely.ops import split, unary_union
 pd.set_option('precision', 10)
 
-from .graph import graph_fromGDF
+from .graph import graph_fromGDF, nodes_degree
 from .utilities import center_line
 
 """
@@ -342,8 +342,9 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_i
                     else:
                         cl = center_line(line_geometry, line_geometry_connector)
                         edges_gdf.at[ix_line,'geometry'] = cl
-                        if ('highway' in edges_gdf.columns) & (edges_gdf.loc[ix_line_connector]['pedestrian'] == 1): 
-                            edges_gdf.at[ix_line,'pedestrian'] = 1 
+                        if 'highway' in edges_gdf.columns:
+                            if edges_gdf.loc[ix_line_connector]['pedestrian'] == 1: 
+                                edges_gdf.at[ix_line,'pedestrian'] = 1 
                     edges_gdf.drop(ix_line_connector, axis = 0, inplace = True)
                         
         if dead_ends: 
