@@ -588,7 +588,7 @@ def generate_row_colorbar(cmap, fig, ax, ncols, text_color, font_size, norm = No
     _set_colorbar(pos, sm, ticks, norm, symbol, text_color, font_size)    
     
     
-def _set_colorbar(pos, sm, ticks, norm, symbol, text_color, font_size)
+def _set_colorbar(pos, sm, ticks, norm, symbol, text_color, font_size):
     cax = fig.add_axes(pos, frameon = False)
     cax.tick_params(size=0)
     cb = plt.colorbar(sm, cax=cax)

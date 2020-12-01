@@ -12,7 +12,6 @@ from .centrality import *
 from .cleaning_network import *
 from .graph import *
 from .landmarks import *
-from .landmarks_integration import *
 from .land_use import*
 from .plotting import *
 from .regions import *

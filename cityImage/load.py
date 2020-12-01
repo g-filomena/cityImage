@@ -9,6 +9,8 @@ import math
 from math import sqrt
 import ast
 import functools
+from osmnx import downloader
+
 
 from shapely.geometry import Point, LineString, Polygon, MultiPoint
 from shapely.ops import split
@@ -51,7 +53,7 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
     
     # using OSMNx to download data from OpenStreetMap     
     if download_method == "OSMpolygon":
-        query = ox.osm_polygon_download(place, limit=1, polygon_geojson=1)
+        query = downloader._osm_polygon_download(place, limit=1, polygon_geojson=1)
         OSMplace = query[0]["display_name"]
         G = ox.graph_from_place(OSMplace, network_type = network_type, simplify = True)
         
