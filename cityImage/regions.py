@@ -285,6 +285,7 @@ def check_disconnected_districts(nodes_gdf, edges_gdf, min_size = 10):
     
   
 def amend_node_membership(nodeID, nodes_gdf, edges_gdf):
+    
     if nodes_gdf.loc[nodeID]['district'] != 999999: 
         return nodes_gdf.loc[nodeID]['district']
     tmp_edges = edges_gdf[(edges_gdf.u == nodeID) | (edges_gdf.v == nodeID)].copy()

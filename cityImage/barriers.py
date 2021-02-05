@@ -289,7 +289,10 @@ def water_barriers(place, download_method, distance = None, epsg = None):
                                custom_filter= '["natural"~"coastline"]')
         sea = ox.graph_to_gdfs(sea_graph, nodes=False, edges=True, node_geometry= False, fill_edge_geometry=True)
         sea = sea.to_crs(crs)
-        if sea.type != "LineString": 
+        sea = sea.unary_union
+        sea = linemerge(sea)
+        
+        if sea.type != "LineString":        
             sea = linemerge(sea)
             if sea.type != "LineString": 
                 features = [i for i in sea]
@@ -297,7 +300,9 @@ def water_barriers(place, download_method, distance = None, epsg = None):
                 features = [sea]
         else: 
             features = [sea]
+
         df = pd.DataFrame({'geometry': features})
+        sea = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)     
         sea['length'] = sea['geometry'].length
         sea = sea[['geometry', 'length']]
     

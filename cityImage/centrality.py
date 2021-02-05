@@ -10,8 +10,6 @@ from shapely.geometry import Point
 pd.set_option("precision", 10)
 
 from .utilities import scaling_columnDF, dict_to_df
-   
-## Centrality functions ###############
 
 def nodes_dict(G):
     """
@@ -193,61 +191,6 @@ def reach_centrality(G, weight, radius, attribute):
 
     return reach_centrality
     
-    
-def rescale_centrality(nodes_gdf, measure, radius = 400):
-    """
-    The measure rescales precomputed centrality values within a certain radius around each node.
-    Indicate the value to rescale through the parameter "measure" (column name).
-
-    Parameters
-    ----------
-    nodes_gdf: Point GeoDataFrame
-        nodes (junctions) GeoDataFrame
-    measure: string
-    radius: float
-        distance from node within wich rescaling the betweenness centrality value
-    
-    Returns
-    -------
-    dictionary
-    """
-    
-    nodes_gdf = nodes_gdf.copy()
-    if measure not in nodes_gdf.columns: 
-        raise columnError("The column name provided was not found in the nodes GeoDataFrame")
-    spatial_index = nodes_gdf.sindex # spatial index
-    nodes_gdf[measure+"_"+str(radius)] = nodes_gdf.apply(lambda row: _rescale_centrality(row.Index, nodes_gdf, sindex, radius = radius, measure = measure), axis=1)
-        
-    return nodes_gdf
-
-def _rescale_centrality(nodeID, nodes_gdf, nodes_gdf_sindex, radius, measure):
-    """
-    It supports the rescale_centrality function.
-    
-    Parameters
-    ----------
-    nodeID: integer
-    nodes_gdf: Point GeoDataFrame
-        nodes (junctions) GeoDataFrame
-    nodes_gdf_sindex = Rtree Spatial Index
-    radius: float
-        distance around the node within looking for other nodes
-    measure: string
-    
-    Returns
-    -------
-    float value
-    """
-    
-    node_geometry = nodes_gdf.loc[nodeID].geometry
-    buffer = node_geometry.buffer(radius)
-    possible_matches_index = list(sindex.intersection(buffer.bounds))
-    possible_matches = nodes_gdf.iloc[possible_matches_index]
-    precise_matches = possible_matches[possible_matches.intersects(buffer)]
-    scaling_columnDF(precise_matches, measure) 
-        
-    return precise_matches[measure+"_sc"].loc[nodeID]
-
 def centrality(G, nodes_gdf, measure, weight, normalized = False):
     """"
     The function computes several node centrality measures.
@@ -280,36 +223,6 @@ def centrality(G, nodes_gdf, measure, weight, normalized = False):
     
     return c
     
-# TODO: optimise code above  
-# def local_centrality(G, measure, weight, radius = 400, normalized = False):
-    # """
-    # The function computes betweenness centrality at the local level.
-      
-    # Parameters
-    # ----------
-    # G: Networkx graph
-    # weight: string, edges weight
-    # radius: float, distance from node, within local betweenness is computed  
-    
-    # Returns
-    # -------
-    # dictionary
-    # """
-           
-    # path_length = functools.partial(nx.single_source_dijkstra_path_length, weight = weight)
-    # nodes = G.nodes()
-    # cm = {}
-    # coord_nodes = nodes_dict(G)
-
-    # for n in nodes:
-        # G_small = nx.ego_graph(G, n, radius=radius, distance="weight")
-        # if measure == "betweenness_centrality": c = nx.betweenness_centrality(G_small, weight = weight, normalized=normalized)[n]
-        # elif measure == "straightness_centrality": c = straightness_centrality(G_small, weight = weight, normalized=normalized)[n]
-        # elif measure == "closeness_centrality": c = nx.closeness_centrality(G_small, weight = weight, normalized=normalized)[n]
-        # cm[n] = c
-    
-    # return cm
-      
     
 def append_edges_metrics(edges_gdf, G, dicts, column_names):
     """"

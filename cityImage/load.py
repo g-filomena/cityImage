@@ -61,7 +61,8 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
         G = ox.graph_from_address(place, network_type = network_type, distance = distance, simplify = True)
     
     # (download_method == "OSMplace")
-    else: G = ox.graph_from_place(place, network_type = network_type, simplify = True)
+    else:
+        G = ox.graph_from_place(place, network_type = network_type, simplify = True)
     
     # fix list of osmid assigned to same edges
     for i, item in enumerate(G.edges()):
@@ -72,8 +73,7 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
     
     nodes = ox.graph_to_gdfs(G, nodes=True, edges=False, node_geometry=True, fill_edge_geometry=False)
     nodes_gdf = nodes.drop(["highway", "ref"], axis=1, errors = "ignore")
-    # getting rid of OSMid and preparing geodataframes
-    nodes_gdf.index = nodes_gdf.osmid.astype("int64")
+    edges_gdf.reset_index(inplace = True)
     nodes_gdf, edges_gdf = reset_index_street_network_gdfs(nodes_gdf, edges_gdf)    
                
     # columns to keep (u and v represent "from" and "to" node)
@@ -91,7 +91,8 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
     # finalising geodataframes
     if epsg is None: 
         nodes_gdf, edges_gdf = ox.projection.project_gdf(nodes_gdf), ox.projection.project_gdf(edges_gdf)
-    else: nodes_gdf, edges_gdf = nodes_gdf.to_crs(epsg = epsg), edges_gdf.to_crs(epsg = epsg)
+    else: 
+        nodes_gdf, edges_gdf = nodes_gdf.to_crs(epsg = epsg), edges_gdf.to_crs(epsg = epsg)
     
     nodes_gdf["x"], nodes_gdf["y"] = list(zip(*[(r.coords[0][0], r.coords[0][1]) for r in nodes_gdf.geometry]))
     nodes_gdf['height'] = 2 # this will be used for 3d visibility analysis
@@ -238,7 +239,7 @@ def reset_index_street_network_gdfs(nodes_gdf, edges_gdf):
     -------
     tuple of GeoDataFrames
     """
-    
+
     edges_gdf = edges_gdf.rename(columns = {"u":"old_u", "v":"old_v"})
     nodes_gdf["old_nodeID"] = nodes_gdf.index.values.astype("int64")
     nodes_gdf = nodes_gdf.reset_index(drop = True)

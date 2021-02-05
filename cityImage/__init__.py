@@ -19,4 +19,4 @@ from .utilities import *
 from .simplification import *
 from .transport_network import *
 
-__version__ = '0.12'
+__version__ = '0.14'

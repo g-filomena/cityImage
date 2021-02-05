@@ -407,7 +407,7 @@ def visibility_score(buildings_gdf, sight_lines = pd.DataFrame({'a' : []}), meth
     col = ["max", "mean", "nr_lines"]      
 
     for i in col: 
-        ci.scaling_columnDF(stats, i)
+        scaling_columnDF(stats, i)
     # computing the 3d visibility score
     if method == 'longest':
         stats["3dvis"] = stats["max_sc"]

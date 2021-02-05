@@ -567,7 +567,7 @@ def generate_grid_colorbar(cmap, fig, grid, nrows, ncols, text_color, font_size,
         ax = grid[nrows-1]
         pos = [ax.get_position().x0+width, ax.get_position().y0, 0.027, ax.get_position().height]
 
-    _set_colorbar(pos, sm, ticks, norm, symbol, text_color, font_size)    
+    _set_colorbar(fig, pos, sm, ticks, norm, symbol, text_color, font_size, only_min_max)    
     
 def generate_row_colorbar(cmap, fig, ax, ncols, text_color, font_size, norm = None, ticks = 5, symbol = False, only_min_max = False):
     
@@ -585,10 +585,11 @@ def generate_row_colorbar(cmap, fig, ax, ncols, text_color, font_size, norm = No
     elif ncols > 2:
         width = ax.get_position().x1*(ncols-1)-hr_p*ncols
     pos = [ax.get_position().x0+width, ax.get_position().y0, 0.05, ax.get_position().height]
-    _set_colorbar(pos, sm, ticks, norm, symbol, text_color, font_size)    
+    
+    _set_colorbar(fig, pos, sm, ticks, norm, symbol, text_color, font_size, only_min_max)    
     
     
-def _set_colorbar(pos, sm, ticks, norm, symbol, text_color, font_size):
+def _set_colorbar(fig, pos, sm, ticks, norm, symbol, text_color, font_size, only_min_max = False):
     cax = fig.add_axes(pos, frameon = False)
     cax.tick_params(size=0)
     cb = plt.colorbar(sm, cax=cax)
