@@ -16,7 +16,7 @@ from pathlib import Path
 
 # go up two levels from /docs/source to the package root
 sys.path.insert(0, str(Path().resolve().parent.parent))
-sys.path.insert(0, os.path.abspath("../.."))
+# sys.path.insert(0, os.path.abspath("../.."))
 # mock import these packages because readthedocs doesn't have them installed
 
 
