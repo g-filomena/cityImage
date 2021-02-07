@@ -1,4 +1,5 @@
 [![CodeFactor](https://www.codefactor.io/repository/github/g-filomena/cityimage/badge)](https://www.codefactor.io/repository/github/g-filomena/cityimage)
+[![Documentation Status](https://readthedocs.org/projects/cityimage/badge/?version=latest)](https://cityimage.readthedocs.io/en/latest/?badge=latest)
 
 # cityImage
 
