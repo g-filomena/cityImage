@@ -13,6 +13,7 @@
 import sys
 import os
 from pathlib import Path
+import faculty_sphinx_theme
 
 # go up two levels from /docs/source to the package root
 sys.path.insert(0, str(Path().resolve().parent.parent))
@@ -49,6 +50,7 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.mathjax",
     "sphinx.ext.viewcode",
+    "faculty_sphinx_theme"
     
 ]
 
@@ -84,7 +86,6 @@ html_title = project
 # NOTE: All the lines are after this are the theme-specific ones. These are
 #       written as part of the site generation pipeline for this project.
 # !! MARKER !!
-extensions.append("faculty_sphinx_theme")
 html_theme = "faculty-sphinx-theme"
 
 # Add any paths that contain custom static files (such as style sheets) here,
