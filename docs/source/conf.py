@@ -48,6 +48,7 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.mathjax",
     "sphinx.ext.viewcode",
+    
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -83,7 +84,7 @@ html_title = project
 #       written as part of the site generation pipeline for this project.
 # !! MARKER !!
 extensions.append("faculty_sphinx_theme")
-html_theme = "faculty_sphinx_theme"
+html_theme = "faculty-sphinx-theme"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
