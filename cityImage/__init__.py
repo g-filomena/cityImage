@@ -13,7 +13,7 @@ from .cleaning_network import *
 from .graph import *
 from .landmarks import *
 from .land_use import*
-from .plotting import *
+from .plot import *
 from .regions import *
 from .utilities import *
 from .simplification import *
