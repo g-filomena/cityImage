@@ -15,7 +15,6 @@ from .utilities import center_line
 
 """
 This set of functions is designed for cleaning street network's GeoDataFrame (nodes, edges), by taking care of dead_ends, duplicate geometries, same vertexes edges and so on.
-
 """
 
 def duplicate_nodes(nodes_gdf, edges_gdf):

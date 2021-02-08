@@ -17,8 +17,6 @@ from shapely.ops import split
 pd.set_option("precision", 10)
 pd.options.mode.chained_assignment = None
 
-from .utilities import *
-
 """
 This set of functions handles interoperations between GeoDataFrames and graphs. It allows data conversion and the extraction of nodes and edges GeoDataFrames from roads shapefile or OpenStreetMap.
 

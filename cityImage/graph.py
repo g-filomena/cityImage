@@ -17,7 +17,7 @@ pd.set_option("precision", 10)
 pd.options.mode.chained_assignment = None
 
 from .utilities import *
-from .angles import *
+from .angles import angle_line_geometries
 
 ## Obtaining graphs ###############
 

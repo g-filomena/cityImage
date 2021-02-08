@@ -8,13 +8,12 @@ from shapely.ops import cascaded_union, linemerge
 from scipy.sparse import linalg
 pd.set_option("precision", 10)
 
-from .utilities import *
-from .angles import *
+from .utilities import scaling_columnDF, 
+from .angles import get_coord_angle
 
 """
 This set of functions is designed for extracting the computational Image of The City.
 Computational landmarks can be extracted employing the following functions.
-
 """
   
  

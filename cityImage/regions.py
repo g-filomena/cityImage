@@ -13,8 +13,8 @@ from shapely.geometry import Point, LineString, Polygon, MultiPolygon, mapping, 
 from shapely.ops import cascaded_union, linemerge, nearest_points
 pd.set_option("precision", 10)
 
-from .graph import *
-from .utilities import *
+from .graph import graph_fromGDF
+from .utilities import dict_to_df, distance_geometry_gdf, dual_id_dict
 
 def identify_regions(dual_graph, edges_gdf, weight = None):
     """
