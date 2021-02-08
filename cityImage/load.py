@@ -37,9 +37,9 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
     place: string
         name of cities or areas in OSM: when using "OSMpolygon" please provide the name of a "relation" in OSM as an argument of "place"; when using "distance_from_address"
         provide an existing OSM address; when using "OSMplace" provide an OSM place name
-    download_method: string, {"OSMpolygon", "distance_from_address", "OSMplace"}
+    download_method: string {"OSMpolygon", "distance_from_address", "OSMplace"}
         it indicates the method that should be used for downloading the data.
-    network_type: string,  {"walk", "bike", "drive", "drive_service", "all", "all_private", "none"}
+    network_type: string {"walk", "bike", "drive", "drive_service", "all", "all_private", "none"}
         it indicates type of street or other network to extract - from OSMNx paramaters
     epsg: int
         epsg of the area considered; if None OSMNx is used for the projection
@@ -48,7 +48,8 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
         
     Returns
     -------
-    tuple of GeoDataFrames
+    nodes_gdf, edges_gdf: Tuple of GeoDataFrames
+        the junction and street segments GeoDataFrames
     """
     
     # using OSMNx to download data from OpenStreetMap     

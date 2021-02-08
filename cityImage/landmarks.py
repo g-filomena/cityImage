@@ -40,7 +40,8 @@ def get_buildings_fromSHP(path, epsg, case_study_area = None, distance_from_cent
     
     Returns
     -------
-    tuple of GeoDataFrames
+    buildings_gdf, obstructions_gdf: tuple of GeoDataFrames
+        the buildings and the obstructions GeoDataFrames
     """   
     
     # trying reading buildings footprints shapefile from directory
@@ -82,7 +83,6 @@ def get_buildings_fromSHP(path, epsg, case_study_area = None, distance_from_cent
         case_study_area = obstructions_gdf.geometry.unary_union.centroid.buffer(distance_from_center)
 
     buildings_gdf = obstructions_gdf[obstructions_gdf.geometry.within(case_study_area)]
-
     # clipping buildings in the case-study area
 
     return buildings_gdf, obstructions_gdf
@@ -107,7 +107,8 @@ def get_buildings_fromOSM(place, download_method, epsg = None, distance = 1000):
     
     Returns
     -------
-    GeoDataFrames
+    buildings_gdf: Polygon GeoDataFrame
+        the buildings GeoDataFrame
     """   
     
     columns_to_keep = ['amenity', 'building', 'geometry', 'historic', 'land_use_raw']
@@ -152,6 +153,29 @@ def get_buildings_fromOSM(place, download_method, epsg = None, distance = 1000):
     return buildings_gdf
 
 def simplify_footprints(buildings_gdf, crs):
+    """    
+    The function downloads and cleans buildings footprint geometries and create a buildings GeoDataFrames for the area of interest.
+    The function exploits OSMNx functions for downloading the data as well as for projecting it.
+    The land use classification for each building is extracted. Only relevant columns are kept.   
+            
+    Parameters
+    ----------
+    place: string, tuple
+        name of cities or areas in OSM: when using "from point" please provide a (lat, lon) tuple to create the bounding box around it; when using "distance_from_address"
+        provide an existing OSM address; when using "OSMplace" provide an OSM place name
+    download_method: string, {"from_point", "distance_from_address", "OSMplace"}
+        it indicates the method that should be used for downloading the data.
+    epsg: int
+        epsg of the area considered; if None OSMNx is used for the projection
+    distance: float
+        Specify distance from address or point
+    
+    Returns
+    -------
+    buildings_gdf: Polygon GeoDataFrame
+        the buildings GeoDataFrame
+    """  
+    
     buildings_gdf = buildings_gdf.copy()
     single_parts = gpd.geoseries.GeoSeries([geom for geom in buildings_gdf.unary_union.geoms])
     single_parts_gdf = gpd.GeoDataFrame(geometry=single_parts, crs = crs)
@@ -159,6 +183,28 @@ def simplify_footprints(buildings_gdf, crs):
     return single_parts_gdf
 
 def attach_attributes(buildings_gdf, attributes_gdf, height_field, base_field, land_use_field):
+    """    
+    The function downloads and cleans buildings footprint geometries and create a buildings GeoDataFrames for the area of interest.
+    The function exploits OSMNx functions for downloading the data as well as for projecting it.
+    The land use classification for each building is extracted. Only relevant columns are kept.   
+            
+    Parameters
+    ----------
+    place: string, tuple
+        name of cities or areas in OSM: when using "from point" please provide a (lat, lon) tuple to create the bounding box around it; when using "distance_from_address"
+        provide an existing OSM address; when using "OSMplace" provide an OSM place name
+    download_method: string, {"from_point", "distance_from_address", "OSMplace"}
+        it indicates the method that should be used for downloading the data.
+    epsg: int
+        epsg of the area considered; if None OSMNx is used for the projection
+    distance: float
+        Specify distance from address or point
+    
+    Returns
+    -------
+    new_buildings_gdf: Polygon GeoDataFrame
+        the buildings GeoDataFrame
+    """  
     
     buildings_gdf = buildings_gdf.copy()
     attributes_gdf['area'] = attributes_gdf.geometry.area
@@ -225,8 +271,9 @@ def structural_score(buildings_gdf, obstructions_gdf, edges_gdf, max_expansion_d
         
     Returns
     -------
-    GeoDataFrame
-    """
+    buildings_gdf: Polygon GeoDataFrame
+        the updated buildings GeoDataFrame
+    """  
     
     buildings_gdf = buildings_gdf.copy()
     if (obstructions_gdf is None): 
@@ -366,13 +413,14 @@ def visibility_score(buildings_gdf, sight_lines = pd.DataFrame({'a' : []}), meth
     Parameters
     ----------
     buildings_gdf: Polygon GeoDataFrame
-    
+        buildings GeoDataFrame - case study area
     sight_lines: LineString GeoDataFrame
-   
+    
     Returns
     -------
-    GeoDataFrame
-    """
+    buildings_gdf: Polygon GeoDataFrame
+        the updated buildings GeoDataFrame
+    """  
     sight_lines = sight_lines.copy()
     sight_lines['nodeID'] = sight_lines['nodeID'].astype(int)
     sight_lines['buildingID'] = sight_lines['buildingID'].astype(int)
@@ -502,6 +550,7 @@ def cultural_score_from_dataset(buildings_gdf, historical_elements_gdf, score = 
     Parameters
     ----------
     buildings_gdf: Polygon GeoDataFrame
+        buildings GeoDataFrame - case study area
     historical_elements_gdf: Point or Polygon GeoDataFrame
     score: string
    
@@ -560,11 +609,13 @@ def cultural_score_from_OSM(buildings_gdf):
     Parameters
     ----------
     buildings_gdf: Polygon GeoDataFrame
+        buildings GeoDataFrame - case study area
    
     Returns
     -------
-    GeoDataFrame
-    """ 
+    buildings_gdf: Polygon GeoDataFrame
+        the updated buildings GeoDataFrame
+    """  
     
     buildings_gdf = buildings_gdf.copy()    
     buildings_gdf["cult"] = 0
@@ -585,12 +636,14 @@ def pragmatic_score(buildings_gdf, radius = 200):
     Parameters
     ----------
     buildings_gdf: Polygon GeoDataFrame
+        buildings GeoDataFrame - case study area
     buffer: float
    
     Returns
     -------
-    GeoDataFrame
-    """
+    buildings_gdf: Polygon GeoDataFrame
+        the updated buildings GeoDataFrame
+    """  
     
     buildings_gdf = buildings_gdf.copy()   
     buildings_gdf["nr"] = 1 # to count
@@ -608,6 +661,8 @@ def _compute_pragmatic_meaning_building(building_geometry, building_land_use, bu
     ----------
     buildings_geometry: Polygon
     building_land_use: String
+    buildings_gdf: Polygon GeoDataFrame
+        buildings GeoDataFrame - case study area
     buildings_gdf_sindex: Rtree Spatial index
     radius: float
    
@@ -648,8 +703,9 @@ def compute_global_scores(buildings_gdf, g_cW, g_iW):
    
     Returns
     -------
-    GeoDataFrame
-    """
+    buildings_gdf: Polygon GeoDataFrame
+        the updated buildings GeoDataFrame
+    """  
     
     # scaling
     col = ["3dvis", "fac", "height", "area","2dvis", "cult", "prag"]
@@ -715,8 +771,9 @@ def compute_local_scores(buildings_gdf, l_cW, l_iW, radius = 1500):
    
     Returns
     -------
-    GeoDataFrame
-    """
+    buildings_gdf: Polygon GeoDataFrame
+        the updated buildings GeoDataFrame
+    """  
     
     buildings_gdf = buildings_gdf.copy()
     buildings_gdf.index = buildings_gdf.buildingID
@@ -743,12 +800,14 @@ def _building_local_score(building_geometry, buildingID, buildings_gdf, building
     buildingID: int
     buildings_gdf: Polygon GeoDataFrame
     buildings_gdf_sindex: Rtree spatial index
-    l_cW, l_iW: dictionaries
-    radius: float, regulates the extension of the area wherein the scores are recomputed, around the building
+    l_cW: dictionary
+    l_iW: dictionary
+    radius: float
+        regulates the extension of the area wherein the scores are recomputed, around the building
    
     Returns
     -------
-    GeoDataFrame
+    score: Float
     """
                                              
     col = ["3dvis", "fac", "height", "area","2dvis", "cult","prag"]
@@ -785,8 +844,9 @@ def _building_local_score(building_geometry, buildingID, buildings_gdf, building
             scaling_columnDF(pm, i)
         
     pm["lScore"] =  pm["vScore_l_sc"]*l_cW["vScore"] + pm["sScore_l_sc"]*l_cW["sScore"] + pm["cScore_l"]*l_cW["cScore"] + pm["pScore_l"]*l_cW["pScore"]
+    score = float("{0:.3f}".format(pm["lScore"].loc[buildingID]))
     # return the so obtined score
-    return float("{0:.3f}".format(pm["lScore"].loc[buildingID]))
+    return score
 
 class Error(Exception):
     """Base class for other exceptions"""

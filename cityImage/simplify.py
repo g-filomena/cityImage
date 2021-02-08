@@ -16,57 +16,10 @@ import statistics
 import ast
 from .graph import nodes_degree
 from .utilities import center_line, merge_lines
-from .cleaning_network import clean_network, correct_edges
-from .angles import difference_angle_line_geometries, angle_line_geometries
+from .clean import clean_network, correct_edges
+from .angles import difference_angle_line_geometries, angle_line_geometries, is_parallel
 
-def is_parallel(line_geometry_A, line_geometry_B, hard = False):
-    
-    difference_angle = difference_angle_line_geometries(line_geometry_A, line_geometry_B)
-    if (difference_angle <= 30):
-        return True
-        
-    line_coordsA = list(line_geometry_A.coords)
-    line_coordsB = list(line_geometry_B.coords)
-    if ((len(line_coordsA) == 2) | (len(line_coordsB) == 2)): 
-        return False
-       
-    if not hard:
-        # remove first coordinates (A,B)
-        line_geometry_A = LineString([coor for coor in line_coordsA[1:]])
-        line_geometry_B = LineString([coor for coor in line_coordsB[1:]])
-        difference_angle = difference_angle_line_geometries(line_geometry_A, line_geometry_B)
-        if (difference_angle <= 20) & (difference_angle >= -20): 
-            return True
-        
-        # remove first (A) and last (B)
-        line_geometry_B = LineString([coor for coor in line_coordsB[:-1]])
-        difference_angle = difference_angle_line_geometries(line_geometry_A, line_geometry_B)
-        if (difference_angle <= 20) & (difference_angle >= -20): 
-            return True
-        
-        # remove last (A) and first (B)
-        line_geometry_A = LineString([coor for coor in line_coordsA[:-1]])
-        line_geometry_B = LineString([coor for coor in line_coordsB[1:]])
-        difference_angle = difference_angle_line_geometries(line_geometry_A, line_geometry_B)
-        if (difference_angle <= 20) & (difference_angle >= -20): 
-            return True
-        
-        # remove last coordinates (A, B)
-        line_geometry_A = LineString([coor for coor in line_coordsA[:-1]])
-        line_geometry_B = LineString([coor for coor in line_coordsB[:-1]])
-        difference_angle = difference_angle_line_geometries(line_geometry_A, line_geometry_B)
-        if (difference_angle <= 20) & (difference_angle >= -20): 
-            return True
-        
-        if ((len(line_coordsA) == 3) | (len(line_coordsB) == 3)):
-            return False
-        line_geometry_A = LineString([coor for coor in line_coordsA[1:-1]])
-        line_geometry_B = LineString([coor for coor in line_coordsB[1:-1]])
-        difference_angle = difference_angle_line_geometries(line_geometry_A, line_geometry_B)
-        if (difference_angle <= 20) & (difference_angle >= -20): 
-            return True
-        
-    return False
+
     
 def is_continuation(ix_lineA, ix_lineB, edges_gdf):
 

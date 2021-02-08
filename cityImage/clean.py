@@ -20,7 +20,7 @@ This set of functions is designed for cleaning street network's GeoDataFrame (no
 
 def duplicate_nodes(nodes_gdf, edges_gdf):
     """
-    The function checks the existencce of duplicate nodes through the network, on the basis of geometry
+    The function checks the existencce of duplicate nodes through the network, on the basis of geometry.
      
     Parameters
     ----------
@@ -31,7 +31,8 @@ def duplicate_nodes(nodes_gdf, edges_gdf):
    
     Returns
     -------
-    tuple of GeoDataFrames
+    nodes_gdf, edges_gdf: tuple of GeoDataFrames
+        the cleaned junctions and street segments GeoDataFrame
     """
     
     # the index of nodes_gdf has to be nodeID
@@ -58,8 +59,9 @@ def duplicate_nodes(nodes_gdf, edges_gdf):
         # assigning the unique index to edges
         edges_gdf.loc[edges_gdf.u == node,'u'] = index
         edges_gdf.loc[edges_gdf.v == node,'v'] = index
-        
-    return new_nodes, edges_gdf
+    
+    nodes_gdf = new_nodes.copy()
+    return nodes_gdf, edges_gdf
     
 
 def fix_dead_ends(nodes_gdf, edges_gdf):
@@ -75,7 +77,8 @@ def fix_dead_ends(nodes_gdf, edges_gdf):
    
     Returns
     -------
-    tuple of GeoDataFrames
+    nodes_gdf, edges_gdf: tuple of GeoDataFrames
+        the cleaned junctions and street segments GeoDataFrame
     """
     
     nodes_gdf =  nodes_gdf.copy()
@@ -94,7 +97,7 @@ def fix_dead_ends(nodes_gdf, edges_gdf):
 
 def is_nodes_simplified(nodes_gdf, edges_gdf):
     """
-    The function checks the presence of pseudo-junctions, by using the edges_gdf geodataframe.
+    The function checks the presence of pseudo-junctions, by using the edges_gdf GeoDataFrame.
      
     Parameters
     ----------
@@ -103,7 +106,8 @@ def is_nodes_simplified(nodes_gdf, edges_gdf):
    
     Returns
     -------
-    boolean
+    simplified: boolean
+        whether the nodes of the network are simplified or not
     """
     
     simplified = True
@@ -120,7 +124,7 @@ def is_nodes_simplified(nodes_gdf, edges_gdf):
 
 def is_edges_simplified(edges_gdf):
     """
-    The function checks the presence of possible duplicate geometries in the edges_gdf geodataframe.
+    The function checks the presence of possible duplicate geometries in the edges_gdf GeoDataFrame.
      
     Parameters
     ----------
@@ -129,7 +133,8 @@ def is_edges_simplified(edges_gdf):
    
     Returns
     -------
-    boolean
+    simplified: boolean
+        whether the edges of the network are simplified or not
     """
     
     simplified = True 
@@ -148,7 +153,7 @@ def is_edges_simplified(edges_gdf):
 def simplify_graph(nodes_gdf, edges_gdf):
     """
     The function identify pseudo-nodes, namely nodes that represent intersection between only 2 segments.
-    The segments are merged and the node is removed from the nodes_gdf geodataframe.
+    The segments are merged and the node is removed from the nodes_gdf GeoDataFrame.
      
     Parameters
     ----------
@@ -159,7 +164,8 @@ def simplify_graph(nodes_gdf, edges_gdf):
    
     Returns
     -------
-    tuple of GeoDataFrames
+    nodes_gdf, edges_gdf: tuple of GeoDataFrames
+        the cleaned junctions and street segments GeoDataFrame
     """
     
     nodes_gdf, edges_gdf = nodes_gdf.copy(), edges_gdf.copy()
@@ -261,7 +267,8 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_i
    
     Returns
     -------
-    tuple of GeoDataFrames
+    nodes_gdf, edges_gdf: tuple of GeoDataFrames
+        the cleaned junctions and street segments GeoDataFrame
     """
     
     nodes_gdf, edges_gdf = nodes_gdf.copy(), edges_gdf.copy()       
@@ -350,7 +357,7 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_i
         if dead_ends: 
             nodes_gdf, edges_gdf = fix_dead_ends(nodes_gdf, edges_gdf)
         
-        # only keep nodes which are actually used by the edges in the geodataframe
+        # only keep nodes which are actually used by the edges in the GeoDataFrame
         to_keep = list(set(list(edges_gdf['u'].unique()) + list(edges_gdf['v'].unique())))
         nodes_gdf = nodes_gdf[nodes_gdf['nodeID'].isin(to_keep)]
         if fix_topology: 
@@ -384,7 +391,7 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_i
 
 def fix_network_topology(nodes_gdf, edges_gdf):
     """
-    It breaks lines at intersections with other lines in the streets GeoDataFrame, apart from segments categorised as bridges or tunnels in OSM.
+    It breaks lines at intersections with other lines in the streets GeoDataFrame, apart from segments categorised as bridges or tunnels in OSM (if such attribut is provided)
 
     Parameters
     ----------
@@ -395,7 +402,8 @@ def fix_network_topology(nodes_gdf, edges_gdf):
        
     Returns
     -------
-    tuple of GeoDataFrames
+    nodes_gdf, edges_gdf: tuple of GeoDataFrames
+        the cleaned junctions and street segments GeoDataFrame
     """
     
     nodes_gdf, edges_gdf = nodes_gdf.copy(), edges_gdf.copy()
@@ -442,7 +450,7 @@ def fix_network_topology(nodes_gdf, edges_gdf):
        
         geometry_collection = MultiPoint([point.coords[0] for point in new_collection])  
         # including the intersecting geometries in the coordinates sequence of the line and split
-        new_line_geometries = split_line_at_MultiPoint(line_geometry, geometry_collection) 
+        new_line_geometries = _split_line_at_MultiPoint(line_geometry, geometry_collection) 
 
         for n, line in enumerate(new_line_geometries): # assigning the resulting geometries
             if n == 0: 
@@ -483,7 +491,7 @@ def fix_network_topology(nodes_gdf, edges_gdf):
     return nodes_gdf, edges_gdf
 
     
-def split_line_at_MultiPoint(line_geometry, intersection):   
+def _split_line_at_MultiPoint(line_geometry, intersection):   
 
     """
     The function checks whether the coordinates of Point(s) in a Point Collections coordinate are part of the sequence of coordinates of a LineString.
@@ -500,7 +508,8 @@ def split_line_at_MultiPoint(line_geometry, intersection):
         
     Returns
     -------
-    MultiLineString
+    lines: MultiLineString
+        the resulting segments composing the original line_geometry
     """
     for point in intersection:
         new_line_coords = list(line_geometry.coords)
@@ -531,7 +540,8 @@ def correct_edges(nodes_gdf, edges_gdf):
    
     Returns
     -------
-    GeoDataFrame
+    edges_gdf: LineString GeoDataFrame
+        the updated street segments GeoDataFrame
     """
 
     edges_gdf['geometry'] = edges_gdf.apply(lambda row: _update_line_geometry_coords(row['u'], row['v'], nodes_gdf, row['geometry']), axis=1)
@@ -557,7 +567,8 @@ def _update_line_geometry_coords(u, v, nodes_gdf, line_geometry):
         
     Returns
     -------
-    LineString
+    new_line_geometry: LineString
+        the readjusted LineString, on the basis of the given u and v nodes
     """
     
     line_coords = list(line_geometry.coords)
@@ -566,9 +577,3 @@ def _update_line_geometry_coords(u, v, nodes_gdf, line_geometry):
     new_line_geometry = LineString([coor for coor in line_coords])
     
     return new_line_geometry
-
-class Error(Exception):
-    """Base class for other exceptions"""
-
-class columnError(Error):
-    """Raised when a column name is not provided"""

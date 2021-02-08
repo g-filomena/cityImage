@@ -8,7 +8,7 @@ from shapely.ops import cascaded_union, linemerge, polygonize, polygonize_full, 
 pd.set_option("precision", 10)
 
 """
-Set of functions to extract barriers within a certain urban space (Major roads, water bodies, parks and railway structures).
+A set of functions to extract barriers within a certain urban space (Major roads, water bodies, parks and railway structures).
 The concept of barrier refers to Lynch's "edges" in The Image of the City.
 """
 
@@ -33,7 +33,8 @@ def road_barriers(place, download_method, distance = None, epsg = None, include_
         
     Returns
     -------
-    LineString GeoDataFrame
+    road_barriers: LineString GeoDataFrame
+        the road barriers
     """
     
     crs = {'init': 'epsg:' + str(epsg)}
@@ -98,7 +99,7 @@ def water_barriers(place, download_method, distance = None, epsg = None):
     place: string
         name of cities or areas in OSM: when using "OSMpolygon" please provide the name of a "relation" in OSM as an argument of "place"; when using "distance_from_address"
         provide an existing OSM address; when using "OSMplace" provide an OSM place name
-    download_method: string, {"polygon", "distance_from_address", "OSMplace"}
+    download_method: string {"polygon", "distance_from_address", "OSMplace"}
         it indicates the method that should be used for downloading the data.
     distance: float
         it is used only if download_method == "distance from address"
@@ -107,7 +108,8 @@ def water_barriers(place, download_method, distance = None, epsg = None):
         
     Returns
     -------
-    LineString GeoDataFrame
+    water_barriers: LineString GeoDataFrame
+        the water barriers GeoDataFrame
     """
     
     crs = {'init': 'epsg:' + str(epsg)}
@@ -336,7 +338,7 @@ def railway_barriers(place, download_method,distance = None, epsg = None, keep_l
     place: string
         name of cities or areas in OSM: when using "OSMpolygon" please provide the name of a "relation" in OSM as an argument of "place"; when using "distance_from_address"
         provide an existing OSM address; when using "OSMplace" provide an OSM place name
-    download_method: string, {"polygon", "distance_from_address", "OSMplace"}
+    download_method: string {"polygon", "distance_from_address", "OSMplace"}
         it indicates the method that should be used for downloading the data.
     distance: float
         it is used only if download_method == "distance from address"
@@ -347,7 +349,8 @@ def railway_barriers(place, download_method,distance = None, epsg = None, keep_l
         
     Returns
     -------
-    LineString GeoDataFrame
+    railway_barriers: LineString GeoDataFrame
+        the railway barriers GeoDataFrame
     """
     
     
@@ -413,7 +416,7 @@ def park_barriers(place, download_method, distance = None, epsg = None, min_area
     place: string
         name of cities or areas in OSM: when using "OSMpolygon" please provide the name of a "relation" in OSM as an argument of "place"; when using "distance_from_address"
         provide an existing OSM address; when using "OSMplace" provide an OSM place name
-    download_method: string, {"polygon", "distance_from_address", "OSMplace"}
+    download_method: string {"polygon", "distance_from_address", "OSMplace"}
         it indicates the method that should be used for downloading the data.
     distance: float
         it is used only if download_method == "distance from address"
@@ -424,7 +427,8 @@ def park_barriers(place, download_method, distance = None, epsg = None, min_area
       
     Returns
     -------
-    LineString GeoDataFrame
+    park_barriers: LineString GeoDataFrame
+        the park barriers GeoDataFrame
     """
 
     crs = {'init': 'epsg:' + str(epsg)}
@@ -477,12 +481,14 @@ def along_water(edges_gdf, barriers_gdf):
     Parameters
     ----------
     edges_gdf: LineString GeoDataFrame
-        Street segments 
+        the street segmentes GeoDataFrame 
     barriers_gdf: LineString GeoDataFrame
-        Barriers 
+        the barriers GeoDataFrame
+        
     Returns
     -------
-    LineString GeoDataFrame
+    edges_gdf: LineString GeoDataFrame
+        the updated street segments GeoDataFrame
     """
     
     sindex = edges_gdf.sindex
@@ -500,18 +506,19 @@ def along_water(edges_gdf, barriers_gdf):
 def along_within_parks(edges_gdf, barriers_gdf):
     """
     The function assigns to each street segment in a GeoDataFrame the list of barrierIDs corresponding to parks which lay along the street segment.
-    Also street segments within parks are considered
-    and the barriers are admitted.
+    Also street segments within parks are considered and the barriers are admitted.
         
     Parameters
     ----------
     edges_gdf: LineString GeoDataFrame
-        Street segments 
+        the street segmentes GeoDataFrame 
     barriers_gdf: LineString GeoDataFrame
-        Barriers 
+        the barriers GeoDataFrame
+        
     Returns
     -------
-    LineString GeoDataFrame
+    edges_gdf: LineString GeoDataFrame
+        the updated street segments GeoDataFrame
     """
     
     sindex = edges_gdf.sindex
@@ -539,9 +546,9 @@ def barriers_along(ix_line, edges_gdf, barriers_gdf, edges_gdf_sindex, offset = 
     ix_line: int
         index street segment
     edges_gdf: LineString GeoDataFrame
-        Street segments 
+        the street segmentes GeoDataFrame 
     barriers_gdf: LineString GeoDataFrame
-        Barriers 
+        the barriers GeoDataFrame
     edges_gdf_sindex: RTree Sindex
         spatial index on edges_gdf
     offset: int
@@ -549,7 +556,8 @@ def barriers_along(ix_line, edges_gdf, barriers_gdf, edges_gdf_sindex, offset = 
       
     Returns
     -------
-    LineString GeoDataFrame
+    barriers_along: List
+        a list of barriers along a given street segment
     """
     
     buffer = edges_gdf.loc[ix_line].geometry.buffer(offset)
@@ -590,7 +598,8 @@ def _within_parks(line_geometry, park_polygons):
       
     Returns
     -------
-    List
+    within: List
+        a list of street segments within a given park's polygon
     """
     
     within = []
@@ -610,12 +619,14 @@ def assign_structuring_barriers(edges_gdf, barriers_gdf):
     Parameters
     ----------
     edges_gdf: LineString GeoDataFrame
-        Street segments 
+        the street segmentes GeoDataFrame 
     barriers_gdf: LineString GeoDataFrame
-        Barriers 
+        the barriers GeoDataFrame
+        
     Returns
     -------
-    LineString GeoDataFrame
+    edges_gdf: LineString GeoDataFrame
+        the updated street segments GeoDataFrame
     """
     
     barriers_gdf = barriers_gdf.copy()
@@ -637,11 +648,12 @@ def _crossing_barriers(line_geometry, barriers_gdf):
     line_geometry: LineString 
         street segment geometry
     barriers_gdf: LineString GeoDataFrame
-        Barriers 
+        the barriers GeoDataFrame
         
     Returns
     -------
-    list
+    adjacent_barriers: List
+        a list of adjacent barriers to a given street segment
     """
     
     adjacent_barriers = []
@@ -654,7 +666,30 @@ def _crossing_barriers(line_geometry, barriers_gdf):
     return adjacent_barriers
     
 def get_barriers(place, download_method, distance, epsg): 
- 
+    """
+    The function returns all the barriers (water, park, railways, major roads) within a certain urban area.
+    Certain parameter are set by default. For manipulating, use the barrier-type specific functions (see above).
+    
+    Parameters
+    ----------
+    place: string
+        name of cities or areas in OSM: when using "OSMpolygon" please provide the name of a "relation" in OSM as an argument of "place"; when using "distance_from_address"
+        provide an existing OSM address; when using "OSMplace" provide an OSM place name
+    download_method: string, {"polygon", "distance_from_address", "OSMplace"}
+        it indicates the method that should be used for downloading the data.
+    distance: float
+        it is used only if download_method == "distance from address"
+    epsg: int
+        epsg of the area considered; if None OSMNx is used for the projection
+    keep_light_rail: boolean
+        considering light rail, like tramway
+        
+    Returns
+    -------
+    barriers_gdf: LineString GeoDataFrame
+        the barriers GeoDataFrame
+    """
+    
     rb = road_barriers(place, download_method, distance, epsg, include_primary = True)
     wb = water_barriers(place, download_method, distance, epsg)
     ryb = railway_barriers(place,download_method, distance, epsg)
