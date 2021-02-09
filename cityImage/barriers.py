@@ -5,6 +5,7 @@ import geopandas as gpd
 
 from shapely.geometry import Point, LineString, Polygon, MultiPolygon, MultiLineString
 from shapely.ops import cascaded_union, linemerge, polygonize, polygonize_full, unary_union, nearest_points
+from .utilities import gdf_from_geometries
 pd.set_option("precision", 10)
 
 def road_barriers(place, download_method, distance = None, epsg = None, include_primary = False):
@@ -88,7 +89,7 @@ def water_barriers(place, download_method, distance = None, epsg = None):
     pd = possible_duplicates.unary_union
     rivers = rivers.difference(pd)
     rivers = _simplify_barrier(river)
-    rivers = _create_gdf(rivers, crs)
+    rivers = gdf_from_geometries(rivers, crs)
     
     # lakes   
     tags = {"natural":"water"}
@@ -100,7 +101,7 @@ def water_barriers(place, download_method, distance = None, epsg = None):
     pd = possible_duplicates.unary_union
     lakes = lakes.difference(pd)
     lakes = _simplify_barrier(lakes) 
-    lakes = _create_gdf(lakes, crs)
+    lakes = gdf_from_geometries(lakes, crs)
     lakes = lakes[lakes['length'] >=500]
     
     # sea   
@@ -108,7 +109,7 @@ def water_barriers(place, download_method, distance = None, epsg = None):
     lakes = _download_geometries(place, download_method, tags, crs)
     sea = sea.unary_union      
     sea = _simplify_barrier(sea)
-    sea = _create_gdf(sea, crs)
+    sea = gdf_from_geometries(sea, crs)
     
     water = rivers.append(lakes)
     water = water.append(sea)
@@ -497,21 +498,3 @@ def _simplify_barrier(geometry)
         
     return features
         
-def _create_gdf(geometries, crs)
-    """
-    The function create a GeoDataFrame from a list of geometries
-    
-    Parameters
-    ----------
-    geometries: list of LineString, Polygon or Points
-        The geometries to be included in the GeoDataFrame
-        
-    Returns
-    -------
-    gdf: GeoDataFrame
-        the resulting GeoDataFrame
-    """
-    df = pd.DataFrame({'geometry': geometries})
-    gdf = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
-    gdf['length'] = gdf['geometry'].length
-    return gdf

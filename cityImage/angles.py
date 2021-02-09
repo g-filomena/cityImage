@@ -6,8 +6,7 @@ from shapely.geometry import Point, LineString, MultiLineString
 """
 A series of math functions for angle computations.
 Readapted for LineStrings from Abhinav Ramakrishnan's post in https://stackoverflow.com/a/28261304/7375309.
-"""
-    
+"""  
 def _dot(vA, vB):
     return vA[0]*vB[0]+vA[1]*vB[1]
         
@@ -249,7 +248,17 @@ def is_parallel(line_geometry_A, line_geometry_B, hard = False):
         if (difference_angle <= 20) & (difference_angle >= -20): 
             return True
         
-    return False        
+    return False   
+    
+def is_continuation(ix_lineA, ix_lineB, edges_gdf):
+
+    nameA = edges_gdf.loc[ix_lineA]['name']
+    nameB = edges_gdf.loc[ix_lineB]['name']
+    line_geometry_A = edges_gdf.loc[ix_lineA]['geometry']
+    line_geometry_B = edges_gdf.loc[ix_lineB]['geometry']
+    if is_parallel(line_geometry_A, line_geometry_B, hard = True): 
+        return True
+    return ((nameA == nameB) & (is_parallel(line_geometry_A, line_geometry_B, hard = False)))   
     
 class Error(Exception):
     """Base class for other exceptions"""

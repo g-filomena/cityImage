@@ -65,41 +65,101 @@ def center_line(line_geometryA, line_geometryB):
     Parameters
     ----------
     line_geometryA: LineString 
+        the first line
     line_geometryB: LineString
+        the second line
     
     Returns:
     ----------
     center_line: LineString
         the resulting center line
     """
-        
+    
+    center_line_coords = _center_line_coords(line_geometry_A, line_geometry_B)    
     line_coordsA = list(line_geometryA.coords)
-    line_coordsB = list(line_geometryB.coords)
-        
+            
+    center_line_coords[0] = line_coordsA[0]
+    center_line_coords[-1] = line_coordsA[-1]
+    center_line = LineString([coor for coor in center_line_coords])
+
+    return center_line
+
+def _center_line_coords()
+    """
+    Given two LineStrings, it derives the corresponding center line's sequence of coordinates
+    
+    Parameters
+    ----------
+    line_geometryA: LineString 
+        the first line
+    line_geometryB: LineString
+        the second line
+    
+    Returns:
+    ----------
+    center_line_coords: list
+        the resulting center line's sequence of coords
+    """
+
+    line_coordsA = list(line_geometry_A.coords)
+    line_coordsB = list(line_geometry_B.coords)
+    
     if ((line_coordsA[0] == line_coordsB[-1]) | (line_coordsA[-1] == line_coordsB[0])): 
         line_coordsB.reverse()  
     
     if line_coordsA == line_coordsB:
-        center_line = LineString([coor for coor in line_coordsA]) 
+        center_line_coords = line_coordsA
+    
     else:
         while len(line_coordsA) > len(line_coordsB):
             index = int(len(line_coordsA)/2)
             del line_coordsA[index]
         while len(line_coordsB) > len(line_coordsA):
             index = int(len(line_coordsB)/2)
-            del line_coordsB[index]          
-    
-        new_line = line_coordsA
+            del line_coordsB[index]      
+        
+        center_line_coords = line_coordsA
         for n, i in enumerate(line_coordsA):
             link = LineString([coor for coor in [line_coordsA[n], line_coordsB[n]]])
-            np = link.centroid.coords[0]       
-            new_line[n] = np
-            
-        new_line[0] = line_coordsA[0]
-        new_line[-1] = line_coordsA[-1]
-        center_line = LineString([coor for coor in new_line])
+            np = link.centroid.coords[0]           
+            center_line_coords[n] = np
+    
+    return center_line_coords
 
-    return center_line
+        
+def split_line_at_interpolation(point, line_geometry): #ok
+    
+    line_coords = list(line_geometry.coords)
+    starting_point = Point(line_coords[0])
+    np = nearest_points(point, line_geometry)[1]
+    distance_start = line_geometry.project(np)
+    
+    new_line_A = []
+    new_line_B = []
+
+    if len(line_coords) == 2:
+        new_line_A = [line_coords[0],  np.coords[0]]
+        new_line_B = [np.coords[0], line_coords[-1]]
+        line_geometry_A = LineString([coor for coor in new_line_A])
+        line_geometry_B = LineString([coor for coor in new_line_B])
+
+    else:
+        new_line_A.append(line_coords[0])
+        new_line_B.append(np.coords[0])
+
+        for n, i in enumerate(line_coords):
+            if (n == 0) | (n == len(line_coords)-1): 
+                continue
+            if line_geometry.project(Point(i)) < distance_start: 
+                new_line_A.append(i)
+            else: new_line_B.append(i)
+
+        new_line_A.append(np.coords[0])
+        new_line_B.append(line_coords[-1])
+        line_geometry_A = LineString([coor for coor in new_line_A])
+        line_geometry_B = LineString([coor for coor in new_line_B])
+    
+    return((line_geometry_A, line_geometry_B), np)    
 
 def distance_geometry_gdf(geometry, gdf):
     """
@@ -123,10 +183,12 @@ def distance_geometry_gdf(geometry, gdf):
     index = geoseries.name
     return distance, index
 
-
 def merge_lines(line_geometries):
     """
-    Given a list of line_geometries wich are connected by common "to" and "from" vertexes, the function infers the sequence, based on the coordinates, and returns a merged LineString feature.
+    Given a list of line_geometries wich are connected by common "to" and "from" vertexes, the function infers the sequence, based on the coordinates, 
+    and returns a merged LineString feature.
+    As compared to existing shapely functions, this readjust the sequence of coordinates if they are 
+    not sequential (e.g. 1.segment is: xx - yy, second is yy2 - xx2 and xx == xx2).
     
     Parameters
     ----------
@@ -329,6 +391,23 @@ def rescale_geometry(geometry, factor):
     rescaled_geometry = scale(geometry, xfact= factor, yfact= factor, zfact=factor, origin='center') 
     return rescaled_geometry
             
-
-
+def gdf_from_geometries(geometries, crs)
+    """
+    The function creates a GeoDataFrame from a list of geometries
+    
+    Parameters
+    ----------
+    geometries: list of LineString, Polygon or Points
+        The geometries to be included in the GeoDataFrame
+        
+    Returns
+    -------
+    gdf: GeoDataFrame
+        the resulting GeoDataFrame
+    """
+    
+    df = pd.DataFrame({'geometry': geometries})
+    gdf = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
+    gdf['length'] = gdf['geometry'].length
+    return gdf
     

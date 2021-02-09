@@ -491,7 +491,6 @@ def fix_network_topology(nodes_gdf, edges_gdf):
 
     
 def _split_line_at_MultiPoint(line_geometry, intersection):   
-
     """
     The function checks whether the coordinates of Point(s) in a Point Collections coordinate are part of the sequence of coordinates of a LineString.
     When this has been ascerted or fixed, the LineString line_geometry is split at each of the intersecting points in the collection.
