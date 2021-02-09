@@ -433,8 +433,6 @@ def get_barriers(place, download_method, distance, epsg):
         it is used only if download_method == "distance from address"
     epsg: int
         epsg of the area considered; if None OSMNx is used for the projection
-    keep_light_rail: boolean
-        considering light rail, like tramway
         
     Returns
     -------
@@ -454,8 +452,20 @@ def get_barriers(place, download_method, distance, epsg):
    
    
 def _simplify_barrier(geometry)
-
-
+    """
+    The function merges a list of geometries in a single geometry when possible; in any case it returns the resulting features within a list. 
+    
+    Parameters
+    ----------
+    geometry: LineString or MultiLineString
+        The linear representation of a barrier.
+        
+    Returns
+    -------
+    features: list of LineString
+        the list of actual geometries
+    """
+    
     if geometry.type != "LineString":         
         geometry = linemerge(geometry)
         if geometry.type != "LineString": 
@@ -468,7 +478,19 @@ def _simplify_barrier(geometry)
     return features
         
 def _create_gdf(geometries, crs)
-
+    """
+    The function create a GeoDataFrame from a list of geometries
+    
+    Parameters
+    ----------
+    geometries: list of LineString, Polygon or Points
+        The geometries to be included in the GeoDataFrame
+        
+    Returns
+    -------
+    gdf: GeoDataFrame
+        the resulting GeoDataFrame
+    """
     df = pd.DataFrame({'geometry': geometries})
     gdf = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
     gdf['length'] = gdf['geometry'].length
