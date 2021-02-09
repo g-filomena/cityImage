@@ -33,55 +33,21 @@ def road_barriers(place, download_method, distance = None, epsg = None, include_
     """
     
     crs = {'EPSG:' + str(epsg)}
+    tags = {'highway':'trunk', 'highway':'motorway'}
+    if include_primary:
+        tags = {'highway':'trunk', 'highway':'motorway','highway':'primary'}
     
-    if download_method == 'distance_from_address': 
-        roads_graph = ox.geometries_from_address(place, network_type = 'drive', distance = distance)
-    elif download_method == 'OSMplace':
-        roads_graph = ox.geometries_from_place(place, network_type = 'drive')
-    else:
-        roads_graph = ox.geometries_from_polygon(place, network_type = 'drive')
-    
-    roads = ox.graph_to_gdfs(roads_graph, nodes=False, edges=True, node_geometry= False, fill_edge_geometry=True)
-    roads = roads.to_crs(crs)
+    roads = _download_geometries(place, method, tags, crs)
     # exclude tunnels
     if "tunnel" in roads.columns:
         roads["tunnel"].fillna(0, inplace = True)
         roads = roads[roads["tunnel"] == 0] 
-    
-    # resolving lists 
-    roads["highway"] = [x[0] if isinstance(x, list) else x for x in roads["highway"]]        
-    roads.drop(['osmid', 'oneway', 'bridge', 'tunnel'], axis = 1, inplace = True, errors = 'ignore')
-    main_types = ['trunk', 'motorway']
-    if include_primary: 
-        main_types = ['trunk', 'motorway', 'primary']
-    roads = roads[roads.highway.isin(main_types)]
+       
     roads = roads.unary_union
-    
-    if roads.type != "LineString": 
-        roads = linemerge(roads)
-        if roads.type != "LineString": 
-            features = [i for i in roads]
-        else: 
-            features = [roads]
-    else: 
-        features = [roads]
-    
-    features = [i for i in roads]
+    roads = _simplify_barrier(roads)
     df = pd.DataFrame({'geometry': features, 'type': ['road'] * len(features)})
     road_barriers = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
-    road_barriers["from"] = road_barriers.apply(lambda row: row.geometry.coords[0], axis = 1)
-    road_barriers["to"] = road_barriers.apply(lambda row: row.geometry.coords[-1], axis = 1)
-
-    dd_u = dict(road_barriers['from'].value_counts())
-    dd_v = dict(road_barriers['to'].value_counts())
-    dd = {k: dd_u.get(k, 0) + dd_v.get(k, 0) for k in set(dd_u) | set(dd_v)}
-    to_ignore = {k: v for k, v in dd.items() if v == 1}
-    
-    # exclude short sectors which are probably not continuous enough to be considered barriers
-    road_barriers = road_barriers[~((road_barriers['from'].isin(to_ignore) & road_barriers['to'].isin(to_ignore)) & (road_barriers.length < 500))]
-    road_barriers = road_barriers[~((road_barriers['from'].isin(to_ignore) | road_barriers['to'].isin(to_ignore)) & (road_barriers.length < 200))]
-    road_barriers.drop(['from', 'to'], axis = 1, inplace = True)
-    
+       
     return road_barriers
 
 
@@ -110,8 +76,8 @@ def water_barriers(place, download_method, distance = None, epsg = None):
     crs = {'EPSG:' + str(epsg)}
     
     # rivers and canals
-    tag = {"waterway":"river", "waterway":"canal"}  
-    rivers = _download_geometries(place, download_method, tag, crs}
+    tags = {"waterway":"river", "waterway":"canal"}  
+    rivers = _download_geometries(place, download_method, tags, crs}
     if "tunnel" in rivers.columns:
         rivers["tunnel"].fillna(0, inplace = True)
         rivers = rivers[rivers["tunnel"] == 0] 
@@ -125,8 +91,8 @@ def water_barriers(place, download_method, distance = None, epsg = None):
     rivers = _create_gdf(rivers, crs)
     
     # lakes   
-    tag = {"natural":"water"}
-    lakes = _download_geometries(place, download_method, tag, crs}                     
+    tags = {"natural":"water"}
+    lakes = _download_geometries(place, download_method, tags, crs}                     
     lakes = lakes.unary_union
     
     to_remove = {"water":"river", "waterway": True, "water":"steam"}   
@@ -138,8 +104,8 @@ def water_barriers(place, download_method, distance = None, epsg = None):
     lakes = lakes[lakes['length'] >=500]
     
     # sea   
-    tag = {"natural":"coastline"}
-    lakes = _download_geometries(place, download_method, tag, crs)
+    tags = {"natural":"coastline"}
+    lakes = _download_geometries(place, download_method, tags, crs)
     sea = sea.unary_union      
     sea = _simplify_barrier(sea)
     sea = _create_gdf(sea, crs)
@@ -155,14 +121,14 @@ def water_barriers(place, download_method, distance = None, epsg = None):
     return water_barriers
     
     
-def _download_geometries(place, download_method, tag,crs)
+def _download_geometries(place, download_method, tags, crs)
 
     if download_method == 'distance_from_address': 
-        geometries_gdf = ox.geometries_from_address(place, tag = tag)
+        geometries_gdf = ox.geometries_from_address(place, tags = tags)
     elif download_method == 'OSMplace': 
-        geometries_gdf = ox.geometries_from_place(place, tag = tag)
+        geometries_gdf = ox.geometries_from_place(place, tags = tags)
     else: 
-        geometries_gdf = ox.geometries_from_polygon(place, tag = tag)
+        geometries_gdf = ox.geometries_from_polygon(place, tags = tags)
     
     geometries_gdf = geometries_gdf.to_crs(crs)
     return geometries_gdf
@@ -191,8 +157,8 @@ def railway_barriers(place, download_method,distance = None, epsg = None, keep_l
         the railway barriers GeoDataFrame
     """    
     crs = {'EPSG:' + str(epsg)}
-    tag = {"railway":"rail"}
-    railways = _download_geometries(place, download_method, tag, crs)
+    tags = {"railway":"rail"}
+    railways = _download_geometries(place, download_method, tags, crs)
     if "tunnel" in railways.columns:
         railways["tunnel"].fillna(0, inplace = True)
         railways = railways[railways["tunnel"] == 0]     
@@ -201,8 +167,8 @@ def railway_barriers(place, download_method,distance = None, epsg = None, keep_l
     to_remove = 
     # removing light_rail, in case
     if not keep_light_rail:
-        tag = {"railway":"light_rail"}
-        light = _download_geometries(place, download_method, tag, crs)
+        tags = {"railway":"light_rail"}
+        light = _download_geometries(place, download_method, tags, crs)
         lr = light_railways.unary_union
         r = r.difference(lr)
 
@@ -240,40 +206,18 @@ def park_barriers(place, download_method, distance = None, epsg = None, min_area
     """
 
     crs = {'EPSG:' + str(epsg)}
-    if download_method == 'distance_from_address':
-        parks_polygon = ox.geometries_from_address(place, distance = distance, tags={"leisure": True})
-    elif download_method == 'OSMplace': 
-        parks_polygon = ox.geometries_from_place(place, tags={"leisure": True})
-    else: 
-        parks_polygon = ox.geometries_from_polygon(place, tags={"leisure": True})
+    tags = {"leisure": True}
+    parks_poly = _download_geometries(place, method, tags, crs)
     
-    parks_polygon = parks_polygon[parks_polygon.leisure == 'park']
-    ix_geo = parks_polygon.columns.get_loc("geometry")+1
-    to_drop = []
-    
-    for row in parks_polygon.itertuples():
-        type_geo = None
-        try: 
-            type_geo = row[ix_geo].geom_type
-        except: 
-            to_drop.append(row.Index)
-        
-    parks_polygon.drop(to_drop, axis = 0, inplace = True)
-    parks_polygon = parks_polygon.to_crs(crs)
-    parks_polygon.area = parks_polygon.geometry.area
-    parks_polygon = parks_polygon[parks_polygon.area >= min_area]
+    parks_poly = parks_poly[parks_poly.leisure == 'park']
+    parks_poly = parks_poly[~parks_poly['geometry'].is_empty] 
+    parks_poly.area = parks_poly.geometry.area
+    parks_poly = parks_poly[parks_poly.area >= min_area]
  
-    pp = parks_polygon['geometry'].unary_union  
+    pp = parks_poly['geometry'].unary_union  
     pp = polygonize_full(pp)
     parks = unary_union(pp).buffer(10).boundary # to simpify a bit
-
-    if parks.type != "LineString": 
-        parks = linemerge(parks)
-        if parks.type != "LineString": 
-            features = [i for i in parks]
-        else: features = [parks]
-    else: 
-        features = [parks]
+    parks = _simplify_barrier(parks)
 
     df = pd.DataFrame({'geometry': features, 'type': ['park'] * len(features)})
     park_barriers = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
