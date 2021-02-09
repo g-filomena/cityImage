@@ -122,7 +122,27 @@ def water_barriers(place, download_method, distance = None, epsg = None):
     
     
 def _download_geometries(place, download_method, tags, crs)
-
+    """
+    The function downloads certain geometries from OSM, by means of OSMNX functions.
+    It returns a GeoDataFrame, that could be empty when no geometries are found, with the provided tags.
+    
+    Parameters
+    ----------
+    place: string
+        name of cities or areas in OSM: when using "OSMpolygon" please provide the name of a "relation" in OSM as an argument of "place"; when using "distance_from_address"
+        provide an existing OSM address; when using "OSMplace" provide an OSM place name
+    download_method: string {"polygon", "distance_from_address", "OSMplace"}
+        it indicates the method that should be used for downloading the data.
+    tag: dict 
+        the desired OSMN tags
+    crs: string
+        the coordinate system of the case study area
+        
+    Returns
+    -------
+    geometries_gdf: GeoDataFrame
+        the resulting GeoDataFrame
+    """    
     if download_method == 'distance_from_address': 
         geometries_gdf = ox.geometries_from_address(place, tags = tags)
     elif download_method == 'OSMplace': 
