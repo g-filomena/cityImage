@@ -11,8 +11,8 @@ pd.set_option('precision', 10)
 
 from .graph import*
 from .utilities import *
-from .cleaning_network import*
-from .simplification import*
+from .clean import*
+from .simplify_streets import*
 from .load import*
 
 def get_urban_rail_fromOSM(download_type, place, epsg, distance = 7000): 

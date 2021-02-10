@@ -84,7 +84,7 @@ def center_line(line_geometryA, line_geometryB):
 
     return center_line
 
-def _center_line_coords()
+def _center_line_coords(line_geometryA, line_geometryB):
     """
     Given two LineStrings, it derives the corresponding center line's sequence of coordinates
     
@@ -391,7 +391,7 @@ def rescale_geometry(geometry, factor):
     rescaled_geometry = scale(geometry, xfact= factor, yfact= factor, zfact=factor, origin='center') 
     return rescaled_geometry
             
-def gdf_from_geometries(geometries, crs)
+def gdf_from_geometries(geometries, crs):
     """
     The function creates a GeoDataFrame from a list of geometries
     

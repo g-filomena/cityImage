@@ -78,14 +78,14 @@ def water_barriers(place, download_method, distance = None, epsg = None):
     
     # rivers and canals
     tags = {"waterway":"river", "waterway":"canal"}  
-    rivers = _download_geometries(place, download_method, tags, crs}
+    rivers = _download_geometries(place, download_method, tags, crs)
     if "tunnel" in rivers.columns:
         rivers["tunnel"].fillna(0, inplace = True)
         rivers = rivers[rivers["tunnel"] == 0] 
     rivers = rivers.unary_union
     
     to_remove = {"natural":"water", "water":"river", "water":"steam"}   
-    possible_duplicates = _download_geometries(place, download_method, to_remove, crs}
+    possible_duplicates = _download_geometries(place, download_method, to_remove, crs)
     pd = possible_duplicates.unary_union
     rivers = rivers.difference(pd)
     rivers = _simplify_barrier(river)
@@ -93,11 +93,11 @@ def water_barriers(place, download_method, distance = None, epsg = None):
     
     # lakes   
     tags = {"natural":"water"}
-    lakes = _download_geometries(place, download_method, tags, crs}                     
+    lakes = _download_geometries(place, download_method, tags, crs)   
     lakes = lakes.unary_union
     
     to_remove = {"water":"river", "waterway": True, "water":"steam"}   
-    possible_duplicates = _download_geometries(place, download_method, to_remove, crs}
+    possible_duplicates = _download_geometries(place, download_method, to_remove, crs)
     pd = possible_duplicates.unary_union
     lakes = lakes.difference(pd)
     lakes = _simplify_barrier(lakes) 
@@ -119,10 +119,9 @@ def water_barriers(place, download_method, distance = None, epsg = None):
     df = pd.DataFrame({'geometry': features, 'type': ['water'] * len(features)})
     water_barriers = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
     
-    return water_barriers
+    return water_barriers    
     
-    
-def _download_geometries(place, download_method, tags, crs)
+def _download_geometries(place, download_method, tags, crs):
     """
     The function downloads certain geometries from OSM, by means of OSMNX functions.
     It returns a GeoDataFrame, that could be empty when no geometries are found, with the provided tags.
@@ -185,11 +184,10 @@ def railway_barriers(place, download_method,distance = None, epsg = None, keep_l
         railways = railways[railways["tunnel"] == 0]     
     r = railways.unary_union
     
-    to_remove = 
     # removing light_rail, in case
     if not keep_light_rail:
-        tags = {"railway":"light_rail"}
-        light = _download_geometries(place, download_method, tags, crs)
+        to_remove = {"railway":"light_rail"}
+        light = _download_geometries(place, download_method, to_remove, crs)
         lr = light_railways.unary_union
         r = r.difference(lr)
 
@@ -472,7 +470,7 @@ def get_barriers(place, download_method, distance, epsg):
     return barriers_gdf
    
    
-def _simplify_barrier(geometry)
+def _simplify_barrier(geometry):
     """
     The function merges a list of geometries in a single geometry when possible; in any case it returns the resulting features within a list. 
     

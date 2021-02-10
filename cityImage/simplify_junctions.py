@@ -4,18 +4,14 @@ warnings.simplefilter(action='ignore')
 import pandas as pd
 import numpy as np
 import geopandas as gpd
-import math
-from math import sqrt
 from shapely.geometry import Point, LineString, Polygon, MultiPoint
-from shapely.ops import linemerge, nearest_points, split, polygonize_full, unary_union
+from shapely.ops import linemerge, polygonize_full
 
 pd.set_option('precision', 10)
 pd.options.mode.chained_assignment = None
 
-import statistics
-import ast
 from .graph import nodes_degree
-from .utilities import center_line, merge_lines
+from .utilities import center_line, merge_lines, split_line_at_interpolation
 from .clean import clean_network, correct_edges
 from .angles import angle_line_geometries, is_continuation
 from .simplify_streets import interpolate_on_center_line
@@ -500,7 +496,7 @@ def dissolve_roundabouts(nodes_gdf, edges_gdf, max_length_segment = 80, angle_to
             
     return nodes_gdf, edges_gdf
                     
-def _check_indexes(nodes_gdf, edges_gdf)          
+def _check_indexes(nodes_gdf, edges_gdf): 
 
     nodes_gdf.index, edges_gdf.index = nodes_gdf.nodeID, edges_gdf.edgeID
     nodes_gdf.index.name, edges_gdf.index.name = None, None

@@ -32,7 +32,7 @@ def get_coord_angle(origin, distance, angle):
 
     (disp_x, disp_y) = (distance * math.sin(math.radians(angle)), distance * math.cos(math.radians(angle)))
     coord = (origin[0] + disp_x, origin[1] + disp_y)
-    return 
+    return coord
 
 def angle_line_geometries(line_geometryA, line_geometryB, degree = False, deflection = False, angular_change = False):
     """
@@ -155,7 +155,7 @@ def angle_line_geometries(line_geometryA, line_geometryB, degree = False, deflec
     
     angle = angle_rad
     if degree:
-        return angle = angle_deg
+        angle = angle_deg
     return angle
     
 def difference_angle_line_geometries(line_geometryA, line_geometryB):

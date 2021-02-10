@@ -8,7 +8,7 @@ from shapely.ops import cascaded_union, linemerge
 from scipy.sparse import linalg
 pd.set_option("precision", 10)
 
-from .utilities import scaling_columnDF, 
+from .utilities import scaling_columnDF
 from .angles import get_coord_angle
 
 """

@@ -16,7 +16,8 @@ from .land_use import*
 from .plot import *
 from .regions import *
 from .utilities import *
-from .simplify import *
+from .simplify_junctions import *
+from .simplify_streets import *
 from .transport_network import *
 
 __version__ = '0.14'
