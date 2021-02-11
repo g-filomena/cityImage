@@ -61,7 +61,7 @@ def test_graph():
 ## Test barriers.py
 def test_barriers(): 
     
-    barriers = get_barriers(place, download_method, distance = None, epsg)
+    barriers = get_barriers(place, download_method, distance = None, epsg = epsg)
 
     # assign barriers to street network
     edges_gdf = ci.along_within_parks(edges_gdf, barriers_gdf)
