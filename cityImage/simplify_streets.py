@@ -12,10 +12,10 @@ pd.options.mode.chained_assignment = None
 
 import ast
 from .graph import nodes_degree
-from .utilities import center_line, merge_lines, split_line_at_interpolation
+from .utilities import center_line, center_line_coords, merge_lines, split_line_at_interpolation
 from .clean import clean_network, correct_edges
 from .angles import difference_angle_line_geometries, angle_line_geometries, is_parallel, is_continuation
-from .simplify_junctions import simplify_complex_junctions, simplify_dual_lines_junctions
+from .simplify_junctions import simplify_complex_junctions, simplify_dual_lines_junctions, dissolve_roundabouts
                     
 
 def identify_clusters(nodes_gdf, edges_gdf, radius = 10):   
@@ -268,7 +268,7 @@ def center_line_cluster(line_geometries, nodes_gdf, clusters_gdf, cluster_from, 
         coord_from = (clusters_gdf.loc[cluster_from]['x'], clusters_gdf.loc[cluster_from]['y'])
     
     coord_to =  (clusters_gdf.loc[cluster_to]['x'], clusters_gdf.loc[cluster_to]['y'])
-    center_line_coords = _center_line_coords(line_geometry_A, line_geometry_B)
+    center_line_coords = center_line_coords(line_geometry_A, line_geometry_B)
         
     center_line_coords[0] = coord_from
     center_line_coords[-1] = coord_to

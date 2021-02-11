@@ -38,7 +38,7 @@ def road_barriers(place, download_method, distance = None, epsg = None, include_
     if include_primary:
         tags = {'highway':'trunk', 'highway':'motorway','highway':'primary'}
     
-    roads = _download_geometries(place, method, tags, crs)
+    roads = _download_geometries(place, download_method, tags, crs)
     # exclude tunnels
     if "tunnel" in roads.columns:
         roads["tunnel"].fillna(0, inplace = True)

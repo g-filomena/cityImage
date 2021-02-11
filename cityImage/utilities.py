@@ -75,7 +75,7 @@ def center_line(line_geometryA, line_geometryB):
         the resulting center line
     """
     
-    center_line_coords = _center_line_coords(line_geometryA, line_geometryB)    
+    center_line_coords = center_line_coords(line_geometryA, line_geometryB)    
     line_coordsA = list(line_geometryA.coords)
             
     center_line_coords[0] = line_coordsA[0]
