@@ -112,41 +112,41 @@ def test_landmarks():
     
     _, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg, distance = None)
     obstructions = buildings_gdf.copy()
-    buildings_gdf = ci.structural_score(buildings_gdf, obstructions, edges_gdf, max_expansion_distance = 300, distance_along = 50, radius = 150)
-    sight_lines = 
-    buildings_gdf = ci.visibility_score(buildings_gdf, sight_lines = pd.DataFrame({'a' : []}))
-    buildings_gdf = cultural_score_from_OSM(buildings_gdf)
-    buildings_gdf = ci.pragmatic_score(buildings_gdf, radius = 200)
+    # buildings_gdf = ci.structural_score(buildings_gdf, obstructions, edges_gdf, max_expansion_distance = 300, distance_along = 50, radius = 150)
+    # sight_lines = 
+    # buildings_gdf = ci.visibility_score(buildings_gdf, sight_lines = pd.DataFrame({'a' : []}))
+    # buildings_gdf = cultural_score_from_OSM(buildings_gdf)
+    # buildings_gdf = ci.pragmatic_score(buildings_gdf, radius = 200)
     
-    g_cW = {'vScore': 0.50, 'sScore' : 0.30, 'cScore': 0.20, 'pScore': 0.10}
-    g_iW = {'vis': 0.50, 'fac': 0.30, 'height': 0.20, 'area': 0.30, 'a_vis':0.30, 'neigh': 0.20 , 'road': 0.20}
+    # g_cW = {'vScore': 0.50, 'sScore' : 0.30, 'cScore': 0.20, 'pScore': 0.10}
+    # g_iW = {'vis': 0.50, 'fac': 0.30, 'height': 0.20, 'area': 0.30, 'a_vis':0.30, 'neigh': 0.20 , 'road': 0.20}
 
-    l_cW = {'vScore': 0.25, 'sScore' : 0.35, 'cScore':0.10 , 'pScore': 0.30}
-    l_iW = {'vis': 0.50, 'fac': 0.30, 'height': 0.20, 'area': 0.40, 'a_vis': 0.00, 'neigh': 0.30 , 'road': 0.30}
+    # l_cW = {'vScore': 0.25, 'sScore' : 0.35, 'cScore':0.10 , 'pScore': 0.30}
+    # l_iW = {'vis': 0.50, 'fac': 0.30, 'height': 0.20, 'area': 0.40, 'a_vis': 0.00, 'neigh': 0.30 , 'road': 0.30}
     
-    buildings_gdf =  ci.compute_global_scores(buildings_gdf, g_cW, g_iW)
-    buildings_gdf = ci.compute_local_scores(buildings_gdf, l_cW, l_iW, radius = 1500)
+    # buildings_gdf =  ci.compute_global_scores(buildings_gdf, g_cW, g_iW)
+    # buildings_gdf = ci.compute_local_scores(buildings_gdf, l_cW, l_iW, radius = 1500)
     
-def test_regions():
+# def test_regions():
     
 
 
-def reset_index_gdfsIG(nodes_gdf, edges_gdf):
+# def reset_index_gdfsIG(nodes_gdf, edges_gdf):
     
-    nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg, distance = None)
-    G = ci.graph_fromGDF(nodes_gdf, edges_gdf, nodeID = 'nodeID')
-    nodes_dual, edges_dual = ci.dual_gdf(nodes_gdf, edges_gdf, epsg = epsg, oneway = False, angle = 'degree')
-    dual_graph = ci.dual_graph_fromGDF(nodes_dual, edges_dual)
+    # nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg, distance = None)
+    # G = ci.graph_fromGDF(nodes_gdf, edges_gdf, nodeID = 'nodeID')
+    # nodes_dual, edges_dual = ci.dual_gdf(nodes_gdf, edges_gdf, epsg = epsg, oneway = False, angle = 'degree')
+    # dual_graph = ci.dual_graph_fromGDF(nodes_dual, edges_dual)
     
-    dual_regions = ci.identify_regions(dual_graph, edges_gdf, weight = None):
-    primal_regions = ci.dentify_regions_primal(G, nodes_gdf, weight = None)
+    # dual_regions = ci.identify_regions(dual_graph, edges_gdf, weight = None):
+    # primal_regions = ci.dentify_regions_primal(G, nodes_gdf, weight = None)
     
-    nodes_dualIG, edges_dualIG = ci.reset_index_dual_gdfsIG(nodesDual_gdf, edgesDual_gdf):
-    dual_graphIG = ci.dual_graphIG_fromGDF(nodes_dualIG, edges_dualIG):
-    polygonise_partition(edges_gdf, partition_field, method = None, buffer = 30):
-    districts_to_edges_from_nodes(edges_gdf, nodes_gdf, district_field):
-    district_to_nodes_from_edges(node_geometry, edges_gdf, sindex):
-    district_to_nodes_from_polygons(node_geometry, polygons_gdf):
-    find_gateways(nodeID, nodes_gdf, edges_gdf):
-    check_disconnected_regions(nodes_gdf, edges_gdf, min_size):
-    amend_node_membership(nodeID, nodes_gdf, edges_gdf):
+    # nodes_dualIG, edges_dualIG = ci.reset_index_dual_gdfsIG(nodesDual_gdf, edgesDual_gdf):
+    # dual_graphIG = ci.dual_graphIG_fromGDF(nodes_dualIG, edges_dualIG):
+    # polygonise_partition(edges_gdf, partition_field, method = None, buffer = 30):
+    # districts_to_edges_from_nodes(edges_gdf, nodes_gdf, district_field):
+    # district_to_nodes_from_edges(node_geometry, edges_gdf, sindex):
+    # district_to_nodes_from_polygons(node_geometry, polygons_gdf):
+    # find_gateways(nodeID, nodes_gdf, edges_gdf):
+    # check_disconnected_regions(nodes_gdf, edges_gdf, min_size):
+    # amend_node_membership(nodeID, nodes_gdf, edges_gdf):
