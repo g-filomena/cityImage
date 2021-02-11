@@ -268,11 +268,11 @@ def center_line_cluster(line_geometries, nodes_gdf, clusters_gdf, cluster_from, 
         coord_from = (clusters_gdf.loc[cluster_from]['x'], clusters_gdf.loc[cluster_from]['y'])
     
     coord_to =  (clusters_gdf.loc[cluster_to]['x'], clusters_gdf.loc[cluster_to]['y'])
-    center_line_coords = center_line_coords(line_geometry_A, line_geometry_B)
+    cl_coords = center_line_coords(line_geometry_A, line_geometry_B)
         
-    center_line_coords[0] = coord_from
-    center_line_coords[-1] = coord_to
-    center_line = LineString([coor for coor in center_line_coords])           
+    cl_coords[0] = coord_from
+    cl_coords[-1] = coord_to
+    center_line = LineString([coor for coor in cl_coords])           
         
     return center_line        
                                                                                                        

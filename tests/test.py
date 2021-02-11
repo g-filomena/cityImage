@@ -46,7 +46,7 @@ def test_loadSHP():
 ## Test graph.py
 def test_graph():
  
-    graph_fromGDF = ci.graph_fromGDF(nodes_gdf, edges_gdf, nodeID = 'nodeID)
+    graph_fromGDF = ci.graph_fromGDF(nodes_gdf, edges_gdf, nodeID = 'nodeID')
     self.graph = graph_fromGDF
     assert len(graph_fromGDF) == len(nodes_gdf)
     assert len(graph_fromGDF.edges()) == len(edges_gdf)
