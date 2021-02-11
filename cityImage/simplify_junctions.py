@@ -6,6 +6,7 @@ import numpy as np
 import geopandas as gpd
 from shapely.geometry import Point, LineString, Polygon, MultiPoint
 from shapely.ops import linemerge, polygonize_full
+import statistics
 
 pd.set_option('precision', 10)
 pd.options.mode.chained_assignment = None

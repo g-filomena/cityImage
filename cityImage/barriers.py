@@ -106,7 +106,7 @@ def water_barriers(place, download_method, distance = None, epsg = None):
     
     # sea   
     tags = {"natural":"coastline"}
-    lakes = _download_geometries(place, download_method, tags, crs)
+    sea = _download_geometries(place, download_method, tags, crs)
     sea = sea.unary_union      
     sea = _simplify_barrier(sea)
     sea = gdf_from_geometries(sea, crs)
