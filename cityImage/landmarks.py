@@ -459,7 +459,7 @@ def visibility_score(buildings_gdf, sight_lines = pd.DataFrame({'a' : []}), meth
     if method == 'longest':
         stats["3dvis"] = stats["max_sc"]
     elif method == 'combined':
-        stats["3dvis"] = stats["max_sc"]*0.5+tmp["mean_sc"]*0.25+tmp["nr_lines_sc"]*0.25
+        stats["3dvis"] = stats["max_sc"]*0.5+stats["mean_sc"]*0.25+stats["nr_lines_sc"]*0.25
 
     # merging and building the final output
     buildings_gdf = pd.merge(buildings_gdf, stats[["buildingID", "3dvis"]], on = "buildingID", how = "left") 

@@ -6,7 +6,7 @@ import pyproj
 
 from math import sqrt
 from shapely.geometry import LineString, Point, Polygon, mapping
-from shapely.ops import unary_union, transform
+from shapely.ops import unary_union, transform, nearest_points
 from shapely.affinity import scale
 from functools import partial
 
@@ -29,9 +29,9 @@ def scaling_columnDF(df, column, inverse = False):
     ----------
     """
     
-    df[i+"_sc"] = (df[i]-df[i].min())/(df[i].max()-df[i].min())
+    df[column+"_sc"] = (df[column]-df[column].min())/(df[column].max()-df[column].min())
     if inverse: 
-        df[i+"_sc"] = 1-(df[i]-df[i].min())/(df[i].max()-df[i].min())
+        df[column+"_sc"] = 1-(df[column]-df[column].min())/(df[column].max()-df[column].min())
         
     
 def dict_to_df(list_dict, list_col):
@@ -75,7 +75,7 @@ def center_line(line_geometryA, line_geometryB):
         the resulting center line
     """
     
-    center_line_coords = _center_line_coords(line_geometry_A, line_geometry_B)    
+    center_line_coords = _center_line_coords(line_geometryA, line_geometryB)    
     line_coordsA = list(line_geometryA.coords)
             
     center_line_coords[0] = line_coordsA[0]
@@ -101,8 +101,8 @@ def _center_line_coords(line_geometryA, line_geometryB):
         the resulting center line's sequence of coords
     """
 
-    line_coordsA = list(line_geometry_A.coords)
-    line_coordsB = list(line_geometry_B.coords)
+    line_coordsA = list(line_geometryA.coords)
+    line_coordsB = list(line_geometryB.coords)
     
     if ((line_coordsA[0] == line_coordsB[-1]) | (line_coordsA[-1] == line_coordsB[0])): 
         line_coordsB.reverse()  

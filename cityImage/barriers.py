@@ -46,7 +46,7 @@ def road_barriers(place, download_method, distance = None, epsg = None, include_
        
     roads = roads.unary_union
     roads = _simplify_barrier(roads)
-    df = pd.DataFrame({'geometry': features, 'type': ['road'] * len(features)})
+    df = pd.DataFrame({'geometry': roads, 'type': ['road'] * len(roads)})
     road_barriers = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
        
     return road_barriers
@@ -88,7 +88,7 @@ def water_barriers(place, download_method, distance = None, epsg = None):
     possible_duplicates = _download_geometries(place, download_method, to_remove, crs)
     pd = possible_duplicates.unary_union
     rivers = rivers.difference(pd)
-    rivers = _simplify_barrier(river)
+    rivers = _simplify_barrier(rivers)
     rivers = gdf_from_geometries(rivers, crs)
     
     # lakes   
@@ -116,7 +116,7 @@ def water_barriers(place, download_method, distance = None, epsg = None):
     water = water.unary_union
     water = _simplify_barrier(water)
         
-    df = pd.DataFrame({'geometry': features, 'type': ['water'] * len(features)})
+    df = pd.DataFrame({'geometry': water, 'type': ['water'] * len(water)})
     water_barriers = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
     
     return water_barriers    
@@ -188,14 +188,14 @@ def railway_barriers(place, download_method,distance = None, epsg = None, keep_l
     if not keep_light_rail:
         to_remove = {"railway":"light_rail"}
         light = _download_geometries(place, download_method, to_remove, crs)
-        lr = light_railways.unary_union
+        lr = light.unary_union
         r = r.difference(lr)
 
     p = polygonize_full(r)
     railways = unary_union(p).buffer(10).boundary # to simpify a bit
     railways = _simplify_barrier(railways)
         
-    df = pd.DataFrame({'geometry': features, 'type': ['railway'] * len(features)})
+    df = pd.DataFrame({'geometry': railways, 'type': ['railway'] * len(railways)})
     railway_barriers = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
     
     return railway_barriers
@@ -226,7 +226,7 @@ def park_barriers(place, download_method, distance = None, epsg = None, min_area
 
     crs = {'EPSG:' + str(epsg)}
     tags = {"leisure": True}
-    parks_poly = _download_geometries(place, method, tags, crs)
+    parks_poly = _download_geometries(place, download_method, tags, crs)
     
     parks_poly = parks_poly[parks_poly.leisure == 'park']
     parks_poly = parks_poly[~parks_poly['geometry'].is_empty] 
@@ -238,7 +238,7 @@ def park_barriers(place, download_method, distance = None, epsg = None, min_area
     parks = unary_union(pp).buffer(10).boundary # to simpify a bit
     parks = _simplify_barrier(parks)
 
-    df = pd.DataFrame({'geometry': features, 'type': ['park'] * len(features)})
+    df = pd.DataFrame({'geometry': parks, 'type': ['park'] * len(parks)})
     park_barriers = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
     
     return park_barriers

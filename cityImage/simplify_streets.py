@@ -15,7 +15,7 @@ from .graph import nodes_degree
 from .utilities import center_line, merge_lines, split_line_at_interpolation
 from .clean import clean_network, correct_edges
 from .angles import difference_angle_line_geometries, angle_line_geometries, is_parallel, is_continuation
-
+from .simplify_junctions import simplify_complex_junctions, simplify_dual_lines_junctions
                     
 
 def identify_clusters(nodes_gdf, edges_gdf, radius = 10):   

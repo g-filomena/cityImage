@@ -214,7 +214,7 @@ def plot_gdf(gdf, column = None, title = None, black_background = True, fig_size
     
     ax.set_aspect("equal")
     if axis_frame: 
-        set_axis_frame(ax, black_background, multiPlot.text_color)
+        set_axis_frame(ax, black_background, plot.text_color)
     else: ax.set_axis_off()     
     zorder = 0
     # base map (e.g. street network)
@@ -489,7 +489,7 @@ def plot_multiplex(M, multiplex_edges):
 
     west, south, east, north = multiplex_edges.total_bounds
     bbox_aspect_ratio = (north - south) / (east - west)*1.5
-    fig_width = fig_height +90 / bb_aspect_ratio/1.5
+    fig_width = fig_height +90 / bbox_aspect_ratio/1.5
     fig = plt.figure(figsize=(15, 15))
     ax = fig.gca(projection="3d")
     ax.add_collection3d(lc)
@@ -714,6 +714,6 @@ def cmap_two_colors(from_rgb,to_rgb):
     
 def cmap_three_colors(col1, col2, col3):
 
-    list_colors = [col1, col2, colr3]
+    list_colors = [col1, col2, col3]
 
     return LinearSegmentedColormap.from_list('red_to green', list_colors)

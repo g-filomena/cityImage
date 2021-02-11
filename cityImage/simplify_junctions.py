@@ -377,7 +377,8 @@ def dissolve_roundabouts(nodes_gdf, edges_gdf, max_length_segment = 80, angle_to
         tmp =  edges_gdf[(edges_gdf['u'] == node.Index) | (edges_gdf['v'] == node.Index)].copy()
         found = False
         not_a_roundabout = False
-               
+        sc, sc_last_vertex = None, None
+        
         # take one of these lines and examine its relationship with the others at the same junction
         for row in tmp.itertuples():
             if row[ix_geo].length > max_length_segment: 
@@ -395,6 +396,7 @@ def dissolve_roundabouts(nodes_gdf, edges_gdf, max_length_segment = 80, angle_to
             segment = row
             distance = 0
             second_candidate = False
+
             
             while not found:
                 if distance >= 400: 
@@ -422,7 +424,8 @@ def dissolve_roundabouts(nodes_gdf, edges_gdf, max_length_segment = 80, angle_to
                         angle = angle_line_geometries(segment[ix_geo], connector[ix_geo], angular_change = True, degree = True)
                         if angle > angle_tolerance: 
                             possible_connectors.drop(connector.Index, axis = 0, inplace = True)
-                        else: possible_connectors.at[connector.Index, 'angle'] = angle
+                        else: 
+                            possible_connectors.at[connector.Index, 'angle'] = angle
                     
                 if (len(possible_connectors) == 0) | (last_vertex in processed_nodes):
                     if not second_candidate: 
@@ -449,11 +452,13 @@ def dissolve_roundabouts(nodes_gdf, edges_gdf, max_length_segment = 80, angle_to
                     second_candidate = True
                     if sc[ix_u] == last_vertex:
                         sc_last_vertex = sc[ix_v]
-                    else: sc_last_vertex = sc[ix_u]
+                    else: 
+                        sc_last_vertex = sc[ix_u]
                 
                 if segment[ix_u] == last_vertex:
                     last_vertex = segment[ix_v]
-                else: last_vertex = segment[ix_u]
+                else: 
+                    last_vertex = segment[ix_u]
                 sequence_nodes.append(last_vertex)
                 sequence_segments.append(segment[0])                
                 distance += segment[ix_geo].length
@@ -468,6 +473,7 @@ def dissolve_roundabouts(nodes_gdf, edges_gdf, max_length_segment = 80, angle_to
                     centroid = roundabout.centroid
                     distances = [nodes_gdf.loc[i].geometry.distance(centroid) for i in sequence_nodes]
                     shortest, longest, mean = min(distances), max(distances), statistics.mean(distances) 
+                    
                     if (shortest < mean * 0.80) | (longest > mean * 1.20): 
                         not_a_roundabout = True
                         break

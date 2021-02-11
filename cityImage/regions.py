@@ -71,7 +71,7 @@ def identify_regions_primal(graph, nodes_graph, weight = None):
     if weight is None: 
         weight = 'topo' #the function requires a string 
     # extraction of the best partitions
-    partition = best_partition(graph, weight=weight)
+    partition = community.best_partition(graph, weight=weight)
     regions = nodes_graph.copy()
     regions['p_'+weight] = regions.nodeID.map(partition)
     return regions
