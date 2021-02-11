@@ -84,7 +84,7 @@ def center_line(line_geometryA, line_geometryB):
 
     return center_line
 
-def _center_line_coords(line_geometryA, line_geometryB):
+def center_line_coords(line_geometryA, line_geometryB):
     """
     Given two LineStrings, it derives the corresponding center line's sequence of coordinates
     

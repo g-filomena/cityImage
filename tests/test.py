@@ -44,7 +44,7 @@ def test_loadSHP():
     # nodes_gdf, edges_gdf = ci.get_network_fromSHP(path, epsg, dict_columns = dict_columns, other_columns = [])
 
 ## Test graph.py
-def test_graph()
+def test_graph():
  
     graph_fromGDF = ci.graph_fromGDF(nodes_gdf, edges_gdf, nodeID = 'nodeID)
     self.graph = graph_fromGDF
