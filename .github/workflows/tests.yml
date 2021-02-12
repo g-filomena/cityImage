@@ -15,9 +15,6 @@ jobs:
         os: [ubuntu-latest]
         env:
           - ci/envs/latest.yml
-        include:
-          - env: ci/envs/latest.yaml
-            os: windows-latest
     
     steps:
       - uses: actions/checkout@v2
@@ -48,7 +45,7 @@ jobs:
 
       # - name: Test documentation
         # shell: bash -l {0}
-        # if: contains(matrix.env, 'latest.yaml') && contains(matrix.os, 'ubuntu')
+        # if: contains(matrix.env, 'latest.yml') && contains(matrix.os, 'ubuntu')
         # run: |
           # ci/envs/test_documentation.sh
 
