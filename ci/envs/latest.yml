@@ -1,0 +1,16 @@
+name: test
+channels:
+  - conda-forge
+dependencies:
+  - shapely
+  - python
+  - geopandas
+  - osmnx
+  - networkx
+  - matplotlib
+  - python-louvain
+  # testing
+  - pytest
+  - pytest-cov
+  - codecov
+
