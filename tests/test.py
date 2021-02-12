@@ -61,12 +61,13 @@ def test_graph():
 ## Test barriers.py
 def test_barriers(): 
     nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg, distance = None)
-    barriers = ci.get_barriers(place, download_method, distance = None, epsg = epsg)
+    barriers_gdf = ci.get_barriers(place, download_method, distance = None, epsg = epsg)
 
     # assign barriers to street network
     edges_gdf_updated = ci.along_within_parks(edges_gdf, barriers_gdf)
     edges_gdf_updated_sindex = edges_gdf_updated.sindex
-    edges_gdf_updated = ci.barriers_along(ix_line, edges_gdf_updated, barriers_gdf, edges_gdf_sindex, offset = 100)
+    edges_gdf_updated = ci.along_water(edges_gdf, barriers_gdf)
+    edges_gdf_updated = ci.along_within_parks(edges_gdf, barriers_gdf)
     edges_gdf_updated = ci.assign_structuring_barriers(edges_gdf_updated, barriers_gdf)
 
 ## Test angles.py
@@ -88,18 +89,19 @@ def test_angles():
 def test_centrality():
     nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg, distance = None)
 
-    graph_fromGDF = ci.graph_fromGDF(nodes_gdf, edges_gdf, nodeID = 'nodeID')
-    graph = graph_fromGDF
+    graph = ci.graph_fromGDF(nodes_gdf, edges_gdf, nodeID = 'nodeID')
+
     weight = 'length'
     sc = ci.straightness_centrality(graph, weight = weight, normalized = True)
     
     services = ox.pois.pois_from_address(address, distance = 3000, amenities=amenities).to_crs(epsg=epsg)
     services = services[services['geometry'].geom_type == 'Point']
-
     nodes_gdf = ci.weight_nodes(nodes_gdf, services, graph, field_name = 'services', radius = 50)
-    rc = reach_centrality(graph,  weight = weight, radius = 400, attribute = 'services')
+    rc = ci.reach_centrality(graph,  weight = weight, radius = 400, attribute = 'services')
+    
     measure = 'betweenness centrality'
-    bc = centrality(graph, nodes_gdf, measure, weight, normalized = False)
+    bc = ci.centrality(graph, nodes_gdf, measure, weight, normalized = False)
+    
     Eb = nx.edge_betweenness_centrality(graph, weight = weight, normalized = False)
     edges_gdf = ci.append_edges_metrics(edges_gdf, graph, dicts, ['Eb'])
 
