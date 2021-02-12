@@ -88,6 +88,7 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
     if epsg is None: 
         nodes_gdf, edges_gdf = ox.projection.project_gdf(nodes_gdf), ox.projection.project_gdf(edges_gdf)
     else: 
+        crs = 'EPSG:' + str(epsg)
         nodes_gdf, edges_gdf = nodes_gdf.to_crs(crs), edges_gdf.to_crs(crs)
     
     nodes_gdf["x"], nodes_gdf["y"] = list(zip(*[(r.coords[0][0], r.coords[0][1]) for r in nodes_gdf.geometry]))
