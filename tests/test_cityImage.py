@@ -13,7 +13,7 @@ import cityImage as ci
 # define queries to use throughout tests
 
 place = "Susa, Italy"
-download_method = 'OSMPlace'
+download_method = 'OSMplace'
 epsg = 3003
 OSMPolygon = 'Susa (44287)'
 address = 'Susa, via Roma 1'
@@ -38,7 +38,7 @@ def test_loadSHP():
 def test_graph():
     nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg)
     graph = ci.graph_fromGDF(nodes_gdf, edges_gdf, nodeID = 'nodeID')
-    multi_graph_fromGDF = ci.multiGraph_fromGDF(nodes_gdf, edges_gdf, 'nodeIDQ')
+    multi_graph_fromGDF = ci.multiGraph_fromGDF(nodes_gdf, edges_gdf, 'nodeID')
     
     nodes_dual, edges_dual = ci.dual_gdf(nodes_gdf, edges_gdf, epsg = epsg, oneway = False, angle = 'degree')
     dual_graph = ci.dual_graph_fromGDF(nodes_dual, edges_dual)
@@ -134,5 +134,5 @@ def test_regions():
     nodes_gdf_ped, edges_gdf_ped = ci.get_network_fromOSM(place, 'OSMplace', network_type = "walk", epsg = epsg)
     nodes_gdf_ped = ci.district_to_nodes_from_polygons(nodes_gdf_ped, polygons_gdf)
     min_size_district = 10
-    nodes_gdf_ped = ci.amend_nodes_membership(nodes_gdf_ped, edges_gdf_ped, 'p_topo', min_size_district = min_size_district)
-    nodes_gdf_ped = ci.find_gateways(nodes_gdf_ped, edges_gdf_ped, 'p_topo')
+    nodes_gdf_ped = ci.amend_nodes_membership(nodes_gdf_ped, edges_gdf_ped, 'districtID', min_size_district = min_size_district)
+    nodes_gdf_ped = ci.find_gateways(nodes_gdf_ped, edges_gdf_ped, 'districtID')
