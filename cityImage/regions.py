@@ -77,7 +77,7 @@ def identify_regions_primal(graph, nodes_graph, weight = None):
     return regions
   
                   
-def polygonise_partition(edges_gdf, partition_field, method = None, buffer = 30):
+def polygonise_partitions(edges_gdf, partition_field, method = None, buffer = 30):
     """
     Run the natural_roads function on an entire GeoDataFrame of street segments.
     The geodataframes are supposed to be cleaned and can be obtained via the functions "get_fromOSM(place)" or "get_fromSHP(directory, 
@@ -104,7 +104,8 @@ def polygonise_partition(edges_gdf, partition_field, method = None, buffer = 30)
         polygon = unary_union(polygon).buffer(buffer)
         if method == 'convex_hull': 
             polygons.append(polygon.convex_hull)
-        else: polygons.append(polygon)
+        else: 
+            polygons.append(polygon)
         partitionIDs.append(i)
 
     df = pd.DataFrame(d)
@@ -112,7 +113,7 @@ def polygonise_partition(edges_gdf, partition_field, method = None, buffer = 30)
     return partitions_polygonised
     
     
-def districts_to_edges_from_nodes(edges_gdf, nodes_gdf, district_field):
+def districts_to_edges_from_nodes(edges_gdf, nodes_gdf, column):
     """
     Run the natural_roads function on an entire GeoDataFrame of street segments.
     The geodataframes are supposed to be cleaned and can be obtained via the functions "get_fromOSM(place)" or "get_fromSHP(directory, 
@@ -131,16 +132,16 @@ def districts_to_edges_from_nodes(edges_gdf, nodes_gdf, district_field):
     ix_v = edges_gdf.columns.get_loc('v')+1  
     
     edges_gdf = edges_gdf.copy()
-    edges_gdf[district_field+'_uv'] = 999999
-    edges_gdf[district_field+'_u'] = 999999
-    edges_gdf[district_field+'_v'] = 999999
+    edges_gdf[column+'_uv'] = 999999
+    edges_gdf[column+'_u'] = 999999
+    edges_gdf[column+'_v'] = 999999
     
-    edges_gdf[[district_field+'_uv', district_field+'_u', district_field+'_v']] = edges_gdf.apply(lambda row: _assign_district_to_edge(row['edgeID'], edges_gdf, 
-                        nodes_gdf, district_field), axis = 1, result_type= 'expand')      
+    edges_gdf[[column+'_uv', column+'_u', column+'_v']] = edges_gdf.apply(lambda row: _assign_district_to_edge(row['edgeID'], edges_gdf, 
+                        nodes_gdf, column), axis = 1, result_type= 'expand')      
 
     return edges_gdf
 
-def _assign_district_to_edge(edgeID, edges_gdf, nodes_gdf, district_field):
+def _assign_district_to_edge(edgeID, edges_gdf, nodes_gdf, column):
     """
     Run the natural_roads function on an entire GeoDataFrame of street segments.
     The geodataframes are supposed to be cleaned and can be obtained via the functions "get_fromOSM(place)" or "get_fromSHP(directory, 
@@ -157,76 +158,14 @@ def _assign_district_to_edge(edgeID, edges_gdf, nodes_gdf, district_field):
     """
     series = edges_gdf.loc[edgeID]
     district_uv = 999999
-    district_u = nodes_gdf.loc[series.u][district_field]
-    district_v = nodes_gdf.loc[series.v][district_field]
+    district_u = nodes_gdf.loc[series.u][column]
+    district_v = nodes_gdf.loc[series.v][column]
     if district_u == district_v: 
         district_uv = district_u
     return district_uv, district_u, district_v
 
    
-def district_to_nodes_from_edges(node_geometry, edges_gdf, sindex):
-    """
-    Run the natural_roads function on an entire GeoDataFrame of street segments.
-    The geodataframes are supposed to be cleaned and can be obtained via the functions "get_fromOSM(place)" or "get_fromSHP(directory, 
-    epsg)". The parameter tolerance indicates the maximux deflection allowed to consider two roads possible natural continuation.
-    
-    Parameters
-    ----------
-    dual_graph: GeoDataFrames
-    weight = string
-    
-    Returns
-    -------
-    GeoDataFrames
-    """
-    point = node_geometry
-    n = point.buffer(20)
-    possible_matches_index = list(sindex.intersection(n.bounds))
-    pm = edges_gdf.iloc[possible_matches_index].copy()
-    dist = distance_geometry_gdf(point, pm)
-    return edges_gdf.loc[dist[1]]['district']
-    
-def district_to_nodes_from_polygons(node_geometry, polygons_gdf):
-    """
-    Run the natural_roads function on an entire GeoDataFrame of street segments.
-    The geodataframes are supposed to be cleaned and can be obtained via the functions "get_fromOSM(place)" or "get_fromSHP(directory, 
-    epsg)". The parameter tolerance indicates the maximux deflection allowed to consider two roads possible natural continuation.
-    
-    Parameters
-    ----------
-    dual_graph: GeoDataFrames
-    weight = string
-    
-    Returns
-    -------
-    GeoDataFrames
-    """
-    point = node_geometry
-    dist = distance_geometry_gdf(point, polygons_gdf)
-    return polygons_gdf.loc[dist[1]]['districtID']
-              
-def find_gateways(nodeID, nodes_gdf, edges_gdf):
-    """
-    Run the natural_roads function on an entire GeoDataFrame of street segments.
-    The geodataframes are supposed to be cleaned and can be obtained via the functions "get_fromOSM(place)" or "get_fromSHP(directory, 
-    epsg)". The parameter tolerance indicates the maximux deflection allowed to consider two roads possible natural continuation.
-    
-    Parameters
-    ----------
-    dual_graph: GeoDataFrames
-    weight = string
-    
-    Returns
-    -------
-    GeoDataFrames
-    """
-    tmp = edges_gdf[(edges_gdf.u == nodeID) | (edges_gdf.v == nodeID)].copy()
-    tmp_nodes = nodes_gdf[nodes_gdf.nodeID.isin(tmp.u) | nodes_gdf.nodeID.isin(tmp.v)].copy()
-    if (len(tmp_nodes.district.unique()) > 1): 
-        return 1
-    return 0
-    
-def check_disconnected_districts(nodes_gdf, edges_gdf, min_size = 10):
+def district_to_nodes_from_edges(nodes_gdf, edges_gdf, column):
     """
     Run the natural_roads function on an entire GeoDataFrame of street segments.
     The geodataframes are supposed to be cleaned and can be obtained via the functions "get_fromOSM(place)" or "get_fromSHP(directory, 
@@ -242,27 +181,24 @@ def check_disconnected_districts(nodes_gdf, edges_gdf, min_size = 10):
     GeoDataFrames
     """
     nodes_gdf = nodes_gdf.copy()
-    districts = nodes_gdf.district.unique()
+    nodes_graph['district'] = 0
+    sindex = edges_gdf.sindex # spatial index
     
-    for district in districts:
-        if district == 999999: 
-            continue
-        tmp_nodes = nodes_gdf[nodes_gdf.district == district].copy()
-        tmp_edges = edges_gdf[edges_gdf.u.isin(tmp_nodes.nodeID) & edges_gdf.v.isin(tmp_nodes.nodeID)].copy()
-        tmp_graph = graph_fromGDF(tmp_nodes, tmp_edges, 'nodeID')
-        if len(tmp_nodes) < min_size: 
-            nodes_gdf.loc[nodes_gdf.nodeID.isin(tmp_nodes.nodeID), 'district'] = 999999
-            continue
-        if not nx.is_connected(tmp_graph): 
-            largest_component = max(nx.connected_components(tmp_graph), key=len)
-            G = tmp_graph.subgraph(largest_component)
-            to_check = [item for item in list(tmp_nodes.nodeID) if item not in list(G.nodes())]
-            nodes_gdf.loc[nodes_gdf.nodeID.isin(to_check), 'district'] = 999999
+    nodes_gdf['district'] = nodes_gdf.apply(lambda row: _assign_district_to_node(row['geometry'], edges_gdf, sindex, column), axis = 1)
+    nodes_graph['district'] = nodes_graph.district.astype(int)
+    return nodes_graph
     
-    return nodes_gdf
+def _assign_district_to_node(node_geometry, edges_gdf, sindex, column):   
+        
+    point = node_geometry
+    n = point.buffer(20)
+    possible_matches_index = list(sindex.intersection(n.bounds))
+    pm = edges_gdf.iloc[possible_matches_index].copy()
+    dist = distance_geometry_gdf(point, pm)
+    district = edges_gdf.loc[dist[1]][column]
+    return district
     
-  
-def amend_node_membership(nodeID, nodes_gdf, edges_gdf):
+def district_to_nodes_from_polygons(nodes_gdf, partitions_gdf):
     """
     Run the natural_roads function on an entire GeoDataFrame of street segments.
     The geodataframes are supposed to be cleaned and can be obtained via the functions "get_fromOSM(place)" or "get_fromSHP(directory, 
@@ -278,23 +214,173 @@ def amend_node_membership(nodeID, nodes_gdf, edges_gdf):
     GeoDataFrames
     """
     
-    if nodes_gdf.loc[nodeID]['district'] != 999999: 
-        return nodes_gdf.loc[nodeID]['district']
+    nodes_gdf = nodes_gdf.copy()
+    nodes_gdf['district'] = nodes_gdf.apply(lambda row: _assign_district_to_node_from_polygons(row['geometry'], partitions_gdf), axis = 1)
+    nodes_gdf['district'] = nodes_gdf.district.astype(int)
+
+    return nodes_graph
+    
+def _assign_district_to_node_from_polygons(node_geometry, partitions_gdf):
+    """
+    Run the natural_roads function on an entire GeoDataFrame of street segments.
+    The geodataframes are supposed to be cleaned and can be obtained via the functions "get_fromOSM(place)" or "get_fromSHP(directory, 
+    epsg)". The parameter tolerance indicates the maximux deflection allowed to consider two roads possible natural continuation.
+    
+    Parameters
+    ----------
+    dual_graph: GeoDataFrames
+    weight = string
+    
+    Returns
+    -------
+    GeoDataFrames
+    """
+    
+    point = node_geometry
+    dist = distance_geometry_gdf(point, partitions_gdf)
+    district = partitions_gdf.loc[dist[1]]['districtID']
+    return district        
+    
+def _check_disconnected_districts(nodes_gdf, edges_gdf, column, min_size = 10):
+    """
+    Run the natural_roads function on an entire GeoDataFrame of street segments.
+    The geodataframes are supposed to be cleaned and can be obtained via the functions "get_fromOSM(place)" or "get_fromSHP(directory, 
+    epsg)". The parameter tolerance indicates the maximux deflection allowed to consider two roads possible natural continuation.
+    
+    Parameters
+    ----------
+    dual_graph: GeoDataFrames
+    weight = string
+    
+    Returns
+    -------
+    GeoDataFrames
+    """
+    nodes_gdf = nodes_gdf.copy()
+    districts = nodes_gdf[column].unique()
+    
+    for district in districts:
+        if district == 999999: 
+            continue
+        tmp_nodes = nodes_gdf[nodes_gdf[column] == district].copy()
+        tmp_edges = edges_gdf[edges_gdf.u.isin(tmp_nodes.nodeID) & edges_gdf.v.isin(tmp_nodes.nodeID)].copy()
+        tmp_graph = graph_fromGDF(tmp_nodes, tmp_edges, 'nodeID')
+        
+        if len(tmp_nodes) < min_size: 
+            nodes_gdf.loc[nodes_gdf.nodeID.isin(tmp_nodes.nodeID), column] = 999999
+            continue
+        
+        if not nx.is_connected(tmp_graph): 
+            largest_component = max(nx.connected_components(tmp_graph), key=len)
+            G = tmp_graph.subgraph(largest_component)
+            to_check = [item for item in list(tmp_nodes.nodeID) if item not in list(G.nodes())]
+            nodes_gdf.loc[nodes_gdf.nodeID.isin(to_check), column] = 999999
+    
+    return nodes_gdf
+  
+def amend_nodes_membership(nodes_gdf, edges_gdf, column, min_size_district = 10):
+    """
+    Run the natural_roads function on an entire GeoDataFrame of street segments.
+    The geodataframes are supposed to be cleaned and can be obtained via the functions "get_fromOSM(place)" or "get_fromSHP(directory, 
+    epsg)". The parameter tolerance indicates the maximux deflection allowed to consider two roads possible natural continuation.
+    
+    Parameters
+    ----------
+    dual_graph: GeoDataFrames
+    weight = string
+    
+    Returns
+    -------
+    GeoDataFrames
+    """
+    
+    nodes_gdf = nodes_gdf.copy()
+    nodes_gdf = _check_disconnected_districts(nodes_gdf, edges_gdf, column, min_size_district)
+    while (999999 in nodes_gdf[column].unique()):
+        nodes_gdf[column] = nodes_gdf.apply(lambda row: _amend_node_membership(row['nodeID'], nodes_gdf, edges_gdf, column), axis = 1)
+        nodes_gdf = _check_disconnected_districts(nodes_gdf, edges_gdf, min_size_district)
+    
+    return nodes_gdf
+
+def _amend_node_membership(nodeID, nodes_gdf, edges_gdf):
+    """
+    Run the natural_roads function on an entire GeoDataFrame of street segments.
+    The geodataframes are supposed to be cleaned and can be obtained via the functions "get_fromOSM(place)" or "get_fromSHP(directory, 
+    epsg)". The parameter tolerance indicates the maximux deflection allowed to consider two roads possible natural continuation.
+    
+    Parameters
+    ----------
+    dual_graph: GeoDataFrames
+    weight = string
+    
+    Returns
+    -------
+    GeoDataFrames
+    """    
+    if nodes_gdf.loc[nodeID][column] != 999999: 
+        return nodes_gdf.loc[nodeID][column]
     tmp_edges = edges_gdf[(edges_gdf.u == nodeID) | (edges_gdf.v == nodeID)].copy()
     unique =  list(np.unique(tmp_edges[['u', 'v']].values))
     unique.remove(nodeID)
-    tmp_nodes = nodes_gdf[(nodes_gdf.nodeID.isin(unique)) & (nodes_gdf.district != 999999) ].copy()
+    tmp_nodes = nodes_gdf[(nodes_gdf.nodeID.isin(unique)) & (nodes_gdf[column] != 999999) ].copy()
     if len(tmp_nodes) == 0: 
         return 999999
-    districts_sorted = tmp_nodes.district.value_counts(sort=True, ascending=False)
+    districts_sorted = tmp_nodes[column].value_counts(sort=True, ascending=False)
     
     if len(districts_sorted) == 1:  
         return districts_sorted.idxmax()
     if districts_sorted.iloc[0] > districts_sorted.iloc[1]: 
         return districts_sorted.idxmax()
     
-    tmp_nodes = tmp_nodes[tmp_nodes.district.isin(list(districts_sorted[0:2].index))]
+    tmp_nodes = tmp_nodes[tmp_nodes[column].isin(list(districts_sorted[0:2].index))]
     tmp_edges = edges_gdf[((edges_gdf.u == nodeID) & (edges_gdf.v.isin(tmp_nodes.nodeID))) |
                           ((edges_gdf.v == nodeID) & (edges_gdf.u.isin(tmp_nodes.nodeID)))]
     closest = distance_geometry_gdf(nodes_gdf.loc[nodeID].geometry, tmp_nodes)[1]
-    return tmp_nodes.loc[closest].district
+    new_district = tmp_nodes.loc[closest][column]
+    return new_district
+    
+def find_gateways(nodes_gdf, edges_gdf, column):
+    """
+    Run the natural_roads function on an entire GeoDataFrame of street segments.
+    The geodataframes are supposed to be cleaned and can be obtained via the functions "get_fromOSM(place)" or "get_fromSHP(directory, 
+    epsg)". The parameter tolerance indicates the maximux deflection allowed to consider two roads possible natural continuation.
+    
+    Parameters
+    ----------
+    dual_graph: GeoDataFrames
+    weight = string
+    
+    Returns
+    -------
+    GeoDataFrames
+    """
+    
+    # assign gateways
+    nodes_gdf = nodes_gdf.copy()
+    nodes_gdf['gateway'] = nodes_gdf.apply(lambda row: _gateway(row['nodeID'], nodes_gdf, edges_gdf, column), axis = 1)
+    return nodes_gdf
+    
+def _gateway(nodeID, nodes_gdf, edges_gdf, column):
+    """
+    Run the natural_roads function on an entire GeoDataFrame of street segments.
+    The geodataframes are supposed to be cleaned and can be obtained via the functions "get_fromOSM(place)" or "get_fromSHP(directory, 
+    epsg)". The parameter tolerance indicates the maximux deflection allowed to consider two roads possible natural continuation.
+    
+    Parameters
+    ----------
+    dual_graph: GeoDataFrames
+    weight = string
+    
+    Returns
+    -------
+    GeoDataFrames
+    """
+    
+    tmp = edges_gdf[(edges_gdf.u == nodeID) | (edges_gdf.v == nodeID)].copy()
+    tmp_nodes = nodes_gdf[nodes_gdf.nodeID.isin(tmp.u) | nodes_gdf.nodeID.isin(tmp.v)].copy()
+    gateway 
+    if (len(tmp_nodes['column'].unique()) > 1): 
+        gateway = 1
+    else:
+        gateway = 0
+    return gateway
