@@ -14,11 +14,11 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         env:
-          - ci/envs/test.yml
+          - ci/envs/latest.yml
         include:
           - env: ci/envs/latest.yaml
             os: windows-latest
-
+    
     steps:
       - uses: actions/checkout@v2
 
