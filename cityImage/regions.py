@@ -49,7 +49,7 @@ def identify_regions(dual_graph, edges_gdf, weight = None):
     regions = pd.merge(edges_gdf, partitions_df, left_on = 'edgeID', right_index = True, how= 'left')
     return regions
     
-def identify_regions_primal(graph, nodes_graph, weight = None):
+def identify_regions_primal(graph, nodes_gdf, weight = None):
     """
     It identifies regions in the street network, using the primal graph representation.
     The modularity optimisation technique is used to identify urban regions.
@@ -72,7 +72,7 @@ def identify_regions_primal(graph, nodes_graph, weight = None):
         weight = 'topo' #the function requires a string 
     # extraction of the best partitions
     partition = community.best_partition(graph, weight=weight)
-    regions = nodes_graph.copy()
+    regions = nodes_gdf.copy()
     regions['p_'+weight] = regions.nodeID.map(partition)
     return regions
   
@@ -181,12 +181,12 @@ def district_to_nodes_from_edges(nodes_gdf, edges_gdf, column):
     GeoDataFrames
     """
     nodes_gdf = nodes_gdf.copy()
-    nodes_graph['district'] = 0
+    nodes_gdf[column] = 0
     sindex = edges_gdf.sindex # spatial index
     
-    nodes_gdf['district'] = nodes_gdf.apply(lambda row: _assign_district_to_node(row['geometry'], edges_gdf, sindex, column), axis = 1)
-    nodes_graph['district'] = nodes_graph.district.astype(int)
-    return nodes_graph
+    nodes_gdf[column] = nodes_gdf.apply(lambda row: _assign_district_to_node(row['geometry'], edges_gdf, sindex, column), axis = 1)
+    nodes_gdf[column] = nodes_gdf[column].astype(int)
+    return nodes_gdf
     
 def _assign_district_to_node(node_geometry, edges_gdf, sindex, column):   
         
@@ -218,7 +218,7 @@ def district_to_nodes_from_polygons(nodes_gdf, partitions_gdf):
     nodes_gdf['district'] = nodes_gdf.apply(lambda row: _assign_district_to_node_from_polygons(row['geometry'], partitions_gdf), axis = 1)
     nodes_gdf['district'] = nodes_gdf.district.astype(int)
 
-    return nodes_graph
+    return nodes_gdf
     
 def _assign_district_to_node_from_polygons(node_geometry, partitions_gdf):
     """
