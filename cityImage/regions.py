@@ -75,45 +75,48 @@ def identify_regions_primal(graph, nodes_gdf, weight = None):
     regions = nodes_gdf.copy()
     regions['p_'+weight] = regions.nodeID.map(partition)
     return regions
-  
-                  
-def polygonise_partitions(edges_gdf, partition_field, method = None, buffer = 30):
+                
+def polygonise_partitions(edges_gdf, column, convex_hull = True, buffer = 30):
     """
-    Run the natural_roads function on an entire GeoDataFrame of street segments.
-    The geodataframes are supposed to be cleaned and can be obtained via the functions "get_fromOSM(place)" or "get_fromSHP(directory, 
-    epsg)". The parameter tolerance indicates the maximux deflection allowed to consider two roads possible natural continuation.
+    Given districts assign to street segments it create polygons represint districts, either by creating a convex_hull for each group of segments or 
+    simply polygonising them.
     
     Parameters
     ----------
-    edges_gdf: GeoDataFrames
-    partition_field = string
-    method = None, 
-    buffer = 30
-    
+    edges_gdf: LineString GeoDataFrame
+        the street segments GeoDataFrame
+    column: string
+        the name of the column containing the district identifier
+    convex_hull: boolean
+        if trues creates create convex hulls after having polygonised the cluster of segments
+    buffer: float
+        desired buffer around the polygonised segments, before possibly obtaining the convex hulls
+        
     Returns
     -------
-    GeoDataFrames
+    polygonised_partitions: Polygon GeoDataFrame
+        A GeoDataFrame containing the polygonised partitions
     """
+    
     polygons = []
     partitionIDs = []
     d = {'geometry' : polygons, 'districtID' : partitionIDs}
 
-    partitions = edges_gdf[partition_field].unique()
+    partitions = edges_gdf[column].unique()
     for i in partitions:
-        polygon =  polygonize_full(edges_gdf[edges_gdf[partition_field] == i].geometry.unary_union)
+        polygon =  polygonize_full(edges_gdf[edges_gdf[column] == i].geometry.unary_union)
         polygon = unary_union(polygon).buffer(buffer)
-        if method == 'convex_hull': 
+        if convex_hull:
             polygons.append(polygon.convex_hull)
         else: 
             polygons.append(polygon)
         partitionIDs.append(i)
 
     df = pd.DataFrame(d)
-    partitions_polygonised = gpd.GeoDataFrame(df, crs=edges_gdf.crs, geometry=df['geometry'])
-    return partitions_polygonised
-    
-    
-def districts_to_edges_from_nodes(edges_gdf, nodes_gdf, column):
+    polygonised_partitions = gpd.GeoDataFrame(df, crs=edges_gdf.crs, geometry=df['geometry'])
+    return polygonised_partitions
+   
+def district_to_nodes_from_edges(nodes_gdf, edges_gdf, column):
     """
     Run the natural_roads function on an entire GeoDataFrame of street segments.
     The geodataframes are supposed to be cleaned and can be obtained via the functions "get_fromOSM(place)" or "get_fromSHP(directory, 
@@ -127,6 +130,45 @@ def districts_to_edges_from_nodes(edges_gdf, nodes_gdf, column):
     Returns
     -------
     GeoDataFrames
+    """
+    nodes_gdf = nodes_gdf.copy()
+    nodes_gdf[column] = 0
+    sindex = edges_gdf.sindex # spatial index
+    
+    nodes_gdf[column] = nodes_gdf.apply(lambda row: _assign_district_to_node(row['geometry'], edges_gdf, sindex, column), axis = 1)
+    nodes_gdf[column] = nodes_gdf[column].astype(int)
+    return nodes_gdf
+    
+def _assign_district_to_node(node_geometry, edges_gdf, sindex, column):   
+        
+    point = node_geometry
+    n = point.buffer(20)
+    possible_matches_index = list(sindex.intersection(n.bounds))
+    pm = edges_gdf.iloc[possible_matches_index].copy()
+    dist = distance_geometry_gdf(point, pm)
+    district = edges_gdf.loc[dist[1]][column]
+    return district
+    
+def districts_to_edges_from_nodes(edges_gdf, nodes_gdf, column):
+    """
+    It assigns districts to edges, when the districts are assigned to the nodes (i.e. communities are identified on the primal graph)
+    
+    
+    Parameters
+    ----------
+    edges_gdf: LineString GeoDataFrame
+        the street segments GeoDataFrame
+    column: string
+        the name of the column containing the district identifier
+    convex_hull: boolean
+        if trues creates create convex hulls after having polygonised the cluster of segments
+    buffer: float
+        desired buffer around the polygonised segments, before possibly obtaining the convex hulls
+        
+    Returns
+    -------
+    polygonised_partitions: Polygon GeoDataFrame
+        A GeoDataFrame containing the polygonised partitions
     """
     ix_u = edges_gdf.columns.get_loc('u')+1  
     ix_v = edges_gdf.columns.get_loc('v')+1  
@@ -163,42 +205,8 @@ def _assign_district_to_edge(edgeID, edges_gdf, nodes_gdf, column):
     if district_u == district_v: 
         district_uv = district_u
     return district_uv, district_u, district_v
-
-   
-def district_to_nodes_from_edges(nodes_gdf, edges_gdf, column):
-    """
-    Run the natural_roads function on an entire GeoDataFrame of street segments.
-    The geodataframes are supposed to be cleaned and can be obtained via the functions "get_fromOSM(place)" or "get_fromSHP(directory, 
-    epsg)". The parameter tolerance indicates the maximux deflection allowed to consider two roads possible natural continuation.
     
-    Parameters
-    ----------
-    dual_graph: GeoDataFrames
-    weight = string
-    
-    Returns
-    -------
-    GeoDataFrames
-    """
-    nodes_gdf = nodes_gdf.copy()
-    nodes_gdf[column] = 0
-    sindex = edges_gdf.sindex # spatial index
-    
-    nodes_gdf[column] = nodes_gdf.apply(lambda row: _assign_district_to_node(row['geometry'], edges_gdf, sindex, column), axis = 1)
-    nodes_gdf[column] = nodes_gdf[column].astype(int)
-    return nodes_gdf
-    
-def _assign_district_to_node(node_geometry, edges_gdf, sindex, column):   
-        
-    point = node_geometry
-    n = point.buffer(20)
-    possible_matches_index = list(sindex.intersection(n.bounds))
-    pm = edges_gdf.iloc[possible_matches_index].copy()
-    dist = distance_geometry_gdf(point, pm)
-    district = edges_gdf.loc[dist[1]][column]
-    return district
-    
-def district_to_nodes_from_polygons(nodes_gdf, partitions_gdf):
+def district_to_nodes_from_polygons(nodes_gdf, partitions_gdf, column):
     """
     Run the natural_roads function on an entire GeoDataFrame of street segments.
     The geodataframes are supposed to be cleaned and can be obtained via the functions "get_fromOSM(place)" or "get_fromSHP(directory, 
@@ -215,12 +223,12 @@ def district_to_nodes_from_polygons(nodes_gdf, partitions_gdf):
     """
     
     nodes_gdf = nodes_gdf.copy()
-    nodes_gdf['district'] = nodes_gdf.apply(lambda row: _assign_district_to_node_from_polygons(row['geometry'], partitions_gdf), axis = 1)
-    nodes_gdf['district'] = nodes_gdf.district.astype(int)
+    nodes_gdf['column'] = nodes_gdf.apply(lambda row: _assign_district_to_node_from_polygons(row['geometry'], partitions_gdf, column), axis = 1)
+    nodes_gdf['new_cocolumnlumn'] = nodes_gdf.column.astype(int)
 
     return nodes_gdf
     
-def _assign_district_to_node_from_polygons(node_geometry, partitions_gdf):
+def _assign_district_to_node_from_polygons(node_geometry, partitions_gdf, column):
     """
     Run the natural_roads function on an entire GeoDataFrame of street segments.
     The geodataframes are supposed to be cleaned and can be obtained via the functions "get_fromOSM(place)" or "get_fromSHP(directory, 
@@ -238,7 +246,7 @@ def _assign_district_to_node_from_polygons(node_geometry, partitions_gdf):
     
     point = node_geometry
     dist = distance_geometry_gdf(point, partitions_gdf)
-    district = partitions_gdf.loc[dist[1]]['districtID']
+    district = partitions_gdf.loc[dist[1]][column]
     return district        
     
 def _check_disconnected_districts(nodes_gdf, edges_gdf, column, min_size = 10):
