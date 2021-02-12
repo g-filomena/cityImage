@@ -103,7 +103,7 @@ def test_centrality():
     bc = ci.centrality(graph, nodes_gdf, measure, weight, normalized = False)
     
     Eb = nx.edge_betweenness_centrality(graph, weight = weight, normalized = False)
-    edges_gdf = ci.append_edges_metrics(edges_gdf, graph, dicts, ['Eb'])
+    edges_gdf = ci.append_edges_metrics(edges_gdf, graph, [Eb], ['Eb'])
 
 def test_clean_network():
     nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg, distance = None)
