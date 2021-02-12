@@ -9,10 +9,7 @@ from shapely.geometry import LineString, Point, Polygon, mapping
 from shapely.ops import unary_union, transform, nearest_points
 from shapely.affinity import scale
 from functools import partial
-
-
 pd.set_option("precision", 10)
-
     
 def scaling_columnDF(df, column, inverse = False):
     """
@@ -275,77 +272,7 @@ def convex_hull_wgs(gdf):
 
     convex_hull_wgs = transform(project, convex_hull)
     return convex_hull_wgs      
-            
-def create_hexagon(side_length, x, y):
-    """
-    Create a hexagon centered on (x, y)
-    
-    Parameters
-    ----------
-    side_length: float
-        length of the hexagon's edgeline_geometries
-    x: float
-        x-coordinate of the hexagon's center
-    y: float
-        y-coordinate of the hexagon's center
-    
-    Return
-    ----------
-    polygon: Polygon
-        the resulting hexagon
-    """
-       
-    c = [[x + math.cos(math.radians(angle)) * side_length, y + math.sin(math.radians(angle)) * side_length] for angle in range(0, 360, 60)]
-    polygon = Polygon(c)
-    return polygon
-
-
-def create_grid(gdf, side_length = 150):
-    """
-    Create a grid of hexagons, for a given GeoDataFrame's extent.
-    
-    Parameters
-    ----------
-    gdf: GeoDataFrame
-    side_length: float
-        length of the hexagon's edgeline_geometries
-    
-    Return
-    ----------
-    grid: Polygon GeoDataFrame
-        the resulting grid of hexagons
-    """
-    xmin, ymin,xmax,ymax = gdf.total_bounds # lat-long of 2 corners
-    EW = Point(xmin,ymin).distance(Point(xmax,ymin))
-    NS = Point(xmin,ymin).distance(Point(xmin,ymax))
-
-    height = int(side_length*1.73)
-    width = side_length*2
-
-    cols = list(range(int(np.floor(xmin)), int(np.ceil(xmax)), width))
-    rows = list(range(int(np.floor(ymin)), int(np.ceil(ymax)), height))
-    rows.reverse()
-    polygons = []
-    odd = False
-
-    to_reach = cols[-1]
-    x = cols[0]
-    while (x < to_reach):
-        if odd: 
-            x = x-side_length/2
-        for y in rows:
-            if odd: 
-                y = y-height/2
-            centroid = Polygon([(x,y), (x+side_length, y), (x+side_length, y-side_length), (x, y-side_length)]).centroid       
-            polygons.append(create_hexagon(side_length, centroid.coords[0][0], centroid.coords[0][1] ))
-        if odd: 
-            x = x + width-side_length/2
-        else: x = x+width
-        odd = not odd
-
-
-    grid = gpd.GeoDataFrame({'geometry':polygons}, crs = gdf.crs)
-    return grid          
+        
     
 def rescale_ranges(n, range1, range2):
     """
@@ -369,28 +296,7 @@ def rescale_ranges(n, range1, range2):
     delta2 = range2[1] - range2[0]
     value = (delta2 * (n - range1[0]) / delta1) + range2[0]    
     return value
-    
-            
-def rescale_geometry(geometry, factor):
-    """
-    It rescales a geometry of a certain factor. The same factor is applied to each dimension (x, y,z), from the center of the geometry.
-    See shapely.affinity.scale for details
-    
-    Parameters
-    ----------
-    geometry: Polygon
-        a polygon
-    factor: float
-        the factor/distance to use for rescaling
-    
-    Return
-    ----------
-    rescaled_geometry: Polygon
-        the resulting rescaled geometry        
-    """
-    rescaled_geometry = scale(geometry, xfact= factor, yfact= factor, zfact=factor, origin='center') 
-    return rescaled_geometry
-            
+                         
 def gdf_from_geometries(geometries, crs):
     """
     The function creates a GeoDataFrame from a list of geometries
