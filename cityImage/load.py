@@ -54,7 +54,7 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
         G = ox.graph_from_polygon(place, network_type = network_type, simplify = True)
         
     elif download_method == "distance_from_address":
-        G = ox.graph_from_address(place, network_type = network_type, distance = distance, simplify = True)
+        G = ox.graph_from_address(place, network_type = network_type, dist = distance, simplify = True)
     
     # (download_method == "OSMplace")
     else:

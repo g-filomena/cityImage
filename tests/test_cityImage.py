@@ -12,32 +12,22 @@ import cityImage as ci
 
 # define queries to use throughout tests
 
-place = "Susa, Torino"
+place = "Susa, Italy"
 download_method = 'OSMPlace'
 epsg = 3003
 OSMPolygon = 'Susa (44287)'
 address = 'Susa, via Roma 1'
+distance = 1500
 location = (45.1383, 7.0509)
 nodes_gdf, edges_gdf = None, None
 graph = None
 
-amenities = ['arts_centre', 'atm', 'bank', 'bar', 'bbq', 'bicycle_rental', 'bicycle_repair_station', 'biergarten', 
-             'boat_rental', 'boat_sharing', 'brothel', 'bureau_de_change', 'cafe', 'car_rental', 'car_sharing', 'car_wash', 'casino', 'childcare',
-           'cinema', 'clinic', 'college', 'community_centre', 'courthouse', 'crematorium', 'dentist', 'dive_centre', 'doctors', 
-           'driving_school', 'embassy', 'fast_food', 'ferry_terminal', 'fire_station', 'food_court', 'fuel', 'gambling', 'gym', 
-           'hospital', 'ice_cream', 'internet_cafe', 'kindergarten', 'kitchen', 'language_school', 'library', 'marketplace', 
-           'monastery', 'motorcycle_parking', 'music_school', 'nightclub', 'nursing_home', 'pharmacy', 'place_of_worship', 
-           'planetarium', 'police', 'post_office', 'prison', 'pub', 'public_building', 'ranger_station', 'restaurant', 'sauna',
-           'school', 'shelter', 'shower', 'social_centre', 'social_facility', 'stripclub', 'studio', 'swingerclub', 'theatre', 
-           'toilets', 'townhall', 'university', 'veterinary']
-
-
 ## Test load.py
 def test_loadOSM():
-    nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg, distance = None)
+    nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg)
     polygon = ci.convex_hull_wgs(edges_gdf)
-    nodes_gdf2, edges_gdf2 = ci.get_network_fromOSM(polygon, 'polygon', network_type = "all", epsg = epsg, distance = None)
-    nodes_gdf3, edges_gdf3 = ci.get_network_fromOSM(address, 'distance_from_address', network_type = "all", epsg = epsg, distance = 2000)
+    nodes_gdf2, edges_gdf2 = ci.get_network_fromOSM(polygon, 'polygon', network_type = "all", epsg = epsg)
+    nodes_gdf3, edges_gdf3 = ci.get_network_fromOSM(address, 'distance_from_address', network_type = "all", epsg = epsg, distance = distance)
     
     
 def test_loadSHP():   
@@ -46,23 +36,23 @@ def test_loadSHP():
 
 ## Test graph.py
 def test_graph():
-    nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg, distance = None)
+    nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg)
     graph_fromGDF = ci.graph_fromGDF(nodes_gdf, edges_gdf, nodeID = 'nodeID')
     graph = graph_fromGDF
-    assert len(graph_fromGDF) == len(nodes_gdf)
+    assert len(graph_fromGDF.nodes()) == len(nodes_gdf)
     assert len(graph_fromGDF.edges()) == len(edges_gdf)
     
     # multi_graph_fromGDF = ci.multiGraph_fromGDF(nodes_gdf, edges_gdf, 'nodeID')
     
     nodes_dual, edges_dual = ci.dual_gdf(nodes_gdf, edges_gdf, epsg = epsg, oneway = False, angle = 'degree')
     dual_graph = ci.dual_graph_fromGDF(nodes_dual, edges_dual)
-    assert len(graph_fromGDF) == len(nodes_dual)
+    assert len(dual_graph.nodes()) == len(nodes_dual)
     assert len(graph_fromGDF.edges()) == len(edges_dual)
 
 ## Test barriers.py
 def test_barriers(): 
-    nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg, distance = None)
-    barriers_gdf = ci.get_barriers(place, download_method, distance = None, epsg = epsg)
+    nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, download_method, network_type = "all", epsg = epsg)
+    barriers_gdf = ci.get_barriers(place, download_method, epsg = epsg)
 
     # assign barriers to street network
     edges_gdf_updated = ci.along_within_parks(edges_gdf, barriers_gdf)
@@ -73,13 +63,11 @@ def test_barriers():
 
 ## Test angles.py
 def test_angles():
-    nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg, distance = None)
+    nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg)
     tmp = edges_gdf[(edges_gdf.u == 0) | (edges_gdf.v == 0)]
     
     line_geometryA = tmp.iloc[0].geometry
     line_geometryB = tmp.iloc[1].geometry
-    assert line_geometryA.geom_type == 'LineString'
-    assert line_geometryB.geom_type == 'LineString'
     difference = ci.difference_angle_line_geometries(line_geometryA, line_geometryB)
     
     angle = ci.angle_line_geometries(line_geometryA, line_geometryB, degree = True, deflection = False, angular_change = False)
@@ -88,14 +76,14 @@ def test_angles():
     
 ## Test centrality.py
 def test_centrality():
-    nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg, distance = None)
+    nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg)
 
     graph = ci.graph_fromGDF(nodes_gdf, edges_gdf, nodeID = 'nodeID')
 
     weight = 'length'
     sc = ci.straightness_centrality(graph, weight = weight, normalized = True)
     
-    services = ox.pois.pois_from_address(address, distance = 3000, amenities=amenities).to_crs(epsg=epsg)
+    services = ox.geometries_from_address(address, tags = {'amenity':True}, dist = distance).to_crs(epsg=epsg)
     services = services[services['geometry'].geom_type == 'Point']
     nodes_gdf = ci.weight_nodes(nodes_gdf, services, graph, field_name = 'services', radius = 50)
     rc = ci.reach_centrality(graph,  weight = weight, radius = 400, attribute = 'services')
@@ -107,17 +95,17 @@ def test_centrality():
     edges_gdf = ci.append_edges_metrics(edges_gdf, graph, [Eb], ['Eb'])
 
 def test_clean_network():
-    nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg, distance = None)
+    nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg)
     clean_nodes_gdf, clean_edges_gdf = ci.clean_network(nodes_gdf, edges_gdf, dead_ends = True, remove_disconnected_islands = True, same_uv_edges = True, 
         self_loops = True, fix_topology = True)
 
 # def test_landmarks():
 
-    # buildings_gdf = ci.get_buildings_fromOSM(place, download_method = 'OSMPlace', epsg = epsg, distance = None)
+    # buildings_gdf = ci.get_buildings_fromOSM(place, download_method = 'OSMPlace', epsg = epsg)
     # buildings_gdf_address = ci.get_buildings_fromOSM(address, download_method = 'distance_from_address', epsg = epsg, distance = 1000)
     # buildings_gdf_point = ci.get_buildings_fromOSM(location, download_method = 'from_point', epsg = epsg, distance = 1000)
     
-    # _, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg, distance = None)
+    # _, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg)
     # obstructions = buildings_gdf.copy()
     # buildings_gdf = ci.structural_score(buildings_gdf, obstructions, edges_gdf, max_expansion_distance = 300, distance_along = 50, radius = 150)
     # sight_lines = 
@@ -137,7 +125,7 @@ def test_clean_network():
     
 def test_regions():
         
-    nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "drive", epsg = epsg, distance = None)
+    nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "drive", epsg = epsg)
     graph = ci.graph_fromGDF(nodes_gdf, edges_gdf, nodeID = 'nodeID')
     nodes_dual, edges_dual = ci.dual_gdf(nodes_gdf, edges_gdf, epsg = epsg, oneway = False, angle = 'degree')
     dual_graph = ci.dual_graph_fromGDF(nodes_dual, edges_dual)
@@ -145,12 +133,12 @@ def test_regions():
     dual_regions = ci.identify_regions(dual_graph, edges_gdf, weight = None)
     primal_regions = ci.identify_regions_primal(graph, nodes_gdf, weight = None)
     
-    polygons_gdf = ci.polygonise_partitions(edges_gdf, 'topo', method = None, buffer = 30)
+    polygons_gdf = ci.polygonise_partitions(edges_gdf, 'p_topo', method = None, buffer = 30)
     edges_updated = ci.districts_to_edges_from_nodes(edges_gdf, primal_regions, 'p_topo')
     nodes_updated = ci.district_to_nodes_from_edges(nodes_gdf, edges_gdf, 'p_topo')
     
     
-    nodes_gdf_ped, edges_gdf_ped = ci.get_network_fromOSM(place, 'OSMplace', network_type = "pedestrian", epsg = epsg, distance = None)
+    nodes_gdf_ped, edges_gdf_ped = ci.get_network_fromOSM(place, 'OSMplace', network_type = "pedestrian", epsg = epsg)
     nodes_gdf_ped = ci.district_to_nodes_from_polygons(nodes_gdf_ped, polygons_gdf)
     min_size_district = 10
     nodes_gdf_ped = ci.amend_nodes_membership(nodes_gdf_ped, edges_gdf_ped, 'p_topo', min_size_district = min_size_district)

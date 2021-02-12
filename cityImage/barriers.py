@@ -8,7 +8,7 @@ from shapely.ops import cascaded_union, linemerge, polygonize, polygonize_full, 
 from .utilities import gdf_from_geometries
 pd.set_option("precision", 10)
 
-def road_barriers(place, download_method, distance = None, epsg = None, include_primary = False):
+def road_barriers(place, download_method, distance = 0.0, epsg = None, include_primary = False):
     """
     The function downloads major roads from OSM. These can be considered to be barrier to pedestrian movement or, at least, to structure people's cognitive Image of the City.
     if 'include_primary' considers also primary roads, beyond motorway and trunk roads.
@@ -38,7 +38,7 @@ def road_barriers(place, download_method, distance = None, epsg = None, include_
     if include_primary:
         tags = {'highway':'trunk', 'highway':'motorway','highway':'primary'}
     
-    roads = _download_geometries(place, download_method, tags, crs)
+    roads = _download_geometries(place, download_method, tags, crs, distance)
     # exclude tunnels
     if "tunnel" in roads.columns:
         roads["tunnel"].fillna(0, inplace = True)
@@ -52,7 +52,7 @@ def road_barriers(place, download_method, distance = None, epsg = None, include_
     return road_barriers
 
 
-def water_barriers(place, download_method, distance = None, epsg = None):
+def water_barriers(place, download_method, distance = 0.0, epsg = None):
     """
     The function downloads water bodies from OSM. Lakes, rivers and see coastlines can be considered structuring barriers.
         
@@ -78,14 +78,14 @@ def water_barriers(place, download_method, distance = None, epsg = None):
     
     # rivers and canals
     tags = {"waterway":"river", "waterway":"canal"}  
-    rivers = _download_geometries(place, download_method, tags, crs)
+    rivers = _download_geometries(place, download_method, tags, crs, distance)
     if "tunnel" in rivers.columns:
         rivers["tunnel"].fillna(0, inplace = True)
         rivers = rivers[rivers["tunnel"] == 0] 
     rivers = rivers.unary_union
     
     to_remove = {"natural":"water", "water":"river", "water":"steam"}   
-    possible_duplicates = _download_geometries(place, download_method, to_remove, crs)
+    possible_duplicates = _download_geometries(place, download_method, to_remove, crs, distance)
     pd = possible_duplicates.unary_union
     rivers = rivers.difference(pd)
     rivers = _simplify_barrier(rivers)
@@ -93,11 +93,11 @@ def water_barriers(place, download_method, distance = None, epsg = None):
     
     # lakes   
     tags = {"natural":"water"}
-    lakes = _download_geometries(place, download_method, tags, crs)   
+    lakes = _download_geometries(place, download_method, tags, crs, distance)   
     lakes = lakes.unary_union
     
     to_remove = {"water":"river", "waterway": True, "water":"steam"}   
-    possible_duplicates = _download_geometries(place, download_method, to_remove, crs)
+    possible_duplicates = _download_geometries(place, download_method, to_remove, crs, distance)
     pd = possible_duplicates.unary_union
     lakes = lakes.difference(pd)
     lakes = _simplify_barrier(lakes) 
@@ -106,7 +106,7 @@ def water_barriers(place, download_method, distance = None, epsg = None):
     
     # sea   
     tags = {"natural":"coastline"}
-    sea = _download_geometries(place, download_method, tags, crs)
+    sea = _download_geometries(place, download_method, tags, crs, distance)
     sea = sea.unary_union      
     sea = _simplify_barrier(sea)
     sea = gdf_from_geometries(sea, crs)
@@ -117,11 +117,11 @@ def water_barriers(place, download_method, distance = None, epsg = None):
     water = _simplify_barrier(water)
         
     df = pd.DataFrame({'geometry': water, 'type': ['water'] * len(water)})
-    water_barriers = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
+    water_barriers = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs, distance)
     
     return water_barriers    
     
-def _download_geometries(place, download_method, tags, crs):
+def _download_geometries(place, download_method, tags, crs, distance = 0.0):
     """
     The function downloads certain geometries from OSM, by means of OSMNX functions.
     It returns a GeoDataFrame, that could be empty when no geometries are found, with the provided tags.
@@ -144,7 +144,7 @@ def _download_geometries(place, download_method, tags, crs):
         the resulting GeoDataFrame
     """    
     if download_method == 'distance_from_address': 
-        geometries_gdf = ox.geometries_from_address(place, tags = tags)
+        geometries_gdf = ox.geometries_from_address(place, tags = tags, dist = distance)
     elif download_method == 'OSMplace': 
         geometries_gdf = ox.geometries_from_place(place, tags = tags)
     else: 
@@ -153,7 +153,7 @@ def _download_geometries(place, download_method, tags, crs):
     geometries_gdf = geometries_gdf.to_crs(crs)
     return geometries_gdf
     
-def railway_barriers(place, download_method,distance = None, epsg = None, keep_light_rail = False):
+def railway_barriers(place, download_method, distance = 0.0, epsg = None, keep_light_rail = False):
     """
     The function downloads overground railway structures from OSM. Such structures can be considered barriers which shape the Image of the City and obstruct sight and movement.
         
@@ -178,7 +178,7 @@ def railway_barriers(place, download_method,distance = None, epsg = None, keep_l
     """    
     crs = {'EPSG:' + str(epsg)}
     tags = {"railway":"rail"}
-    railways = _download_geometries(place, download_method, tags, crs)
+    railways = _download_geometries(place, download_method, tags, crs, distance)
     if "tunnel" in railways.columns:
         railways["tunnel"].fillna(0, inplace = True)
         railways = railways[railways["tunnel"] == 0]     
@@ -187,7 +187,7 @@ def railway_barriers(place, download_method,distance = None, epsg = None, keep_l
     # removing light_rail, in case
     if not keep_light_rail:
         to_remove = {"railway":"light_rail"}
-        light = _download_geometries(place, download_method, to_remove, crs)
+        light = _download_geometries(place, download_method, to_remove, crs, distance)
         lr = light.unary_union
         r = r.difference(lr)
 
@@ -200,7 +200,7 @@ def railway_barriers(place, download_method,distance = None, epsg = None, keep_l
     
     return railway_barriers
     
-def park_barriers(place, download_method, distance = None, epsg = None, min_area = 100000):
+def park_barriers(place, download_method, distance = 0.0, epsg = None, min_area = 100000):
     """
     The function downloads parks areas with a certain extent and converts them to LineString features. Parks may break continuity in the urban structure, besides being attractive areas for pedestrians.
         
@@ -226,7 +226,7 @@ def park_barriers(place, download_method, distance = None, epsg = None, min_area
 
     crs = {'EPSG:' + str(epsg)}
     tags = {"leisure": True}
-    parks_poly = _download_geometries(place, download_method, tags, crs)
+    parks_poly = _download_geometries(place, download_method, tags, crs, distance)
     
     parks_poly = parks_poly[parks_poly.leisure == 'park']
     parks_poly = parks_poly[~parks_poly['geometry'].is_empty] 
