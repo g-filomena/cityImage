@@ -10,12 +10,11 @@ from shapely.ops import linemerge, nearest_points, split, polygonize_full, unary
 pd.set_option('precision', 10)
 pd.options.mode.chained_assignment = None
 
-import ast
 from .graph import nodes_degree
 from .utilities import center_line, center_line_coords, merge_lines, split_line_at_interpolation
 from .clean import clean_network, correct_edges
 from .angles import difference_angle_line_geometries, angle_line_geometries, is_parallel, is_continuation
-from .simplify_junctions import simplify_complex_junctions, simplify_dual_lines_junctions, dissolve_roundabouts
+from .simplify_junctions import simplify_complex_junctions, simplify_dual_lines_junctions, dissolve_roundabouts, interpolate_on_center_line
                     
 
 def identify_clusters(nodes_gdf, edges_gdf, radius = 10):   
@@ -275,68 +274,7 @@ def center_line_cluster(line_geometries, nodes_gdf, clusters_gdf, cluster_from, 
     center_line = LineString([coor for coor in cl_coords])           
         
     return center_line        
-                                                                                                       
-def interpolate_on_center_line(ix_line, center_line, nodes_gdf, edges_gdf,  first_node, last_node, nodes_traversed, 
-                                clusters_gdf = None, clusters_traversed = []):
-       
-    line_geometry = center_line   
-    new_index = ix_line                                                                                        
-    distances = {}
-    
-    if len(clusters_traversed)> 0:
-        nodes_traversed = nodes_traversed + clusters_traversed
-    for node in nodes_traversed:
-        if node in clusters_traversed: 
-            node_geometry = clusters_gdf.loc[node]['geometry']
-        else: node_geometry = nodes_gdf.loc[node]['geometry']
-        np = nearest_points(node_geometry, center_line)[1]
-        distance = center_line.project(np)
-        distances[node] = distance                                                                                               
-
-    distances_sorted = sorted(distances.items(), key=lambda kv: kv[1])               
-                                                                                                    
-    for counter, node in enumerate(distances_sorted):
-        
-        node = distances_sorted[counter][0]
-        if node in clusters_traversed: 
-            point = clusters_gdf.loc[node].geometry
-        else: point = nodes_gdf.loc[node].geometry
-        result, np = split_line_at_interpolation(point, line_geometry)
-            
-        if node in clusters_traversed:
-            clusters_gdf.at[node, 'x'] = np.coords[0][0]
-            clusters_gdf.at[node, 'y'] = np.coords[0][1]
-            clusters_gdf.at[node, 'geometry'] = np
-            if counter == 0: 
-                edges_gdf.at[new_index, 'u'] = first_node
-            continue
-            
-        nodes_gdf.at[node, 'x'] = np.coords[0][0]
-        nodes_gdf.at[node, 'y'] = np.coords[0][1]
-        nodes_gdf.at[node, 'geometry'] = np 
-        
-        #first part of the segment, adjusting node coordinates        
-        tmp = edges_gdf[(edges_gdf.u == node) | (edges_gdf.v == node)].copy()
-        tmp.drop(ix_line, axis = 0, inplace = True, errors = 'ignore')
-                
-        if counter == 0: 
-            edges_gdf.at[new_index, 'u'] = first_node
-        
-        edges_gdf.at[new_index, 'geometry'] = result[0]
-        edges_gdf.at[new_index, 'v'] = node
-        edges_gdf.at[new_index, 'new_geo'] = True
-          
-        # second part of the segment
-        new_index = max(edges_gdf.index)+1
-        
-        edges_gdf.loc[new_index] = edges_gdf.loc[ix_line]
-        edges_gdf.at[new_index, 'geometry'] = result[1]
-        edges_gdf.at[new_index, 'u'] = node
-        edges_gdf.at[new_index, 'v'] = last_node
-        edges_gdf.at[new_index, 'edgeID'] = new_index
-        edges_gdf.at[new_index, 'new_geo'] = True
-        line_geometry = result[1]                                       
-                                                                         
+                                                                                                                                                                                                                
 def dissolve_dual_lines(ix_lines, line_geometries, nodes_gdf, edges_gdf, clusters_gdf, cluster, goal, first_node, last_node, 
                         nodes_traversed, direction, one_cluster = False, clusters_traversed = []):
     
