@@ -22,7 +22,7 @@ This set of functions handles interoperations between GeoDataFrames and graphs. 
     
 ## Graph preparation functions ###############
     
-def get_network_fromOSM(place, download_method, network_type = "all", epsg = None, distance = 7000): 
+def get_network_fromOSM(place, download_method, network_type = "all", epsg = None, distance = 500.0): 
 
     """
     The function downloads and creates a simplified OSMNx graph for a selected area. 
@@ -117,7 +117,7 @@ def get_network_fromSHP(path, epsg, dict_columns = {}, other_columns = []):
     """
     
     # try reading street network from directory
-    crs = {'init': 'epsg'+str(epsg), 'no_defs': True}
+    crs = {'EPSG:' + str(epsg)}
     edges_gdf = gpd.read_file(path)
     try:
         edges_gdf = edges_gdf.to_crs(epsg=epsg)
@@ -134,7 +134,8 @@ def get_network_fromSHP(path, epsg, dict_columns = {}, other_columns = []):
         for n, (key, value) in enumerate(dict_columns.items()):
             if (value is not None): 
                 edges_gdf[new_columns[n]] = edges_gdf[value]
-    else: new_columns = []
+    else: 
+        new_columns = []
      
     standard_columns = ["geometry", "from", "to", "key"]
     edges_gdf = edges_gdf[standard_columns + new_columns + other_columns]
@@ -179,7 +180,8 @@ def obtain_nodes_gdf(edges_gdf, epsg):
     #preparing nodes geodataframe
     nodes_data = pd.DataFrame.from_records(unique_nodes, columns=["x", "y"]).astype("float")
     geometry = [Point(xy) for xy in zip(nodes_data.x, nodes_data.y)]
-    crs = {'init': 'epsg:' + str(epsg)}
+    
+    crs = {'EPSG:' + str(epsg)}
     nodes_gdf = gpd.GeoDataFrame(nodes_data, crs=crs, geometry=geometry)
     nodes_gdf.reset_index(drop=True, inplace = True)
     

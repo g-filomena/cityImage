@@ -37,17 +37,11 @@ def test_loadSHP():
 ## Test graph.py
 def test_graph():
     nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg)
-    graph_fromGDF = ci.graph_fromGDF(nodes_gdf, edges_gdf, nodeID = 'nodeID')
-    graph = graph_fromGDF
-    assert len(graph_fromGDF.nodes()) == len(nodes_gdf)
-    assert len(graph_fromGDF.edges()) == len(edges_gdf)
-    
-    # multi_graph_fromGDF = ci.multiGraph_fromGDF(nodes_gdf, edges_gdf, 'nodeID')
+    graph = ci.graph_fromGDF(nodes_gdf, edges_gdf, nodeID = 'nodeID')
+    multi_graph_fromGDF = ci.multiGraph_fromGDF(nodes_gdf, edges_gdf, 'nodeIDQ')
     
     nodes_dual, edges_dual = ci.dual_gdf(nodes_gdf, edges_gdf, epsg = epsg, oneway = False, angle = 'degree')
     dual_graph = ci.dual_graph_fromGDF(nodes_dual, edges_dual)
-    assert len(dual_graph.nodes()) == len(nodes_dual)
-    assert len(graph_fromGDF.edges()) == len(edges_dual)
 
 ## Test barriers.py
 def test_barriers(): 
@@ -88,7 +82,7 @@ def test_centrality():
     nodes_gdf = ci.weight_nodes(nodes_gdf, services, graph, field_name = 'services', radius = 50)
     rc = ci.reach_centrality(graph,  weight = weight, radius = 400, attribute = 'services')
     
-    measure = 'betweenness centrality'
+    measure = 'betweenness_centrality'
     bc = ci.centrality(graph, nodes_gdf, measure, weight, normalized = False)
     
     Eb = nx.edge_betweenness_centrality(graph, weight = weight, normalized = False)
@@ -133,12 +127,11 @@ def test_regions():
     dual_regions = ci.identify_regions(dual_graph, edges_gdf, weight = None)
     primal_regions = ci.identify_regions_primal(graph, nodes_gdf, weight = None)
     
-    polygons_gdf = ci.polygonise_partitions(edges_gdf, 'p_topo', method = None, buffer = 30)
+    polygons_gdf = ci.polygonise_partitions(dual_regions, 'p_topo', method = None, buffer = 30)
     edges_updated = ci.districts_to_edges_from_nodes(edges_gdf, primal_regions, 'p_topo')
-    nodes_updated = ci.district_to_nodes_from_edges(nodes_gdf, edges_gdf, 'p_topo')
+    nodes_updated = ci.district_to_nodes_from_edges(nodes_gdf, dual_regions, 'p_topo')
     
-    
-    nodes_gdf_ped, edges_gdf_ped = ci.get_network_fromOSM(place, 'OSMplace', network_type = "pedestrian", epsg = epsg)
+    nodes_gdf_ped, edges_gdf_ped = ci.get_network_fromOSM(place, 'OSMplace', network_type = "walk", epsg = epsg)
     nodes_gdf_ped = ci.district_to_nodes_from_polygons(nodes_gdf_ped, polygons_gdf)
     min_size_district = 10
     nodes_gdf_ped = ci.amend_nodes_membership(nodes_gdf_ped, edges_gdf_ped, 'p_topo', min_size_district = min_size_district)

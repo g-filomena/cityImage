@@ -50,13 +50,15 @@ def graph_fromGDF(nodes_gdf, edges_gdf, nodeID = "nodeID"):
     a = (nodes_gdf.applymap(type) == list).sum()
     if len(a[a>0]): 
         to_ignore = a[a>0].index[0]
-    else: to_ignore = []
+    else: 
+        to_ignore = []
     
     for attribute_name in nodes_gdf.columns:
         if attribute_name in to_ignore: 
             continue    
         # only add this attribute to nodes which have a non-null value for it
-        else: attribute_values = {k: v for k, v in attributes[attribute_name].items() if pd.notnull(v)}
+        else: 
+            attribute_values = {k: v for k, v in attributes[attribute_name].items() if pd.notnull(v)}
         nx.set_node_attributes(G, name=attribute_name, values=attribute_values)
 
     # add the edges and attributes that are not u, v (as they're added separately) or null

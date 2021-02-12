@@ -8,7 +8,7 @@ from shapely.ops import cascaded_union, linemerge, polygonize, polygonize_full, 
 from .utilities import gdf_from_geometries
 pd.set_option("precision", 10)
 
-def road_barriers(place, download_method, distance = 0.0, epsg = None, include_primary = False):
+def road_barriers(place, download_method, distance = 500.0, epsg = None, include_primary = False):
     """
     The function downloads major roads from OSM. These can be considered to be barrier to pedestrian movement or, at least, to structure people's cognitive Image of the City.
     if 'include_primary' considers also primary roads, beyond motorway and trunk roads.
@@ -52,7 +52,7 @@ def road_barriers(place, download_method, distance = 0.0, epsg = None, include_p
     return road_barriers
 
 
-def water_barriers(place, download_method, distance = 0.0, epsg = None):
+def water_barriers(place, download_method, distance = 500.0, epsg = None):
     """
     The function downloads water bodies from OSM. Lakes, rivers and see coastlines can be considered structuring barriers.
         
@@ -121,7 +121,7 @@ def water_barriers(place, download_method, distance = 0.0, epsg = None):
     
     return water_barriers    
     
-def _download_geometries(place, download_method, tags, crs, distance = 0.0):
+def _download_geometries(place, download_method, tags, crs, distance = 500.0):
     """
     The function downloads certain geometries from OSM, by means of OSMNX functions.
     It returns a GeoDataFrame, that could be empty when no geometries are found, with the provided tags.
@@ -153,7 +153,7 @@ def _download_geometries(place, download_method, tags, crs, distance = 0.0):
     geometries_gdf = geometries_gdf.to_crs(crs)
     return geometries_gdf
     
-def railway_barriers(place, download_method, distance = 0.0, epsg = None, keep_light_rail = False):
+def railway_barriers(place, download_method, distance = 500.0, epsg = None, keep_light_rail = False):
     """
     The function downloads overground railway structures from OSM. Such structures can be considered barriers which shape the Image of the City and obstruct sight and movement.
         
@@ -200,7 +200,7 @@ def railway_barriers(place, download_method, distance = 0.0, epsg = None, keep_l
     
     return railway_barriers
     
-def park_barriers(place, download_method, distance = 0.0, epsg = None, min_area = 100000):
+def park_barriers(place, download_method, distance = 500.0, epsg = None, min_area = 100000):
     """
     The function downloads parks areas with a certain extent and converts them to LineString features. Parks may break continuity in the urban structure, besides being attractive areas for pedestrians.
         
@@ -436,7 +436,7 @@ def _crossing_barriers(line_geometry, barriers_gdf):
     adjacent_barriers = list(intersecting_barriers.barrierID)
     return adjacent_barriers
     
-def get_barriers(place, download_method, distance, epsg): 
+def get_barriers(place, download_method, distance = 500.0, epsg = None): 
     """
     The function returns all the barriers (water, park, railways, major roads) within a certain urban area.
     Certain parameter are set by default. For manipulating, use the barrier-type specific functions (see above).
