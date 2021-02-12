@@ -117,7 +117,7 @@ def water_barriers(place, download_method, distance = 0.0, epsg = None):
     water = _simplify_barrier(water)
         
     df = pd.DataFrame({'geometry': water, 'type': ['water'] * len(water)})
-    water_barriers = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs, distance)
+    water_barriers = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
     
     return water_barriers    
     
