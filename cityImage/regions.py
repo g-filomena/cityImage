@@ -302,7 +302,7 @@ def amend_nodes_membership(nodes_gdf, edges_gdf, column, min_size_district = 10)
     
     return nodes_gdf
 
-def _amend_node_membership(nodeID, nodes_gdf, edges_gdf):
+def _amend_node_membership(nodeID, nodes_gdf, edges_gdf, column):
     """
     Run the natural_roads function on an entire GeoDataFrame of street segments.
     The geodataframes are supposed to be cleaned and can be obtained via the functions "get_fromOSM(place)" or "get_fromSHP(directory, 
@@ -375,7 +375,7 @@ def _gateway(nodeID, nodes_gdf, edges_gdf, column):
     -------
     GeoDataFrames
     """
-    
+    gateway = 99999
     tmp = edges_gdf[(edges_gdf.u == nodeID) | (edges_gdf.v == nodeID)].copy()
     tmp_nodes = nodes_gdf[nodes_gdf.nodeID.isin(tmp.u) | nodes_gdf.nodeID.isin(tmp.v)].copy()
     gateway 
