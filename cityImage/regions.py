@@ -95,7 +95,7 @@ def polygonise_partitions(edges_gdf, column, convex_hull = True, buffer = 30):
     Returns
     -------
     polygonised_partitions: Polygon GeoDataFrame
-        A GeoDataFrame containing the polygonised partitions
+        a GeoDataFrame containing the polygonised partitions
     """
     
     polygons = []
@@ -118,19 +118,24 @@ def polygonise_partitions(edges_gdf, column, convex_hull = True, buffer = 30):
    
 def district_to_nodes_from_edges(nodes_gdf, edges_gdf, column):
     """
-    Run the natural_roads function on an entire GeoDataFrame of street segments.
-    The geodataframes are supposed to be cleaned and can be obtained via the functions "get_fromOSM(place)" or "get_fromSHP(directory, 
-    epsg)". The parameter tolerance indicates the maximux deflection allowed to consider two roads possible natural continuation.
+    It assigns districts' identifiers to the street junctions (nodes), when the districts are assigned to the street segments (edges),
+    i.e. communities are identified on the dual graph. The attribution is based on Euclidean distance from each node to the closest street segment.
     
     Parameters
     ----------
-    dual_graph: GeoDataFrames
-    weight = string
-    
+    nodes_gdf: Point GeoDataFrame
+        the nodes (junctions) GeoDataFrame   
+    edges_gdf: LineString GeoDataFrame
+        the street segments GeoDataFrame
+    column: string
+        the name of the column containing the district identifier
+        
     Returns
     -------
-    GeoDataFrames
+    nodes_gdf: Point GeoDataFrame
+        the updated street junctions GeoDataFrame
     """
+    
     nodes_gdf = nodes_gdf.copy()
     nodes_gdf[column] = 0
     sindex = edges_gdf.sindex # spatial index
@@ -140,7 +145,26 @@ def district_to_nodes_from_edges(nodes_gdf, edges_gdf, column):
     return nodes_gdf
     
 def _assign_district_to_node(node_geometry, edges_gdf, sindex, column):   
+    """
+    It assigns a district's identifier to a street junctions (node), when the districts are assigned to the street segments (edges), 
+    i.e. communities are identified on the dual graph.
+    
+    Parameters
+    ----------
+    node_geometry: Point
+        a node's geometry
+    edges_gdf: LineString GeoDataFrame
+        the street segments GeoDataFrame
+    sindex: 
+    
+    column: string
+        the name of the column containing the district identifier
         
+    Returns
+    -------
+    district: int
+        the district identifier
+    """   
     point = node_geometry
     n = point.buffer(20)
     possible_matches_index = list(sindex.intersection(n.bounds))
@@ -149,27 +173,26 @@ def _assign_district_to_node(node_geometry, edges_gdf, sindex, column):
     district = edges_gdf.loc[dist[1]][column]
     return district
     
-def districts_to_edges_from_nodes(edges_gdf, nodes_gdf, column):
+def districts_to_edges_from_nodes(nodes_gdf, edges_gdf, column):
     """
-    It assigns districts to edges, when the districts are assigned to the nodes (i.e. communities are identified on the primal graph)
-    
+    It assigns districts' identifiers to the street segments (edges), when the districts are assigned to the junctions(nodes), i.e. communities are identified on the 
+    primal graph. The attribution is based on Euclidean distance from each node to the closest street segment.
     
     Parameters
     ----------
+    nodes_gdf: Point GeoDataFrame
+        the nodes (junctions) GeoDataFrame   
     edges_gdf: LineString GeoDataFrame
         the street segments GeoDataFrame
     column: string
         the name of the column containing the district identifier
-    convex_hull: boolean
-        if trues creates create convex hulls after having polygonised the cluster of segments
-    buffer: float
-        desired buffer around the polygonised segments, before possibly obtaining the convex hulls
         
     Returns
     -------
-    polygonised_partitions: Polygon GeoDataFrame
-        A GeoDataFrame containing the polygonised partitions
+    edges_gdf: LineString GeoDataFrame
+        the updated street segments GeoDataFrame
     """
+    
     ix_u = edges_gdf.columns.get_loc('u')+1  
     ix_v = edges_gdf.columns.get_loc('v')+1  
     
@@ -178,25 +201,30 @@ def districts_to_edges_from_nodes(edges_gdf, nodes_gdf, column):
     edges_gdf[column+'_u'] = 999999
     edges_gdf[column+'_v'] = 999999
     
-    edges_gdf[[column+'_uv', column+'_u', column+'_v']] = edges_gdf.apply(lambda row: _assign_district_to_edge(row['edgeID'], edges_gdf, 
-                        nodes_gdf, column), axis = 1, result_type= 'expand')      
+    edges_gdf[[column+'_uv', column+'_u', column+'_v']] = edges_gdf.apply(lambda row: _assign_district_to_edge(row['edgeID'], nodes_gdf, edges_gdf, 
+                        column), axis = 1, result_type= 'expand')      
 
     return edges_gdf
 
-def _assign_district_to_edge(edgeID, edges_gdf, nodes_gdf, column):
+def _assign_district_to_edge(edgeID, nodes_gdf, edges_gdf, column):
     """
-    Run the natural_roads function on an entire GeoDataFrame of street segments.
-    The geodataframes are supposed to be cleaned and can be obtained via the functions "get_fromOSM(place)" or "get_fromSHP(directory, 
-    epsg)". The parameter tolerance indicates the maximux deflection allowed to consider two roads possible natural continuation.
+    It assigns a district's identifier to a street segments (edge), when the districts are assigned to the junctions (nodes), 
+    i.e. communities are identified on the primal graph. The attribution is based on Euclidean distance from each node to the closest street segment.
     
     Parameters
     ----------
-    dual_graph: GeoDataFrames
-    weight = string
+    edgeID: int
+        the edgeID
+    nodes_gdf: Point GeoDataFrame
+        the nodes (junctions) GeoDataFrame   
+    edges_gdf: LineString GeoDataFrame
+        the street segments GeoDataFrame
+    column: string
+        the name of the column containing the district identifier
     
     Returns
     -------
-    GeoDataFrames
+    Tuple
     """
     series = edges_gdf.loc[edgeID]
     district_uv = 999999

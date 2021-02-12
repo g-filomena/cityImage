@@ -33,12 +33,12 @@ def road_barriers(place, download_method, distance = 500.0, epsg = None, include
         the road barriers
     """
     
-    crs = {'EPSG:' + str(epsg)}
+    crs = 'EPSG:' + str(epsg)
     tags = {'highway':'trunk', 'highway':'motorway'}
     if include_primary:
         tags = {'highway':'trunk', 'highway':'motorway','highway':'primary'}
     
-    roads = _download_geometries(place, download_method, tags, epsg, distance)
+    roads = _download_geometries(place, download_method, tags, crs, distance)
     # exclude tunnels
     if "tunnel" in roads.columns:
         roads["tunnel"].fillna(0, inplace = True)
@@ -74,18 +74,17 @@ def water_barriers(place, download_method, distance = 500.0, epsg = None):
         the water barriers GeoDataFrame
     """
     
-    crs = {'EPSG:' + str(epsg)}
-    
+    crs = 'EPSG:' + str(epsg)
     # rivers and canals
     tags = {"waterway":"river", "waterway":"canal"}  
-    rivers = _download_geometries(place, download_method, tags, epsg, distance)
+    rivers = _download_geometries(place, download_method, tags, crs, distance)
     if "tunnel" in rivers.columns:
         rivers["tunnel"].fillna(0, inplace = True)
         rivers = rivers[rivers["tunnel"] == 0] 
     rivers = rivers.unary_union
     
     to_remove = {"natural":"water", "water":"river", "water":"steam"}   
-    possible_duplicates = _download_geometries(place, download_method, to_remove, epsg, distance)
+    possible_duplicates = _download_geometries(place, download_method, to_remove, crs, distance)
     pd = possible_duplicates.unary_union
     rivers = rivers.difference(pd)
     rivers = _simplify_barrier(rivers)
@@ -93,11 +92,11 @@ def water_barriers(place, download_method, distance = 500.0, epsg = None):
     
     # lakes   
     tags = {"natural":"water"}
-    lakes = _download_geometries(place, download_method, tags, epsg, distance)   
+    lakes = _download_geometries(place, download_method, tags, crs, distance)   
     lakes = lakes.unary_union
     
     to_remove = {"water":"river", "waterway": True, "water":"steam"}   
-    possible_duplicates = _download_geometries(place, download_method, to_remove, epsg, distance)
+    possible_duplicates = _download_geometries(place, download_method, to_remove, crs, distance)
     pd = possible_duplicates.unary_union
     lakes = lakes.difference(pd)
     lakes = _simplify_barrier(lakes) 
@@ -106,7 +105,7 @@ def water_barriers(place, download_method, distance = 500.0, epsg = None):
     
     # sea   
     tags = {"natural":"coastline"}
-    sea = _download_geometries(place, download_method, tags, epsg, distance)
+    sea = _download_geometries(place, download_method, tags, crs, distance)
     sea = sea.unary_union      
     sea = _simplify_barrier(sea)
     sea = gdf_from_geometries(sea, crs)
@@ -121,7 +120,7 @@ def water_barriers(place, download_method, distance = 500.0, epsg = None):
     
     return water_barriers    
     
-def _download_geometries(place, download_method, tags, epsg, distance = 500.0):
+def _download_geometries(place, download_method, tags, crs, distance = 500.0):
     """
     The function downloads certain geometries from OSM, by means of OSMNX functions.
     It returns a GeoDataFrame, that could be empty when no geometries are found, with the provided tags.
@@ -150,7 +149,7 @@ def _download_geometries(place, download_method, tags, epsg, distance = 500.0):
     else: 
         geometries_gdf = ox.geometries_from_polygon(place, tags = tags)
     
-    geometries_gdf = geometries_gdf.to_crs(epsg)
+    geometries_gdf = geometries_gdf.to_crs(crs)
     return geometries_gdf
     
 def railway_barriers(place, download_method, distance = 500.0, epsg = None, keep_light_rail = False):
@@ -176,9 +175,9 @@ def railway_barriers(place, download_method, distance = 500.0, epsg = None, keep
     railway_barriers: LineString GeoDataFrame
         the railway barriers GeoDataFrame
     """    
-    crs = {'EPSG:' + str(epsg)}
+    crs = 'EPSG:' + str(epsg)
     tags = {"railway":"rail"}
-    railways = _download_geometries(place, download_method, tags, epsg, distance)
+    railways = _download_geometries(place, download_method, tags, crs, distance)
     if "tunnel" in railways.columns:
         railways["tunnel"].fillna(0, inplace = True)
         railways = railways[railways["tunnel"] == 0]     
@@ -187,7 +186,7 @@ def railway_barriers(place, download_method, distance = 500.0, epsg = None, keep
     # removing light_rail, in case
     if not keep_light_rail:
         to_remove = {"railway":"light_rail"}
-        light = _download_geometries(place, download_method, to_remove, epsg, distance)
+        light = _download_geometries(place, download_method, to_remove, crs, distance)
         lr = light.unary_union
         r = r.difference(lr)
 
@@ -224,9 +223,9 @@ def park_barriers(place, download_method, distance = 500.0, epsg = None, min_are
         the park barriers GeoDataFrame
     """
 
-    crs = {'EPSG:' + str(epsg)}
+    crs = 'EPSG:' + str(epsg)
     tags = {"leisure": True}
-    parks_poly = _download_geometries(place, download_method, tags, epsg, distance)
+    parks_poly = _download_geometries(place, download_method, tags, crs, distance)
     
     parks_poly = parks_poly[parks_poly.leisure == 'park']
     parks_poly = parks_poly[~parks_poly['geometry'].is_empty] 

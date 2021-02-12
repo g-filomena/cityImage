@@ -88,7 +88,7 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
     if epsg is None: 
         nodes_gdf, edges_gdf = ox.projection.project_gdf(nodes_gdf), ox.projection.project_gdf(edges_gdf)
     else: 
-        nodes_gdf, edges_gdf = nodes_gdf.to_crs(epsg = epsg), edges_gdf.to_crs(epsg = epsg)
+        nodes_gdf, edges_gdf = nodes_gdf.to_crs(crs), edges_gdf.to_crs(crs)
     
     nodes_gdf["x"], nodes_gdf["y"] = list(zip(*[(r.coords[0][0], r.coords[0][1]) for r in nodes_gdf.geometry]))
     nodes_gdf['height'] = 2 # this will be used for 3d visibility analysis
@@ -117,10 +117,10 @@ def get_network_fromSHP(path, epsg, dict_columns = {}, other_columns = []):
     """
     
     # try reading street network from directory
-    crs = {'EPSG:' + str(epsg)}
+    crs = 'EPSG:' + str(epsg)
     edges_gdf = gpd.read_file(path)
     try:
-        edges_gdf = edges_gdf.to_crs(epsg=epsg)
+        edges_gdf = edges_gdf.to_crs(crs)
     except:
         edges_gdf.crs = crs
        
@@ -148,7 +148,7 @@ def get_network_fromSHP(path, epsg, dict_columns = {}, other_columns = []):
     # assigning indexes
     edges_gdf.reset_index(inplace=True, drop=True)
     edges_gdf["edgeID"] = edges_gdf.index.values.astype(int) 
-    nodes_gdf = obtain_nodes_gdf(edges_gdf, epsg)
+    nodes_gdf = obtain_nodes_gdf(edges_gdf, crs)
     
     # linking on coordinates
     nodes_gdf["nodeID"] = nodes_gdf.index.values.astype(int)
@@ -158,7 +158,7 @@ def get_network_fromSHP(path, epsg, dict_columns = {}, other_columns = []):
     
     return nodes_gdf, edges_gdf
     
-def obtain_nodes_gdf(edges_gdf, epsg):
+def obtain_nodes_gdf(edges_gdf, crs):
     """
     It obtains the nodes GeoDataFrame from the unique coordinates pairs in the edges_gdf GeoDataFrame.
         
@@ -166,8 +166,8 @@ def obtain_nodes_gdf(edges_gdf, epsg):
     ----------
     edges_gdf: LineString GeoDataFrame
         street segments GeoDataFrame
-    epsg: int
-        epsg of the area considered 
+    crs: string
+        coordinate reference system of the area considered 
     Returns
     -------
     Point GeoDataFrames
@@ -180,8 +180,7 @@ def obtain_nodes_gdf(edges_gdf, epsg):
     #preparing nodes geodataframe
     nodes_data = pd.DataFrame.from_records(unique_nodes, columns=["x", "y"]).astype("float")
     geometry = [Point(xy) for xy in zip(nodes_data.x, nodes_data.y)]
-    
-    crs = {'EPSG:' + str(epsg)}
+   
     nodes_gdf = gpd.GeoDataFrame(nodes_data, crs=crs, geometry=geometry)
     nodes_gdf.reset_index(drop=True, inplace = True)
     

@@ -127,8 +127,9 @@ def test_regions():
     dual_regions = ci.identify_regions(dual_graph, edges_gdf, weight = None)
     primal_regions = ci.identify_regions_primal(graph, nodes_gdf, weight = None)
     
-    polygons_gdf = ci.polygonise_partitions(dual_regions, 'p_topo', method = None, buffer = 30)
-    edges_updated = ci.districts_to_edges_from_nodes(edges_gdf, primal_regions, 'p_topo')
+    polygons_gdf = ci.polygonise_partitions(dual_regions, 'p_topo', convex_hull = False, buffer = 30)
+    polygons_gdf = ci.polygonise_partitions(dual_regions, 'p_topo', convex_hull = True, buffer = 30)
+    edges_updated = ci.districts_to_edges_from_nodes(primal_regions, edges_gdf, 'p_topo')
     nodes_updated = ci.district_to_nodes_from_edges(nodes_gdf, dual_regions, 'p_topo')
     
     nodes_gdf_ped, edges_gdf_ped = ci.get_network_fromOSM(place, 'OSMplace', network_type = "walk", epsg = epsg)
