@@ -35,7 +35,8 @@ amenities = ['arts_centre', 'atm', 'bank', 'bar', 'bbq', 'bicycle_rental', 'bicy
 ## Test load.py
 def test_loadOSM():
     nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg, distance = None)
-    nodes_gdf2, edges_gdf2 = ci.get_network_fromOSM(OSMPolygon, 'OSMpolygon', network_type = "all", epsg = epsg, distance = None)
+    polygon = ci.convex_hull_wgs(edges_gdf)
+    nodes_gdf2, edges_gdf2 = ci.get_network_fromOSM(polygon, 'polygon', network_type = "all", epsg = epsg, distance = None)
     nodes_gdf3, edges_gdf3 = ci.get_network_fromOSM(address, 'distance_from_address', network_type = "all", epsg = epsg, distance = 2000)
     
     

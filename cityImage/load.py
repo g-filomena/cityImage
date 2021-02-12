@@ -9,8 +9,6 @@ import math
 from math import sqrt
 import ast
 import functools
-from osmnx import downloader
-
 
 from shapely.geometry import Point, LineString, Polygon, MultiPoint
 from shapely.ops import split
@@ -35,8 +33,9 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
     place: string
         name of cities or areas in OSM: when using "OSMpolygon" please provide the name of a "relation" in OSM as an argument of "place"; when using "distance_from_address"
         provide an existing OSM address; when using "OSMplace" provide an OSM place name
-    download_method: string {"OSMpolygon", "distance_from_address", "OSMplace"}
-        it indicates the method that should be used for downloading the data.
+    download_method: string {"polygon", "distance_from_address", "OSMplace"}
+        it indicates the method that should be used for downloading the data. When 'polygon' the shape to get network data within. coordinates should be in
+        unprojected latitude-longitude degrees (EPSG:4326).
     network_type: string {"walk", "bike", "drive", "drive_service", "all", "all_private", "none"}
         it indicates type of street or other network to extract - from OSMNx paramaters
     epsg: int
@@ -51,10 +50,8 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
     """
     
     # using OSMNx to download data from OpenStreetMap     
-    if download_method == "OSMpolygon":
-        query = downloader._osm_polygon_download(place, limit=1, polygon_geojson=1)
-        OSMplace = query[0]["display_name"]
-        G = ox.graph_from_place(OSMplace, network_type = network_type, simplify = True)
+    if download_method == "polygon":
+        G = ox.graph_from_polygon(place, network_type = network_type, simplify = True)
         
     elif download_method == "distance_from_address":
         G = ox.graph_from_address(place, network_type = network_type, distance = distance, simplify = True)
