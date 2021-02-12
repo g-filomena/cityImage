@@ -117,7 +117,7 @@ def test_clean_network():
     # _, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg, distance = None)
     # obstructions = buildings_gdf.copy()
     # buildings_gdf = ci.structural_score(buildings_gdf, obstructions, edges_gdf, max_expansion_distance = 300, distance_along = 50, radius = 150)
-    sight_lines = 
+    # sight_lines = 
     
     # buildings_gdf = ci.visibility_score(buildings_gdf, sight_lines = sight_lines)
     # buildings_gdf = ci.cultural_score_from_OSM(buildings_gdf)
