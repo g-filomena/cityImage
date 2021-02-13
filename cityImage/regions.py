@@ -251,8 +251,8 @@ def district_to_nodes_from_polygons(nodes_gdf, partitions_gdf, column):
     """
     
     nodes_gdf = nodes_gdf.copy()
-    nodes_gdf['column'] = nodes_gdf.apply(lambda row: _assign_district_to_node_from_polygons(row['geometry'], partitions_gdf, column), axis = 1)
-    nodes_gdf['new_cocolumnlumn'] = nodes_gdf.column.astype(int)
+    nodes_gdf[column] = nodes_gdf.apply(lambda row: _assign_district_to_node_from_polygons(row['geometry'], partitions_gdf, column), axis = 1)
+    nodes_gdf[column] = nodes_gdf.column]astype(int)
 
     return nodes_gdf
     

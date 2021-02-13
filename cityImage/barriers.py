@@ -223,7 +223,7 @@ def park_barriers(place, download_method, distance = 500.0, epsg = None, min_are
     
     parks_poly = parks_poly[parks_poly.leisure == 'park']
     parks_poly = parks_poly[~parks_poly['geometry'].is_empty] 
-    parks_poly.area = parks_poly.geometry.area
+    parks_poly['area'] = parks_poly.geometry.area
     parks_poly = parks_poly[parks_poly.area >= min_area]
  
     pp = parks_poly['geometry'].unary_union  
