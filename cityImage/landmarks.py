@@ -44,7 +44,8 @@ def get_buildings_fromSHP(path, epsg, case_study_area = None, distance_from_cent
     """   
     
     # trying reading buildings footprints shapefile from directory
-    obstructions_gdf = gpd.read_file(path).to_crs(epsg=epsg)  
+    crs = 'EPSG:'+epsg
+    obstructions_gdf = gpd.read_file(path).to_crs(crs)  
     
     # computing area, reassigning columns
     obstructions_gdf["area"] = obstructions_gdf["geometry"].area
@@ -125,7 +126,7 @@ def get_buildings_fromOSM(place, download_method, epsg = None, distance = 1000):
     if epsg is None:
         buildings_gdf = ox.projection.project_gdf(buildings_gdf)
     else:
-        crs = {'init': 'epsg:'+str(epsg), 'no_defs': True}
+        crs = 'EPSG:'+epsg
         buildings_gdf = buildings_gdf.to_crs(crs)
 
     buildings_gdf['land_use_raw'] = None

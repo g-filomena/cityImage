@@ -334,7 +334,7 @@ def amend_nodes_membership(nodes_gdf, edges_gdf, column, min_size_district = 10)
     nodes_gdf = _check_disconnected_districts(nodes_gdf, edges_gdf, column, min_size_district)
     while (999999 in nodes_gdf[column].unique()):
         nodes_gdf[column] = nodes_gdf.apply(lambda row: _amend_node_membership(row['nodeID'], nodes_gdf, edges_gdf, column), axis = 1)
-        nodes_gdf = _check_disconnected_districts(nodes_gdf, edges_gdf, min_size_district)
+        nodes_gdf = _check_disconnected_districts(nodes_gdf, edges_gdf, column, min_size_district)
     
     return nodes_gdf
 

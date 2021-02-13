@@ -93,29 +93,34 @@ def test_clean_network():
     clean_nodes_gdf, clean_edges_gdf = ci.clean_network(nodes_gdf, edges_gdf, dead_ends = True, remove_disconnected_islands = True, same_uv_edges = True, 
         self_loops = True, fix_topology = True)
 
-# def test_landmarks():
+def test_landmarks():
 
-    # buildings_gdf = ci.get_buildings_fromOSM(place, download_method = 'OSMPlace', epsg = epsg)
-    # buildings_gdf_address = ci.get_buildings_fromOSM(address, download_method = 'distance_from_address', epsg = epsg, distance = 1000)
-    # buildings_gdf_point = ci.get_buildings_fromOSM(location, download_method = 'from_point', epsg = epsg, distance = 1000)
+    buildings_gdf = ci.get_buildings_fromOSM(place, download_method = 'OSMPlace', epsg = epsg)
+    buildings_gdf_address = ci.get_buildings_fromOSM(address, download_method = 'distance_from_address', epsg = epsg, distance = 1000)
+    buildings_gdf_point = ci.get_buildings_fromOSM(location, download_method = 'from_point', epsg = epsg, distance = 1000)
     
-    # _, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg)
-    # obstructions = buildings_gdf.copy()
-    # buildings_gdf = ci.structural_score(buildings_gdf, obstructions, edges_gdf, max_expansion_distance = 300, distance_along = 50, radius = 150)
-    # sight_lines = 
+    epsg = 25832
+    input_path = "input/Muenster_buildings.shp'
+    buildings_shp = get_buildings_fromSHP(path, epsg, height_field = 'height', base_field = 'base', land_use_field = 'land_use')
+    _, edges_gdf = ci.get_network_fromOSM('Muenster, Germany' 'OSMplace', network_type = "drive", epsg = epsg)
+    obstructions = gpd.read_file("input/Muenster_obstructions.shp")
+    obstructions.index = obstructions.buildingID
+    ostructions.index.name = None
+    buildings_gdf = ci.structural_score(buildings_gdf, obstructions, edges_gdf, max_expansion_distance = 100, distance_along = 50, radius = 100)
+    sight_lines = gpd.read_file("input/Muenster_sight_lines.shp")
     
-    # buildings_gdf = ci.visibility_score(buildings_gdf, sight_lines = sight_lines)
-    # buildings_gdf = ci.cultural_score_from_OSM(buildings_gdf)
-    # buildings_gdf = ci.pragmatic_score(buildings_gdf, radius = 200)
+    buildings_gdf = ci.visibility_score(buildings_gdf, sight_lines = sight_lines)
+    buildings_gdf = ci.cultural_score_from_OSM(buildings_gdf)
+    buildings_gdf = ci.pragmatic_score(buildings_gdf, radius = 200)
     
-    # g_cW = {'vScore': 0.50, 'sScore' : 0.30, 'cScore': 0.20, 'pScore': 0.10}
-    # g_iW = {'vis': 0.50, 'fac': 0.30, 'height': 0.20, 'area': 0.30, 'a_vis':0.30, 'neigh': 0.20 , 'road': 0.20}
+    g_cW = {'vScore': 0.50, 'sScore' : 0.30, 'cScore': 0.20, 'pScore': 0.10}
+    g_iW = {'vis': 0.50, 'fac': 0.30, 'height': 0.20, 'area': 0.30, 'a_vis':0.30, 'neigh': 0.20 , 'road': 0.20}
 
-    # l_cW = {'vScore': 0.25, 'sScore' : 0.35, 'cScore':0.10 , 'pScore': 0.30}
-    # l_iW = {'vis': 0.50, 'fac': 0.30, 'height': 0.20, 'area': 0.40, 'a_vis': 0.00, 'neigh': 0.30 , 'road': 0.30}
+    l_cW = {'vScore': 0.25, 'sScore' : 0.35, 'cScore':0.10 , 'pScore': 0.30}
+    l_iW = {'vis': 0.50, 'fac': 0.30, 'height': 0.20, 'area': 0.40, 'a_vis': 0.00, 'neigh': 0.30 , 'road': 0.30}
     
-    # buildings_gdf =  ci.compute_global_scores(buildings_gdf, g_cW, g_iW)
-    # buildings_gdf = ci.compute_local_scores(buildings_gdf, l_cW, l_iW, radius = 1500)
+    buildings_gdf =  ci.compute_global_scores(buildings_gdf, g_cW, g_iW)
+    buildings_gdf = ci.compute_local_scores(buildings_gdf, l_cW, l_iW, radius = 1500)
     
 def test_regions():
         
