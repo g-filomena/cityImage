@@ -90,8 +90,7 @@ def test_centrality():
 
 def test_clean_network():
     nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg)
-    clean_nodes_gdf, clean_edges_gdf = ci.clean_network(nodes_gdf, edges_gdf, dead_ends = True, remove_disconnected_islands = True, same_uv_edges = True, 
-        self_loops = True, fix_topology = True)
+    nodes_gdf, edges_gdf = ci.simplify_pipeline(nodes_gdf, edges_gdf, radius = 12)
 
 def test_landmarks():
     
@@ -102,8 +101,8 @@ def test_landmarks():
     
     epsg = 25832
     input_path = 'input/Muenster_buildings.shp'
-    buildings_shp = get_buildings_fromSHP(path, epsg, height_field = 'height', base_field = 'base', land_use_field = 'land_use')
-    _, edges_gdf = ci.get_network_fromOSM('Muenster, Germany' 'OSMplace', network_type = "drive", epsg = epsg)
+    buildings_shp = get_buildings_fromSHP(path, epsg = epsg, height_field = 'height', base_field = 'base', land_use_field = 'land_use')
+    _, edges_gdf = ci.get_network_fromOSM('Muenster, Germany', 'OSMplace', network_type = "drive", epsg = epsg)
     obstructions = gpd.read_file('input/Muenster_obstructions.shp')
     obstructions.index = obstructions.buildingID
     ostructions.index.name = None
