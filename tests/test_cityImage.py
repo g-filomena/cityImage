@@ -94,8 +94,9 @@ def test_clean_network():
         self_loops = True, fix_topology = True)
 
 def test_landmarks():
-
-    buildings_gdf = ci.get_buildings_fromOSM(place, download_method = 'OSMPlace', epsg = epsg)
+    
+    epsg = 3003
+    buildings_gdf = ci.get_buildings_fromOSM(place, download_method = 'OSMplace', epsg = epsg)
     buildings_gdf_address = ci.get_buildings_fromOSM(address, download_method = 'distance_from_address', epsg = epsg, distance = 1000)
     buildings_gdf_point = ci.get_buildings_fromOSM(location, download_method = 'from_point', epsg = epsg, distance = 1000)
     
