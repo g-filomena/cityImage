@@ -76,29 +76,27 @@ def water_barriers(place, download_method, distance = 500.0, epsg = None):
     
     crs = 'EPSG:' + str(epsg)
     # rivers and canals
-    tags = {"waterway":"river", "waterway":"canal"}  
+    tags = {"waterway":True}  
     rivers = _download_geometries(place, download_method, tags, crs, distance)
+    rivers = rivers[(rivers.waterway == 'river') | (rivers.waterway == 'canal')]
     if "tunnel" in rivers.columns:
         rivers["tunnel"].fillna(0, inplace = True)
         rivers = rivers[rivers["tunnel"] == 0] 
-    rivers = rivers.unary_union
+        
     
-    to_remove = {"natural":"water", "water":"river", "water":"steam"}   
-    possible_duplicates = _download_geometries(place, download_method, to_remove, crs, distance)
-    pd = possible_duplicates.unary_union
-    rivers = rivers.difference(pd)
+    rivers = rivers.unary_union
     rivers = _simplify_barrier(rivers)
     rivers = gdf_from_geometries(rivers, crs)
     
     # lakes   
     tags = {"natural":"water"}
-    lakes = _download_geometries(place, download_method, tags, crs, distance)   
-    lakes = lakes.unary_union
+    lakes = _download_geometries(place, download_method, tags, crs, distance)  
+    to_remove = ['river', 'stream', 'canal', 'riverbank']
+    lakes = lakes[~lakes.water.isin(to_remove)]
+    lakes['area'] = lakes.geometry.area
+    lakes = lakes[lakes.area > 1000]
+    lakes = MultiLineString([poly.boundary for poly in lakes.geometry])
     
-    to_remove = {"water":"river", "waterway": True, "water":"steam"}   
-    possible_duplicates = _download_geometries(place, download_method, to_remove, crs, distance)
-    pd = possible_duplicates.unary_union
-    lakes = lakes.difference(pd)
     lakes = _simplify_barrier(lakes) 
     lakes = gdf_from_geometries(lakes, crs)
     lakes = lakes[lakes['length'] >=500]
@@ -178,18 +176,14 @@ def railway_barriers(place, download_method, distance = 500.0, epsg = None, keep
     crs = 'EPSG:' + str(epsg)
     tags = {"railway":"rail"}
     railways = _download_geometries(place, download_method, tags, crs, distance)
+    # removing light_rail, in case
+    if not keep_light_rail:
+        railways = railways[railways.railway != 'light_rail']
     if "tunnel" in railways.columns:
         railways["tunnel"].fillna(0, inplace = True)
         railways = railways[railways["tunnel"] == 0]     
-    r = railways.unary_union
     
-    # removing light_rail, in case
-    if not keep_light_rail:
-        to_remove = {"railway":"light_rail"}
-        light = _download_geometries(place, download_method, to_remove, crs, distance)
-        lr = light.unary_union
-        r = r.difference(lr)
-
+    r = railways.unary_union
     p = polygonize_full(r)
     railways = unary_union(p).buffer(10).boundary # to simpify a bit
     railways = _simplify_barrier(railways)

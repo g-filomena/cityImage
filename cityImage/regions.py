@@ -100,7 +100,7 @@ def polygonise_partitions(edges_gdf, column, convex_hull = True, buffer = 30):
     
     polygons = []
     partitionIDs = []
-    d = {'geometry' : polygons, 'districtID' : partitionIDs}
+    d = {'geometry' : polygons, column : partitionIDs}
 
     partitions = edges_gdf[column].unique()
     for i in partitions:
