@@ -100,14 +100,14 @@ def test_landmarks():
     buildings_gdf_point = ci.get_buildings_fromOSM(location, download_method = 'from_point', epsg = epsg, distance = 1000)
     
     epsg = 25832
-    input_path = "input/Muenster_buildings.shp'
+    input_path = 'input/Muenster_buildings.shp'
     buildings_shp = get_buildings_fromSHP(path, epsg, height_field = 'height', base_field = 'base', land_use_field = 'land_use')
     _, edges_gdf = ci.get_network_fromOSM('Muenster, Germany' 'OSMplace', network_type = "drive", epsg = epsg)
-    obstructions = gpd.read_file("input/Muenster_obstructions.shp")
+    obstructions = gpd.read_file('input/Muenster_obstructions.shp')
     obstructions.index = obstructions.buildingID
     ostructions.index.name = None
     buildings_gdf = ci.structural_score(buildings_gdf, obstructions, edges_gdf, max_expansion_distance = 100, distance_along = 50, radius = 100)
-    sight_lines = gpd.read_file("input/Muenster_sight_lines.shp")
+    sight_lines = gpd.read_file('input/Muenster_sight_lines.shp')
     
     buildings_gdf = ci.visibility_score(buildings_gdf, sight_lines = sight_lines)
     buildings_gdf = ci.cultural_score_from_OSM(buildings_gdf)
