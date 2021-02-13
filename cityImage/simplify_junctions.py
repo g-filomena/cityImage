@@ -507,6 +507,7 @@ def _check_indexes(nodes_gdf, edges_gdf):
     nodes_gdf.index, edges_gdf.index = nodes_gdf.nodeID, edges_gdf.edgeID
     nodes_gdf.index.name, edges_gdf.index.name = None, None
     edges_gdf = edges_gdf.where(pd.notnull(edges_gdf), None)
+    return nodes_gdf, edges_gdf
           
 
 def interpolate_on_center_line(ix_line, center_line, nodes_gdf, edges_gdf, first_node, last_node, nodes_traversed, 
