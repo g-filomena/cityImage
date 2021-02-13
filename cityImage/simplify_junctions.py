@@ -81,8 +81,9 @@ def simplify_dual_lines_junctions(nodes_gdf, edges_gdf, max_difference_length = 
             possible_matches = possible_matches[~possible_matches.index.isin(processed)]
             
             possible_matches = possible_matches[possible_matches.geometry.length <  row[ix_geo].length]
+            possible_matches['continuation'] = False
             possible_matches['continuation'] = possible_matches.apply(lambda c: is_continuation(current_index, c.name, edges_gdf), axis = 1)
-            possible_mathces = possible_matches[possible_matches.continuation]
+            possible_matches = possible_matches[possible_matches.continuation]
             
             if len(possible_matches) == 0: 
                 continue

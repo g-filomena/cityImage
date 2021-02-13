@@ -114,11 +114,11 @@ def get_buildings_fromOSM(place, download_method, epsg = None, distance = 1000):
     columns_to_keep = ['amenity', 'building', 'geometry', 'historic', 'land_use_raw']
 
     if download_method == "distance_from_address": 
-        buildings_gdf = ox.geometries_from_address(address = place, distance = distance, tags={"building": True})
+        buildings_gdf = ox.geometries_from_address(address = place, dist = distance, tags={"building": True})
     elif download_method == "OSMplace": 
         buildings_gdf = ox.geometries_from_place(place, tags={"building": True})
     elif download_method == "from_point": 
-        buildings_gdf = ox.geometries_from_point(point = place, distance = distance, tags={"building": True})
+        buildings_gdf = ox.geometries_from_point(point = place, dist = distance, tags={"building": True})
     elif download_method == "OSMpolygon": 
         buildings_gdf = ox.geometries_from_polygon(place, tags={"building": True})
     else: raise downloadError('Provide a download method amongst {"from_point", "distance_from_address", "OSMplace", "OSMpolygon}')
@@ -515,11 +515,11 @@ def get_historical_buildings_fromOSM(place, download_method, epsg = None, distan
     columns_to_keep = ['geometry', 'historic', 'heritage']
 
     if download_method == "distance_from_address": 
-        historic_buildings = ox.geometries_from_address(address = place, distance = distance, tags={"building": True})
+        historic_buildings = ox.geometries_from_address(address = place, dist = distance, tags={"building": True})
     elif download_method == "OSMplace": 
         historic_buildings = ox.geometries_from_place(place, tags={"building": True})
     elif download_method == "from_point": 
-        historic_buildings = ox.geometries_from_point(point = place, distance = distance, tags={"building": True})
+        historic_buildings = ox.geometries_from_point(point = place, dist = distance, tags={"building": True})
     else: raise downloadError('Provide a download method amongst {"from_point", "distance_from_address", "OSMplace"}')
     
     historic_buildings = historic_buildings[['geometry', 'historic', 'heritage']]
