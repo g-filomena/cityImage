@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 import geopandas as gpd
 from shapely.geometry import Point, LineString, Polygon, MultiPoint
-from shapely.ops import linemerge, polygonize_full
+from shapely.ops import linemerge, polygonize_full, nearest_points
 import statistics
 
 pd.set_option('precision', 10)
