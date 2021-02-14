@@ -119,7 +119,7 @@ def test_landmarks():
     l_cW = {'vScore': 0.25, 'sScore' : 0.35, 'cScore':0.10 , 'pScore': 0.30}
     l_iW = {'vis': 0.50, 'fac': 0.30, 'height': 0.20, 'area': 0.40, 'a_vis': 0.00, 'neigh': 0.30 , 'road': 0.30}
     
-    buildings_gdf =  ci.compute_global_scores(buildings_gdf, g_cW, g_iW)
+    buildings_gdf = ci.compute_global_scores(buildings_gdf, g_cW, g_iW)
     buildings_gdf = ci.compute_local_scores(buildings_gdf, l_cW, l_iW, radius = 1500)
     
 def test_regions():
