@@ -101,7 +101,7 @@ def test_landmarks():
     
     epsg = 25832
     input_path = 'input/Muenster_buildings.shp'
-    buildings_shp = ci.get_buildings_fromSHP(path, epsg = epsg, height_field = 'height', base_field = 'base', land_use_field = 'land_use')
+    buildings_shp = ci.get_buildings_fromSHP(input_path, epsg = epsg, height_field = 'height', base_field = 'base', land_use_field = 'land_use')
     _, edges_gdf = ci.get_network_fromOSM('Muenster, Germany', 'OSMplace', network_type = "drive", epsg = epsg)
     obstructions = gpd.read_file('input/Muenster_obstructions.shp')
     obstructions.index = obstructions.buildingID
