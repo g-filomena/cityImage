@@ -1,13 +1,15 @@
 """Unit tests for the package."""
 
+import osmnx as ox
 import networkx as nx
 import numpy as np
 import pandas as pd
 import pytest
+import geopandas as gpd
 
 from shapely.geometry import LineString, MultiLineString, MultiPoint, MultiPolygon, Point, Polygon
 
-import osmnx as ox
+
 import cityImage as ci
 
 # define queries to use throughout tests
