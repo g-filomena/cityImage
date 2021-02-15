@@ -97,7 +97,7 @@ def test_clean_network():
 def test_landmarks():
     
     epsg = 3003
-    buildings_gdf_susa = ci.get_buildings_fromOSM(place, download_method = 'OSMplace', epsg = epsg)
+    buildings_gdf = ci.get_buildings_fromOSM(place, download_method = 'OSMplace', epsg = epsg)
     buildings_gdf_address = ci.get_buildings_fromOSM(address, download_method = 'distance_from_address', epsg = epsg, distance = 1000)
     buildings_gdf_point = ci.get_buildings_fromOSM(location, download_method = 'from_point', epsg = epsg, distance = 1000)
     
@@ -105,13 +105,14 @@ def test_landmarks():
     input_path = 'tests/input/Muenster_buildings.shp'
     buildings_shp, _ = ci.get_buildings_fromSHP(input_path, epsg = epsg, height_field = 'height', base_field = 'base', land_use_field = 'land_use')
     sight_lines = gpd.read_file('tests/input/Muenster_sight_lines.shp')
-    buildings_gdf, _ = ci.visibility_score(buildings_shp, sight_lines = sight_lines)
+    buildings_shp, _ = ci.visibility_score(buildings_shp, sight_lines = sight_lines)
     
     _, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "drive", epsg = epsg)
-    buildings_gdf_susa = ci.structural_score(buildings_gdf_susa, buildings_gdf_susa, edges_gdf, max_expansion_distance = 100, distance_along = 50, radius = 100)
-    buildings_gdf_susa = ci.cultural_score_from_OSM(buildings_gdf_susa)
-    buildings_gdf_susa['land_use'] = buildings_gdf_susa['land_use_raw']
-    buildings_gdf_susa = ci.pragmatic_score(buildings_gdf_susa, radius = 200)
+    buildings_gdf = ci.structural_score(buildings_gdf, buildings_gdf, edges_gdf, max_expansion_distance = 100, distance_along = 50, radius = 100)
+    buildings_gdf = ci.cultural_score_from_OSM(buildings_gdf)
+    buildings_gdf, _ = ci.visibility_score(buildings_gdf)
+    buildings_gdf['land_use'] = buildings_gdf['land_use_raw']
+    buildings_gdf = ci.pragmatic_score(buildings_gdf, radius = 200)
     
     g_cW = {'vScore': 0.50, 'sScore' : 0.30, 'cScore': 0.20, 'pScore': 0.10}
     g_iW = {'vis': 0.50, 'fac': 0.30, 'height': 0.20, 'area': 0.30, 'a_vis':0.30, 'neigh': 0.20 , 'road': 0.20}
@@ -119,8 +120,8 @@ def test_landmarks():
     l_cW = {'vScore': 0.25, 'sScore' : 0.35, 'cScore':0.10 , 'pScore': 0.30}
     l_iW = {'vis': 0.50, 'fac': 0.30, 'height': 0.20, 'area': 0.40, 'a_vis': 0.00, 'neigh': 0.30 , 'road': 0.30}
     
-    buildings_gdf_susa = ci.compute_global_scores(buildings_gdf_susa, g_cW, g_iW)
-    buildings_gdf_susa = ci.compute_local_scores(buildings_gdf_susa, l_cW, l_iW, radius = 1500)
+    buildings_gdf = ci.compute_global_scores(buildings_gdf, g_cW, g_iW)
+    buildings_gdf = ci.compute_local_scores(buildings_gdf, l_cW, l_iW, radius = 1500)
     
 def test_regions():
         
