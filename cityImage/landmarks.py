@@ -421,19 +421,20 @@ def visibility_score(buildings_gdf, sight_lines = pd.DataFrame({'a' : []}), meth
     buildings_gdf: Polygon GeoDataFrame
         the updated buildings GeoDataFrame
     """  
+
+    
+    buildings_gdf = buildings_gdf.copy()
+    buildings_gdf["fac"] = 0.0
+    if ("height" not in buildings_gdf.columns) | (sight_lines.empty): 
+        return buildings_gdf
+    
     sight_lines = sight_lines.copy()
     sight_lines['nodeID'] = sight_lines['nodeID'].astype(int)
     sight_lines['buildingID'] = sight_lines['buildingID'].astype(int)
     
-    buildings_gdf = buildings_gdf.copy()
-    buildings_gdf["fac"] = 0.0
-    if "height" not in buildings_gdf.columns: 
-        return buildings_gdf
-        
     #facade area (roughly computed)
     buildings_gdf["fac"] = buildings_gdf.apply(lambda row: _facade_area(row["geometry"], row["height"]), axis = 1)
-    if sight_lines.empty: 
-        return buildings_gdf
+
     
     # 3d visibility
     sight_lines = sight_lines.copy()
