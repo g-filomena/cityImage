@@ -107,7 +107,7 @@ def test_landmarks():
     _, edges_gdf = ci.get_network_fromOSM('Muenster, Germany', 'OSMplace', network_type = "drive", epsg = epsg)
     obstructions = gpd.read_file('tests/input/Muenster_obstructions.shp')
     obstructions.index = obstructions.buildingID
-    ostructions.index.name = None
+    obstructions.index.name = None
     buildings_gdf = ci.structural_score(buildings_gdf, obstructions, edges_gdf, max_expansion_distance = 100, distance_along = 50, radius = 100)
     sight_lines = gpd.read_file('tests/input/Muenster_sight_lines.shp')
     
