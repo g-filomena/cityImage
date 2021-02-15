@@ -103,7 +103,7 @@ def test_landmarks():
     
     epsg = 25832
     input_path = 'tests/input/Muenster_buildings.shp'
-    buildings_shp = ci.get_buildings_fromSHP(input_path, epsg = epsg, height_field = 'height', base_field = 'base', land_use_field = 'land_use')
+    buildings_shp, _ = ci.get_buildings_fromSHP(input_path, epsg = epsg, height_field = 'height', base_field = 'base', land_use_field = 'land_use')
     sight_lines = gpd.read_file('tests/input/Muenster_sight_lines.shp')
     buildings_gdf = ci.visibility_score(buildings_shp, sight_lines = sight_lines)
     
