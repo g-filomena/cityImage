@@ -720,9 +720,7 @@ def compute_global_scores(buildings_gdf, g_cW, g_iW):
             g_cW['cScore'] += to_add
             g_cW['pScore'] += to_add
             g_cW['vScore'] = 0.0
-    else if:
-        
-    
+      
     for i in col: 
         if buildings_gdf[i].max() == 0.0: 
             buildings_gdf[i+"_sc"] = 0.0
