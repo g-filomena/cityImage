@@ -712,8 +712,15 @@ def compute_global_scores(buildings_gdf, g_cW, g_iW):
     col = ["3dvis", "fac", "height", "area","2dvis", "cult", "prag"]
     col_inverse = ["neigh", "road"]
     
-    if "height" not in buildings_gdf.columns: 
-        buildings_gdf['height'] = 0.0
+    if ("height" not in buildings_gdf.columns) | (("height" in buildings_gdf.columns) & (buildings_gdf.height.max == 0.0)):
+        buildings_gdf[['height','3dvis', 'fac']]  = 0.0
+        if g_cW['vScore'] != 0.0:
+            to_add = g_cW['vScore']/3
+            g_cW['sScore'] += to_add
+            g_cW['cScore'] += to_add
+            g_cW['pScore'] += to_add
+            g_cW['vScore'] = 0.0
+        
     
     for i in col: 
         if buildings_gdf[i].max() == 0.0: 
