@@ -107,7 +107,7 @@ def test_landmarks():
     sight_lines = gpd.read_file('tests/input/Muenster_sight_lines.shp')
     buildings_gdf = ci.visibility_score(buildings_shp, sight_lines = sight_lines)
     
-        _, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "drive", epsg = epsg)
+    _, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "drive", epsg = epsg)
     buildings_gdf_susa = ci.structural_score(buildings_gdf_susa, buildings_gdf_susa, edges_gdf, max_expansion_distance = 100, distance_along = 50, radius = 100)
     buildings_gdf_susa = ci.cultural_score_from_OSM(buildings_gdf_susa)
     buildings_gdf_susa['land_use'] = buildings_gdf_susa['land_use_raw']
