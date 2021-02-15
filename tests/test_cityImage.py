@@ -97,23 +97,21 @@ def test_clean_network():
 def test_landmarks():
     
     epsg = 3003
-    buildings_gdf = ci.get_buildings_fromOSM(place, download_method = 'OSMplace', epsg = epsg)
+    buildings_gdf_susa = ci.get_buildings_fromOSM(place, download_method = 'OSMplace', epsg = epsg)
     buildings_gdf_address = ci.get_buildings_fromOSM(address, download_method = 'distance_from_address', epsg = epsg, distance = 1000)
     buildings_gdf_point = ci.get_buildings_fromOSM(location, download_method = 'from_point', epsg = epsg, distance = 1000)
     
     epsg = 25832
     input_path = 'tests/input/Muenster_buildings.shp'
     buildings_shp = ci.get_buildings_fromSHP(input_path, epsg = epsg, height_field = 'height', base_field = 'base', land_use_field = 'land_use')
-    _, edges_gdf = ci.get_network_fromOSM('Muenster, Germany', 'OSMplace', network_type = "drive", epsg = epsg)
-    obstructions = gpd.read_file('tests/input/Muenster_obstructions.shp')
-    obstructions.index = obstructions.buildingID
-    obstructions.index.name = None
-    buildings_gdf = ci.structural_score(buildings_gdf, obstructions, edges_gdf, max_expansion_distance = 100, distance_along = 50, radius = 100)
     sight_lines = gpd.read_file('tests/input/Muenster_sight_lines.shp')
+    buildings_gdf = ci.visibility_score(buildings_shp, sight_lines = sight_lines)
     
-    buildings_gdf = ci.visibility_score(buildings_gdf, sight_lines = sight_lines)
-    buildings_gdf = ci.cultural_score_from_OSM(buildings_gdf)
-    buildings_gdf = ci.pragmatic_score(buildings_gdf, radius = 200)
+        _, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "drive", epsg = epsg)
+    buildings_gdf_susa = ci.structural_score(buildings_gdf_susa, buildings_gdf_susa, edges_gdf, max_expansion_distance = 100, distance_along = 50, radius = 100)
+    buildings_gdf_susa = ci.cultural_score_from_OSM(buildings_gdf_susa)
+    buildings_gdf_susa['land_use'] = buildings_gdf_susa['land_use_raw']
+    buildings_gdf_susa = ci.pragmatic_score(buildings_gdf_susa, radius = 200)
     
     g_cW = {'vScore': 0.50, 'sScore' : 0.30, 'cScore': 0.20, 'pScore': 0.10}
     g_iW = {'vis': 0.50, 'fac': 0.30, 'height': 0.20, 'area': 0.30, 'a_vis':0.30, 'neigh': 0.20 , 'road': 0.20}
@@ -144,3 +142,4 @@ def test_regions():
     min_size_district = 10
     nodes_gdf_ped = ci.amend_nodes_membership(nodes_gdf_ped, edges_gdf_ped, 'p_topo', min_size_district = min_size_district)
     nodes_gdf_ped = ci.find_gateways(nodes_gdf_ped, edges_gdf_ped, 'p_topo')
+
