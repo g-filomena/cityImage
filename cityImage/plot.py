@@ -611,9 +611,10 @@ def _set_colorbar(fig, pos, sm, ticks, norm, symbol, text_color, font_size, only
     
     if symbol:
         cax.set_yticklabels([round(t,1) if t < norm.vmax else "> "+str(round(t,1)) for t in cax.get_yticks()])
-    else: cax.set_yticklabels([round(t,1) for t in cax.get_yticks()])
+    else: 
+        cax.set_yticklabels([round(t,1) for t in cax.get_yticks()])
     
-    plt.setp(plt.getp(cax.axes, "yticklabels"), size = 0, color = text_color, fontfamily = 'Times New Roman', fontsize=font_size)
+    plt.setp(plt.getp(cax.axes, "yticklabels"), color = text_color, fontfamily = 'Times New Roman', fontsize=font_size)
              
 def normalize(n, range1, range2):
     delta1 = range1[1] - range1[0]
