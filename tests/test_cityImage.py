@@ -132,7 +132,7 @@ def test_landmarks():
     epsg = 25832
     input_path = 'tests/input/Muenster_buildings.shp'
     
-    buildings_shp, _ = ci.get_buildings_fromSHP(input_path, epsg = epsg, height_field = 'height', base_field = 'base', land_use_field = 'land_use')
+    # buildings_shp, _ = ci.get_buildings_fromSHP(input_path, epsg = epsg, height_field = 'height', base_field = 'base', land_use_field = 'land_use')
     # buildings_attributes = ci.attach_attributes(buildings_gdf, attributes_gdf, height_field, base_field, land_use_field)
     
     buildings_shp, _ = ci.get_buildings_fromSHP(input_path, epsg = epsg, height_field = 'height', base_field = 'base', land_use_field = 'land_use')
@@ -157,7 +157,7 @@ def test_landmarks():
     buildings_gdf = ci.compute_local_scores(buildings_gdf, l_cW, l_iW, radius = 1500)
 
     cmap = ci.random_colors_list_rgb(nlabels = len(buildings_gdf.land_use.unique()))
-    plot_buildings = ci.plot_gdf(buildings_gdf, column = 'land_use', black_background = True, fig_size = 15, cmap = cmap, norm = None, legend = True)
+    plot_buildings = ci.plot_gdf(buildings_gdf, column = 'land_use', black_background = True, fig_size = 15, legend = True)
     plot_flat = ci.plot_gdf(buildings_gdf, black_background = True, fig_size = 15)
     
     
