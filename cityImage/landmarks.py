@@ -513,7 +513,7 @@ def get_historical_buildings_fromOSM(place, download_method, epsg = None, distan
     GeoDataFrames
     """   
     
-    columns_to_keep = ['geometry', 'historic', 'heritage']
+    columns = ['geometry', 'historic']
 
     if download_method == "distance_from_address": 
         historic_buildings = ox.geometries_from_address(address = place, dist = distance, tags={"building": True})
@@ -521,15 +521,22 @@ def get_historical_buildings_fromOSM(place, download_method, epsg = None, distan
         historic_buildings = ox.geometries_from_place(place, tags={"building": True})
     elif download_method == "from_point": 
         historic_buildings = ox.geometries_from_point(center_point = place, dist = distance, tags={"building": True})
-    else: raise downloadError('Provide a download method amongst {"from_point", "distance_from_address", "OSMplace"}')
+    else: 
+        raise downloadError('Provide a download method amongst {"from_point", "distance_from_address", "OSMplace"}')
     
-    historic_buildings = historic_buildings[['geometry', 'historic', 'heritage']]
-    historic_buildings = historic_buildings[~(historic_buildings.historic.isnull() & historic_buildings.heritage.isnull())]
+    if 'heritage' in historic_buildings:
+        columns.append('heritage')
+    historic_buildings = historic_buildings[columns]
+    
+    if 'heritage' in historic_buildings:
+        historic_buildings = historic_buildings[~(historic_buildings.historic.isnull() & historic_buildings.heritage.isnull())]
+    else:
+        historic_buildings = historic_buildings[~historic_buildings.historic.isnull()]
     
     if epsg is None:
         historic_buildings = ox.projection.project_gdf(historic_buildings)
     else:
-        crs = {'init': 'epsg:'+str(epsg), 'no_defs': True}
+        crs = 'EPSG:'+str(epsg)
         historic_buildings = historic_buildings.to_crs(crs)
 
     historic_buildings["historic"] = 1

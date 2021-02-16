@@ -36,7 +36,7 @@ def test_loadOSM():
 def test_loadSHP_topology():  
     epsg = 2019 
     input_path = 'tests/input/York_street_network.shp'
-    dict_columns = {"roadType_field": "highway",  "direction_field": "oneway", "speed_field": None, "name_field": "name"}    
+    dict_columns = {"roadType_field": "type",  "direction_field": "oneway", "speed_field": "maxspeed", "name_field": "name"}    
     nodes_gdf, edges_gdf = ci.get_network_fromSHP(input_path, epsg, dict_columns = dict_columns, other_columns = [])
     # fix topology
     nodes_gdf, edges_gdf = clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_islands = True, same_uv_edges = True, self_loops = False, fix_topology = True)

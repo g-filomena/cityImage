@@ -225,7 +225,7 @@ def centrality(G, nodes_gdf, measure, weight, normalized = False):
     elif measure == "straightness_centrality": 
         centrality = straightness_centrality(G, weight = weight, normalized=normalized)
     elif measure == "closeness_centrality": 
-        centrality = nx.closeness_centrality(G, weight = weight, normalized=normalized)
+        centrality = nx.closeness_centrality(G, distance = weight, normalized=normalized)
     elif measure == "information_centrality": 
         centrality = nx.current_flow_betweenness_centrality(G, weight = weight, solver ="lu", normalized=normalized) 
     else:
