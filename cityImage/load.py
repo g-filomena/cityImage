@@ -48,7 +48,7 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
     nodes_gdf, edges_gdf: Tuple of GeoDataFrames
         the junction and street segments GeoDataFrames
     """
-    if epsg is not None
+    if epsg is not None:
         crs = 'EPSG:' + str(epsg)
         
     # using OSMNx to download data from OpenStreetMap     
