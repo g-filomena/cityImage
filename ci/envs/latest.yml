@@ -9,6 +9,7 @@ dependencies:
   - networkx
   - matplotlib
   - python-louvain
+  - mapclassify
   # testing
   - pytest
   - pytest-cov
