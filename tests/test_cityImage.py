@@ -104,7 +104,7 @@ def test_centrality():
         nodes_gdf[columns[n]] = nodes_gdf.nodeID.map(c)
     
     cmap = ci.kindlmann()
-    base_map = {'gdf_base_map': edges_gdf, 'base_map_alpha' : 0.4, 'base_map_lw' : 1.1, 'base_map_zorder' = 0}
+    base_map = {'gdf_base_map': edges_gdf, 'base_map_alpha' : 0.4, 'base_map_lw' : 1.1, 'base_map_zorder' : 0}
     plot = ci.plot_gdf_grid(gdf = nodes_gdf, columns = columns, black_background = True, fig_size = 15, scheme = 'Lynch_Breaks', 
         cmap = cmap, legend = True, axis_frame = False, ms = None, ms_factor = 30) 
     
