@@ -80,11 +80,8 @@ def test_angles():
 ## Test centrality.py
 def test_centrality():
     nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg)
-
     graph = ci.graph_fromGDF(nodes_gdf, edges_gdf, nodeID = 'nodeID')
-
     weight = 'length'
-
     
     services = ox.geometries_from_address(address, tags = {'amenity':True}, dist = distance).to_crs(epsg=epsg)
     services = services[services['geometry'].geom_type == 'Point']
@@ -92,10 +89,10 @@ def test_centrality():
     rc = ci.reach_centrality(graph,  weight = weight, radius = 400, attribute = 'services')
     
     measure = 'betweenness_centrality'
-    bc = ci.centrality(graph, nodes_gdf, measure = 'betweenness_centrality', weight, normalized = False)
-    sc = ci.centrality(graph, nodes_gdf, measure = 'straightness_centrality', weight, normalized = False)
-    cc = ci.centrality(graph, nodes_gdf, measure = 'closeness_centrality', weight, normalized = False)
-    ic = ci.centrality(graph, nodes_gdf, measure = 'information_centrality', weight, normalized = False)
+    bc = ci.centrality(graph, nodes_gdf, measure = 'betweenness_centrality', weight = weight, normalized = False)
+    sc = ci.centrality(graph, nodes_gdf, measure = 'straightness_centrality', weight = weight, normalized = False)
+    cc = ci.centrality(graph, nodes_gdf, measure = 'closeness_centrality', weight = weight, normalized = False)
+    ic = ci.centrality(graph, nodes_gdf, measure = 'information_centrality', weight = weight, normalized = False)
     Eb = nx.edge_betweenness_centrality(graph, weight = weight, normalized = False)
     edges_gdf = ci.append_edges_metrics(edges_gdf, graph, [Eb], ['Eb'])
 
