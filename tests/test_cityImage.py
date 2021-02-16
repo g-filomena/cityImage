@@ -25,21 +25,21 @@ nodes_gdf, edges_gdf = None, None
 graph = None
 
 ## Test load.py
-def test_loadOSM():
+# def test_loadOSM():
 
-    nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg)
-    polygon = ci.convex_hull_wgs(edges_gdf)
-    nodes_gdf2, edges_gdf2 = ci.get_network_fromOSM(polygon, 'polygon', network_type = "all", epsg = epsg)
-    nodes_gdf3, edges_gdf3 = ci.get_network_fromOSM(address, 'distance_from_address', network_type = "all", epsg = epsg, distance = distance)
+    # nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg)
+    # polygon = ci.convex_hull_wgs(edges_gdf)
+    # nodes_gdf2, edges_gdf2 = ci.get_network_fromOSM(polygon, 'polygon', network_type = "all", epsg = epsg)
+    # nodes_gdf3, edges_gdf3 = ci.get_network_fromOSM(address, 'distance_from_address', network_type = "all", epsg = epsg, distance = distance)
     
     
-def test_loadSHP_topology():  
-    epsg = 2019 
-    input_path = 'tests/input/York_street_network.shp'
-    dict_columns = {"roadType_field": "type",  "direction_field": "oneway", "speed_field": "maxspeed", "name_field": "name"}    
-    nodes_gdf, edges_gdf = ci.get_network_fromSHP(input_path, epsg, dict_columns = dict_columns, other_columns = [])
+# def test_loadSHP_topology():  
+    # epsg = 2019 
+    # input_path = 'tests/input/York_street_network.shp'
+    # dict_columns = {"roadType_field": "type",  "direction_field": "oneway", "speed_field": "maxspeed", "name_field": "name"}    
+    # nodes_gdf, edges_gdf = ci.get_network_fromSHP(input_path, epsg, dict_columns = dict_columns, other_columns = [])
     # fix topology
-    nodes_gdf, edges_gdf = ci.clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_islands = True, same_uv_edges = True, self_loops = False, fix_topology = True)
+    # nodes_gdf, edges_gdf = ci.clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_islands = True, same_uv_edges = True, self_loops = False, fix_topology = True)
     
 
 # Test graph.py
@@ -63,9 +63,9 @@ def test_loadSHP_topology():
     # edges_gdf_updated = ci.along_water(edges_gdf, barriers_gdf)
     # edges_gdf_updated = ci.along_within_parks(edges_gdf, barriers_gdf)
     # edges_gdf_updated = ci.assign_structuring_barriers(edges_gdf_updated, barriers_gdf)
-    def plot_barriers(barriers_gdf, lw = 1.1, title = "Plot", legend = False, axis_frame = False, black_background = True,                 
-               fig_size = 15, gdf_base_map = pd.DataFrame({"a" : []}), base_map_color = None, base_map_alpha = 0.4,
-               base_map_lw = 1.1, base_map_ms = 2.0, base_map_zorder = 0):
+    # def plot_barriers(barriers_gdf, lw = 1.1, title = "Plot", legend = False, axis_frame = False, black_background = True,                 
+               # fig_size = 15, gdf_base_map = pd.DataFrame({"a" : []}), base_map_color = None, base_map_alpha = 0.4,
+               # base_map_lw = 1.1, base_map_ms = 2.0, base_map_zorder = 0):
 
 # Test angles.py
 # def test_angles():
