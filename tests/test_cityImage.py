@@ -157,8 +157,8 @@ def test_landmarks():
     buildings_gdf = ci.compute_local_scores(buildings_gdf, l_cW, l_iW, radius = 1500)
 
     cmap = ci.random_colors_list_rgb(nlabels = len(buildings_gdf.land_use.unique()))
-    plot_buildings = ci.plot_gdf(buildings, column = 'land_use', black_background = True, fig_size = 15, cmap = cmap, norm = None, legend = True)
-    plot_flat = ci.plot_gdf(buildings, black_background = True, fig_size = 15)
+    plot_buildings = ci.plot_gdf(buildings_gdf, column = 'land_use', black_background = True, fig_size = 15, cmap = cmap, norm = None, legend = True)
+    plot_flat = ci.plot_gdf(buildings_gdf, black_background = True, fig_size = 15)
     
     
 def test_regions():
