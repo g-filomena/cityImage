@@ -106,7 +106,7 @@ def test_centrality():
     cmap = ci.kindlmann()
     base_map_dict = {'gdf_base_map': edges_gdf, 'base_map_alpha' : 0.4, 'base_map_lw' : 1.1, 'base_map_zorder' : 0}
     
-    plot = ci.plot_gdf(gdf = nodes_gdf, columns = columns, black_background = True, fig_size = 15, scheme = 'Lynch_Breaks', 
+    plot = ci.plot_gdf(gdf = nodes_gdf, column = 'Bc', black_background = True, fig_size = 15, scheme = 'Lynch_Breaks', 
         cmap = cmap, legend = True, axis_frame = True, ms = 25, **base_map_dict) 
     
     cmap = ci.cmap_three_colors('yewllo', 'orange', 'red')
