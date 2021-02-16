@@ -63,6 +63,9 @@ def test_loadSHP_topology():
     # edges_gdf_updated = ci.along_water(edges_gdf, barriers_gdf)
     # edges_gdf_updated = ci.along_within_parks(edges_gdf, barriers_gdf)
     # edges_gdf_updated = ci.assign_structuring_barriers(edges_gdf_updated, barriers_gdf)
+    def plot_barriers(barriers_gdf, lw = 1.1, title = "Plot", legend = False, axis_frame = False, black_background = True,                 
+               fig_size = 15, gdf_base_map = pd.DataFrame({"a" : []}), base_map_color = None, base_map_alpha = 0.4,
+               base_map_lw = 1.1, base_map_ms = 2.0, base_map_zorder = 0):
 
 # Test angles.py
 # def test_angles():
@@ -78,23 +81,40 @@ def test_loadSHP_topology():
     # angle_angular = ci.angle_line_geometries(line_geometryA, line_geometryB, degree = True, deflection = True, angular_change = True)
     
 # Test centrality.py
-# def test_centrality():
-    # nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg)
-    # graph = ci.graph_fromGDF(nodes_gdf, edges_gdf, nodeID = 'nodeID')
-    # weight = 'length'
+def test_centrality():
+    nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg)
+    graph = ci.graph_fromGDF(nodes_gdf, edges_gdf, nodeID = 'nodeID')
+    weight = 'length'
     
-    # services = ox.geometries_from_address(address, tags = {'amenity':True}, dist = distance).to_crs(epsg=epsg)
-    # services = services[services['geometry'].geom_type == 'Point']
-    # nodes_gdf = ci.weight_nodes(nodes_gdf, services, graph, field_name = 'services', radius = 50)
-    # rc = ci.reach_centrality(graph,  weight = weight, radius = 400, attribute = 'services')
+    services = ox.geometries_from_address(address, tags = {'amenity':True}, dist = distance).to_crs(epsg=epsg)
+    services = services[services['geometry'].geom_type == 'Point']
+    nodes_gdf = ci.weight_nodes(nodes_gdf, services, graph, field_name = 'services', radius = 50)
+    rc = ci.reach_centrality(graph,  weight = weight, radius = 400, attribute = 'services')
     
-    # measure = 'betweenness_centrality'
-    # bc = ci.centrality(graph, nodes_gdf, measure = 'betweenness_centrality', weight = weight, normalized = False)
-    # sc = ci.centrality(graph, nodes_gdf, measure = 'straightness_centrality', weight = weight, normalized = False)
-    # cc = ci.centrality(graph, nodes_gdf, measure = 'closeness_centrality', weight = weight, normalized = False)
-    # ic = ci.centrality(graph, nodes_gdf, measure = 'information_centrality', weight = weight, normalized = False)
-    # Eb = nx.edge_betweenness_centrality(graph, weight = weight, normalized = False)
-    # edges_gdf = ci.append_edges_metrics(edges_gdf, graph, [Eb], ['Eb'])
+    measure = 'betweenness_centrality'
+    Bc = ci.centrality(graph, nodes_gdf, measure = 'betweenness_centrality', weight = weight, normalized = False)
+    Sc = ci.centrality(graph, nodes_gdf, measure = 'straightness_centrality', weight = weight, normalized = False)
+    Cc = ci.centrality(graph, nodes_gdf, measure = 'closeness_centrality', weight = weight, normalized = False)
+    Ic = ci.centrality(graph, nodes_gdf, measure = 'information_centrality', weight = weight, normalized = False)
+    
+    ## Appending the attributes to the geodataframe
+    dicts = [Bc, Sc, Cc, Ic]
+    columns = ['Bc', 'Sc', 'Cc', 'Ic']
+    for n,c in enumerate(dicts): 
+        nodes_gdf[columns[n]] = nodes_gdf.nodeID.map(c)
+    
+    cmap = ci.kindlmann()
+    base_map = {'gdf_base_map': edges_gdf, 'base_map_alpha' : 0.4, 'base_map_lw' : 1.1, 'base_map_zorder' = 0}
+    plot = ci.plot_gdf_grid(gdf = nodes_gdf, columns = columns, black_background = True, fig_size = 15, scheme = 'Lynch_Breaks', 
+        cmap = cmap, legend = True, axis_frame = False, ms = None, ms_factor = 30) 
+    
+    Eb = nx.edge_betweenness_centrality(graph, weight = weight, normalized = False)
+    edges_gdf = ci.append_edges_metrics(edges_gdf, graph, [Eb], ['Eb'])
+    
+    cbar = {'bar' : True, 'cbar_ticks' : 5, 'cbar_max_symbol' : False, 'only_min_max' : False}
+    cmap = ci.cmap_two_colors('red', 'blue')
+    plot_edges = ci.plot_gdf(edges_gdf, column = 'Eb', black_background = False, fig_size = 15, scheme = 'Fisher_Jenks', classes = 6, cmap = None, color = None, alpha = None, 
+                    legend = False, c axis_frame = False, ms = None, ms_factor = None, lw = None, lw_factor = None, cbar)
 
 # def test_clean_network():
     # nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg)
@@ -156,3 +176,16 @@ def test_loadSHP_topology():
     # nodes_gdf_ped = ci.amend_nodes_membership(nodes_gdf_ped, edges_gdf_ped, 'p_topo', min_size_district = min_size_district)
     # nodes_gdf_ped = ci.find_gateways(nodes_gdf_ped, edges_gdf_ped, 'p_topo')
 
+# def test_plot():
+    
+    # nodes_gdf
+    # edges_gdf
+    
+    # base_map = {gdf_base_map = pd.DataFrame({"a" : []}), base_map_color = None, base_map_alpha = 0.4, base_map_lw = 1.1, base_map_ms = 2.0, base_map_zorder = 0}
+    
+    # plot = 
+    
+    
+    # def plot_gdfs(list_gdfs = None, column = None, main_title = None, titles = None, black_background = True, fig_size = 15, scheme = None, bins = None, classes = None, norm = None, cmap = None, color = None, alpha = None, 
+        # legend = False, axis_frame = False, ms = None, ms_factor = None, lw = None, lw_factor = None): 
+    
