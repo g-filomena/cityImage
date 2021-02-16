@@ -414,7 +414,7 @@ def _gateway(nodeID, nodes_gdf, edges_gdf, column):
     gateway = 99999
     tmp = edges_gdf[(edges_gdf.u == nodeID) | (edges_gdf.v == nodeID)].copy()
     tmp_nodes = nodes_gdf[nodes_gdf.nodeID.isin(tmp.u) | nodes_gdf.nodeID.isin(tmp.v)].copy()
-    gateway 
+
     if (len(tmp_nodes[column].unique()) > 1): 
         gateway = 1
     else:
