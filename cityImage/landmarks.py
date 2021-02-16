@@ -396,7 +396,7 @@ def _advance_visibility(building_geometry, obstructions_gdf, obstructions_sindex
     list_points.append(Point(origin))
     poly = Polygon([[p.x, p.y] for p in list_points])
     
-    # subtracting th area of the building and computing the area of the polygon (area of visibility)
+    # subtracting the area of the building and computing the area of the polygon (area of visibility)
     try: 
         poly_vis = poly.difference(building_geometry)
     except:

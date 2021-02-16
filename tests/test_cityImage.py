@@ -60,9 +60,8 @@ def test_barriers():
     edges_gdf_updated = ci.along_within_parks(edges_gdf, barriers_gdf)
     edges_gdf_updated = ci.assign_structuring_barriers(edges_gdf_updated, barriers_gdf)
     
-    def test_plot_barriers():
-        base_map_dict = {'gdf_base_map': edges_gdf, 'base_map_alpha' : 0.4, 'base_map_lw' : 1.1, 'base_map_zorder' : 0}
-        plot = ci.plot_barriers(barriers_gdf, lw = 1.1, legend = True, axis_frame = False, black_background = True, fig_size = 15, **base_map_dict)
+    base_map_dict = {'gdf_base_map': edges_gdf, 'base_map_alpha' : 0.4, 'base_map_lw' : 1.1, 'base_map_zorder' : 0}
+    plot = ci.plot_barriers(barriers_gdf, lw = 1.1, legend = True, axis_frame = False, black_background = True, fig_size = 15, **base_map_dict)
 
 # Test angles.py
 def test_angles():
@@ -101,23 +100,22 @@ def test_centrality():
     for n, c in enumerate(dicts): 
         nodes_gdf[columns[n]] = nodes_gdf.nodeID.map(c)
     
-    def test_plotA():
-        cmap = ci.kindlmann()
-        base_map_dict = {'gdf_base_map': edges_gdf, 'base_map_alpha' : 0.4, 'base_map_lw' : 1.1, 'base_map_zorder' : 0}
-        
-        plot = ci.plot_gdf(gdf = nodes_gdf, column = 'Bc', black_background = True, fig_size = 15, scheme = 'Lynch_Breaks', 
-            cmap = cmap, legend = True, axis_frame = True, ms = 25, **base_map_dict) 
-        
-        cmap = ci.cmap_three_colors('yellow', 'orange', 'red')
-        plot = ci.plot_gdf_grid(gdf = nodes_gdf, columns = columns, black_background = True, fig_size = 15, scheme = 'Lynch_Breaks', 
-            cmap = cmap, legend = True, ms_factor = 30) 
-        
-        Eb = nx.edge_betweenness_centrality(graph, weight = weight, normalized = False)
-        edges_gdf = ci.append_edges_metrics(edges_gdf, graph, [Eb], ['Eb'])
-        
-        cbar_dict = {'cbar' : True, 'cbar_ticks' : 2, 'cbar_max_symbol' : True, 'only_min_max' : True}
-        cmap = ci.cmap_two_colors('red', 'blue')
-        plot_edges = ci.plot_gdf(edges_gdf, column = 'Eb', black_background = True, fig_size = 15, scheme = 'Fisher_Jenks', cmap = cmap, norm = None, legend = False, **cbar_dict)
+    cmap = ci.kindlmann()
+    base_map_dict = {'gdf_base_map': edges_gdf, 'base_map_alpha' : 0.4, 'base_map_lw' : 1.1, 'base_map_zorder' : 0}
+    
+    plot = ci.plot_gdf(gdf = nodes_gdf, column = 'Bc', black_background = True, fig_size = 15, scheme = 'Lynch_Breaks', 
+        cmap = cmap, legend = True, axis_frame = True, ms = 25, **base_map_dict) 
+    
+    cmap = ci.cmap_three_colors('yellow', 'orange', 'red')
+    plot = ci.plot_gdf_grid(gdf = nodes_gdf, columns = columns, black_background = True, fig_size = 15, scheme = 'Lynch_Breaks', 
+        cmap = cmap, legend = True, ms_factor = 30) 
+    
+    Eb = nx.edge_betweenness_centrality(graph, weight = weight, normalized = False)
+    edges_gdf = ci.append_edges_metrics(edges_gdf, graph, [Eb], ['Eb'])
+    
+    cbar_dict = {'cbar' : True, 'cbar_ticks' : 2, 'cbar_max_symbol' : True, 'only_min_max' : True}
+    cmap = ci.cmap_two_colors('red', 'blue')
+    plot_edges = ci.plot_gdf(edges_gdf, column = 'Eb', black_background = True, fig_size = 15, scheme = 'Fisher_Jenks', cmap = cmap, norm = None, legend = False, **cbar_dict)
 
 def test_clean_network():
     nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg)
@@ -158,11 +156,9 @@ def test_landmarks():
     buildings_gdf = ci.compute_global_scores(buildings_gdf, g_cW, g_iW)
     buildings_gdf = ci.compute_local_scores(buildings_gdf, l_cW, l_iW, radius = 1500)
 
-    
-    def test_plotB():
-        cmap = ci.random_colors_list_rgb(nlabels = len(buildings_gdf.land_use.unique()))
-        plot_buildings = ci.plot_gdf(buildings, column = 'land_use', black_background = True, fig_size = 15, cmap = cmap, norm = None, legend = True)
-        plot_flat = ci.plot_gdf(buildings, black_background = True, fig_size = 15)
+    cmap = ci.random_colors_list_rgb(nlabels = len(buildings_gdf.land_use.unique()))
+    plot_buildings = ci.plot_gdf(buildings, column = 'land_use', black_background = True, fig_size = 15, cmap = cmap, norm = None, legend = True)
+    plot_flat = ci.plot_gdf(buildings, black_background = True, fig_size = 15)
     
     
 def test_regions():
