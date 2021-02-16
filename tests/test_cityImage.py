@@ -114,7 +114,7 @@ def test_centrality():
     cbar = {'bar' : True, 'cbar_ticks' : 5, 'cbar_max_symbol' : False, 'only_min_max' : False}
     cmap = ci.cmap_two_colors('red', 'blue')
     plot_edges = ci.plot_gdf(edges_gdf, column = 'Eb', black_background = False, fig_size = 15, scheme = 'Fisher_Jenks', classes = 6, cmap = None, color = None, alpha = None, 
-                    legend = False, c axis_frame = False, ms = None, ms_factor = None, lw = None, lw_factor = None, cbar)
+                    legend = False, axis_frame = False, ms = None, ms_factor = None, lw = None, lw_factor = None, cbar)
 
 # def test_clean_network():
     # nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg)
