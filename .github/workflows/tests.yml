@@ -49,9 +49,9 @@ jobs:
         # run: |
           # ci/envs/test_documentation.sh
 
-      - name: Black
-        shell: bash -l {0}
-        run: |
-          black --check .
+#       - name: Black
+#         shell: bash -l {0}
+#         run: |
+#           black --check .
 
       - uses: codecov/codecov-action@v1
