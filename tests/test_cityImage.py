@@ -57,7 +57,7 @@ def test_loadSHP_topology():
     # nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, download_method, network_type = "all", epsg = epsg)
     # barriers_gdf = ci.get_barriers(place, download_method, epsg = epsg)
 
-    assign barriers to street network
+    # assign barriers to street network
     # edges_gdf_updated = ci.along_within_parks(edges_gdf, barriers_gdf)
     # edges_gdf_updated_sindex = edges_gdf_updated.sindex
     # edges_gdf_updated = ci.along_water(edges_gdf, barriers_gdf)
