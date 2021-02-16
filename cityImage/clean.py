@@ -424,9 +424,9 @@ def fix_network_topology(nodes_gdf, edges_gdf):
     old_edges_gdf = edges_gdf.copy()
     
     for row in old_edges_gdf.itertuples():
-        if (bridges) & (old_edges_gdf.loc[row.Index].bridge != 0):
+        if (bridges) and (old_edges_gdf.loc[row.Index].bridge != 0):
             continue # bridges are not checked
-        if (tunnel) & (old_edges_gdf.loc[row.Index].tunnel != 0): 
+        if (tunnel) and (old_edges_gdf.loc[row.Index].tunnel != 0): 
             continue # tunnels are not checked
         
         line_geometry = old_edges_gdf.loc[row.Index].geometry
@@ -443,7 +443,9 @@ def fix_network_topology(nodes_gdf, edges_gdf):
         for p in points:
             if (p.coords[0] == line_geometry.coords[0]) | (p.coords[0] == line_geometry.coords[-1]): 
                 pass # disregarding the ones which lie on the line's u-v nodes
-            else: new_collection.append(p) # only checking the others
+            else: 
+                new_collection.append(p) # only checking the others
+        
         if len(new_collection) == 0: 
             continue    
        
@@ -454,7 +456,8 @@ def fix_network_topology(nodes_gdf, edges_gdf):
         for n, line in enumerate(new_line_geometries): # assigning the resulting geometries
             if n == 0: 
                 index = row.Index
-            else: index = max(edges_gdf.index)+1
+            else: 
+                index = max(edges_gdf.index)+1
             # copy attributes
             edges_gdf.loc[index] = edges_gdf.loc[row.Index]  
             # and assign geometry an new edgeID 
