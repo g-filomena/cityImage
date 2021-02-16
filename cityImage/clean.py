@@ -407,7 +407,7 @@ def fix_network_topology(nodes_gdf, edges_gdf):
     
     nodes_gdf, edges_gdf = nodes_gdf.copy(), edges_gdf.copy()
     union = edges_gdf.unary_union
-    bridges = False
+    bridges, tunnels = False, False
     
     if 'bridge' in edges_gdf.columns:
         bridges = True
@@ -416,7 +416,7 @@ def fix_network_topology(nodes_gdf, edges_gdf):
         edges_gdf['bridge'] = edges_gdf['bridge'].astype(int)
     
     if 'tunnel' in edges_gdf.columns:    
-        tunnel = True
+        tunnels = True
         edges_gdf['tunnel'].fillna(0, inplace = True)
         edges_gdf['tunnel'] = edges_gdf['tunnel'].where(edges_gdf['tunnel'] == '0', 1)
         edges_gdf['tunnel'] = edges_gdf['tunnel'].astype(int)
@@ -426,7 +426,7 @@ def fix_network_topology(nodes_gdf, edges_gdf):
     for row in old_edges_gdf.itertuples():
         if (bridges) and (old_edges_gdf.loc[row.Index].bridge != 0):
             continue # bridges are not checked
-        if (tunnel) and (old_edges_gdf.loc[row.Index].tunnel != 0): 
+        if (tunnels) and (old_edges_gdf.loc[row.Index].tunnel != 0): 
             continue # tunnels are not checked
         
         line_geometry = old_edges_gdf.loc[row.Index].geometry
