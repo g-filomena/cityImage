@@ -221,13 +221,13 @@ def centrality(G, nodes_gdf, measure, weight, normalized = False):
     """    
     centrality = {}
     if measure == "betweenness_centrality": 
-        centrality = nx.betweenness_centrality(G, weight = weight, normalized=normalized)
+        centrality = nx.betweenness_centrality(G, weight = weight, normalized = normalized)
     elif measure == "straightness_centrality": 
-        centrality = straightness_centrality(G, weight = weight, normalized=normalized)
+        centrality = straightness_centrality(G, weight = weight, normalized = normalized)
     elif measure == "closeness_centrality": 
-        centrality = nx.closeness_centrality(G, distance = weight, normalized=normalized)
+        centrality = nx.closeness_centrality(G, distance = weight)
     elif measure == "information_centrality": 
-        centrality = nx.current_flow_betweenness_centrality(G, weight = weight, solver ="lu", normalized=normalized) 
+        centrality = nx.current_flow_betweenness_centrality(G, weight = weight, solver ="lu", =normalized) 
     else:
         raise nameError("The name provided is not a valid centrality name associated with a function")
     
