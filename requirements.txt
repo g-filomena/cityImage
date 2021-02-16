@@ -10,3 +10,4 @@ scipy>=1.6
 seaborn>=0.11
 shapely>=1.7.1
 rtree>=0.9
+mapclassify>= 2.2.0
