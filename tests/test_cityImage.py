@@ -26,18 +26,25 @@ graph = None
 
 ## Test load.py
 def test_loadOSM():
+
     nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg)
     polygon = ci.convex_hull_wgs(edges_gdf)
     nodes_gdf2, edges_gdf2 = ci.get_network_fromOSM(polygon, 'polygon', network_type = "all", epsg = epsg)
     nodes_gdf3, edges_gdf3 = ci.get_network_fromOSM(address, 'distance_from_address', network_type = "all", epsg = epsg, distance = distance)
     
     
-def test_loadSHP():   
+def test_loadSHP_topology():  
+    epsg = 2019 
+    input_path = 'tests/input/York_street_network.shp'
     dict_columns = {"roadType_field": "highway",  "direction_field": "oneway", "speed_field": None, "name_field": "name"}    
-    # nodes_gdf, edges_gdf = ci.get_network_fromSHP(path, epsg, dict_columns = dict_columns, other_columns = [])
+    nodes_gdf, edges_gdf = ci.get_network_fromSHP(input_path, epsg, dict_columns = dict_columns, other_columns = [])
+    # fix topology
+    nodes_gdf, edges_gdf clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_disconnected_islands = True, same_uv_edges = True, self_loops = False, fix_topology = True)
+    
 
 ## Test graph.py
 def test_graph():
+
     nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg)
     graph = ci.graph_fromGDF(nodes_gdf, edges_gdf, nodeID = 'nodeID')
     multi_graph_fromGDF = ci.multiGraph_fromGDF(nodes_gdf, edges_gdf, 'nodeID')
@@ -77,7 +84,7 @@ def test_centrality():
     graph = ci.graph_fromGDF(nodes_gdf, edges_gdf, nodeID = 'nodeID')
 
     weight = 'length'
-    sc = ci.straightness_centrality(graph, weight = weight, normalized = True)
+
     
     services = ox.geometries_from_address(address, tags = {'amenity':True}, dist = distance).to_crs(epsg=epsg)
     services = services[services['geometry'].geom_type == 'Point']
@@ -85,8 +92,10 @@ def test_centrality():
     rc = ci.reach_centrality(graph,  weight = weight, radius = 400, attribute = 'services')
     
     measure = 'betweenness_centrality'
-    bc = ci.centrality(graph, nodes_gdf, measure, weight, normalized = False)
-    
+    bc = ci.centrality(graph, nodes_gdf, measure = 'betweenness_centrality', weight, normalized = False)
+    sc = ci.centrality(graph, nodes_gdf, measure = 'straightness_centrality', weight, normalized = False)
+    cc = ci.centrality(graph, nodes_gdf, measure = 'closeness_centrality', weight, normalized = False)
+    ic = ci.centrality(graph, nodes_gdf, measure = 'information_centrality', weight, normalized = False)
     Eb = nx.edge_betweenness_centrality(graph, weight = weight, normalized = False)
     edges_gdf = ci.append_edges_metrics(edges_gdf, graph, [Eb], ['Eb'])
 
@@ -100,15 +109,21 @@ def test_landmarks():
     buildings_gdf = ci.get_buildings_fromOSM(place, download_method = 'OSMplace', epsg = epsg)
     buildings_gdf_address = ci.get_buildings_fromOSM(address, download_method = 'distance_from_address', epsg = epsg, distance = 1000)
     buildings_gdf_point = ci.get_buildings_fromOSM(location, download_method = 'from_point', epsg = epsg, distance = 1000)
+    historical = ci.get_historical_buildings_fromOSM(place, download_method = 'OSMplace', epsg = epsg)
     
     epsg = 25832
     input_path = 'tests/input/Muenster_buildings.shp'
+    
+    buildings_shp, _ = ci.get_buildings_fromSHP(input_path, epsg = epsg, height_field = 'height', base_field = 'base', land_use_field = 'land_use')
+    # buildings_attributes = ci.attach_attributes(buildings_gdf, attributes_gdf, height_field, base_field, land_use_field):
+    
     buildings_shp, _ = ci.get_buildings_fromSHP(input_path, epsg = epsg, height_field = 'height', base_field = 'base', land_use_field = 'land_use')
     sight_lines = gpd.read_file('tests/input/Muenster_sight_lines.shp')
     buildings_shp, _ = ci.visibility_score(buildings_shp, sight_lines = sight_lines)
     
     _, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "drive", epsg = epsg)
-    buildings_gdf = ci.structural_score(buildings_gdf, buildings_gdf, edges_gdf, max_expansion_distance = 100, distance_along = 50, radius = 100)
+    buildings_gdf = ci.structural_score(buildings_gdf, buildings_gdf, edges_gdf, max_expansion_distance = 100, distance_along = 50, radius = 100)   
+    
     buildings_gdf = ci.cultural_score_from_OSM(buildings_gdf)
     buildings_gdf, _ = ci.visibility_score(buildings_gdf)
     buildings_gdf['land_use'] = buildings_gdf['land_use_raw']
