@@ -227,7 +227,7 @@ def centrality(G, nodes_gdf, measure, weight, normalized = False):
     elif measure == "closeness_centrality": 
         centrality = nx.closeness_centrality(G, distance = weight)
     elif measure == "information_centrality": 
-        centrality = nx.current_flow_betweenness_centrality(G, weight = weight, solver ="lu", =normalized) 
+        centrality = nx.current_flow_betweenness_centrality(G, weight = weight, solver ="lu", normalized =normalized) 
     else:
         raise nameError("The name provided is not a valid centrality name associated with a function")
     
