@@ -95,7 +95,7 @@ class MultiPlot():
         self.fig, self.grid = fig, grid
         self.font_size, self.text_color = font_size, text_color
 
-def single_plot(ax, gdf, column = None, scheme = None, bins = None, classes = None, norm = None, cmap = None, color = None, alpha = None, 
+def _single_plot(ax, gdf, column = None, scheme = None, bins = None, classes = None, norm = None, cmap = None, color = None, alpha = None, 
                 legend = False, axis_frame = False, ms = None, ms_factor = None, lw = None, lw_factor = None,  zorder = 0):
     
     gdf = gdf.copy()
@@ -108,9 +108,11 @@ def single_plot(ax, gdf, column = None, scheme = None, bins = None, classes = No
     # single-colour map
     if (column is None) & (scheme is None) & (color is None):
         color = 'red'
+    
     # categorical map
     elif (column is not None) & (scheme is None) & (norm is None) & (cmap is None): 
         cmap = rand_cmap(len(gdf[column].unique()))         
+    
     # Lynch's bins - only for variables from 0 to 1 
     elif scheme == "Lynch_Breaks":  
         scaling_columnDF(gdf, column)
@@ -118,14 +120,18 @@ def single_plot(ax, gdf, column = None, scheme = None, bins = None, classes = No
         bins = [0.125, 0.25, 0.5, 0.75, 1.00]
         scheme = 'User_Defined'
         categorical = False
+    
     elif norm is not None:
         legend = False
         categorical = False
         scheme = None
+    
     elif (scheme is not None) & (classes is None) & (bins is None):
         classes = 7   
+    
     if (scheme is not None) & (cmap is None) :
         cmap = kindlmann()
+    
     if (scheme is not None) | (norm is not None):
         categorical = False
         color = None
@@ -150,7 +156,8 @@ def single_plot(ax, gdf, column = None, scheme = None, bins = None, classes = No
             ms = gdf['ms']
         elif ms is None:
             ms = 1.0
-        else: ms = ms
+        else: 
+            ms = ms
 
         gdf.plot(ax = ax, column = column, markersize = ms, categorical = categorical, color = color, scheme = scheme, cmap = cmap, norm = norm, alpha = alpha,
             legend = legend, classification_kwds = c_k, zorder = zorder) 
@@ -160,6 +167,7 @@ def single_plot(ax, gdf, column = None, scheme = None, bins = None, classes = No
             lw = 1.00
         elif lw_factor is not None:
             lw = [value*lw_factor if value*lw_factor> 1.1 else 1.1 for value in gdf[column]]
+        
         gdf.plot(ax = ax, column = column, categorical = categorical, color = color, linewidth = lw, scheme = scheme, alpha = alpha, cmap = cmap, norm = norm,
             legend = legend, classification_kwds = c_k, capstyle = 'round', joinstyle = 'round', zorder = zorder) 
                 
@@ -172,41 +180,70 @@ def plot_gdf(gdf, column = None, title = None, black_background = True, fig_size
                 legend = False, cbar = False, cbar_ticks = 5, cbar_max_symbol = False, only_min_max = False, axis_frame = False, ms = None, ms_factor = None, lw = None, lw_factor = None, gdf_base_map = pd.DataFrame({"a" : []}), base_map_color = None, base_map_alpha = 0.4,
                 base_map_lw = 1.1, base_map_ms = 2.0, base_map_zorder = 0):
     """
-    It creates a plot from a Point GeoDataFrame. 
-    It plots the distribution over value and geographical space of variable "column" using "scheme". 
+    It plots the geometries of a GeoDataFrame, coloring on the bases of the values contained in column, using a given scheme.
     If only "column" is provided, a categorical map is depicted.
-    Otherwise, a plain map is shown.
+    If no column is provided, a plain map is shown.
     
     Parameters
     ----------
     gdf: GeoDataFrame
+        GeoDataFrame to be plotted 
     column: string
         Column on which the plot is based
-    classes: int
-        classes for visualising when scheme is not "None"
-    ms: float
-        markersize value 
-    ms_col: str 
-        Column name in the GeoDataFrame's column where markersize values are stored
-    scheme: dictionary of str {"Equal_Interval", "Fisher_Jenks"..}
-        check: https://pysal.readthedocs.io/en/v1.11.0/library/esda/mapclassify.html
-    bins: list
-        bins defined by the user
-    cmap: string,
-        see matplotlib colormaps for a list of possible values
-    title: str 
-        title of the graph
-    legend: boolean
-        if True, show legend, otherwise don't
-    color_bar: boolean
-        if True, show color_bar, otherwise don't (only when legend is False)
+    title: string 
+        title of the plot
     black_background: boolean 
         black background or white
     fig_size: float
-        size figure extent
-    gdf_base_map: LineString GeoDataFrame
-        If provided, it is used as background/base map for visualisation purposes
-    
+        size of the figure's side extent
+    scheme: string
+        classification method, choose amongst: https://pysal.org/mapclassify/api.html
+    bins: list
+        bins defined by the user
+    classes: int
+        classes for visualising when scheme is not "None"
+    norm: array
+        A class that specifies a desired data normalisation into a [min, max] interval
+    cmap: string,
+        see matplotlib colormaps for a list of possible values
+    color: string
+        categorical color applied to all geometries when not using a column to color them
+    alpha: float
+        alpha value of the plotted layer
+    legend: boolean
+        if True, show legend, otherwise don't
+    cbar: boolean
+        if True, show colorbar, otherwise don't; when True it doesn't show legend
+    cbar_ticks: int
+        number of ticks along the color barrier_type
+    cbar_max_symbol: boolean
+        if True, it shows the ">" next to the highest tick's label in the color bar (useful when normalising)
+    only_min_max: boolean
+        if True, it shows the ">" next to the highest tick's label in the color bar (useful when normalising)
+    axis_frame: boolean
+        if True, it shows an axis frame
+    ms: float
+        point size value, when plotting a Point GeoDataFrame
+    ms_factor: float 
+        when provided, it rescales the column provided, if any, from 0 to 1 and it uses the ms_factor to rescale the marker size accordingly 
+        (e.g. rescaled variable's value [0-1] * factor), when plotting a Point GeoDataFrame
+    lw: float
+        line width, when plotting a LineString GeoDataFrame
+    lw_factor: float
+        when provided, it rescales the column provided, if any, from 0 to 1 and it uses the lw_factor to rescale the line width accordingly 
+        (e.g. rescaled variable's value [0-1] * factor), when plotting a LineString GeoDataFrame
+    gdf_base_map: GeoDataFrame
+        a desired additional layer to use as a base map        
+    base_map_color: string
+        color applied to all geometries of the base map
+    base_map_alpha: float
+        base map's alpha value
+    base_map_ms: float
+        base map's marker size when the base map is a Point GeoDataFrame
+    base_map_lw: float
+        base map's line width when the base map is a LineString GeoDataFrame
+    base_map_zorder: int   
+        zorder of the layer; e.g. if 0, plots first, thus main GeoDataFrame on top; if 1, plots last, thus on top.
     """
     
     # fig,ax set up
@@ -216,7 +253,8 @@ def plot_gdf(gdf, column = None, title = None, black_background = True, fig_size
     ax.set_aspect("equal")
     if axis_frame: 
         set_axis_frame(ax, black_background, plot.text_color)
-    else: ax.set_axis_off()     
+    else: 
+        ax.set_axis_off()     
     zorder = 0
     # base map (e.g. street network)
     if (not gdf_base_map.empty):
@@ -261,7 +299,7 @@ def plot_barriers(barriers_gdf, lw = 1.1, title = "Plot", legend = False, axis_f
     
     Parameters
     ----------
-    gdf: GeoDataFrame
+    barriers_gdf: GeoDataFrame
     
     lw: float
         line width
@@ -269,11 +307,24 @@ def plot_barriers(barriers_gdf, lw = 1.1, title = "Plot", legend = False, axis_f
         title of the graph
     legend: boolean
         if True, show legend, otherwise don't
+        axis_frame: boolean
+        if True, it shows an axis frame 
     black_background: boolean 
         black background or white
     fig_size: float
-        size figure extent
-
+        size of the figure's side extent
+    gdf_base_map: GeoDataFrame
+        a desired additional layer to use as a base map        
+    base_map_color: string
+        color applied to all geometries of the base map
+    base_map_alpha: float
+        base map's alpha value
+    base_map_ms: float
+        base map's marker size when the base map is a Point GeoDataFrame
+    base_map_lw: float
+        base map's line width when the base map is a LineString GeoDataFrame
+    base_map_zorder: int   
+        zorder of the layer; e.g. if 0, plots first, thus main GeoDataFrame on top; if 1, plots last, thus on top.
     """ 
     barriers_gdf = barriers_gdf.copy()    
     
@@ -284,7 +335,8 @@ def plot_barriers(barriers_gdf, lw = 1.1, title = "Plot", legend = False, axis_f
     ax.set_aspect("equal")
     if axis_frame: 
         set_axis_frame(ax, black_background, plot.text_color)
-    else: ax.set_axis_off()     
+    else: 
+        ax.set_axis_off()     
     
     zorder = 0
     # background (e.g. street network)
@@ -315,34 +367,61 @@ def plot_gdfs(list_gdfs = None, column = None, main_title = None, titles = None,
                 legend = False, cbar = False, cbar_ticks = 5, cbar_max_symbol = False, only_min_max = False, axis_frame = False, ms = None, ms_factor = None, lw = None, lw_factor = None): 
                      
     """
-    It creates of subplots from a list of polygons GeoDataFrames
-    When column and scheme are not "None" it plots the distribution over value and geographical space of variable "column" using scheme
-    "scheme". If only "column" is provided, a categorical map is generated.
+    It plots the geometries of a list of GeoDataFrame, containing the same type of geometry. Coloring is based on a provided column (that needs to be a column in each passed GeoDataFrame), using a given scheme.
+    If only "column" is provided, a categorical map is depicted.
+    If no column is provided, a plain map is shown.
     
     Parameters
     ----------
     list_gdfs: list of GeoDataFrames
-
-    columns: string
+        GeoDataFrames to be plotted
+    column: string
         Column on which the plot is based
-        list_titles: list of str
-        subplots'titles    
-    
-    classes: int
-        classes for visualising when scheme is not "None"
-    scheme: dictionary of str {"Equal_Interval", "Fisher_Jenks"..}
-        check: https://pysal.readthedocs.io/en/v1.11.0/library/esda/mapclassify.html
-    bins: list
-        bins defined by the user
-    cmap: string,
-        see matplotlib colormaps for a list of possible values
-    legend: boolean
-        if True, show legend, otherwise don't
-    color_bar: boolean
-        if True, show color_bar, otherwise don't (only when legend is False)
+    main_title: string 
+        main title of the plot
+    titles: list of string
+        list of titles to be assigned to each quadrant (axes) of the grid
     black_background: boolean 
         black background or white
-    """                 
+    fig_size: float
+        size figure extent
+    scheme: string
+        classification method, choose amongst: https://pysal.org/mapclassify/api.html
+    bins: list
+        bins defined by the user
+    classes: int
+        classes for visualising when scheme is not "None"
+    norm: array
+        A class that specifies a desired data normalisation into a [min, max] interval
+    cmap: string,
+        see matplotlib colormaps for a list of possible values
+    color: string
+        categorical color applied to all geometries when not using a column to color them
+    alpha: float
+        alpha value of the plotted layer
+    legend: boolean
+        if True, show legend, otherwise don't
+    cbar: boolean
+        if True, show colorbar, otherwise don't; when True it doesn't show legend
+    cbar_ticks: int
+        number of ticks along the color barrier_type
+    cbar_max_symbol: boolean
+        if True, it shows the ">" next to the highest tick's label in the color bar (useful when normalising)
+    only_min_max: boolean
+        if True, it shows the ">" next to the highest tick's label in the color bar (useful when normalising)
+    axis_frame: boolean
+        if True, it shows an axis frame
+    ms: float
+        point size value, when plotting a Point GeoDataFrame
+    ms_factor: float 
+        when provided, it rescales the column provided, if any, from 0 to 1 and it uses the ms_factor to rescale the marker size accordingly 
+        (e.g. rescaled variable's value [0-1] * factor), when plotting a Point GeoDataFrame
+    lw: float
+        line width, when plotting a LineString GeoDataFrame
+    lw_factor: float
+        when provided, it rescales the column provided, if any, from 0 to 1 and it uses the lw_factor to rescale the line width accordingly 
+        (e.g. rescaled variable's value [0-1] * factor), when plotting a LineString GeoDataFrame   
+    """              
                      
     nrows, ncols = int(len(list_gdfs)/2), 2
     if (len(list_gdfs)%2 != 0): 
@@ -359,7 +438,8 @@ def plot_gdfs(list_gdfs = None, column = None, main_title = None, titles = None,
         ax.set_aspect("equal")
         if axis_frame: 
             set_axis_frame(ax, black_background, multiPlot.text_color)
-        else: ax.set_axis_off()      
+        else: 
+            ax.set_axis_off()      
 
         if n > len(list_gdfs)-1: 
             continue # when odd nr of gdfs    
@@ -397,7 +477,62 @@ def plot_gdfs(list_gdfs = None, column = None, main_title = None, titles = None,
    
 def plot_gdf_grid(gdf = None, columns = None, titles = None, black_background = True, fig_size = 15, scheme = None, bins = None, classes = None, norm = None, cmap = None, color = None, alpha = None, 
                 legend = False, cbar = False, cbar_ticks = 5, cbar_max_symbol = False, only_min_max = False, axis_frame = False, ms = None, ms_factor = None, lw = None, lw_factor = None): 
-       
+    
+    """
+    It plots the geometries of a GeoDataFrame, coloring on the bases of the values contained in column, using a given scheme.
+    If only "column" is provided, a categorical map is depicted.
+    If no column is provided, a plain map is shown.
+    
+    Parameters
+    ----------
+    gdf: GeoDataFrame
+        GeoDataFrame to be plotted 
+    column: string
+        Column on which the plot is based
+    title: string 
+        title of the plot
+    black_background: boolean 
+        black background or white
+    fig_size: float
+        size figure extent
+    scheme: string
+        classification method, choose amongst: https://pysal.org/mapclassify/api.html
+    bins: list
+        bins defined by the user
+    classes: int
+        classes for visualising when scheme is not "None"
+    norm: array
+        A class that specifies a desired data normalisation into a [min, max] interval
+    cmap: string,
+        see matplotlib colormaps for a list of possible values
+    color: string
+        categorical color applied to all geometries when not using a column to color them
+    alpha: float
+        alpha value of the plotted layer
+    legend: boolean
+        if True, show legend, otherwise don't
+    cbar: boolean
+        if True, show colorbar, otherwise don't; when True it doesn't show legend
+    cbar_ticks: int
+        number of ticks along the color barrier_type
+    cbar_max_symbol: boolean
+        if True, it shows the ">" next to the highest tick's label in the color bar (useful when normalising)
+    only_min_max: boolean
+        if True, it shows the ">" next to the highest tick's label in the color bar (useful when normalising)
+    axis_frame: boolean
+        if True, it shows an axis frame
+    ms: float
+        point size value, when plotting a Point GeoDataFrame
+    ms_factor: float 
+        when provided, it rescales the column provided, if any, from 0 to 1 and it uses the ms_factor to rescale the marker size accordingly 
+        (e.g. rescaled variable's value [0-1] * factor), when plotting a Point GeoDataFrame
+    lw: float
+        line width, when plotting a LineString GeoDataFrame
+    lw_factor: float
+        when provided, it rescales the column provided, if any, from 0 to 1 and it uses the lw_factor to rescale the line width accordingly 
+        (e.g. rescaled variable's value [0-1] * factor), when plotting a LineString GeoDataFrame
+    """   
+    
     nrows, ncols = int(len(columns)/2), 2
     if (len(columns)%2 != 0): 
         nrows = nrows+1
@@ -411,7 +546,8 @@ def plot_gdf_grid(gdf = None, columns = None, titles = None, black_background = 
         ax.set_aspect("equal")
         if axis_frame: 
             set_axis_frame(ax, black_background, multiPlot.text_color)
-        else: ax.set_axis_off()
+        else: 
+            ax.set_axis_off()
         
         if n > len(columns)-1: 
             continue # when odd nr of columns
@@ -483,7 +619,8 @@ def plot_multiplex(M, multiplex_edges):
             line_width.append(0.2)
         elif data["pedestrian"] == 1: 
             line_width.append(0.1)
-        else: line_width.append(lwidth)
+        else: 
+            line_width.append(lwidth)
 
     fig_height = 40
     lc = Line3DCollection(lines, linewidths=line_width, alpha=1, color="#ffffff", zorder=1)
@@ -513,7 +650,8 @@ def _generate_legend_fig(ax, nrows, text_color, font_size, black_background):
     plt.setp(leg.texts, family='Times New Roman', fontsize = font_size, color = text_color, va = 'center')
     if nrows%2 == 0: 
         leg.set_bbox_to_anchor((2.15, 1.00, 0.33, 0.33))    
-    else: leg.set_bbox_to_anchor((1.15, 0.5, 0.33, 0.33))
+    else: 
+        leg.set_bbox_to_anchor((1.15, 0.5, 0.33, 0.33))
     
     leg.get_frame().set_linewidth(0.0) # remove legend border
     leg.set_zorder(102)
@@ -527,7 +665,8 @@ def _generate_legend_ax(ax, font_size, black_background):
     leg = ax.get_legend()  
     if black_background:
         text_color = 'black'
-    else: text_color = 'white'
+    else: 
+        text_color = 'white'
     
     plt.setp(leg.texts, family='Times New Roman', fontsize = font_size, color = text_color, va = 'center')
     leg.set_bbox_to_anchor((0., 0., 0.2, 0.2))
@@ -687,7 +826,7 @@ def kindlmann():
             (1.0, 1.0, 1.0)]
     return LinearSegmentedColormap.from_list('kindlmann', kindlmann_list)
     
-def set_axis_frame(ax, black_background, text_color):
+def _set_axis_frame(ax, black_background, text_color):
     
     ax.xaxis.set_ticklabels([])
     ax.yaxis.set_ticklabels([])
