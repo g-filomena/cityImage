@@ -411,7 +411,7 @@ def plot_barriers(barriers_gdf, lw = 1.1, title = "Plot", legend = False, axes_f
     if legend: 
         _generate_legend_ax(ax, plot.font_size-10, black_background)
     
-    plt.show()  
+    return fig
     
 def plot_gdfs(list_gdfs = None, column = None, main_title = None, titles = None, black_background = True, fig_size = 15, scheme = None, bins = None, classes = None, norm = None, cmap = None, color = None, alpha = None, 
                 legend = False, cbar = False, cbar_ticks = 5, cbar_max_symbol = False, only_min_max = False, axes_frame = False, ms = None, ms_factor = None, lw = None, lw_factor = None): 
