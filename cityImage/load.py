@@ -23,9 +23,8 @@ This set of functions handles interoperations between GeoDataFrames and graphs. 
 ## Graph preparation functions ###############
     
 def get_network_fromOSM(place, download_method, network_type = "all", epsg = None, distance = 500.0): 
-
     """
-    The function downloads and creates a simplified OSMNx graph for a selected area. 
+    The function downloads and creates a simplified OSMNx graph for a selected area's street network.
     Afterwards, GeoDataFrames for nodes and edges are created, assigning new nodeID and edgeID identifiers.
         
     Parameters
@@ -34,7 +33,7 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
         name of cities or areas in OSM: when using "OSMpolygon" please provide the name of a "relation" in OSM as an argument of "place"; when using "distance_from_address"
         provide an existing OSM address; when using "OSMplace" provide an OSM place name
     download_method: string {"polygon", "distance_from_address", "OSMplace"}
-        it indicates the method that should be used for downloading the data. When 'polygon' the shape to get network data within. coordinates should be in
+        it indicates the method that should be used for downloading the data. When 'polygon' the shape to get network data within coordinates should be in
         unprojected latitude-longitude degrees (EPSG:4326).
     network_type: string {"walk", "bike", "drive", "drive_service", "all", "all_private", "none"}
         it indicates type of street or other network to extract - from OSMNx paramaters

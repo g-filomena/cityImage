@@ -13,14 +13,14 @@ pd.set_option("precision", 10)
     
 def scaling_columnDF(df, column, inverse = False):
     """
-    It rescales the values in a dataframe"s from 0 to 1
+    It rescales the values in a dataframe's columns from 0 to 1
     
     Parameters
     ----------
     df: pandas DataFrame
         a DataFrame
     column: string
-        the column name, representing the column to rescale_geometry
+        the column name, representing the column to rescale
     inverse: boolean
         if true, rescales from 1 to 0 instead of 0 to 1
     ----------
@@ -32,9 +32,8 @@ def scaling_columnDF(df, column, inverse = False):
         
     
 def dict_to_df(list_dict, list_col):
-
     """
-    It takes a list of dictionaries and creates from them a pandas DataFrame a df, with the dictionaries become columns.
+    It takes a list of dictionaries and creates from them a pandas DataFrame, where the dictionaries become columns.
     
     Parameters
     ----------
@@ -124,7 +123,22 @@ def center_line_coords(line_geometryA, line_geometryB):
     return center_line_coords
 
         
-def split_line_at_interpolation(point, line_geometry): #ok
+def split_line_at_interpolation(point, line_geometry):
+    """
+    Given a LineString, it interpolates a given point and it returns a Tuple of the two resulting lines and the interpolation Point.
+    
+    Parameters
+    ----------
+    point: Point 
+        the point
+    line_geometry: LineString
+        the line
+    
+    Returns:
+    ----------
+    result: tuple
+        a tuple containing the two resulting lines and the interpolation point.
+    """
     
     line_coords = list(line_geometry.coords)
     starting_point = Point(line_coords[0])
@@ -156,7 +170,8 @@ def split_line_at_interpolation(point, line_geometry): #ok
         line_geometry_A = LineString([coor for coor in new_line_A])
         line_geometry_B = LineString([coor for coor in new_line_B])
     
-    return((line_geometry_A, line_geometry_B), np)    
+    result = ((line_geometry_A, line_geometry_B), np)    
+    return result
 
 def distance_geometry_gdf(geometry, gdf):
     """
@@ -173,23 +188,24 @@ def distance_geometry_gdf(geometry, gdf):
     distance, index: tuple
         the closest distance from the geometry, and the index of the closest geometry in the gdf
     """
+    
     gdf = gdf.copy()
     gdf["dist"] = gdf.apply(lambda row: geometry.distance(row['geometry']),axis=1)
     geoseries = gdf.iloc[gdf["dist"].argmin()]
     distance  = geoseries.dist
     index = geoseries.name
-    return distance, index
+    return (distance, index)
 
 def merge_lines(line_geometries):
     """
     Given a list of line_geometries wich are connected by common "to" and "from" vertexes, the function infers the sequence, based on the coordinates, 
-    and returns a merged LineString feature.
-    As compared to existing shapely functions, this readjust the sequence of coordinates if they are 
-    not sequential (e.g. 1.segment is: xx - yy, second is yy2 - xx2 and xx == xx2).
+    and returns a merged LineString feature. As compared to existing shapely functions, this function readjusts the sequence of coordinates if they are not sequential 
+    (e.g. 1.segment is: xx - yy, second is yy2 - xx2 and xx == xx2).
     
     Parameters
     ----------
     line_geometries: list of LineString
+        the lines
     
     Returns:
     ----------
@@ -230,11 +246,12 @@ def merge_lines(line_geometries):
             
 def envelope_wgs(gdf):
     """
-    Given a certain GeoDataFrame it derives its envelope in the WGS coordinate system.
+    Given a GeoDataFrame it derives its envelope in the WGS coordinate system.
     
     Parameters
     ----------
     gdf: GeoDataFrame
+        the geodataframe
     
     Return
     ----------
@@ -253,12 +270,13 @@ def envelope_wgs(gdf):
     
 def convex_hull_wgs(gdf):
     """
-    Given a certain GeoDataFrame it derives its convex hull in the WGS coordinate system.
+    Given a GeoDataFrame it derives its convex hull in the WGS coordinate system.
     
     Parameters
     ----------
     gdf: GeoDataFrame
-    
+        the geodataframe
+        
     Return
     ----------
     convex_hull_wgs: Polygon

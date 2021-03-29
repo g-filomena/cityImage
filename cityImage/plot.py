@@ -9,7 +9,7 @@ import matplotlib.ticker as ticker
 
 from mpl_toolkits.axes_grid1 import make_axes_locatable, ImageGrid
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
-from matplotlib.colors import LinearSegmentedColormap, DivergingNorm
+from matplotlib.colors import LinearSegmentedColormap, TwoSlopeNorm
 import mapclassify
 
 import pylab
@@ -71,7 +71,6 @@ class MultiPlotGrid():
         
 class MultiPlot():
     
-    
     def __init__(self, fig_size, nrows, ncols, black_background, title = None):
     
         figsize = (fig_size, fig_size/2*nrows)          
@@ -96,7 +95,49 @@ class MultiPlot():
         self.font_size, self.text_color = font_size, text_color
 
 def _single_plot(ax, gdf, column = None, scheme = None, bins = None, classes = None, norm = None, cmap = None, color = None, alpha = None, 
-                legend = False, axis_frame = False, ms = None, ms_factor = None, lw = None, lw_factor = None,  zorder = 0):
+                legend = False, ms = None, ms_factor = None, lw = None, lw_factor = None,  zorder = 0):
+    """
+    It plots the geometries of a GeoDataFrame, coloring on the bases of the values contained in column, using a given scheme, on the provided Axes.
+    If only "column" is provided, a categorical map is depicted.
+    If no column is provided, a plain map is shown.
+    
+    Parameters
+    ----------
+    ax: matplotlib.axes object
+        the Axes on which plotting
+    gdf: GeoDataFrame
+        GeoDataFrame to be plotted 
+    column: string
+        Column on which the plot is based
+    scheme: string
+        classification method, choose amongst: https://pysal.org/mapclassify/api.html
+    bins: list
+        bins defined by the user
+    classes: int
+        classes for visualising when scheme is not "None"
+    norm: array
+        A class that specifies a desired data normalisation into a [min, max] interval
+    cmap: string, matplotlib.colors.LinearSegmentedColormap
+        see matplotlib colormaps for a list of possible values or pass a colormap
+    color: string
+        categorical color applied to all geometries when not using a column to color them
+    alpha: float
+        alpha value of the plotted layer
+    legend: boolean
+        if True, show legend, otherwise don't
+    ms: float
+        point size value, when plotting a Point GeoDataFrame
+    ms_factor: float 
+        when provided, it rescales the column provided, if any, from 0 to 1 and it uses the ms_factor to rescale the marker size accordingly 
+        (e.g. rescaled variable's value [0-1] * factor), when plotting a Point GeoDataFrame
+    lw: float
+        line width, when plotting a LineString GeoDataFrame
+    lw_factor: float
+        when provided, it rescales the column provided, if any, from 0 to 1 and it uses the lw_factor to rescale the line width accordingly 
+        (e.g. rescaled variable's value [0-1] * factor), when plotting a LineString GeoDataFrame
+    zorder: int   
+        zorder of this layer; e.g. if 0, plots first, thus main GeoDataFrame on top; if 1, plots last, thus on top.
+    """  
     
     gdf = gdf.copy()
     categorical = True
@@ -177,7 +218,7 @@ def _single_plot(ax, gdf, column = None, scheme = None, bins = None, classes = N
         
  
 def plot_gdf(gdf, column = None, title = None, black_background = True, fig_size = 15, scheme = None, bins = None, classes = None, norm = None, cmap = None, color = None, alpha = None, 
-                legend = False, cbar = False, cbar_ticks = 5, cbar_max_symbol = False, only_min_max = False, axis_frame = False, ms = None, ms_factor = None, lw = None, lw_factor = None, gdf_base_map = pd.DataFrame({"a" : []}), base_map_color = None, base_map_alpha = 0.4,
+                legend = False, cbar = False, cbar_ticks = 5, cbar_max_symbol = False, only_min_max = False, axes_frame = False, ms = None, ms_factor = None, lw = None, lw_factor = None, gdf_base_map = pd.DataFrame({"a" : []}), base_map_color = None, base_map_alpha = 0.4,
                 base_map_lw = 1.1, base_map_ms = 2.0, base_map_zorder = 0):
     """
     It plots the geometries of a GeoDataFrame, coloring on the bases of the values contained in column, using a given scheme.
@@ -204,8 +245,8 @@ def plot_gdf(gdf, column = None, title = None, black_background = True, fig_size
         classes for visualising when scheme is not "None"
     norm: array
         A class that specifies a desired data normalisation into a [min, max] interval
-    cmap: string,
-        see matplotlib colormaps for a list of possible values
+    cmap: string, matplotlib.colors.LinearSegmentedColormap
+        see matplotlib colormaps for a list of possible values or pass a colormap
     color: string
         categorical color applied to all geometries when not using a column to color them
     alpha: float
@@ -215,12 +256,12 @@ def plot_gdf(gdf, column = None, title = None, black_background = True, fig_size
     cbar: boolean
         if True, show colorbar, otherwise don't; when True it doesn't show legend
     cbar_ticks: int
-        number of ticks along the color barrier_type
+        number of ticks along the colorbar
     cbar_max_symbol: boolean
-        if True, it shows the ">" next to the highest tick's label in the color bar (useful when normalising)
+        if True, it shows the ">" next to the highest tick's label in the colorbar (useful when normalising)
     only_min_max: boolean
-        if True, it shows the ">" next to the highest tick's label in the color bar (useful when normalising)
-    axis_frame: boolean
+        if True, it shows the ">" next to the highest tick's label in the colorbar (useful when normalising)
+    axes_frame: boolean
         if True, it shows an axis frame
     ms: float
         point size value, when plotting a Point GeoDataFrame
@@ -244,15 +285,20 @@ def plot_gdf(gdf, column = None, title = None, black_background = True, fig_size
         base map's line width when the base map is a LineString GeoDataFrame
     base_map_zorder: int   
         zorder of the layer; e.g. if 0, plots first, thus main GeoDataFrame on top; if 1, plots last, thus on top.
-    """
+        
+    Returns
+    -------
+    fig: matplotlib.figure.Figure object
+        the resulting figure
+    """   
     
     # fig,ax set up
     plot = Plot(fig_size = fig_size, black_background = black_background, title = title)
     fig, ax = plot.fig, plot.ax
     
     ax.set_aspect("equal")
-    if axis_frame: 
-        set_axis_frame(ax, black_background, plot.text_color)
+    if axes_frame: 
+        _set_axes_frame(ax, black_background, plot.text_color)
     else: 
         ax.set_axis_off()     
     zorder = 0
@@ -267,8 +313,8 @@ def plot_gdf(gdf, column = None, title = None, black_background = True, fig_size
         if base_map_zorder == 0:
             zorder = 1
    
-    single_plot(ax, gdf, column = column, scheme = scheme, bins = bins, classes = classes, norm = norm, cmap = cmap, color = color, alpha = alpha, 
-                axis_frame = axis_frame, ms = ms, ms_factor = ms_factor, lw = lw, lw_factor = lw_factor, zorder = zorder, legend = legend)
+    _single_plot(ax, gdf, column = column, scheme = scheme, bins = bins, classes = classes, norm = norm, cmap = cmap, color = color, alpha = alpha, 
+                ms = ms, ms_factor = ms_factor, lw = lw, lw_factor = lw_factor, zorder = zorder, legend = legend)
 
     if legend: 
         _generate_legend_ax(ax, plot.font_size-5, black_background) 
@@ -282,12 +328,11 @@ def plot_gdf(gdf, column = None, title = None, black_background = True, fig_size
         generate_row_colorbar(cmap, fig, ax, ncols = 1, text_color = plot.text_color, font_size = plot.font_size, norm = norm, 
                              ticks = cbar_ticks,symbol = cbar_max_symbol, only_min_max = only_min_max)
     
-    plt.show()    
+    return fig    
                 
-def plot_barriers(barriers_gdf, lw = 1.1, title = "Plot", legend = False, axis_frame = False, black_background = True,                 
+def plot_barriers(barriers_gdf, lw = 1.1, title = "Plot", legend = False, axes_frame = False, black_background = True,                 
                fig_size = 15, gdf_base_map = pd.DataFrame({"a" : []}), base_map_color = None, base_map_alpha = 0.4,
                base_map_lw = 1.1, base_map_ms = 2.0, base_map_zorder = 0):
-    
     """
     It creates a plot from a lineString GeoDataFrame. 
     When column and scheme are not "None" it plots the distribution over value and geographical space of variable "column using scheme
@@ -307,7 +352,7 @@ def plot_barriers(barriers_gdf, lw = 1.1, title = "Plot", legend = False, axis_f
         title of the graph
     legend: boolean
         if True, show legend, otherwise don't
-        axis_frame: boolean
+    axes_frame: boolean
         if True, it shows an axis frame 
     black_background: boolean 
         black background or white
@@ -325,7 +370,12 @@ def plot_barriers(barriers_gdf, lw = 1.1, title = "Plot", legend = False, axis_f
         base map's line width when the base map is a LineString GeoDataFrame
     base_map_zorder: int   
         zorder of the layer; e.g. if 0, plots first, thus main GeoDataFrame on top; if 1, plots last, thus on top.
-    """ 
+        
+    Returns
+    -------
+    fig: matplotlib.figure.Figure object
+        the resulting figure
+    """   
     barriers_gdf = barriers_gdf.copy()    
     
     # fig,ax set up
@@ -333,8 +383,8 @@ def plot_barriers(barriers_gdf, lw = 1.1, title = "Plot", legend = False, axis_f
     fig, ax = plot.fig, plot.ax
     
     ax.set_aspect("equal")
-    if axis_frame: 
-        set_axis_frame(ax, black_background, plot.text_color)
+    if axes_frame: 
+        _set_axes_frame(ax, black_background, plot.text_color)
     else: 
         ax.set_axis_off()     
     
@@ -364,7 +414,7 @@ def plot_barriers(barriers_gdf, lw = 1.1, title = "Plot", legend = False, axis_f
     plt.show()  
     
 def plot_gdfs(list_gdfs = None, column = None, main_title = None, titles = None, black_background = True, fig_size = 15, scheme = None, bins = None, classes = None, norm = None, cmap = None, color = None, alpha = None, 
-                legend = False, cbar = False, cbar_ticks = 5, cbar_max_symbol = False, only_min_max = False, axis_frame = False, ms = None, ms_factor = None, lw = None, lw_factor = None): 
+                legend = False, cbar = False, cbar_ticks = 5, cbar_max_symbol = False, only_min_max = False, axes_frame = False, ms = None, ms_factor = None, lw = None, lw_factor = None): 
                      
     """
     It plots the geometries of a list of GeoDataFrame, containing the same type of geometry. Coloring is based on a provided column (that needs to be a column in each passed GeoDataFrame), using a given scheme.
@@ -393,8 +443,8 @@ def plot_gdfs(list_gdfs = None, column = None, main_title = None, titles = None,
         classes for visualising when scheme is not "None"
     norm: array
         A class that specifies a desired data normalisation into a [min, max] interval
-    cmap: string,
-        see matplotlib colormaps for a list of possible values
+    cmap: string, matplotlib.colors.LinearSegmentedColormap
+        see matplotlib colormaps for a list of possible values or pass a colormap
     color: string
         categorical color applied to all geometries when not using a column to color them
     alpha: float
@@ -404,12 +454,12 @@ def plot_gdfs(list_gdfs = None, column = None, main_title = None, titles = None,
     cbar: boolean
         if True, show colorbar, otherwise don't; when True it doesn't show legend
     cbar_ticks: int
-        number of ticks along the color barrier_type
+        number of ticks along the colorbar
     cbar_max_symbol: boolean
-        if True, it shows the ">" next to the highest tick's label in the color bar (useful when normalising)
+        if True, it shows the ">" next to the highest tick's label in the colorbar (useful when normalising)
     only_min_max: boolean
-        if True, it shows the ">" next to the highest tick's label in the color bar (useful when normalising)
-    axis_frame: boolean
+        if True, it shows only the mix and max ticks' labels in the colorbar
+    axes_frame: boolean
         if True, it shows an axis frame
     ms: float
         point size value, when plotting a Point GeoDataFrame
@@ -421,6 +471,12 @@ def plot_gdfs(list_gdfs = None, column = None, main_title = None, titles = None,
     lw_factor: float
         when provided, it rescales the column provided, if any, from 0 to 1 and it uses the lw_factor to rescale the line width accordingly 
         (e.g. rescaled variable's value [0-1] * factor), when plotting a LineString GeoDataFrame   
+        
+    
+    Returns
+    -------
+    fig: matplotlib.figure.Figure object
+        the resulting figure
     """              
                      
     nrows, ncols = int(len(list_gdfs)/2), 2
@@ -436,8 +492,8 @@ def plot_gdfs(list_gdfs = None, column = None, main_title = None, titles = None,
     for n, ax in enumerate(grid):
                 
         ax.set_aspect("equal")
-        if axis_frame: 
-            set_axis_frame(ax, black_background, multiPlot.text_color)
+        if axes_frame: 
+            _set_axes_frame(ax, black_background, multiPlot.text_color)
         else: 
             ax.set_axis_off()      
 
@@ -457,8 +513,8 @@ def plot_gdfs(list_gdfs = None, column = None, main_title = None, titles = None,
             legend_ax = False
             legend_fig = False
         
-        single_plot(ax, gdf, column = column, scheme = scheme, bins = bins, classes = classes, norm = norm, cmap = cmap, color = color, alpha = alpha, legend = legend_ax, 
-                    axis_frame = axis_frame, ms = ms, ms_factor = ms_factor, lw = lw, lw_factor = lw_factor)
+        _single_plot(ax, gdf, column = column, scheme = scheme, bins = bins, classes = classes, norm = norm, cmap = cmap, color = color, alpha = alpha, legend = legend_ax, 
+                    ms = ms, ms_factor = ms_factor, lw = lw, lw_factor = lw_factor)
                     
         if legend_fig:
             _generate_legend_fig(ax, nrows, multiPlot.text_color, (multiPlot.font_size-5), black_background)
@@ -476,8 +532,7 @@ def plot_gdfs(list_gdfs = None, column = None, main_title = None, titles = None,
     return fig
    
 def plot_gdf_grid(gdf = None, columns = None, titles = None, black_background = True, fig_size = 15, scheme = None, bins = None, classes = None, norm = None, cmap = None, color = None, alpha = None, 
-                legend = False, cbar = False, cbar_ticks = 5, cbar_max_symbol = False, only_min_max = False, axis_frame = False, ms = None, ms_factor = None, lw = None, lw_factor = None): 
-    
+                legend = False, cbar = False, cbar_ticks = 5, cbar_max_symbol = False, only_min_max = False, axes_frame = False, ms = None, ms_factor = None, lw = None, lw_factor = None): 
     """
     It plots the geometries of a GeoDataFrame, coloring on the bases of the values contained in column, using a given scheme.
     If only "column" is provided, a categorical map is depicted.
@@ -503,8 +558,8 @@ def plot_gdf_grid(gdf = None, columns = None, titles = None, black_background = 
         classes for visualising when scheme is not "None"
     norm: array
         A class that specifies a desired data normalisation into a [min, max] interval
-    cmap: string,
-        see matplotlib colormaps for a list of possible values
+    cmap: string, matplotlib.colors.LinearSegmentedColormap
+        see matplotlib colormaps for a list of possible values or pass a colormap
     color: string
         categorical color applied to all geometries when not using a column to color them
     alpha: float
@@ -514,12 +569,12 @@ def plot_gdf_grid(gdf = None, columns = None, titles = None, black_background = 
     cbar: boolean
         if True, show colorbar, otherwise don't; when True it doesn't show legend
     cbar_ticks: int
-        number of ticks along the color barrier_type
+        number of ticks along the colorbar
     cbar_max_symbol: boolean
-        if True, it shows the ">" next to the highest tick's label in the color bar (useful when normalising)
+        if True, it shows the ">" next to the highest tick's label in the colorbar (useful when normalising)
     only_min_max: boolean
-        if True, it shows the ">" next to the highest tick's label in the color bar (useful when normalising)
-    axis_frame: boolean
+        if True, it shows only the mix and max ticks' labels in the colorbar
+    axes_frame: boolean
         if True, it shows an axis frame
     ms: float
         point size value, when plotting a Point GeoDataFrame
@@ -544,8 +599,8 @@ def plot_gdf_grid(gdf = None, columns = None, titles = None, black_background = 
     for n, ax in enumerate(grid):
         
         ax.set_aspect("equal")
-        if axis_frame: 
-            set_axis_frame(ax, black_background, multiPlot.text_color)
+        if axes_frame: 
+            _set_axes_frame(ax, black_background, multiPlot.text_color)
         else: 
             ax.set_axis_off()
         
@@ -565,8 +620,8 @@ def plot_gdf_grid(gdf = None, columns = None, titles = None, black_background = 
             legend_ax = False
             legend_fig = False
         
-        single_plot(ax, gdf, column = column, scheme = scheme, bins = bins, classes = classes, norm = norm, cmap = cmap, color = color, alpha = alpha, legend = legend_ax,
-                    axis_frame = axis_frame, ms = ms, ms_factor = ms_factor, lw = lw, lw_factor = lw_factor)
+        _single_plot(ax, gdf, column = column, scheme = scheme, bins = bins, classes = classes, norm = norm, cmap = cmap, color = color, alpha = alpha, legend = legend_ax,
+                    ms = ms, ms_factor = ms_factor, lw = lw, lw_factor = lw_factor)
                             
         if legend_fig:
             _generate_legend_fig(ax, nrows, multiPlot.text_color, multiPlot.font_size-5, black_background)
@@ -645,6 +700,20 @@ def plot_multiplex(M, multiplex_edges):
     return(fig)
     
 def _generate_legend_fig(ax, nrows, text_color, font_size, black_background):
+    """ 
+    It generates the legend for an entire figure.
+    
+    Parameters
+    ----------
+    ax: matplotlib.axes object
+        the Axes on which plotting
+    nrows: int
+        number of rows in the figure
+    text_color: string
+        the text color
+    font_size: int
+        the legend's labels text size
+    """
     
     leg = ax.get_legend() 
     plt.setp(leg.texts, family='Times New Roman', fontsize = font_size, color = text_color, va = 'center')
@@ -661,7 +730,18 @@ def _generate_legend_fig(ax, nrows, text_color, font_size, black_background):
         handle._legmarker.set_markersize(15)
 
 def _generate_legend_ax(ax, font_size, black_background):
-
+    """ 
+    It generate the legend for a figure.
+    
+    Parameters
+    ----------
+    ax: matplotlib.axes object
+        the Axes on which plotting
+    text_color: string
+        the text color
+    font_size: int
+        the legend's labels text size
+    """
     leg = ax.get_legend()  
     if black_background:
         text_color = 'black'
@@ -683,6 +763,34 @@ def _generate_legend_ax(ax, font_size, black_background):
         leg.get_frame().set_alpha(0.90)  
  
 def generate_grid_colorbar(cmap, fig, grid, nrows, ncols, text_color, font_size, norm = None, ticks = 5, symbol = False, only_min_max = False):
+    """ 
+    It generates a colorbar for an entire grid of axes.
+    
+    Parameters
+    ----------
+    cmap: string, matplotlib.colors.LinearSegmentedColormap
+        see matplotlib colormaps for a list of possible values or pass a colormap
+    fig: matplotlib.figure.Figure
+        The figure container for the current plot
+    grid: array of Axes, mpl_toolkits.axes_grid1.axes_grid.ImageGrid
+        the list of Axes or the ImageGrid object
+    nrows: int
+        the number of "rows" in the grid/figure
+    ncols: int
+        the number of "columns" in the grid/figure
+    text_color: string
+        the text color    
+    font_size: int
+        the colorbar's labels text size
+    norm: array
+        A class that specifies a desired data normalisation into a [min, max] interval
+    ticks: int
+        the number of ticks along the colorbar
+    symbol: boolean
+        if True, it shows the ">" next to the highest tick's label in the colorbar (useful when normalising)
+    only_min_max: boolean
+        if True, it shows only the mix and max ticks' labels in the colorbar
+    """
     
     if font_size is None: 
         font_size = 20
@@ -707,9 +815,35 @@ def generate_grid_colorbar(cmap, fig, grid, nrows, ncols, text_color, font_size,
         ax = grid[nrows-1]
         pos = [ax.get_position().x0+width, ax.get_position().y0, 0.027, ax.get_position().height]
 
-    _set_colorbar(fig, pos, sm, ticks, norm, symbol, text_color, font_size, only_min_max)    
+    _set_colorbar(fig, pos, sm, norm, text_color, font_size, ticks, symbol, only_min_max)    
     
 def generate_row_colorbar(cmap, fig, ax, ncols, text_color, font_size, norm = None, ticks = 5, symbol = False, only_min_max = False):
+    """ 
+    It generates a colorbar for a specific row of a figure.
+    
+    Parameters
+    ----------
+    cmap: string, matplotlib.colors.LinearSegmentedColormap
+        see matplotlib colormaps for a list of possible values or pass a colormap
+    fig: matplotlib.figure.Figure
+        The figure container for the current plot    
+    ax: matplotlib.axes object
+        the Axes on which plotting
+    ncols: int
+        the number of "columns" in the grid/figure
+    text_color: string
+        the text color
+    font_size: int
+        the colorbar's labels text size
+    norm: array
+        A class that specifies a desired data normalisation into a [min, max] interval
+    ticks: int
+        the number of ticks along the colorbar
+    symbol: boolean
+        if True, it shows the ">" next to the highest tick's label in the colorbar (useful when normalising)
+    only_min_max: boolean
+        if True, it shows only the mix and max ticks' labels in the colorbar
+    """
     
     if font_size is None: 
         font_size = 20
@@ -726,10 +860,35 @@ def generate_row_colorbar(cmap, fig, ax, ncols, text_color, font_size, norm = No
         width = ax.get_position().x1*(ncols-1)-hr_p*ncols
     pos = [ax.get_position().x0+width, ax.get_position().y0, 0.05, ax.get_position().height]
     
-    _set_colorbar(fig, pos, sm, ticks, norm, symbol, text_color, font_size, only_min_max)    
+    _set_colorbar(fig, pos, sm, norm, text_color, font_size, ticks, symbol, only_min_max)    
     
     
-def _set_colorbar(fig, pos, sm, ticks, norm, symbol, text_color, font_size, only_min_max = False):
+def _set_colorbar(fig, pos, sm, norm, text_color, font_size, ticks, symbol, only_min_max = False):
+    """ 
+    It plots a colorbar, given some settings.
+    
+    Parameters
+    ----------
+    fig: matplotlib.figure.Figure
+        The figure container for the current plot
+    pos: list of float
+        the axes positions
+    sm: matplotlib.cm.ScalarMappable
+        a mixin class to map scalar data to RGBA
+    norm: array
+        A class that specifies a desired data normalisation into a [min, max] interval
+    text_color: string
+        the text color
+    font_size: int
+        the colorbar's labels text size
+    ticks: int
+        the number of ticks along the colorbar
+    symbol: boolean
+        if True, it shows the ">" next to the highest tick's label in the colorbar (useful when normalising)
+    only_min_max: boolean
+        if True, it shows only the mix and max ticks' labels in the colorbar
+    """
+
     cax = fig.add_axes(pos, frameon = False)
     cax.tick_params(size=0)
     cb = plt.colorbar(sm, cax=cax)
@@ -756,11 +915,46 @@ def _set_colorbar(fig, pos, sm, ticks, norm, symbol, text_color, font_size, only
     plt.setp(plt.getp(cax.axes, "yticklabels"), color = text_color, fontfamily = 'Times New Roman', fontsize=font_size)
              
 def normalize(n, range1, range2):
+    """ 
+    It generate the legend for a figure.
+    
+    Parameters
+    ----------
+    ax:
+    
+    nrows:
+    
+    text_color:
+    
+    font_size:
+    
+    black_background:
+    
+    Returns
+    -------
+    cmap:  matplotlib.colors.Colormap
+        the color map
+    """  
     delta1 = range1[1] - range1[0]
     delta2 = range2[1] - range2[0]
     return (delta2 * (n - range1[0]) / delta1) + range2[0]           
 
 def random_colors_list_hsv(nlabels, vmin = 0.8, vmax = 1.0):
+    """ 
+    It generates a list of random HSV colors, given the number of classes, min and max values in the HSV spectrum.
+    
+    Parameters
+    ----------
+    nlabels: int
+        the number of categories to be coloured 
+    type_color: string {"soft", "bright"} 
+        it defines whether using bright or soft pastel colors, by limiting the RGB spectrum
+       
+    Returns
+    -------
+    cmap: matplotlib.colors.LinearSegmentedColormap
+        the color map
+    """
     randHSVcolors = [(np.random.uniform(low=0.0, high=0.95),
                       np.random.uniform(low=0.4, high=0.95),
                       np.random.uniform(low= vmin, high= vmax)) for i in range(nlabels)]
@@ -768,9 +962,25 @@ def random_colors_list_hsv(nlabels, vmin = 0.8, vmax = 1.0):
     return  randHSVcolors
 
 def random_colors_list_rgb(nlabels, vmin = 0.8, vmax = 1.0):
+    """ 
+    It generates a categorical random color map, given the number of classes
+    
+    Parameters
+    ----------
+    nlabels: int
+        the number of categories to be coloured 
+    type_color: string {"soft", "bright"} 
+        it defines whether using bright or soft pastel colors, by limiting the RGB spectrum
+       
+    Returns
+    -------
+    cmap: matplotlib.colors.LinearSegmentedColormap
+        the color map
+    """ 
+    
     randHSVcolors = [(np.random.uniform(low=0.0, high=0.95),
                       np.random.uniform(low=0.4, high=0.95),
-                       np.random.uniform(low= vmin, high= vmax)) for i in range(nlabels)]
+                      np.random.uniform(low= vmin, high= vmax)) for i in range(nlabels)]
 
     # Convert HSV list to RGB
     randRGBcolors = []
@@ -781,14 +991,21 @@ def random_colors_list_rgb(nlabels, vmin = 0.8, vmax = 1.0):
             
 # Generate random colormap
 def rand_cmap(nlabels, type_color ='soft'):
-    """
-    Creates a random colormap to be used together with matplotlib. Useful for segmentation tasks
-    :param nlabels: Number of labels (size of colormap)
-    :param type: 'bright' for strong colors, 'soft' for pastel colors
-    :param first_color_black: Option to use first color as black, True or False
-    :param last_color_black: Option to use last color as black, True or False
-    :return: colormap for matplotlib
-    """
+    """ 
+    It generates a categorical random color map, given the number of classes
+    
+    Parameters
+    ----------
+    nlabels: int
+        the number of categories to be coloured 
+    type_color: string {"soft", "bright"} 
+        it defines whether using bright or soft pastel colors, by limiting the RGB spectrum
+       
+    Returns
+    -------
+    cmap: matplotlib.colors.LinearSegmentedColormap
+        the color map
+    """   
     if type_color not in ('bright', 'soft'):
         type_color = 'bright'
     
@@ -819,42 +1036,57 @@ def rand_cmap(nlabels, type_color ='soft'):
     return random_colormap
 
 def kindlmann():
+    """ 
+    It returns a Kindlmann color map. See https://ieeexplore.ieee.org/document/1183788
+       
+    Returns
+    -------
+    cmap: matplotlib.colors.LinearSegmentedColormap
+        the color map
+    """   
 
     kindlmann_list = [(0.00, 0.00, 0.00,1), (0.248, 0.0271, 0.569, 1), (0.0311, 0.258, 0.646,1),
             (0.019, 0.415, 0.415,1), (0.025, 0.538, 0.269,1), (0.0315, 0.658, 0.103,1),
             (0.331, 0.761, 0.036,1),(0.768, 0.809, 0.039,1), (0.989, 0.862, 0.772,1),
             (1.0, 1.0, 1.0)]
-    return LinearSegmentedColormap.from_list('kindlmann', kindlmann_list)
+    cmap = LinearSegmentedColormap.from_list('kindlmann', kindlmann_list)
+    return cmap
     
-def _set_axis_frame(ax, black_background, text_color):
+def _set_axes_frame(ax, black_background, text_color):
+    """ 
+    It draws the axis frame.
     
+    Parameters
+    ----------
+    ax: matplotlib.axes
+        the Axes on which plotting
+    black_background: boolean
+        it indicates if the background color is black
+    text_color: string
+        the text color
+    """
     ax.xaxis.set_ticklabels([])
     ax.yaxis.set_ticklabels([])
     ax.tick_params(axis= 'both', which= 'both', length=0)
+    
     for spine in ax.spines: 
         ax.spines[spine].set_color(text_color)
     if black_background: 
         ax.set_facecolor('black')
+      
+def cmap_from_colors(list_colors):
+    """ 
+    It generates a colormap given a list of colors.
     
-def cmap_two_colors(from_rgb,to_rgb):
-    
-    from_rgb = cols.to_rgb(from_rgb)
-    to_rgb = cols.to_rgb(to_rgb) 
-        
-    # from color r,g,b
-    r1,g1,b1 = from_rgb
-    # to color r,g,b
-    r2,g2,b2 = to_rgb
-
-    cdict = {'red': ((0, r1, r1), (1, r2, r2)),
-           'green': ((0, g1, g1), (1, g2, g2)),
-           'blue': ((0, b1, b1), (1, b2, b2))}
-
-    cmap = LinearSegmentedColormap('custom_cmap', cdict)
+    Parameters
+    ----------
+    list_colors: list of string
+        the list of colours
+       
+    Returns
+    -------
+    cmap:  matplotlib.colors.LinearSegmentedColormap
+        the color map
+    """   
+    cmap = LinearSegmentedColormap.from_list('custom_cmap', list_colors)
     return cmap
-    
-def cmap_three_colors(col1, col2, col3):
-
-    list_colors = [col1, col2, col3]
-
-    return LinearSegmentedColormap.from_list('red_to green', list_colors)

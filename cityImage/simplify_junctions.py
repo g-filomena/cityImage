@@ -369,10 +369,12 @@ def dissolve_roundabouts(nodes_gdf, edges_gdf, max_length_segment = 80, angle_to
         return(nodes_gdf, edges_gdf)
     
     to_edit_gdf = nodes_gdf[nodes_gdf.nodeID.isin(list(to_edit.keys()))].copy()
+    if len(to_edit_gdf) == 0:
+        return nodes_gdf, edges_gdf
         
     for node in to_edit_gdf.itertuples():
 
-        if node in processed_nodes: 
+        if node.Index in processed_nodes: 
             continue
         tmp =  edges_gdf[(edges_gdf['u'] == node.Index) | (edges_gdf['v'] == node.Index)].copy()
         found = False

@@ -8,7 +8,7 @@ from shapely.ops import cascaded_union, linemerge, polygonize, polygonize_full, 
 from .utilities import gdf_from_geometries
 pd.set_option("precision", 10)
 
-def road_barriers(place, download_method, distance = 500.0, epsg = None, include_primary = False):
+def road_barriers(place, download_method, distance = 500.0, epsg = None, include_primary = False, include_secondary = False):
     """
     The function downloads major roads from OSM. These can be considered to be barrier to pedestrian movement or, at least, to structure people's cognitive Image of the City.
     if 'include_primary' considers also primary roads, beyond motorway and trunk roads.
@@ -25,7 +25,9 @@ def road_barriers(place, download_method, distance = 500.0, epsg = None, include
     epsg: int
         epsg of the area considered; if None OSMNx is used for the projection
     include_primary: boolean
-        it is used only if download_method_graphB == "distance from address"
+        it true, it considers primary roads as barriers
+    include_secondary: boolean
+        it true, it considers secondary roads as barriers
         
     Returns
     -------
@@ -37,6 +39,8 @@ def road_barriers(place, download_method, distance = 500.0, epsg = None, include
     to_keep = ['trunk', 'motorway']
     if include_primary:
         to_keep.append('primary')
+    if include_primary:
+        to_keep.append('secondary')
         
     tags = {'highway': True}
     roads = _download_geometries(place, download_method, tags, crs, distance)

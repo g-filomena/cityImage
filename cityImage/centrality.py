@@ -208,8 +208,8 @@ def centrality(G, nodes_gdf, measure, weight, normalized = False):
     G: Networkx graph
     nodes_gdf: Point GeoDataFrame
         nodes (junctions) GeoDataFrame
-    measure: string
-        the type of centrality to be computed {"betweenness_centrality", "straightness_centrality", "closeness_centrality","information_centrality"}
+    measure: string {"betweenness_centrality", "straightness_centrality", "closeness_centrality","information_centrality"}
+        the type of centrality to be computed 
     weight: string
         the street segments' weight (e.g. distance)
     normalized: boolean

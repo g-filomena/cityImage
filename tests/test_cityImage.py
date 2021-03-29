@@ -106,7 +106,7 @@ graph = None
     # plot = ci.plot_gdf(gdf = nodes_gdf, column = 'Bc', black_background = True, fig_size = 15, scheme = 'Lynch_Breaks', 
         # cmap = cmap, legend = True, axis_frame = True, ms = 25, **base_map_dict) 
     
-    # cmap = ci.cmap_three_colors('yellow', 'orange', 'red')
+    # cmap = ci.cmap_from_colors(['yellow', 'orange', 'red'])
     # plot = ci.plot_gdf_grid(gdf = nodes_gdf, columns = columns, black_background = True, fig_size = 15, scheme = 'Lynch_Breaks', 
         # cmap = cmap, legend = True, ms_factor = 30) 
     
@@ -114,55 +114,55 @@ graph = None
     # edges_gdf = ci.append_edges_metrics(edges_gdf, graph, [Eb], ['Eb'])
     
     # cbar_dict = {'cbar' : True, 'cbar_ticks' : 2, 'cbar_max_symbol' : True, 'only_min_max' : True}
-    # cmap = ci.cmap_two_colors('red', 'blue')
+    # cmap = ci.cmap_from_colors(['red', 'blue'])
     # plot_edges = ci.plot_gdf(edges_gdf, column = 'Eb', black_background = True, fig_size = 15, scheme = 'Fisher_Jenks', cmap = cmap, norm = None, legend = False, **cbar_dict)
     
     # _, edges_gdf2 = ci.get_network_fromOSM("Avigliana, Italia", 'OSMplace', network_type = "all", epsg = epsg)
-    # plot_multi = ci.plot_gdfs([edges_gdf, edges_gdf2], column = "length", 
+    # plot_multi = ci.plot_gdfs([edges_gdf, edges_gdf2], column = "length", black_background = True, fig_size = 15, scheme = 'Fisher_Jenks', cmap = cmap, **cbar_dict)
     
 
 # def test_clean_network():
     # nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg)
     # nodes_gdf, edges_gdf = ci.simplify_pipeline(nodes_gdf, edges_gdf, radius = 12)
 
-# def test_landmarks():
+def test_landmarks():
     
-    # epsg = 3003
-    # buildings_gdf = ci.get_buildings_fromOSM(place, download_method = 'OSMplace', epsg = epsg)
-    # buildings_gdf_address = ci.get_buildings_fromOSM(address, download_method = 'distance_from_address', epsg = epsg, distance = 1000)
-    # buildings_gdf_point = ci.get_buildings_fromOSM(location, download_method = 'from_point', epsg = epsg, distance = 1000)
-    # historical = ci.get_historical_buildings_fromOSM(place, download_method = 'OSMplace', epsg = epsg)
+    epsg = 3003
+    buildings_gdf = ci.get_buildings_fromOSM(place, download_method = 'OSMplace', epsg = epsg)
+    buildings_gdf_address = ci.get_buildings_fromOSM(address, download_method = 'distance_from_address', epsg = epsg, distance = 1000)
+    buildings_gdf_point = ci.get_buildings_fromOSM(location, download_method = 'from_point', epsg = epsg, distance = 1000)
+    historical = ci.get_historical_buildings_fromOSM(place, download_method = 'OSMplace', epsg = epsg)
     
-    # epsg = 25832
-    # input_path = 'tests/input/Muenster_buildings.shp'
+    epsg = 25832
+    input_path = 'tests/input/Muenster_buildings.shp'
     
     # buildings_shp, _ = ci.get_buildings_fromSHP(input_path, epsg = epsg, height_field = 'height', base_field = 'base', land_use_field = 'land_use')
     # buildings_attributes = ci.attach_attributes(buildings_gdf, attributes_gdf, height_field, base_field, land_use_field)
     
-    # buildings_shp, _ = ci.get_buildings_fromSHP(input_path, epsg = epsg, height_field = 'height', base_field = 'base', land_use_field = 'land_use')
-    # sight_lines = gpd.read_file('tests/input/Muenster_sight_lines.shp')
-    # buildings_shp, _ = ci.visibility_score(buildings_shp, sight_lines = sight_lines)
+    buildings_shp, _ = ci.get_buildings_fromSHP(input_path, epsg = epsg, height_field = 'height', base_field = 'base', land_use_field = 'land_use')
+    sight_lines = gpd.read_file('tests/input/Muenster_sight_lines.shp')
+    buildings_shp, _ = ci.visibility_score(buildings_shp, sight_lines = sight_lines)
     
-    # _, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "drive", epsg = epsg)
-    # buildings_gdf = ci.structural_score(buildings_gdf, buildings_gdf, edges_gdf, max_expansion_distance = 100, distance_along = 50, radius = 100)   
+    _, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "drive", epsg = epsg)
+    buildings_gdf = ci.structural_score(buildings_gdf, buildings_gdf, edges_gdf, max_expansion_distance = 100, distance_along = 50, radius = 100)   
     
-    # buildings_gdf = ci.cultural_score_from_OSM(buildings_gdf)
-    # buildings_gdf, _ = ci.visibility_score(buildings_gdf)
-    # buildings_gdf['land_use'] = buildings_gdf['land_use_raw']
-    # buildings_gdf = ci.pragmatic_score(buildings_gdf, radius = 200)
+    buildings_gdf = ci.cultural_score_from_OSM(buildings_gdf)
+    buildings_gdf, _ = ci.visibility_score(buildings_gdf)
+    buildings_gdf['land_use'] = buildings_gdf['land_use_raw']
+    buildings_gdf = ci.pragmatic_score(buildings_gdf, radius = 200)
     
-    # g_cW = {'vScore': 0.50, 'sScore' : 0.30, 'cScore': 0.20, 'pScore': 0.10}
-    # g_iW = {'3dvis': 0.50, 'fac': 0.30, 'height': 0.20, 'area': 0.30, '2dvis':0.30, 'neigh': 0.20 , 'road': 0.20}
+    g_cW = {'vScore': 0.50, 'sScore' : 0.30, 'cScore': 0.20, 'pScore': 0.10}
+    g_iW = {'3dvis': 0.50, 'fac': 0.30, 'height': 0.20, 'area': 0.30, '2dvis':0.30, 'neigh': 0.20 , 'road': 0.20}
 
-    # l_cW = {'vScore': 0.25, 'sScore' : 0.35, 'cScore':0.10 , 'pScore': 0.30}
-    # l_iW = {'3dvis': 0.50, 'fac': 0.30, 'height': 0.20, 'area': 0.40, '2dvis': 0.00, 'neigh': 0.30 , 'road': 0.30}
+    l_cW = {'vScore': 0.25, 'sScore' : 0.35, 'cScore':0.10 , 'pScore': 0.30}
+    l_iW = {'3dvis': 0.50, 'fac': 0.30, 'height': 0.20, 'area': 0.40, '2dvis': 0.00, 'neigh': 0.30 , 'road': 0.30}
     
-    # buildings_gdf = ci.compute_global_scores(buildings_gdf, g_cW, g_iW)
-    # buildings_gdf = ci.compute_local_scores(buildings_gdf, l_cW, l_iW, radius = 1500)
+    buildings_gdf = ci.compute_global_scores(buildings_gdf, g_cW, g_iW)
+    buildings_gdf = ci.compute_local_scores(buildings_gdf, l_cW, l_iW, radius = 1500)
 
-    # cmap = ci.random_colors_list_rgb(nlabels = len(buildings_gdf.land_use.unique()))
-    # plot_buildings = ci.plot_gdf(buildings_gdf, column = 'land_use', black_background = True, fig_size = 15, legend = True)
-    # plot_flat = ci.plot_gdf(buildings_gdf, black_background = True, fig_size = 15)
+    cmap = ci.random_colors_list_rgb(nlabels = len(buildings_gdf.land_use.unique()))
+    plot_buildings = ci.plot_gdf(buildings_gdf, column = 'land_use', black_background = True, fig_size = 15, legend = True)
+    plot_flat = ci.plot_gdf(buildings_gdf, black_background = True, fig_size = 15)
     
     
 # def test_regions():
@@ -186,18 +186,18 @@ graph = None
     # nodes_gdf_ped = ci.amend_nodes_membership(nodes_gdf_ped, edges_gdf_ped, 'p_topo', min_size_district = min_size_district)
     # nodes_gdf_ped = ci.find_gateways(nodes_gdf_ped, edges_gdf_ped, 'p_topo')
 
-def test_railway_graph():
+# def test_railway_graph():
 
-    place = 'Paris, France'
-    epsg = 27571
+    # place = 'Paris, France'
+    # epsg = 27571
         
-    railways_gdf = ci.get_urban_rail_fromOSM(place, 'OSMplace', epsg)
-    railways_gdf = railways_gdf[railways_gdf['type'] == 'rail'].copy()
+    # railways_gdf = ci.get_urban_rail_fromOSM(place, 'OSMplace', epsg)
+    # railways_gdf = railways_gdf[railways_gdf['type'] == 'rail'].copy()
 
-    stations_gdf = gpd.read_file('tests/input/Paris_stations.shp', driver = 'ESRI Shapefile')
-    stations_gdf = stations_gdf[stations_gdf['mode'] == 'RER']
+    # stations_gdf = gpd.read_file('tests/input/Paris_stations.shp', driver = 'ESRI Shapefile')
+    # stations_gdf = stations_gdf[stations_gdf['mode'] == 'RER']
     
-    nodes_railway, edges_railway = ci.gdfs_from_railways(railways_gdf, epsg)
-    nodes_railway, edges_railway = ci.assign_stations_to_nodes(stations_gdf, nodes_railway, edges_railway, name_field = 'nom_gare')
-    nodes_railway, edges_railway = ci.dissolve_stations(nodes_railway, edges_railway)
-    nodes_railway, edges_railway = ci.extend_stations(nodes_railway, edges_railway)
+    # nodes_railway, edges_railway = ci.gdfs_from_railways(railways_gdf, epsg)
+    # nodes_railway, edges_railway = ci.assign_stations_to_nodes(stations_gdf, nodes_railway, edges_railway, name_field = 'nom_gare')
+    # nodes_railway, edges_railway = ci.dissolve_stations(nodes_railway, edges_railway)
+    # nodes_railway, edges_railway = ci.extend_stations(nodes_railway, edges_railway)

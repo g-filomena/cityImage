@@ -17,28 +17,27 @@ from .utilities import distance_geometry_gdf
 clean_settings = {'remove_disconnected_islands' : False, 'dead_ends' : False, 'same_uv_edges' : False, 'self_loops' : True, 'fix_topology' : False}
 
 def get_urban_rail_fromOSM(place, download_method, epsg, distance = 7000): 
-
     """
-    The function downloads and creates a simplified OSMNx graph for a selected area. 
+    The function downloads and creates a simplified OSMNx graph for a selected area's urban rail network. 
     Afterwards, GeoDataFrames for nodes and edges are created, assigning new nodeID and edgeID identifiers.
         
     Parameters
     ----------
-    download_method: string, {"OSMpolygon", "distance_from_address", "OSMplace"}
-        it indicates the method that should be used for downloading the data. of dowload
     place: string
         name of cities or areas in OSM: when using "OSMpolygon" please provide the name of a "relation" in OSM as an argument of "place"; when using "distance_from_address"
         provide an existing OSM address; when using "OSMplace" provide an OSM place name
-    network_type: string,  {"walk", "bike", "drive", "drive_service", "all", "all_private", "none"}
-        it indicates type of street or other network to extract - from OSMNx paramaters
+    download_method: string {"polygon", "distance_from_address", "OSMplace"}
+        it indicates the method that should be used for downloading the data. When 'polygon' the shape to get network data within. coordinates should be in
+        unprojected latitude-longitude degrees (EPSG:4326).
     epsg: int
         epsg of the area considered; if None OSMNx is used for the projection
     distance: float
-        it is used only if download_type == "distance from address"
+        it is used only if download_method == "distance from address"
         
     Returns
     -------
-    tuple of GeoDataFrames
+    nodes_gdf, edges_gdf: Tuple of GeoDataFrames
+        the nodes and edges GeoDataFrames
     """
     
     crs = 'EPSG:' + str(epsg)
@@ -65,8 +64,7 @@ def get_urban_rail_fromOSM(place, download_method, epsg, distance = 7000):
     return railways_gdf
 
 
-def gdfs_from_railways(railways_gdf, epsg):
-    
+def gdfs_from_railways(railways_gdf, epsg):  
     """
     The function loads a vector lines shapefile from a specified directory, along with the epsg coordinate code.
     It creates two GeoDataFrame, one for street junctions (nodes) and one for street segments (edges).
@@ -112,6 +110,10 @@ def gdfs_from_railways(railways_gdf, epsg):
     # linking on coordinates
     nodes_gdf["nodeID"] = nodes_gdf.index.values.astype(int)
     nodes_gdf, edges_gdf = join_by_coordinates(nodes_gdf, edges_gdf)
+    edges_gdf.reset_index(inplace = True, drop = True)
+    edges_gdf["edgeID"] = edges_gdf.index.values.astype(int)
+    nodes_gdf.index.name = None
+    edges_gdf.index.name = None
     
     # Assigning codes based on the edge's nodes. 
     # The string is formulated putting the node with lower ID first, regardless it being 'u' or 'v'

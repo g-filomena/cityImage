@@ -18,7 +18,6 @@ Computational landmarks can be extracted employing the following functions.
   
  
 def get_buildings_fromSHP(path, epsg, case_study_area = None, distance_from_center = 1000, height_field = None, base_field = None, land_use_field = None):
-
     """    
     The function take a sets of buildings, returns two smaller GDFs of buildings: the case-study area, plus a larger area containing other 
     buildings, called "obstructions" (for analyses which include adjacent buildings). If the area for clipping the obstructions is not
@@ -328,6 +327,7 @@ def _advance_visibility(building_geometry, obstructions_gdf, obstructions_sindex
     Parameters
     ----------
     building_geometry: Polygon
+    
     obstructions_gdf: Polygon GeoDataFrame
         obstructions GeoDataFrame  
     obstructions_sindex: Rtree Spatial Index
@@ -366,7 +366,7 @@ def _advance_visibility(building_geometry, obstructions_gdf, obstructions_sindex
         
         # finding actual obstacles to this line
         obstacles = possible_obstacles[possible_obstacles.crosses(line)]
-        ob = cascaded_union(obstacles.geometry)
+
         
         """
         if there are obstacles: indentify where the line from the origin is interrupted, create the geometry and
@@ -374,6 +374,7 @@ def _advance_visibility(building_geometry, obstructions_gdf, obstructions_sindex
         """
         
         if len(obstacles) > 0:
+            ob = cascaded_union(obstacles.geometry)
             t = line.intersection(ob)
             # taking the coordinates
             try: 
@@ -383,7 +384,8 @@ def _advance_visibility(building_geometry, obstructions_gdf, obstructions_sindex
             lineNew = LineString([origin, Point(intersection)])
         
         # the line is not interrupted, keeping the original one
-        else: lineNew = line 
+        else: 
+            lineNew = line 
 
         list_lines.append(lineNew)
         # increase the angle
