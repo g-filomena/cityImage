@@ -100,7 +100,7 @@ def secondary_road_barriers(place, download_method, distance = 500.0, epsg = Non
     return road_barriers
 
 
-def water_barriers(place, download_method, distance = 500.0, epsg = None):
+def water_barriers(place, download_method, distance = 500.0, lakes_area = 1000, epsg = None):
     """
     The function downloads water bodies from OSM. Lakes, rivers and see coastlines can be considered structuring barriers.
         
@@ -138,10 +138,10 @@ def water_barriers(place, download_method, distance = 500.0, epsg = None):
     # lakes   
     tags = {"natural":"water"}
     lakes = _download_geometries(place, download_method, tags, crs, distance)  
-    to_remove = ['river', 'stream', 'canal', 'riverbank']
+    to_remove = ['river', 'stream', 'canal', 'riverbank', 'reflecting_pool', 'reservoir', 'bay']
     lakes = lakes[~lakes.water.isin(to_remove)]
     lakes['area'] = lakes.geometry.area
-    lakes = lakes[lakes.area > 1000]
+    lakes = lakes[lakes.area > lakes_area]
     lakes = lakes.unary_union
     
     lakes = _simplify_barrier(lakes) 
@@ -335,7 +335,7 @@ def along_within_parks(edges_gdf, barriers_gdf):
     
     sindex = edges_gdf.sindex
     tmp = barriers_gdf[barriers_gdf['type']=='park']
-    edges_gdf['a_parks'] = edges_gdf.apply(lambda row: barriers_along(row['edgeID'], edges_gdf, tmp, sindex, offset = 200), axis = 1)
+    # edges_gdf['a_parks'] = edges_gdf.apply(lambda row: barriers_along(row['edgeID'], edges_gdf, tmp, sindex, offset = 200), axis = 1)
     
     # polygonize parks
     park_polygons = barriers_gdf[barriers_gdf['type']=='park'].copy()
@@ -343,8 +343,7 @@ def along_within_parks(edges_gdf, barriers_gdf):
     park_polygons = gpd.GeoDataFrame(park_polygons['barrierID'], geometry = park_polygons['geometry'], crs = edges_gdf.crs)
     
     edges_gdf['w_parks'] = edges_gdf.apply(lambda row: _within_parks(row['geometry'], park_polygons), axis = 1) #within
-    edges_gdf['aw_parks'] = edges_gdf.apply(lambda row: list(set(row['a_parks']+row['w_parks'])), axis = 1) #along
-    edges_gdf.drop(['a_parks', 'w_parks'], axis = 1, inplace = True)
+
 
     return edges_gdf
     

@@ -30,7 +30,6 @@ class Plot():
     def __init__(self, fig_size, black_background, title):
     
         fig, ax = plt.subplots(1, figsize=(fig_size, fig_size))
-        ax.set_axis_off()
 
         # background black or white - basic settings
         rect = fig.patch 
@@ -42,6 +41,7 @@ class Plot():
             rect.set_facecolor("white")
         font_size = fig_size*2+5 # font-size
         fig.suptitle(title, color = text_color, fontsize=font_size, fontfamily = 'Times New Roman')
+        fig.subplots_adjust(top=0.92)
         
         plt.axis("equal")
         self.fig, self.ax = fig, ax
@@ -51,13 +51,11 @@ class MultiPlotGrid():
     
     def __init__(self, fig_size, nrows, ncols, black_background):
         
-        figsize = (fig_size, fig_size*nrows)
-        if (nrows == 1) & (ncols == 2): 
-            figsize = (fig_size, fig_size/2)
-            
+        figsize = (fig_size, fig_size*nrows)           
         fig = plt.figure(figsize=figsize)
         grid = ImageGrid(fig, 111, nrows_ncols=(nrows,ncols), axes_pad= (0.50, 1.00))
         rect = fig.patch 
+        
         if black_background: 
             text_color = "white"
             rect.set_facecolor("black")
@@ -73,7 +71,7 @@ class MultiPlot():
     
     def __init__(self, fig_size, nrows, ncols, black_background, title = None):
     
-        figsize = (fig_size, fig_size/2*nrows)          
+        figsize = (fig_size, fig_size*nrows) 
         fig, grid = plt.subplots(nrows = nrows, ncols = ncols, figsize=figsize)
 
         rect = fig.patch 
@@ -84,13 +82,12 @@ class MultiPlot():
             text_color = "black"
             rect.set_facecolor("white")
         
-        font_size = fig_size*2+5
+        font_size = fig_size+5
         if title is not None:
             fig.suptitle(title, color = text_color, fontsize = font_size, fontfamily = 'Times New Roman', 
                          ha = 'center', va = 'center') 
             fig.subplots_adjust(top=0.92)
-        
-        plt.axis("equal")    
+         
         self.fig, self.grid = fig, grid
         self.font_size, self.text_color = font_size, text_color
 
@@ -301,6 +298,7 @@ def plot_gdf(gdf, column = None, title = None, black_background = True, fig_size
         _set_axes_frame(ax, black_background, plot.text_color)
     else: 
         ax.set_axis_off()     
+    
     zorder = 0
     # base map (e.g. street network)
     if (not gdf_base_map.empty):
@@ -405,8 +403,9 @@ def plot_barriers(barriers_gdf, lw = 1.1, title = "Plot", legend = False, axes_f
     
     colors = ['green', 'red', 'gray', 'blue']
     if 'secondary_road' in list(barriers_gdf['type'].unique()):
-        colors.append('gold')
-    
+        colors[3] = 'darkgray'
+        colors.append('blue')
+        
     colormap = LinearSegmentedColormap.from_list('new_map', colors, N=len(colors))
     barriers_gdf.plot(ax = ax, categorical = True, column = 'barrier_type', cmap = colormap, linewidth = lw, legend = legend, 
                      label =  'barrier_type', zorder = zorder )             
@@ -416,7 +415,7 @@ def plot_barriers(barriers_gdf, lw = 1.1, title = "Plot", legend = False, axes_f
     
     return fig
     
-def plot_gdfs(list_gdfs = None, column = None, main_title = None, titles = None, black_background = True, fig_size = 15, scheme = None, bins = None, classes = None, norm = None, cmap = None, color = None, alpha = None, 
+def plot_gdfs(list_gdfs = [], column = None, ncols = 2, main_title = None, titles = [], black_background = True, fig_size = 15, scheme = None, bins = None, classes = None, norm = None, cmap = None, color = None, alpha = None, 
                 legend = False, cbar = False, cbar_ticks = 5, cbar_max_symbol = False, only_min_max = False, axes_frame = False, ms = None, ms_factor = None, lw = None, lw_factor = None): 
                      
     """
@@ -482,11 +481,18 @@ def plot_gdfs(list_gdfs = None, column = None, main_title = None, titles = None,
         the resulting figure
     """              
                      
-    nrows, ncols = int(len(list_gdfs)/2), 2
-    if (len(list_gdfs)%2 != 0): 
-        nrows = nrows+1
-     
-    multiPlot = MultiPlot(fig_size = fig_size, nrows = nrows, ncols = ncols, black_background = black_background, title = main_title)
+    if ncols == 2:
+        nrows, ncols = int(len(list_gdfs)/2), 2
+        if (len(list_gdfs)%2 != 0): 
+            nrows = nrows+1
+    else:
+        nrows, ncols = int(len(list_gdfs)/3), 3
+        if (len(list_gdfs)%3 != 0): 
+            nrows = nrows+1
+
+    multiPlot = MultiPlot(fig_size = fig_size, nrows = nrows, ncols = ncols, black_background = black_background, 
+                          title = main_title)
+    
     fig, grid = multiPlot.fig, multiPlot.grid   
     legend_fig = False
     
@@ -504,7 +510,7 @@ def plot_gdfs(list_gdfs = None, column = None, main_title = None, titles = None,
             continue # when odd nr of gdfs    
         
         gdf = list_gdfs[n]
-        if titles is not None:
+        if len(titles) > 0:
             ax.set_title(titles[n], loc='center', fontfamily = 'Times New Roman', fontsize = multiPlot.font_size, color = multiPlot.text_color,  pad = 15)
             
         if (n == ncols*nrows/2) & legend & ((scheme == 'User_Defined') | (scheme == 'Lynch_Breaks')):
@@ -534,7 +540,7 @@ def plot_gdfs(list_gdfs = None, column = None, main_title = None, titles = None,
             
     return fig
    
-def plot_gdf_grid(gdf = None, columns = None, titles = None, black_background = True, fig_size = 15, scheme = None, bins = None, classes = None, norm = None, cmap = None, color = None, alpha = None, 
+def plot_gdf_grid(gdf = None, columns = [], ncols = 2, titles = [], black_background = True, fig_size = 15, scheme = None, bins = None, classes = None, norm = None, cmap = None, color = None, alpha = None, 
                 legend = False, cbar = False, cbar_ticks = 5, cbar_max_symbol = False, only_min_max = False, axes_frame = False, ms = None, ms_factor = None, lw = None, lw_factor = None): 
     """
     It plots the geometries of a GeoDataFrame, coloring on the bases of the values contained in the provided columns, using a given scheme.
@@ -591,9 +597,14 @@ def plot_gdf_grid(gdf = None, columns = None, titles = None, black_background = 
         (e.g. rescaled variable's value [0-1] * factor), when plotting a LineString GeoDataFrame
     """   
     
-    nrows, ncols = int(len(columns)/2), 2
-    if (len(columns)%2 != 0): 
-        nrows = nrows+1
+    if ncols == 2:
+        nrows, ncols = int(len(columns)/2), 2
+        if (len(columns)%2 != 0): 
+            nrows = nrows+1
+    else:
+        nrows, ncols = int(len(columns)/3), 3
+        if (len(columns)%3 != 0): 
+            nrows = nrows+1
      
     multiPlot = MultiPlotGrid(fig_size = fig_size, nrows = nrows, ncols = ncols, black_background = black_background)
     fig, grid = multiPlot.fig, multiPlot.grid   
@@ -611,7 +622,7 @@ def plot_gdf_grid(gdf = None, columns = None, titles = None, black_background = 
             continue # when odd nr of columns
         
         column = columns[n]
-        if titles is not None:          
+        if len(titles) > 0:          
             ax.set_title(titles[n], loc='center', fontfamily = 'Times New Roman', fontsize = multiPlot.font_size, color = multiPlot.text_color,  pad = 15)
         
         if (n == ncols*nrows/2) & legend & ((scheme == 'User_Defined') | (scheme == 'Lynch_Breaks')):
@@ -639,7 +650,6 @@ def plot_gdf_grid(gdf = None, columns = None, titles = None, black_background = 
         generate_grid_colorbar(cmap, fig, grid, nrows, ncols, multiPlot.text_color,multiPlot.font_size-5, norm = norm, ticks = cbar_ticks, 
                               symbol = cbar_max_symbol, only_min_max = only_min_max)
 
-            
     return fig
     
 def plot_multiplex(M, multiplex_edges):
@@ -702,7 +712,7 @@ def plot_multiplex(M, multiplex_edges):
 
     return(fig)
     
-def _generate_legend_fig(ax, nrows, text_color, font_size, black_background):
+def _generate_legend_fig(ax, nrows, ncols, text_color, font_size, black_background):
     """ 
     It generates the legend for an entire figure.
     
@@ -720,11 +730,19 @@ def _generate_legend_fig(ax, nrows, text_color, font_size, black_background):
     
     leg = ax.get_legend() 
     plt.setp(leg.texts, family='Times New Roman', fontsize = font_size, color = text_color, va = 'center')
-    if nrows%2 == 0: 
-        leg.set_bbox_to_anchor((2.15, 1.00, 0.33, 0.33))    
-    else: 
-        leg.set_bbox_to_anchor((1.15, 0.5, 0.33, 0.33))
     
+    if ncols == 2:
+        if nrows%2 == 0: 
+            leg.set_bbox_to_anchor((2.15, 1.00, 0.33, 0.33))    
+        else: 
+            leg.set_bbox_to_anchor((1.15, 0.5, 0.33, 0.33))
+    
+    elif ncols == 3:
+        if nrows%2 == 0: 
+            leg.set_bbox_to_anchor((2.25, 1.15, 0.33, 0.33))    
+        else:     
+            leg.set_bbox_to_anchor((1.25, 0.65, 0.33, 0.33))
+        
     leg.get_frame().set_linewidth(0.0) # remove legend border
     leg.set_zorder(102)
     leg.get_frame().set_facecolor('none')
@@ -803,12 +821,12 @@ def generate_grid_colorbar(cmap, fig, grid, nrows, ncols, text_color, font_size,
     vr_p = 1/30.30
     hr_p = 0.5/30.30
     ax = grid[0]
-
+ 
     if ncols == 2:
         width = ax.get_position().x1*ncols-hr_p-ax.get_position().x0
-    elif ncols > 2:
-        width = ax.get_position().x1*(ncols-1)-hr_p*ncols
-   
+    else:
+        width = ax.get_position().x1*(ncols-1)+0.10
+
     if nrows == 1: 
         pos = [ax.get_position().x0+width, ax.get_position().y0, 0.027, ax.get_position().height]
     elif nrows%2 == 0:
@@ -1072,7 +1090,7 @@ def _set_axes_frame(ax, black_background, text_color):
     ax.yaxis.set_ticklabels([])
     ax.tick_params(axis= 'both', which= 'both', length=0)
     
-    for spine in ax.spines: 
+    for spine in ax.spines:
         ax.spines[spine].set_color(text_color)
     if black_background: 
         ax.set_facecolor('black')
@@ -1093,3 +1111,22 @@ def cmap_from_colors(list_colors):
     """   
     cmap = LinearSegmentedColormap.from_list('custom_cmap', list_colors)
     return cmap
+    
+def lighten_color(color, amount=0.5):
+    """
+    Lightens the given color by multiplying (1-luminosity) by the given amount.
+    Input can be matplotlib color string, hex string, or RGB tuple.
+
+    Examples:
+    >> lighten_color('g', 0.3)
+    >> lighten_color('#F034A3', 0.6)
+    >> lighten_color((.3,.55,.1), 0.5)
+    """
+    import matplotlib.colors as mc
+    import colorsys
+    try:
+        c = mc.cnames[color]
+    except:
+        c = color
+    c = colorsys.rgb_to_hls(*mc.to_rgb(c))
+    return colorsys.hls_to_rgb(c[0], 1 - amount * (1 - c[1]), c[2])

@@ -520,11 +520,11 @@ def get_historical_buildings_fromOSM(place, download_method, epsg = None, distan
     if download_method == "distance_from_address": 
         historic_buildings = ox.geometries_from_address(address = place, dist = distance, tags={"building": True})
     elif download_method == "OSMplace": 
-        historic_buildings = ox.geometries_from_place(place, tags={"building": True})
+        historic_buildings = ox.geometries_from_place(place = place, tags={"building": True})
     elif download_method == "from_point": 
         historic_buildings = ox.geometries_from_point(center_point = place, dist = distance, tags={"building": True})
     elif download_method == "polygon": 
-        historic_buildings = ox.geometries_from_polygon(polygon, tags={"building": True})
+        historic_buildings = ox.geometries_from_polygon(polygon = place, tags={"building": True})
     else: 
         raise downloadError('Provide a download method amongst {"from_point", "distance_from_address", "OSMplace"}')
     
