@@ -195,7 +195,8 @@ def reach_centrality(G, weight, radius, attribute):
                     weight_target = G.nodes[target][attribute]
                     reach = reach + weight_target
             reach_centrality[n] = reach
-        else: reach_centrality[n]=0.0
+        else: 
+            reach_centrality[n]=0.0
 
     return reach_centrality
     

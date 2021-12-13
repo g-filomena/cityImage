@@ -8,7 +8,7 @@ from shapely.ops import cascaded_union, linemerge, polygonize, polygonize_full, 
 from .utilities import gdf_from_geometries
 pd.set_option("precision", 10)
 
-def road_barriers(place, download_method, distance = 500.0, epsg = None, include_primary = False, include_secondary = False):
+def road_barriers(place, download_method, distance = 500.0, epsg = None, include_primary = False):
     """
     The function downloads major roads from OSM. These can be considered to be barrier to pedestrian movement or, at least, to structure people's cognitive Image of the City.
     if 'include_primary' considers also primary roads, beyond motorway and trunk roads.
@@ -39,8 +39,6 @@ def road_barriers(place, download_method, distance = 500.0, epsg = None, include
     to_keep = ['trunk', 'motorway']
     if include_primary:
         to_keep.append('primary')
-    if include_primary:
-        to_keep.append('secondary')
         
     tags = {'highway': True}
     roads = _download_geometries(place, download_method, tags, crs, distance)
@@ -53,6 +51,50 @@ def road_barriers(place, download_method, distance = 500.0, epsg = None, include
     roads = roads.unary_union
     roads = _simplify_barrier(roads)
     df = pd.DataFrame({'geometry': roads, 'type': ['road'] * len(roads)})
+    road_barriers = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
+       
+    return road_barriers
+    
+def secondary_road_barriers(place, download_method, distance = 500.0, epsg = None):
+    """
+    The function downloads major roads from OSM. These can be considered to be barrier to pedestrian movement or, at least, to structure people's cognitive Image of the City.
+    if 'include_primary' considers also primary roads, beyond motorway and trunk roads.
+        
+    Parameters
+    ----------
+    place: string
+        name of cities or areas in OSM: when using "OSMpolygon" please provide the name of a "relation" in OSM as an argument of "place"; when using "distance_from_address"
+        provide an existing OSM address; when using "OSMplace" provide an OSM place name
+    download_method: string, {"polygon", "distance_from_address", "OSMplace"}
+        it indicates the method that should be used for downloading the data.
+    distance: float
+        it is used only if download_method == "distance from address"
+    epsg: int
+        epsg of the area considered; if None OSMNx is used for the projection
+    include_primary: boolean
+        it true, it considers primary roads as barriers
+    include_secondary: boolean
+        it true, it considers secondary roads as barriers
+        
+    Returns
+    -------
+    road_barriers: LineString GeoDataFrame
+        the road barriers
+    """
+    
+    crs = 'EPSG:' + str(epsg)
+    to_keep = ['secondary']
+    tags = {'highway': True}
+    roads = _download_geometries(place, download_method, tags, crs, distance)
+    roads = roads[roads.highway.isin(to_keep)]
+    # exclude tunnels
+    if "tunnel" in roads.columns:
+        roads["tunnel"].fillna(0, inplace = True)
+        roads = roads[roads["tunnel"] == 0] 
+       
+    roads = roads.unary_union
+    roads = _simplify_barrier(roads)
+    df = pd.DataFrame({'geometry': roads, 'type': ['secondary_road'] * len(roads)})
     road_barriers = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
        
     return road_barriers
@@ -89,7 +131,6 @@ def water_barriers(place, download_method, distance = 500.0, epsg = None):
         rivers["tunnel"].fillna(0, inplace = True)
         rivers = rivers[rivers["tunnel"] == 0] 
         
-    
     rivers = rivers.unary_union
     rivers = _simplify_barrier(rivers)
     rivers = gdf_from_geometries(rivers, crs)
@@ -101,7 +142,7 @@ def water_barriers(place, download_method, distance = 500.0, epsg = None):
     lakes = lakes[~lakes.water.isin(to_remove)]
     lakes['area'] = lakes.geometry.area
     lakes = lakes[lakes.area > 1000]
-    lakes = MultiLineString([poly.boundary for poly in lakes.geometry])
+    lakes = lakes.unary_union
     
     lakes = _simplify_barrier(lakes) 
     lakes = gdf_from_geometries(lakes, crs)
@@ -123,6 +164,7 @@ def water_barriers(place, download_method, distance = 500.0, epsg = None):
     water_barriers = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
     
     return water_barriers    
+     
     
 def _download_geometries(place, download_method, tags, crs, distance = 500.0):
     """
@@ -401,7 +443,8 @@ def assign_structuring_barriers(edges_gdf, barriers_gdf):
     
     barriers_gdf = barriers_gdf.copy()
     edges_gdf = edges_gdf.copy()
-    tmp = barriers_gdf[barriers_gdf['type'] != 'park'].copy() # parks are disregarded
+    exlcude = ['secondary_road', 'park'] # parks are disregarded
+    tmp = barriers_gdf[~barriers_gdf['type'].isin(exlcude)].copy() 
     
     edges_gdf['c_barr'] = edges_gdf.apply(lambda row: _crossing_barriers(row['geometry'], tmp ), axis = 1)
     edges_gdf['sep_barr'] = edges_gdf.apply(lambda row: True if len(row['c_barr']) > 0 else False, axis = 1)
@@ -469,7 +512,7 @@ def get_barriers(place, download_method, distance = 500.0, epsg = None):
     return barriers_gdf
    
    
-def _simplify_barrier(geometry):
+def _simplify_barrier(geometries):
     """
     The function merges a list of geometries in a single geometry when possible; in any case it returns the resulting features within a list. 
     
@@ -484,14 +527,20 @@ def _simplify_barrier(geometry):
         the list of actual geometries
     """
     
-    if geometry.type != "LineString":         
-        geometry = linemerge(geometry)
-        if geometry.type != "LineString": 
-            features = [i for i in geometry]
-        else: 
-            features = [geometry]
+    if type(geometries) is not LineString:        
+        try:
+            geometries = linemerge(geometries)
+        except NotImplementedError:
+            geometries = [geometry if geometry.geom_type != 'Polygon' else geometry.boundary for geometry in geometries]
+            if any(isinstance(geometry, MultiLineString) for geometry in geometries):
+                pass
+            else:
+                geometries = linemerge(geometries)  
+    
+    if type(geometries) is LineString: 
+        features = [geometries]
     else: 
-        features = [geometry]
-        
+        features = geometries
+    
     return features
         

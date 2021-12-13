@@ -35,7 +35,7 @@ def identify_regions(dual_graph, edges_gdf, weight = None):
     regions: dict
         a dictionary where to each primal edgeID (key) corresponds a region code (value)
     """
-
+    edges_gdf = edges_gdf.copy()
     subdvisions = []
     if weight is None: 
         weight = 'topo' #the function requires a string 
@@ -300,12 +300,12 @@ def _check_disconnected_districts(nodes_gdf, edges_gdf, column, min_size = 10):
             continue
         tmp_nodes = nodes_gdf[nodes_gdf[column] == district].copy()
         tmp_edges = edges_gdf[edges_gdf.u.isin(tmp_nodes.nodeID) & edges_gdf.v.isin(tmp_nodes.nodeID)].copy()
-        tmp_graph = graph_fromGDF(tmp_nodes, tmp_edges, 'nodeID')
-        
+
         if len(tmp_nodes) < min_size: 
             nodes_gdf.loc[nodes_gdf.nodeID.isin(tmp_nodes.nodeID), column] = 999999
             continue
-        
+            
+        tmp_graph = graph_fromGDF(tmp_nodes, tmp_edges, 'nodeID')
         if not nx.is_connected(tmp_graph): 
             largest_component = max(nx.connected_components(tmp_graph), key=len)
             G = tmp_graph.subgraph(largest_component)

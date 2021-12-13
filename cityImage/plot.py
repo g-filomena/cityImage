@@ -116,7 +116,7 @@ def _single_plot(ax, gdf, column = None, scheme = None, bins = None, classes = N
     classes: int
         classes for visualising when scheme is not "None"
     norm: array
-        A class that specifies a desired data normalisation into a [min, max] interval
+        a class that specifies a desired data normalisation into a [min, max] interval
     cmap: string, matplotlib.colors.LinearSegmentedColormap
         see matplotlib colormaps for a list of possible values or pass a colormap
     color: string
@@ -144,7 +144,7 @@ def _single_plot(ax, gdf, column = None, scheme = None, bins = None, classes = N
     if alpha is None:
         alpha = 1
     if column is not None: 
-        gdf.sort_values(by = column,  ascending = True, inplace = True) 
+        gdf = gdf.reindex(gdf[column].abs().sort_values(ascending = True).index)
     
     # single-colour map
     if (column is None) & (scheme is None) & (color is None):
@@ -207,7 +207,7 @@ def _single_plot(ax, gdf, column = None, scheme = None, bins = None, classes = N
         if (lw is None) & (lw_factor is None): 
             lw = 1.00
         elif lw_factor is not None:
-            lw = [value*lw_factor if value*lw_factor> 1.1 else 1.1 for value in gdf[column]]
+            lw = [(abs(value)*lw_factor) if (abs(value)*lw_factor) > 1.1 else 1.1 for value in gdf[column]]
         
         gdf.plot(ax = ax, column = column, categorical = categorical, color = color, linewidth = lw, scheme = scheme, alpha = alpha, cmap = cmap, norm = norm,
             legend = legend, classification_kwds = c_k, capstyle = 'round', joinstyle = 'round', zorder = zorder) 
@@ -242,9 +242,9 @@ def plot_gdf(gdf, column = None, title = None, black_background = True, fig_size
     bins: list
         bins defined by the user
     classes: int
-        classes for visualising when scheme is not "None"
+        number of classes for categorising the data when scheme is not "None"
     norm: array
-        A class that specifies a desired data normalisation into a [min, max] interval
+        a class that specifies a desired data normalisation into a [min, max] interval
     cmap: string, matplotlib.colors.LinearSegmentedColormap
         see matplotlib colormaps for a list of possible values or pass a colormap
     color: string
@@ -260,9 +260,9 @@ def plot_gdf(gdf, column = None, title = None, black_background = True, fig_size
     cbar_max_symbol: boolean
         if True, it shows the ">" next to the highest tick's label in the colorbar (useful when normalising)
     only_min_max: boolean
-        if True, it shows the ">" next to the highest tick's label in the colorbar (useful when normalising)
+        if True, it only shows the ">" and "<" as labels of the lowest and highest ticks' the colorbar
     axes_frame: boolean
-        if True, it shows an axis frame
+        if True, it shows the axes' frame
     ms: float
         point size value, when plotting a Point GeoDataFrame
     ms_factor: float 
@@ -353,7 +353,7 @@ def plot_barriers(barriers_gdf, lw = 1.1, title = "Plot", legend = False, axes_f
     legend: boolean
         if True, show legend, otherwise don't
     axes_frame: boolean
-        if True, it shows an axis frame 
+        if True, it shows the axes' frame 
     black_background: boolean 
         black background or white
     fig_size: float
@@ -403,8 +403,11 @@ def plot_barriers(barriers_gdf, lw = 1.1, title = "Plot", legend = False, axes_f
     barriers_gdf['barrier_type'] = barriers_gdf['type']
     barriers_gdf.sort_values(by = 'barrier_type', ascending = False, inplace = True)  
     
-    colors = ['green', 'brown', 'grey', 'blue']
-    colormap = LinearSegmentedColormap.from_list('new_map', colors, N=4)
+    colors = ['green', 'red', 'gray', 'blue']
+    if 'secondary_road' in list(barriers_gdf['type'].unique()):
+        colors.append('gold')
+    
+    colormap = LinearSegmentedColormap.from_list('new_map', colors, N=len(colors))
     barriers_gdf.plot(ax = ax, categorical = True, column = 'barrier_type', cmap = colormap, linewidth = lw, legend = legend, 
                      label =  'barrier_type', zorder = zorder )             
                      
@@ -440,9 +443,9 @@ def plot_gdfs(list_gdfs = None, column = None, main_title = None, titles = None,
     bins: list
         bins defined by the user
     classes: int
-        classes for visualising when scheme is not "None"
+        number of classes for categorising the data when scheme is not "None"
     norm: array
-        A class that specifies a desired data normalisation into a [min, max] interval
+        a class that specifies a desired data normalisation into a [min, max] interval
     cmap: string, matplotlib.colors.LinearSegmentedColormap
         see matplotlib colormaps for a list of possible values or pass a colormap
     color: string
@@ -458,9 +461,9 @@ def plot_gdfs(list_gdfs = None, column = None, main_title = None, titles = None,
     cbar_max_symbol: boolean
         if True, it shows the ">" next to the highest tick's label in the colorbar (useful when normalising)
     only_min_max: boolean
-        if True, it shows only the mix and max ticks' labels in the colorbar
+        if True, it only shows the ">" and "<" as labels of the lowest and highest ticks' the colorbar
     axes_frame: boolean
-        if True, it shows an axis frame
+        if True, it shows the axes' frame
     ms: float
         point size value, when plotting a Point GeoDataFrame
     ms_factor: float 
@@ -534,7 +537,7 @@ def plot_gdfs(list_gdfs = None, column = None, main_title = None, titles = None,
 def plot_gdf_grid(gdf = None, columns = None, titles = None, black_background = True, fig_size = 15, scheme = None, bins = None, classes = None, norm = None, cmap = None, color = None, alpha = None, 
                 legend = False, cbar = False, cbar_ticks = 5, cbar_max_symbol = False, only_min_max = False, axes_frame = False, ms = None, ms_factor = None, lw = None, lw_factor = None): 
     """
-    It plots the geometries of a GeoDataFrame, coloring on the bases of the values contained in column, using a given scheme.
+    It plots the geometries of a GeoDataFrame, coloring on the bases of the values contained in the provided columns, using a given scheme.
     If only "column" is provided, a categorical map is depicted.
     If no column is provided, a plain map is shown.
     
@@ -555,9 +558,9 @@ def plot_gdf_grid(gdf = None, columns = None, titles = None, black_background = 
     bins: list
         bins defined by the user
     classes: int
-        classes for visualising when scheme is not "None"
+        number of classes for categorising the data when scheme is not "None"
     norm: array
-        A class that specifies a desired data normalisation into a [min, max] interval
+        a class that specifies a desired data normalisation into a [min, max] interval
     cmap: string, matplotlib.colors.LinearSegmentedColormap
         see matplotlib colormaps for a list of possible values or pass a colormap
     color: string
@@ -573,9 +576,9 @@ def plot_gdf_grid(gdf = None, columns = None, titles = None, black_background = 
     cbar_max_symbol: boolean
         if True, it shows the ">" next to the highest tick's label in the colorbar (useful when normalising)
     only_min_max: boolean
-        if True, it shows only the mix and max ticks' labels in the colorbar
+        if True, it only shows the ">" and "<" as labels of the lowest and highest ticks' the colorbar
     axes_frame: boolean
-        if True, it shows an axis frame
+        if True, it shows the axes' frame
     ms: float
         point size value, when plotting a Point GeoDataFrame
     ms_factor: float 
@@ -783,13 +786,13 @@ def generate_grid_colorbar(cmap, fig, grid, nrows, ncols, text_color, font_size,
     font_size: int
         the colorbar's labels text size
     norm: array
-        A class that specifies a desired data normalisation into a [min, max] interval
+        a class that specifies a desired data normalisation into a [min, max] interval
     ticks: int
         the number of ticks along the colorbar
     symbol: boolean
         if True, it shows the ">" next to the highest tick's label in the colorbar (useful when normalising)
     only_min_max: boolean
-        if True, it shows only the mix and max ticks' labels in the colorbar
+        if True, it only shows the ">" and "<" as labels of the lowest and highest ticks' the colorbar
     """
     
     if font_size is None: 
@@ -836,13 +839,13 @@ def generate_row_colorbar(cmap, fig, ax, ncols, text_color, font_size, norm = No
     font_size: int
         the colorbar's labels text size
     norm: array
-        A class that specifies a desired data normalisation into a [min, max] interval
+        a class that specifies a desired data normalisation into a [min, max] interval
     ticks: int
         the number of ticks along the colorbar
     symbol: boolean
         if True, it shows the ">" next to the highest tick's label in the colorbar (useful when normalising)
     only_min_max: boolean
-        if True, it shows only the mix and max ticks' labels in the colorbar
+        if True, it only shows the ">" and "<" as labels of the lowest and highest ticks' the colorbar
     """
     
     if font_size is None: 
@@ -876,7 +879,7 @@ def _set_colorbar(fig, pos, sm, norm, text_color, font_size, ticks, symbol, only
     sm: matplotlib.cm.ScalarMappable
         a mixin class to map scalar data to RGBA
     norm: array
-        A class that specifies a desired data normalisation into a [min, max] interval
+        a class that specifies a desired data normalisation into a [min, max] interval
     text_color: string
         the text color
     font_size: int
@@ -886,7 +889,7 @@ def _set_colorbar(fig, pos, sm, norm, text_color, font_size, ticks, symbol, only
     symbol: boolean
         if True, it shows the ">" next to the highest tick's label in the colorbar (useful when normalising)
     only_min_max: boolean
-        if True, it shows only the mix and max ticks' labels in the colorbar
+        if True, it only shows the ">" and "<" as labels of the lowest and highest ticks' the colorbar
     """
 
     cax = fig.add_axes(pos, frameon = False)
