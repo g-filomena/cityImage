@@ -9,11 +9,15 @@ import math
 from math import sqrt
 import ast
 import functools
+from osmnx import downloader
+
 
 from shapely.geometry import Point, LineString, Polygon, MultiPoint
 from shapely.ops import split
 pd.set_option("precision", 10)
 pd.options.mode.chained_assignment = None
+
+from .utilities import *
 
 """
 This set of functions handles interoperations between GeoDataFrames and graphs. It allows data conversion and the extraction of nodes and edges GeoDataFrames from roads shapefile or OpenStreetMap.
@@ -22,9 +26,10 @@ This set of functions handles interoperations between GeoDataFrames and graphs. 
     
 ## Graph preparation functions ###############
     
-def get_network_fromOSM(place, download_method, network_type = "all", epsg = None, distance = 500.0): 
+def get_network_fromOSM(place, download_method, network_type = "all", epsg = None, distance = 7000): 
+
     """
-    The function downloads and creates a simplified OSMNx graph for a selected area's street network.
+    The function downloads and creates a simplified OSMNx graph for a selected area. 
     Afterwards, GeoDataFrames for nodes and edges are created, assigning new nodeID and edgeID identifiers.
         
     Parameters
@@ -32,10 +37,9 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
     place: string
         name of cities or areas in OSM: when using "OSMpolygon" please provide the name of a "relation" in OSM as an argument of "place"; when using "distance_from_address"
         provide an existing OSM address; when using "OSMplace" provide an OSM place name
-    download_method: string {"polygon", "distance_from_address", "OSMplace"}
-        it indicates the method that should be used for downloading the data. When 'polygon' the shape to get network data within coordinates should be in
-        unprojected latitude-longitude degrees (EPSG:4326).
-    network_type: string {"walk", "bike", "drive", "drive_service", "all", "all_private", "none"}
+    download_method: string, {"OSMpolygon", "distance_from_address", "OSMplace"}
+        it indicates the method that should be used for downloading the data.
+    network_type: string,  {"walk", "bike", "drive", "drive_service", "all", "all_private", "none"}
         it indicates type of street or other network to extract - from OSMNx paramaters
     epsg: int
         epsg of the area considered; if None OSMNx is used for the projection
@@ -44,22 +48,20 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
         
     Returns
     -------
-    nodes_gdf, edges_gdf: Tuple of GeoDataFrames
-        the junction and street segments GeoDataFrames
+    tuple of GeoDataFrames
     """
-    if epsg is not None:
-        crs = 'EPSG:' + str(epsg)
-        
+    
     # using OSMNx to download data from OpenStreetMap     
-    if download_method == "polygon":
-        G = ox.graph_from_polygon(place, network_type = network_type, simplify = True)
+    if download_method == "OSMpolygon":
+        query = downloader._osm_polygon_download(place, limit=1, polygon_geojson=1)
+        OSMplace = query[0]["display_name"]
+        G = ox.graph_from_place(OSMplace, network_type = network_type, simplify = True)
         
     elif download_method == "distance_from_address":
-        G = ox.graph_from_address(place, network_type = network_type, dist = distance, simplify = True)
+        G = ox.graph_from_address(place, network_type = network_type, distance = distance, simplify = True)
     
     # (download_method == "OSMplace")
-    else:
-        G = ox.graph_from_place(place, network_type = network_type, simplify = True)
+    else: G = ox.graph_from_place(place, network_type = network_type, simplify = True)
     
     # fix list of osmid assigned to same edges
     for i, item in enumerate(G.edges()):
@@ -70,7 +72,8 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
     
     nodes = ox.graph_to_gdfs(G, nodes=True, edges=False, node_geometry=True, fill_edge_geometry=False)
     nodes_gdf = nodes.drop(["highway", "ref"], axis=1, errors = "ignore")
-    edges_gdf.reset_index(inplace = True)
+    # getting rid of OSMid and preparing geodataframes
+    nodes_gdf.index = nodes_gdf.osmid.astype("int64")
     nodes_gdf, edges_gdf = reset_index_street_network_gdfs(nodes_gdf, edges_gdf)    
                
     # columns to keep (u and v represent "from" and "to" node)
@@ -88,8 +91,7 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
     # finalising geodataframes
     if epsg is None: 
         nodes_gdf, edges_gdf = ox.projection.project_gdf(nodes_gdf), ox.projection.project_gdf(edges_gdf)
-    else: 
-        nodes_gdf, edges_gdf = nodes_gdf.to_crs(crs), edges_gdf.to_crs(crs)
+    else: nodes_gdf, edges_gdf = nodes_gdf.to_crs(epsg = epsg), edges_gdf.to_crs(epsg = epsg)
     
     nodes_gdf["x"], nodes_gdf["y"] = list(zip(*[(r.coords[0][0], r.coords[0][1]) for r in nodes_gdf.geometry]))
     nodes_gdf['height'] = 2 # this will be used for 3d visibility analysis
@@ -118,10 +120,10 @@ def get_network_fromSHP(path, epsg, dict_columns = {}, other_columns = []):
     """
     
     # try reading street network from directory
-    crs = 'EPSG:' + str(epsg)
+    crs = {'init': 'epsg'+str(epsg), 'no_defs': True}
     edges_gdf = gpd.read_file(path)
     try:
-        edges_gdf = edges_gdf.to_crs(crs)
+        edges_gdf = edges_gdf.to_crs(epsg=epsg)
     except:
         edges_gdf.crs = crs
        
@@ -135,8 +137,7 @@ def get_network_fromSHP(path, epsg, dict_columns = {}, other_columns = []):
         for n, (key, value) in enumerate(dict_columns.items()):
             if (value is not None): 
                 edges_gdf[new_columns[n]] = edges_gdf[value]
-    else: 
-        new_columns = []
+    else: new_columns = []
      
     standard_columns = ["geometry", "from", "to", "key"]
     edges_gdf = edges_gdf[standard_columns + new_columns + other_columns]
@@ -149,7 +150,7 @@ def get_network_fromSHP(path, epsg, dict_columns = {}, other_columns = []):
     # assigning indexes
     edges_gdf.reset_index(inplace=True, drop=True)
     edges_gdf["edgeID"] = edges_gdf.index.values.astype(int) 
-    nodes_gdf = obtain_nodes_gdf(edges_gdf, crs)
+    nodes_gdf = obtain_nodes_gdf(edges_gdf, epsg)
     
     # linking on coordinates
     nodes_gdf["nodeID"] = nodes_gdf.index.values.astype(int)
@@ -159,7 +160,7 @@ def get_network_fromSHP(path, epsg, dict_columns = {}, other_columns = []):
     
     return nodes_gdf, edges_gdf
     
-def obtain_nodes_gdf(edges_gdf, crs):
+def obtain_nodes_gdf(edges_gdf, epsg):
     """
     It obtains the nodes GeoDataFrame from the unique coordinates pairs in the edges_gdf GeoDataFrame.
         
@@ -167,8 +168,8 @@ def obtain_nodes_gdf(edges_gdf, crs):
     ----------
     edges_gdf: LineString GeoDataFrame
         street segments GeoDataFrame
-    crs: string
-        coordinate reference system of the area considered 
+    epsg: int
+        epsg of the area considered 
     Returns
     -------
     Point GeoDataFrames
@@ -181,7 +182,7 @@ def obtain_nodes_gdf(edges_gdf, crs):
     #preparing nodes geodataframe
     nodes_data = pd.DataFrame.from_records(unique_nodes, columns=["x", "y"]).astype("float")
     geometry = [Point(xy) for xy in zip(nodes_data.x, nodes_data.y)]
-   
+    crs = {'init': 'epsg:' + str(epsg)}
     nodes_gdf = gpd.GeoDataFrame(nodes_data, crs=crs, geometry=geometry)
     nodes_gdf.reset_index(drop=True, inplace = True)
     
@@ -237,7 +238,7 @@ def reset_index_street_network_gdfs(nodes_gdf, edges_gdf):
     -------
     tuple of GeoDataFrames
     """
-
+    
     edges_gdf = edges_gdf.rename(columns = {"u":"old_u", "v":"old_v"})
     nodes_gdf["old_nodeID"] = nodes_gdf.index.values.astype("int64")
     nodes_gdf = nodes_gdf.reset_index(drop = True)

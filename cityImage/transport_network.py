@@ -6,65 +6,77 @@ import numpy as np
 import geopandas as gpd
 from shapely.geometry import Point, LineString, Polygon, MultiPoint
 from shapely.ops import split, unary_union
-import osmnx as ox
 
 pd.set_option('precision', 10)
 
-from .clean import duplicate_nodes, correct_edges, clean_network
-from .load import obtain_nodes_gdf, join_by_coordinates
-from .utilities import distance_geometry_gdf
+from .graph import*
+from .utilities import *
+from .cleaning_network import*
+from .simplification import*
+from .load import*
 
-clean_settings = {'remove_disconnected_islands' : False, 'dead_ends' : False, 'same_uv_edges' : False, 'self_loops' : True, 'fix_topology' : False}
+def get_urban_rail_fromOSM(download_type, place, epsg, distance = 7000): 
 
-def get_urban_rail_fromOSM(place, download_method, epsg, distance = 7000): 
     """
-    The function downloads and creates a simplified OSMNx graph for a selected area's urban rail network. 
+    The function downloads and creates a simplified OSMNx graph for a selected area. 
     Afterwards, GeoDataFrames for nodes and edges are created, assigning new nodeID and edgeID identifiers.
         
     Parameters
     ----------
+    download_type: string, {"OSMpolygon", "distance_from_address", "OSMplace"}
+        it indicates the method that should be used for downloading the data. of dowload
     place: string
         name of cities or areas in OSM: when using "OSMpolygon" please provide the name of a "relation" in OSM as an argument of "place"; when using "distance_from_address"
         provide an existing OSM address; when using "OSMplace" provide an OSM place name
-    download_method: string {"polygon", "distance_from_address", "OSMplace"}
-        it indicates the method that should be used for downloading the data. When 'polygon' the shape to get network data within. coordinates should be in
-        unprojected latitude-longitude degrees (EPSG:4326).
+    network_type: string,  {"walk", "bike", "drive", "drive_service", "all", "all_private", "none"}
+        it indicates type of street or other network to extract - from OSMNx paramaters
     epsg: int
         epsg of the area considered; if None OSMNx is used for the projection
     distance: float
-        it is used only if download_method == "distance from address"
+        it is used only if download_type == "distance from address"
         
     Returns
     -------
-    nodes_gdf, edges_gdf: Tuple of GeoDataFrames
-        the nodes and edges GeoDataFrames
+    tuple of GeoDataFrames
     """
     
-    crs = 'EPSG:' + str(epsg)
-    tag = {'railway' : True}  
+    crs = {'init': 'epsg:' + str(epsg)}
+    tags = [ "rail", "light_rail", "subway"]
+    edges_gdf = pd.DataFrame(columns = None)
+    for tag in tags:
+        try: 
+            # using OSMNx to download data from OpenStreetMap  
+            if download_type == "OSMpolygon":
+                query = ox.osm_polygon_download(place, limit=1, polygon_geojson=1)
+                OSMplace = query[0]["display_name"]
+                G = ox.graph_from_place(place, network_type='none',  retain_all = True, truncate_by_edge=False,
+                                        infrastructure= 'way["railway"~'+tag+']')
+
+            elif download_type == "distance_from_address":
+                G = ox.graph_from_address(place, network_type='none',  retain_all = True, truncate_by_edge=False,
+                                          infrastructure= 'way["railway"~'+tag+']')
+
+            # (download_type == "OSMplace")
+            else: G = ox.graph_from_place(place, network_type='none',  retain_all = True, truncate_by_edge=False,
+                                          infrastructure= 'way["railway"~'+tag+']')
+            gdf = ox.graph_to_gdfs(G, nodes=False, edges=True, node_geometry = False, fill_edge_geometry=True)
+            gdf = gdf.to_crs(crs)
+            gdf['type'] = tag
+        except: 
+            gdf = pd.DataFrame(columns = None)
+        edges_gdf = edges_gdf.append(gdf)
     
-    if download_method == 'distance_from_address': 
-        railways_gdf = ox.geometries_from_address(place, tags = tag, dist = distance)
-    elif download_method == 'OSMplace': 
-        railways_gdf = ox.geometries_from_place(place, tags = tag)
-    else: 
-        railways_gdf = ox.geometries_from_polygon(place, tags = tag)
-    
-    print(railways_gdf.columns)
-    railways_gdf = railways_gdf.to_crs(crs)
-    to_keep = ["rail", "light_rail", "subway"]
-    railways_gdf = railways_gdf[railways_gdf.railway.isin(to_keep)]
-    railways_gdf['type'] = railways_gdf['railway']
-    
-    railways_gdf['length'] = railways_gdf.geometry.length
-    railways_gdf = railways_gdf[["geometry", "length", "name", "type", "bridge", "tunnel"]]
-    railways_gdf.reset_index(inplace=True, drop=True)
-    railways_gdf['edgeID'] = railways_gdf.index.values.astype(int)
-    railways_gdf.index.name = None
-    return railways_gdf
+    if edges_gdf.empty: 
+        return None, None
+     
+    edges_gdf = edges_gdf[["geometry", "length", "name", "type", "key", "bridge"]]
+    edges_gdf.reset_index(inplace=True, drop=True)
+    edges_gdf['edgeID'] = edges_gdf.index.values.astype(int)
+    return edges_gdf
 
 
-def gdfs_from_railways(railways_gdf, epsg):  
+def get_network_fromGDF(edges_gdf, epsg, fix_topology = False):
+    
     """
     The function loads a vector lines shapefile from a specified directory, along with the epsg coordinate code.
     It creates two GeoDataFrame, one for street junctions (nodes) and one for street segments (edges).
@@ -86,39 +98,40 @@ def gdfs_from_railways(railways_gdf, epsg):
     tuple of GeoDataFrames
     """
     
-    crs = 'EPSG:' + str(epsg)
     # try reading street network from directory
-    edges_gdf = railways_gdf.copy()
+    edges_gdf = edges_gdf.copy()
     edges_gdf["from"] = None
     edges_gdf["to"] = None
     edges_gdf["key"] = 0
     
     # creating the dataframes
+    
     geometries = edges_gdf['geometry'].apply(lambda geom: geom.wkb)
     edges_gdf = edges_gdf.loc[geometries.drop_duplicates().index]
     
     standard_columns = ["geometry", "from", "to", "key", "name"]
     edges_gdf = edges_gdf[standard_columns]
+
     edges_gdf['code'], edges_gdf['coords'] = None, None
+
 
     # remove z coordinates, if any
     edges_gdf["geometry"] = edges_gdf.apply(lambda row: LineString([coor for coor in [row["geometry"].coords[i][0:2] for i in range(0, len(row["geometry"].coords))]]), axis = 1)
+    edges_gdf.reset_index(inplace=True, drop=True)
+    edges_gdf['edgeID'] = edges_gdf.index.values.astype(int)
     
     # assigning indexes
-    nodes_gdf = obtain_nodes_gdf(edges_gdf, crs)
+    edges_gdf["edgeID"] = edges_gdf.index.values.astype(int) 
+    nodes_gdf = obtain_nodes_gdf(edges_gdf, epsg)
     
     # linking on coordinates
     nodes_gdf["nodeID"] = nodes_gdf.index.values.astype(int)
     nodes_gdf, edges_gdf = join_by_coordinates(nodes_gdf, edges_gdf)
-    edges_gdf.reset_index(inplace = True, drop = True)
-    edges_gdf["edgeID"] = edges_gdf.index.values.astype(int)
-    nodes_gdf.index.name = None
-    edges_gdf.index.name = None
     
     # Assigning codes based on the edge's nodes. 
     # The string is formulated putting the node with lower ID first, regardless it being 'u' or 'v'
-    edges_gdf["code"] = np.where(edges_gdf['v'] >= edges_gdf['u'], edges_gdf.u.astype(str)+"-"+edges_gdf.v.astype(str), edges_gdf.v.astype(str)+"-"+edges_gdf.u.astype(str))
-    
+    edges_gdf["code"] = np.where(edges_gdf['v'] >= edges_gdf['u'], edges_gdf.u.astype(str)+"-"+edges_gdf.v.astype(str), 
+                          edges_gdf.v.astype(str)+"-"+edges_gdf.u.astype(str))
     # Reordering coordinates to allow for comparison between edges
     nodes_gdf, edges_gdf = duplicate_nodes(nodes_gdf, edges_gdf)
     edges_gdf['coords'] = [list(c.coords) for c in edges_gdf.geometry]
@@ -127,14 +140,16 @@ def gdfs_from_railways(railways_gdf, epsg):
     # dropping edges with same geometry but with coords in different orders (depending on their directions)    
     edges_gdf['tmp'] = edges_gdf['coords'].apply(tuple, 1)  
     edges_gdf.drop_duplicates(['tmp'], keep = 'first', inplace = True)
-    #eliminate node-lines
-    edges_gdf = edges_gdf[~((edges_gdf['u'] == edges_gdf['v']) & (edges_gdf['geometry'].length < 1.00))]     
-    edges_gdf.drop(['coords', 'code', 'tmp'], axis = 1, inplace = True, errors = 'ignore')
+    edges_gdf = edges_gdf[~((edges_gdf['u'] == edges_gdf['v']) & (edges_gdf['geometry'].length < 1.00))] #eliminate node-lines
+
+    # nodes_gdf, edges_gdf = clean_network(nodes_gdf, edges_gdf, dead_ends = False, 
+                            # remove_disconnected_islands = False, same_uv_edges = False, self_loops = False, fix_topology = fix_topology)
     
+    edges_gdf.drop(['coords', 'code', 'tmp'], axis = 1, inplace = True)
     return nodes_gdf, edges_gdf
     
     
-def assign_stations_to_nodes(stations_gdf, nodes_gdf, edges_gdf, name_field):
+def assign_stations(stations_gdf, nodes_gdf, edges_gdf, name_field):
     
     nodes_gdf, edges_gdf = nodes_gdf.copy(), edges_gdf.copy()
     nodes_gdf['stationID'] = 999999
@@ -173,7 +188,6 @@ def assign_stations_to_nodes(stations_gdf, nodes_gdf, edges_gdf, name_field):
                
     nodes_gdf['stationID'] = nodes_gdf['stationID'].astype(int)
     nodes_gdf['nodeID'] = nodes_gdf['nodeID'].astype(int)
-    
     nodes_gdf.index = nodes_gdf['nodeID'].astype(int)
     nodes_gdf.index.name = None        
     nodes_gdf['x'], nodes_gdf['y'] = list(zip(*[(r.coords[0][0], r.coords[0][1]) for r in nodes_gdf.geometry]))
@@ -182,15 +196,17 @@ def assign_stations_to_nodes(stations_gdf, nodes_gdf, edges_gdf, name_field):
     return nodes_gdf, edges_gdf
     
 def dissolve_stations(nodes_gdf, edges_gdf):
-   
+    
     nodes_gdf, edges_gdf = nodes_gdf.copy(), edges_gdf.copy()
     nodes_gdf, edges_gdf = simplify_stations(nodes_gdf, edges_gdf)
     nodes_gdf, edges_gdf = merge_station_nodes(nodes_gdf, edges_gdf)
     nodes_gdf, edges_gdf = simplify_stations(nodes_gdf, edges_gdf)   
     return nodes_gdf, edges_gdf
     
+    
+    # same station is at u and v of an edge
 def simplify_stations(nodes_gdf, edges_gdf):
-        # same station is at u and v of an edge
+    
     nodes_gdf, edges_gdf = nodes_gdf.copy(), edges_gdf.copy()
     to_drop = []
     for row in edges_gdf.itertuples():
@@ -208,12 +224,13 @@ def simplify_stations(nodes_gdf, edges_gdf):
     nodes_gdf['x'], nodes_gdf['y'] = list(zip(*[(r.coords[0][0], r.coords[0][1]) for r in nodes_gdf.geometry]))
     edges_gdf = correct_edges(nodes_gdf, edges_gdf)
     nodes_gdf['nodeID'] = nodes_gdf['nodeID'].astype(int)
-    nodes_gdf, edges_gdf = clean_network(nodes_gdf, edges_gdf, **clean_settings)
+    nodes_gdf, edges_gdf = clean_network(nodes_gdf, edges_gdf, remove_disconnected_islands = False,
+                            dead_ends = False, same_uv_edges = False, self_loops = True, fix_topology = False)
 
     return nodes_gdf, edges_gdf
     
     
-def merge_station_nodes(nodes_gdf, edges_gdf, tolerance = 40):
+def merge_station_nodes(nodes_gdf, edges_gdf):
     
     nodes_gdf, edges_gdf = nodes_gdf.copy(), edges_gdf.copy()
     to_drop = []
@@ -221,7 +238,7 @@ def merge_station_nodes(nodes_gdf, edges_gdf, tolerance = 40):
 
     for row in old_edges_gdf.itertuples():
         u,v  = old_edges_gdf.loc[row.Index].u, old_edges_gdf.loc[row.Index].v
-        if old_edges_gdf.loc[row.Index].geometry.length > tolerance:
+        if old_edges_gdf.loc[row.Index].geometry.length > 40:
             continue
 
         if ((nodes_gdf.loc[u]['stationID'] != nodes_gdf.loc[v]['stationID']) & 
@@ -245,7 +262,8 @@ def merge_station_nodes(nodes_gdf, edges_gdf, tolerance = 40):
     nodes_gdf['x'], nodes_gdf['y'] = list(zip(*[(r.coords[0][0], r.coords[0][1]) for r in nodes_gdf.geometry]))
     edges_gdf = correct_edges(nodes_gdf, edges_gdf)
     nodes_gdf['nodeID'] = nodes_gdf['nodeID'].astype(int)
-    nodes_gdf, edges_gdf = clean_network(nodes_gdf, edges_gdf, **clean_settings)
+    nodes_gdf, edges_gdf = clean_network(nodes_gdf, edges_gdf, remove_disconnected_islands = False,
+                            dead_ends = False, same_uv_edges = False, self_loops = True, fix_topology = False)
 
     return nodes_gdf, edges_gdf
     
@@ -272,7 +290,8 @@ def extend_stations(nodes_gdf, edges_gdf):
             if ((station_u == nodes_gdf.loc[row.Index]['name']) | 
                 (station_v == nodes_gdf.loc[row.Index]['name'])): continue
                     
-            nodes_gdf.at[row.Index, 'geometry'] = MultiPoint([tmp_nodes.loc[row.Index].geometry.coords[0], point.coords[0]]).centroid
+            nodes_gdf.at[row.Index, 'geometry'] = MultiPoint([tmp_nodes.loc[row.Index].geometry.coords[0],
+                                                              point.coords[0]]).centroid
             new_index = edges_gdf.index.max()+1
             edges_gdf.loc[new_index] = edges_gdf.loc[e.Index]
             edges_gdf.at[e.Index, 'geometry'] =  lines[0]
@@ -284,10 +303,9 @@ def extend_stations(nodes_gdf, edges_gdf):
     
     nodes_gdf['x'], nodes_gdf['y'] = list(zip(*[(r.coords[0][0], r.coords[0][1]) for r in nodes_gdf.geometry]))
     edges_gdf = correct_edges(nodes_gdf, edges_gdf)
+    nodes_gdf, edges_gdf = clean_network(nodes_gdf, edges_gdf, remove_disconnected_islands = False,
+                                dead_ends = False, same_uv_edges = True, self_loops = True, fix_topology = False) 
     
-    local_settings = clean_settings.copy()
-    local_settings['same_uv_edges'] = True
-    nodes_gdf, edges_gdf = clean_network(nodes_gdf, edges_gdf, **local_settings) 
     nodes_gdf, edges_gdf = dissolve_stations(nodes_gdf, edges_gdf)
     
     return nodes_gdf, edges_gdf

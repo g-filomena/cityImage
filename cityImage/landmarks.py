@@ -8,16 +8,18 @@ from shapely.ops import cascaded_union, linemerge
 from scipy.sparse import linalg
 pd.set_option("precision", 10)
 
-from .utilities import scaling_columnDF
-from .angles import get_coord_angle
+from .utilities import *
+from .angles import *
 
 """
 This set of functions is designed for extracting the computational Image of The City.
 Computational landmarks can be extracted employing the following functions.
+
 """
   
  
 def get_buildings_fromSHP(path, epsg, case_study_area = None, distance_from_center = 1000, height_field = None, base_field = None, land_use_field = None):
+
     """    
     The function take a sets of buildings, returns two smaller GDFs of buildings: the case-study area, plus a larger area containing other 
     buildings, called "obstructions" (for analyses which include adjacent buildings). If the area for clipping the obstructions is not
@@ -38,13 +40,11 @@ def get_buildings_fromSHP(path, epsg, case_study_area = None, distance_from_cent
     
     Returns
     -------
-    buildings_gdf, obstructions_gdf: tuple of GeoDataFrames
-        the buildings and the obstructions GeoDataFrames
+    tuple of GeoDataFrames
     """   
     
     # trying reading buildings footprints shapefile from directory
-    crs = 'EPSG:'+str(epsg)
-    obstructions_gdf = gpd.read_file(path).to_crs(crs)  
+    obstructions_gdf = gpd.read_file(path).to_crs(epsg=epsg)  
     
     # computing area, reassigning columns
     obstructions_gdf["area"] = obstructions_gdf["geometry"].area
@@ -82,6 +82,7 @@ def get_buildings_fromSHP(path, epsg, case_study_area = None, distance_from_cent
         case_study_area = obstructions_gdf.geometry.unary_union.centroid.buffer(distance_from_center)
 
     buildings_gdf = obstructions_gdf[obstructions_gdf.geometry.within(case_study_area)]
+
     # clipping buildings in the case-study area
 
     return buildings_gdf, obstructions_gdf
@@ -106,18 +107,17 @@ def get_buildings_fromOSM(place, download_method, epsg = None, distance = 1000):
     
     Returns
     -------
-    buildings_gdf: Polygon GeoDataFrame
-        the buildings GeoDataFrame
+    GeoDataFrames
     """   
     
     columns_to_keep = ['amenity', 'building', 'geometry', 'historic', 'land_use_raw']
 
     if download_method == "distance_from_address": 
-        buildings_gdf = ox.geometries_from_address(address = place, dist = distance, tags={"building": True})
+        buildings_gdf = ox.geometries_from_address(address = place, distance = distance, tags={"building": True})
     elif download_method == "OSMplace": 
         buildings_gdf = ox.geometries_from_place(place, tags={"building": True})
     elif download_method == "from_point": 
-        buildings_gdf = ox.geometries_from_point(center_point = place, dist = distance, tags={"building": True})
+        buildings_gdf = ox.geometries_from_point(point = place, distance = distance, tags={"building": True})
     elif download_method == "OSMpolygon": 
         buildings_gdf = ox.geometries_from_polygon(place, tags={"building": True})
     else: raise downloadError('Provide a download method amongst {"from_point", "distance_from_address", "OSMplace", "OSMpolygon}')
@@ -125,7 +125,7 @@ def get_buildings_fromOSM(place, download_method, epsg = None, distance = 1000):
     if epsg is None:
         buildings_gdf = ox.projection.project_gdf(buildings_gdf)
     else:
-        crs = 'EPSG:'+str(epsg)
+        crs = {'init': 'epsg:'+str(epsg), 'no_defs': True}
         buildings_gdf = buildings_gdf.to_crs(crs)
 
     buildings_gdf['land_use_raw'] = None
@@ -152,29 +152,6 @@ def get_buildings_fromOSM(place, download_method, epsg = None, distance = 1000):
     return buildings_gdf
 
 def simplify_footprints(buildings_gdf, crs):
-    """    
-    The function downloads and cleans buildings footprint geometries and create a buildings GeoDataFrames for the area of interest.
-    The function exploits OSMNx functions for downloading the data as well as for projecting it.
-    The land use classification for each building is extracted. Only relevant columns are kept.   
-            
-    Parameters
-    ----------
-    place: string, tuple
-        name of cities or areas in OSM: when using "from point" please provide a (lat, lon) tuple to create the bounding box around it; when using "distance_from_address"
-        provide an existing OSM address; when using "OSMplace" provide an OSM place name
-    download_method: string, {"from_point", "distance_from_address", "OSMplace"}
-        it indicates the method that should be used for downloading the data.
-    epsg: int
-        epsg of the area considered; if None OSMNx is used for the projection
-    distance: float
-        Specify distance from address or point
-    
-    Returns
-    -------
-    buildings_gdf: Polygon GeoDataFrame
-        the buildings GeoDataFrame
-    """  
-    
     buildings_gdf = buildings_gdf.copy()
     single_parts = gpd.geoseries.GeoSeries([geom for geom in buildings_gdf.unary_union.geoms])
     single_parts_gdf = gpd.GeoDataFrame(geometry=single_parts, crs = crs)
@@ -182,28 +159,6 @@ def simplify_footprints(buildings_gdf, crs):
     return single_parts_gdf
 
 def attach_attributes(buildings_gdf, attributes_gdf, height_field, base_field, land_use_field):
-    """    
-    The function downloads and cleans buildings footprint geometries and create a buildings GeoDataFrames for the area of interest.
-    The function exploits OSMNx functions for downloading the data as well as for projecting it.
-    The land use classification for each building is extracted. Only relevant columns are kept.   
-            
-    Parameters
-    ----------
-    place: string, tuple
-        name of cities or areas in OSM: when using "from point" please provide a (lat, lon) tuple to create the bounding box around it; when using "distance_from_address"
-        provide an existing OSM address; when using "OSMplace" provide an OSM place name
-    download_method: string, {"from_point", "distance_from_address", "OSMplace"}
-        it indicates the method that should be used for downloading the data.
-    epsg: int
-        epsg of the area considered; if None OSMNx is used for the projection
-    distance: float
-        Specify distance from address or point
-    
-    Returns
-    -------
-    new_buildings_gdf: Polygon GeoDataFrame
-        the buildings GeoDataFrame
-    """  
     
     buildings_gdf = buildings_gdf.copy()
     attributes_gdf['area'] = attributes_gdf.geometry.area
@@ -270,9 +225,8 @@ def structural_score(buildings_gdf, obstructions_gdf, edges_gdf, max_expansion_d
         
     Returns
     -------
-    buildings_gdf: Polygon GeoDataFrame
-        the updated buildings GeoDataFrame
-    """  
+    GeoDataFrame
+    """
     
     buildings_gdf = buildings_gdf.copy()
     if (obstructions_gdf is None): 
@@ -327,7 +281,6 @@ def _advance_visibility(building_geometry, obstructions_gdf, obstructions_sindex
     Parameters
     ----------
     building_geometry: Polygon
-    
     obstructions_gdf: Polygon GeoDataFrame
         obstructions GeoDataFrame  
     obstructions_sindex: Rtree Spatial Index
@@ -366,7 +319,7 @@ def _advance_visibility(building_geometry, obstructions_gdf, obstructions_sindex
         
         # finding actual obstacles to this line
         obstacles = possible_obstacles[possible_obstacles.crosses(line)]
-
+        ob = cascaded_union(obstacles.geometry)
         
         """
         if there are obstacles: indentify where the line from the origin is interrupted, create the geometry and
@@ -374,7 +327,6 @@ def _advance_visibility(building_geometry, obstructions_gdf, obstructions_sindex
         """
         
         if len(obstacles) > 0:
-            ob = cascaded_union(obstacles.geometry)
             t = line.intersection(ob)
             # taking the coordinates
             try: 
@@ -384,8 +336,7 @@ def _advance_visibility(building_geometry, obstructions_gdf, obstructions_sindex
             lineNew = LineString([origin, Point(intersection)])
         
         # the line is not interrupted, keeping the original one
-        else: 
-            lineNew = line 
+        else: lineNew = line 
 
         list_lines.append(lineNew)
         # increase the angle
@@ -398,7 +349,7 @@ def _advance_visibility(building_geometry, obstructions_gdf, obstructions_sindex
     list_points.append(Point(origin))
     poly = Polygon([[p.x, p.y] for p in list_points])
     
-    # subtracting the area of the building and computing the area of the polygon (area of visibility)
+    # subtracting th area of the building and computing the area of the polygon (area of visibility)
     try: 
         poly_vis = poly.difference(building_geometry)
     except:
@@ -415,28 +366,26 @@ def visibility_score(buildings_gdf, sight_lines = pd.DataFrame({'a' : []}), meth
     Parameters
     ----------
     buildings_gdf: Polygon GeoDataFrame
-        buildings GeoDataFrame - case study area
-    sight_lines: LineString GeoDataFrame
     
+    sight_lines: LineString GeoDataFrame
+   
     Returns
     -------
-    buildings_gdf: Polygon GeoDataFrame
-        the updated buildings GeoDataFrame
-    """  
-
-    
-    buildings_gdf = buildings_gdf.copy()
-    buildings_gdf["fac"] = 0.0
-    if ("height" not in buildings_gdf.columns) | (sight_lines.empty): 
-        return buildings_gdf, sight_lines
-    
+    GeoDataFrame
+    """
     sight_lines = sight_lines.copy()
     sight_lines['nodeID'] = sight_lines['nodeID'].astype(int)
     sight_lines['buildingID'] = sight_lines['buildingID'].astype(int)
     
+    buildings_gdf = buildings_gdf.copy()
+    buildings_gdf["fac"] = 0.0
+    if "height" not in buildings_gdf.columns: 
+        return buildings_gdf
+        
     #facade area (roughly computed)
     buildings_gdf["fac"] = buildings_gdf.apply(lambda row: _facade_area(row["geometry"], row["height"]), axis = 1)
-
+    if sight_lines.empty: 
+        return buildings_gdf
     
     # 3d visibility
     sight_lines = sight_lines.copy()
@@ -458,12 +407,12 @@ def visibility_score(buildings_gdf, sight_lines = pd.DataFrame({'a' : []}), meth
     col = ["max", "mean", "nr_lines"]      
 
     for i in col: 
-        scaling_columnDF(stats, i)
+        ci.scaling_columnDF(stats, i)
     # computing the 3d visibility score
     if method == 'longest':
         stats["3dvis"] = stats["max_sc"]
     elif method == 'combined':
-        stats["3dvis"] = stats["max_sc"]*0.5+stats["mean_sc"]*0.25+stats["nr_lines_sc"]*0.25
+        stats["3dvis"] = stats["max_sc"]*0.5+tmp["mean_sc"]*0.25+tmp["nr_lines_sc"]*0.25
 
     # merging and building the final output
     buildings_gdf = pd.merge(buildings_gdf, stats[["buildingID", "3dvis"]], on = "buildingID", how = "left") 
@@ -515,32 +464,23 @@ def get_historical_buildings_fromOSM(place, download_method, epsg = None, distan
     GeoDataFrames
     """   
     
-    columns = ['geometry', 'historic']
+    columns_to_keep = ['geometry', 'historic', 'heritage']
 
     if download_method == "distance_from_address": 
-        historic_buildings = ox.geometries_from_address(address = place, dist = distance, tags={"building": True})
+        historic_buildings = ox.geometries_from_address(address = place, distance = distance, tags={"building": True})
     elif download_method == "OSMplace": 
-        historic_buildings = ox.geometries_from_place(place = place, tags={"building": True})
+        historic_buildings = ox.geometries_from_place(place, tags={"building": True})
     elif download_method == "from_point": 
-        historic_buildings = ox.geometries_from_point(center_point = place, dist = distance, tags={"building": True})
-    elif download_method == "polygon": 
-        historic_buildings = ox.geometries_from_polygon(polygon = place, tags={"building": True})
-    else: 
-        raise downloadError('Provide a download method amongst {"from_point", "distance_from_address", "OSMplace"}')
+        historic_buildings = ox.geometries_from_point(point = place, distance = distance, tags={"building": True})
+    else: raise downloadError('Provide a download method amongst {"from_point", "distance_from_address", "OSMplace"}')
     
-    if 'heritage' in historic_buildings:
-        columns.append('heritage')
-    historic_buildings = historic_buildings[columns]
-    
-    if 'heritage' in historic_buildings:
-        historic_buildings = historic_buildings[~(historic_buildings.historic.isnull() & historic_buildings.heritage.isnull())]
-    else:
-        historic_buildings = historic_buildings[~historic_buildings.historic.isnull()]
+    historic_buildings = historic_buildings[['geometry', 'historic', 'heritage']]
+    historic_buildings = historic_buildings[~(historic_buildings.historic.isnull() & historic_buildings.heritage.isnull())]
     
     if epsg is None:
         historic_buildings = ox.projection.project_gdf(historic_buildings)
     else:
-        crs = 'EPSG:'+str(epsg)
+        crs = {'init': 'epsg:'+str(epsg), 'no_defs': True}
         historic_buildings = historic_buildings.to_crs(crs)
 
     historic_buildings["historic"] = 1
@@ -562,7 +502,6 @@ def cultural_score_from_dataset(buildings_gdf, historical_elements_gdf, score = 
     Parameters
     ----------
     buildings_gdf: Polygon GeoDataFrame
-        buildings GeoDataFrame - case study area
     historical_elements_gdf: Point or Polygon GeoDataFrame
     score: string
    
@@ -621,13 +560,11 @@ def cultural_score_from_OSM(buildings_gdf):
     Parameters
     ----------
     buildings_gdf: Polygon GeoDataFrame
-        buildings GeoDataFrame - case study area
    
     Returns
     -------
-    buildings_gdf: Polygon GeoDataFrame
-        the updated buildings GeoDataFrame
-    """  
+    GeoDataFrame
+    """ 
     
     buildings_gdf = buildings_gdf.copy()    
     buildings_gdf["cult"] = 0
@@ -648,14 +585,12 @@ def pragmatic_score(buildings_gdf, radius = 200):
     Parameters
     ----------
     buildings_gdf: Polygon GeoDataFrame
-        buildings GeoDataFrame - case study area
     buffer: float
    
     Returns
     -------
-    buildings_gdf: Polygon GeoDataFrame
-        the updated buildings GeoDataFrame
-    """  
+    GeoDataFrame
+    """
     
     buildings_gdf = buildings_gdf.copy()   
     buildings_gdf["nr"] = 1 # to count
@@ -673,8 +608,6 @@ def _compute_pragmatic_meaning_building(building_geometry, building_land_use, bu
     ----------
     buildings_geometry: Polygon
     building_land_use: String
-    buildings_gdf: Polygon GeoDataFrame
-        buildings GeoDataFrame - case study area
     buildings_gdf_sindex: Rtree Spatial index
     radius: float
    
@@ -715,23 +648,16 @@ def compute_global_scores(buildings_gdf, g_cW, g_iW):
    
     Returns
     -------
-    buildings_gdf: Polygon GeoDataFrame
-        the updated buildings GeoDataFrame
-    """  
+    GeoDataFrame
+    """
     
     # scaling
     col = ["3dvis", "fac", "height", "area","2dvis", "cult", "prag"]
     col_inverse = ["neigh", "road"]
     
-    if ("height" not in buildings_gdf.columns) or (("height" in buildings_gdf.columns) and (buildings_gdf.height.max == 0.0)):
-        buildings_gdf[['height','3dvis', 'fac']]  = 0.0
-        if g_cW['vScore'] != 0.0:
-            to_add = g_cW['vScore']/3
-            g_cW['sScore'] += to_add
-            g_cW['cScore'] += to_add
-            g_cW['pScore'] += to_add
-            g_cW['vScore'] = 0.0
-      
+    if "height" not in buildings_gdf.columns: 
+        buildings_gdf['height'] = 0.0
+    
     for i in col: 
         if buildings_gdf[i].max() == 0.0: 
             buildings_gdf[i+"_sc"] = 0.0
@@ -789,9 +715,8 @@ def compute_local_scores(buildings_gdf, l_cW, l_iW, radius = 1500):
    
     Returns
     -------
-    buildings_gdf: Polygon GeoDataFrame
-        the updated buildings GeoDataFrame
-    """  
+    GeoDataFrame
+    """
     
     buildings_gdf = buildings_gdf.copy()
     buildings_gdf.index = buildings_gdf.buildingID
@@ -818,14 +743,12 @@ def _building_local_score(building_geometry, buildingID, buildings_gdf, building
     buildingID: int
     buildings_gdf: Polygon GeoDataFrame
     buildings_gdf_sindex: Rtree spatial index
-    l_cW: dictionary
-    l_iW: dictionary
-    radius: float
-        regulates the extension of the area wherein the scores are recomputed, around the building
+    l_cW, l_iW: dictionaries
+    radius: float, regulates the extension of the area wherein the scores are recomputed, around the building
    
     Returns
     -------
-    score: Float
+    GeoDataFrame
     """
                                              
     col = ["3dvis", "fac", "height", "area","2dvis", "cult","prag"]
@@ -862,9 +785,8 @@ def _building_local_score(building_geometry, buildingID, buildings_gdf, building
             scaling_columnDF(pm, i)
         
     pm["lScore"] =  pm["vScore_l_sc"]*l_cW["vScore"] + pm["sScore_l_sc"]*l_cW["sScore"] + pm["cScore_l"]*l_cW["cScore"] + pm["pScore_l"]*l_cW["pScore"]
-    score = float("{0:.3f}".format(pm["lScore"].loc[buildingID]))
     # return the so obtined score
-    return score
+    return float("{0:.3f}".format(pm["lScore"].loc[buildingID]))
 
 class Error(Exception):
     """Base class for other exceptions"""

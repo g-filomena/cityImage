@@ -4,9 +4,10 @@ from math import sqrt
 from shapely.geometry import Point, LineString, MultiLineString
 
 """
-A series of math functions for angle computations.
-Readapted for LineStrings from Abhinav Ramakrishnan's post in https://stackoverflow.com/a/28261304/7375309.
-"""  
+math functions for angle computations
+readapted for LineStrings from Abhinav Ramakrishnan post in https://stackoverflow.com/a/28261304/7375309
+"""
+    
 def _dot(vA, vB):
     return vA[0]*vB[0]+vA[1]*vB[1]
         
@@ -19,20 +20,20 @@ def get_coord_angle(origin, distance, angle):
     ----------
     origin: tuple of float
         tuple of coordinates
-    distance: float
-        the distance from the origin coordinates
-    angle: float
-        the desired angle
+    line_geometryB: LineString
+    degree: boolean
+        If True returns value in degree, otherwise in radians
+    deflection: boolean
+        If True computes angle of incidence between the two lines, otherwise angle between vectors
+    angular_change: boolean
 
     Returns:
     ----------
-    coords: tuple
-        the resulting coordinates
+    float
     """
 
     (disp_x, disp_y) = (distance * math.sin(math.radians(angle)), distance * math.cos(math.radians(angle)))
-    coord = (origin[0] + disp_x, origin[1] + disp_y)
-    return coord
+    return (origin[0] + disp_x, origin[1] + disp_y)
 
 def angle_line_geometries(line_geometryA, line_geometryB, degree = False, deflection = False, angular_change = False):
     """
@@ -56,8 +57,7 @@ def angle_line_geometries(line_geometryA, line_geometryB, degree = False, deflec
         
     Returns:
     ----------
-    angle: float
-        the resulting angle in radians or degrees
+    float
     """
            
     # extracting coordinates and createing lines
@@ -152,11 +152,10 @@ def angle_line_geometries(line_geometryA, line_geometryB, degree = False, deflec
     except:
         angle_deg = 0.0
         angle_rad = 0.0
-    
-    angle = angle_rad
-    if degree:
-        angle = angle_deg
-    return angle
+        
+    if degree: 
+        return angle_deg
+    return angle_rad
     
 def difference_angle_line_geometries(line_geometryA, line_geometryB):
     """
@@ -171,8 +170,7 @@ def difference_angle_line_geometries(line_geometryA, line_geometryB):
             
     Returns:
     ----------
-    difference_angle: float
-        the resulting difference in degrees
+    float
     """
            
     # extracting coordinates and createing lines
@@ -200,65 +198,7 @@ def difference_angle_line_geometries(line_geometryA, line_geometryB):
     difference_angle = abs(angle_A - angle_B)
         
     return difference_angle
-    
-def is_parallel(line_geometry_A, line_geometry_B, hard = False):
-    
-    difference_angle = difference_angle_line_geometries(line_geometry_A, line_geometry_B)
-    if (difference_angle <= 30):
-        return True
         
-    line_coordsA = list(line_geometry_A.coords)
-    line_coordsB = list(line_geometry_B.coords)
-    if ((len(line_coordsA) == 2) | (len(line_coordsB) == 2)): 
-        return False
-       
-    if not hard:
-        # remove first coordinates (A,B)
-        line_geometry_A = LineString([coor for coor in line_coordsA[1:]])
-        line_geometry_B = LineString([coor for coor in line_coordsB[1:]])
-        difference_angle = difference_angle_line_geometries(line_geometry_A, line_geometry_B)
-        if (difference_angle <= 20) & (difference_angle >= -20): 
-            return True
-        
-        # remove first (A) and last (B)
-        line_geometry_B = LineString([coor for coor in line_coordsB[:-1]])
-        difference_angle = difference_angle_line_geometries(line_geometry_A, line_geometry_B)
-        if (difference_angle <= 20) & (difference_angle >= -20): 
-            return True
-        
-        # remove last (A) and first (B)
-        line_geometry_A = LineString([coor for coor in line_coordsA[:-1]])
-        line_geometry_B = LineString([coor for coor in line_coordsB[1:]])
-        difference_angle = difference_angle_line_geometries(line_geometry_A, line_geometry_B)
-        if (difference_angle <= 20) & (difference_angle >= -20): 
-            return True
-        
-        # remove last coordinates (A, B)
-        line_geometry_A = LineString([coor for coor in line_coordsA[:-1]])
-        line_geometry_B = LineString([coor for coor in line_coordsB[:-1]])
-        difference_angle = difference_angle_line_geometries(line_geometry_A, line_geometry_B)
-        if (difference_angle <= 20) & (difference_angle >= -20): 
-            return True
-        
-        if ((len(line_coordsA) == 3) | (len(line_coordsB) == 3)):
-            return False
-        line_geometry_A = LineString([coor for coor in line_coordsA[1:-1]])
-        line_geometry_B = LineString([coor for coor in line_coordsB[1:-1]])
-        difference_angle = difference_angle_line_geometries(line_geometry_A, line_geometry_B)
-        if (difference_angle <= 20) & (difference_angle >= -20): 
-            return True
-        
-    return False   
-    
-def is_continuation(ix_lineA, ix_lineB, edges_gdf):
-
-    nameA = edges_gdf.loc[ix_lineA]['name']
-    nameB = edges_gdf.loc[ix_lineB]['name']
-    line_geometry_A = edges_gdf.loc[ix_lineA]['geometry']
-    line_geometry_B = edges_gdf.loc[ix_lineB]['geometry']
-    if is_parallel(line_geometry_A, line_geometry_B, hard = True): 
-        return True
-    return ((nameA == nameB) & (is_parallel(line_geometry_A, line_geometry_B, hard = False)))   
     
 class Error(Exception):
     """Base class for other exceptions"""

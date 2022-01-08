@@ -5,10 +5,14 @@ import geopandas as gpd
 
 from shapely.geometry import Point, LineString, Polygon, MultiPolygon, MultiLineString
 from shapely.ops import cascaded_union, linemerge, polygonize, polygonize_full, unary_union, nearest_points
-from .utilities import gdf_from_geometries
 pd.set_option("precision", 10)
 
-def road_barriers(place, download_method, distance = 500.0, epsg = None, include_primary = False):
+"""
+Set of functions to extract barriers within a certain urban space (Major roads, water bodies, parks and railway structures).
+The concept of barrier refers to Lynch's "edges" in The Image of the City.
+"""
+
+def road_barriers(place, download_method, distance = None, epsg = None, include_primary = False):
     """
     The function downloads major roads from OSM. These can be considered to be barrier to pedestrian movement or, at least, to structure people's cognitive Image of the City.
     if 'include_primary' considers also primary roads, beyond motorway and trunk roads.
@@ -25,82 +29,67 @@ def road_barriers(place, download_method, distance = 500.0, epsg = None, include
     epsg: int
         epsg of the area considered; if None OSMNx is used for the projection
     include_primary: boolean
-        it true, it considers primary roads as barriers
-    include_secondary: boolean
-        it true, it considers secondary roads as barriers
+        it is used only if download_method_graphB == "distance from address"
         
     Returns
     -------
-    road_barriers: LineString GeoDataFrame
-        the road barriers
+    LineString GeoDataFrame
     """
     
-    crs = 'EPSG:' + str(epsg)
-    to_keep = ['trunk', 'motorway']
-    if include_primary:
-        to_keep.append('primary')
-        
-    tags = {'highway': True}
-    roads = _download_geometries(place, download_method, tags, crs, distance)
-    roads = roads[roads.highway.isin(to_keep)]
+    crs = {'init': 'epsg:' + str(epsg)}
+    
+    if download_method == 'distance_from_address': 
+        roads_graph = ox.graph_from_address(place, network_type = 'drive', distance = distance, simplify = False)
+    elif download_method == 'OSMplace':
+        roads_graph = ox.graph_from_place(place, network_type = 'drive', simplify = False)
+    else:
+        roads_graph = ox.graph_from_polygon(place, network_type = 'drive', simplify = False)
+    
+    roads = ox.graph_to_gdfs(roads_graph, nodes=False, edges=True, node_geometry= False, fill_edge_geometry=True)
+    roads = roads.to_crs(crs)
     # exclude tunnels
     if "tunnel" in roads.columns:
         roads["tunnel"].fillna(0, inplace = True)
         roads = roads[roads["tunnel"] == 0] 
-       
-    roads = roads.unary_union
-    roads = _simplify_barrier(roads)
-    df = pd.DataFrame({'geometry': roads, 'type': ['road'] * len(roads)})
-    road_barriers = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
-       
-    return road_barriers
     
-def secondary_road_barriers(place, download_method, distance = 500.0, epsg = None):
-    """
-    The function downloads major roads from OSM. These can be considered to be barrier to pedestrian movement or, at least, to structure people's cognitive Image of the City.
-    if 'include_primary' considers also primary roads, beyond motorway and trunk roads.
-        
-    Parameters
-    ----------
-    place: string
-        name of cities or areas in OSM: when using "OSMpolygon" please provide the name of a "relation" in OSM as an argument of "place"; when using "distance_from_address"
-        provide an existing OSM address; when using "OSMplace" provide an OSM place name
-    download_method: string, {"polygon", "distance_from_address", "OSMplace"}
-        it indicates the method that should be used for downloading the data.
-    distance: float
-        it is used only if download_method == "distance from address"
-    epsg: int
-        epsg of the area considered; if None OSMNx is used for the projection
-    include_primary: boolean
-        it true, it considers primary roads as barriers
-    include_secondary: boolean
-        it true, it considers secondary roads as barriers
-        
-    Returns
-    -------
-    road_barriers: LineString GeoDataFrame
-        the road barriers
-    """
-    
-    crs = 'EPSG:' + str(epsg)
-    to_keep = ['secondary']
-    tags = {'highway': True}
-    roads = _download_geometries(place, download_method, tags, crs, distance)
-    roads = roads[roads.highway.isin(to_keep)]
-    # exclude tunnels
-    if "tunnel" in roads.columns:
-        roads["tunnel"].fillna(0, inplace = True)
-        roads = roads[roads["tunnel"] == 0] 
-       
+    # resolving lists 
+    roads["highway"] = [x[0] if isinstance(x, list) else x for x in roads["highway"]]        
+    roads.drop(['osmid', 'oneway', 'bridge', 'tunnel'], axis = 1, inplace = True, errors = 'ignore')
+    main_types = ['trunk', 'motorway']
+    if include_primary: 
+        main_types = ['trunk', 'motorway', 'primary']
+    roads = roads[roads.highway.isin(main_types)]
     roads = roads.unary_union
-    roads = _simplify_barrier(roads)
-    df = pd.DataFrame({'geometry': roads, 'type': ['secondary_road'] * len(roads)})
+    
+    if roads.type != "LineString": 
+        roads = linemerge(roads)
+        if roads.type != "LineString": 
+            features = [i for i in roads]
+        else: 
+            features = [roads]
+    else: 
+        features = [roads]
+    
+    features = [i for i in roads]
+    df = pd.DataFrame({'geometry': features, 'type': ['road'] * len(features)})
     road_barriers = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
-       
+    road_barriers["from"] = road_barriers.apply(lambda row: row.geometry.coords[0], axis = 1)
+    road_barriers["to"] = road_barriers.apply(lambda row: row.geometry.coords[-1], axis = 1)
+
+    dd_u = dict(road_barriers['from'].value_counts())
+    dd_v = dict(road_barriers['to'].value_counts())
+    dd = {k: dd_u.get(k, 0) + dd_v.get(k, 0) for k in set(dd_u) | set(dd_v)}
+    to_ignore = {k: v for k, v in dd.items() if v == 1}
+    
+    # exclude short sectors which are probably not continuous enough to be considered barriers
+    road_barriers = road_barriers[~((road_barriers['from'].isin(to_ignore) & road_barriers['to'].isin(to_ignore)) & (road_barriers.length < 500))]
+    road_barriers = road_barriers[~((road_barriers['from'].isin(to_ignore) | road_barriers['to'].isin(to_ignore)) & (road_barriers.length < 200))]
+    road_barriers.drop(['from', 'to'], axis = 1, inplace = True)
+    
     return road_barriers
 
 
-def water_barriers(place, download_method, distance = 500.0, lakes_area = 1000, epsg = None):
+def water_barriers(place, download_method, distance = None, epsg = None):
     """
     The function downloads water bodies from OSM. Lakes, rivers and see coastlines can be considered structuring barriers.
         
@@ -109,7 +98,7 @@ def water_barriers(place, download_method, distance = 500.0, lakes_area = 1000, 
     place: string
         name of cities or areas in OSM: when using "OSMpolygon" please provide the name of a "relation" in OSM as an argument of "place"; when using "distance_from_address"
         provide an existing OSM address; when using "OSMplace" provide an OSM place name
-    download_method: string {"polygon", "distance_from_address", "OSMplace"}
+    download_method: string, {"polygon", "distance_from_address", "OSMplace"}
         it indicates the method that should be used for downloading the data.
     distance: float
         it is used only if download_method == "distance from address"
@@ -118,87 +107,222 @@ def water_barriers(place, download_method, distance = 500.0, lakes_area = 1000, 
         
     Returns
     -------
-    water_barriers: LineString GeoDataFrame
-        the water barriers GeoDataFrame
+    LineString GeoDataFrame
     """
     
-    crs = 'EPSG:' + str(epsg)
+    crs = {'init': 'epsg:' + str(epsg)}
+    
     # rivers and canals
-    tags = {"waterway":True}  
-    rivers = _download_geometries(place, download_method, tags, crs, distance)
-    rivers = rivers[(rivers.waterway == 'river') | (rivers.waterway == 'canal')]
-    if "tunnel" in rivers.columns:
-        rivers["tunnel"].fillna(0, inplace = True)
-        rivers = rivers[rivers["tunnel"] == 0] 
+    try:
+        if download_method == 'distance_from_address': 
+            rivers_graph = ox.graph_from_address(place, distance = distance, retain_all = True, truncate_by_edge=False, simplify = False,
+                               custom_filter= '["waterway"~"river|canal"]' )
+        elif download_method == 'OSMplace': 
+            rivers_graph = ox.graph_from_place(place, retain_all = True, truncate_by_edge=False, simplify = False, 
+                            custom_filter= '["waterway"~"river|canal"]' )
+        else: 
+            rivers_graph = ox.graph_from_polygon(place, retain_all = True, truncate_by_edge=False, simplify = False,
+                               custom_filter= '["waterway"~"river|canal"]') 
+        rivers = ox.graph_to_gdfs(rivers_graph, nodes=False, edges=True, node_geometry= False, fill_edge_geometry=True)
+        rivers = rivers.to_crs(crs)
+        if "tunnel" in rivers.columns:
+            rivers["tunnel"].fillna(0, inplace = True)
+            rivers = rivers[rivers["tunnel"] == 0] 
+        rivers = rivers.unary_union
         
-    rivers = rivers.unary_union
-    rivers = _simplify_barrier(rivers)
-    rivers = gdf_from_geometries(rivers, crs)
+        try:
+            # removing possible duplicates with different tags
+            if download_method == 'distance_from_address': 
+                river_banks_graph =  ox.graph_from_address(place, distance = distance, retain_all = True, truncate_by_edge=False, simplify = False,
+                                   custom_filter= '["natural"~"water"]["water"~"river"]')                  
+            elif download_method == 'OSMplace': 
+                river_banks_graph =  ox.graph_from_place(place, retain_all = True, truncate_by_edge=False, simplify = False,
+                                    custom_filter= '["natural"~"water"]["water"~"river"]') 
+            else: 
+                river_banks_graph =  ox.graph_from_polygon(place, retain_all = True, truncate_by_edge=False, simplify = False,
+                                    custom_filter= '["natural"~"water"]["water"~"river"]')               
+            river_banks = ox.graph_to_gdfs(river_banks_graph, nodes=False, edges=True, node_geometry=False, fill_edge_geometry=True)
+            river_banks = river_banks.to_crs(crs)
+            rb = river_banks.unary_union
+            rivers = rivers.difference(rb)  
+        
+        except ox._errors.EmptyOverpassResponse: 
+            pass
+        
+        if rivers.type != "LineString":         
+            rivers = linemerge(rivers)
+            if rivers.type != "LineString": 
+                features = [i for i in rivers]
+            else: 
+                features = [rivers]
+        else: 
+            features = [rivers]
+        df = pd.DataFrame({'geometry': features})
+        rivers = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
+        rivers['length'] = rivers['geometry'].length
+        
+    except ox._errors.EmptyOverpassResponse: 
+        rivers = None
+                
+    # lakes #########
+    try:
+        if download_method == 'distance_from_address': 
+            lakes_graph = ox.graph_from_address(place, distance = distance, retain_all = True, truncate_by_edge=False, simplify = False,
+                                custom_filter= '["natural"~"water"]')
+        elif download_method == 'OSMplace': 
+            lakes_graph = ox.graph_from_place(place, retain_all = True, truncate_by_edge=False, simplify = False,
+                                custom_filter= '["natural"~"water"]' )
+        else: 
+            lakes_graph = ox.graph_from_polygon(place, retain_all = True, truncate_by_edge=False, simplify = False,
+                               custom_filter= '["natural"~"water"]' )        
+        lakes = ox.graph_to_gdfs(lakes_graph, nodes=False, edges=True, node_geometry= False, fill_edge_geometry=True)
+        lakes = lakes.to_crs(crs)                       
+        lakes = lakes.unary_union
     
-    # lakes   
-    tags = {"natural":"water"}
-    lakes = _download_geometries(place, download_method, tags, crs, distance)  
-    to_remove = ['river', 'stream', 'canal', 'riverbank', 'reflecting_pool', 'reservoir', 'bay']
-    lakes = lakes[~lakes.water.isin(to_remove)]
-    lakes['area'] = lakes.geometry.area
-    lakes = lakes[lakes.area > lakes_area]
-    lakes = lakes.unary_union
+        try:
+            # removing possible duplicates with different tags - riverbanks
+            if download_method == 'distance_from_address': 
+                river_banks_graph = ox.graph_from_address(place, distance = distance, retain_all = True, truncate_by_edge=False, simplify = False,
+                                   custom_filter= '["waterway"~"riverbank"]')                           
+            elif download_method == 'OSMplace': 
+                river_banks_graph = ox.graph_from_place(place, retain_all = True, truncate_by_edge=False, simplify = False,
+                                   custom_filter= '["waterway"~"riverbank"]')        
+            else: 
+                river_banks_graph = ox.graph_from_polygon(place, retain_all = True, truncate_by_edge=False, simplify = False,
+                                   custom_filter= '["waterway"~"riverbank"]')     
+            river_banks = ox.graph_to_gdfs(river_banks_graph, nodes=False, edges=True, node_geometry=False, fill_edge_geometry=True)
+            river_banks = river_banks.to_crs(crs)
+            rb = river_banks.unary_union
+            lakes = lakes.difference(rb)
+        
+        except ox._errors.EmptyOverpassResponse: 
+            pass
+        
+        # removing possible duplicates with different tags - rivers
+        try:
+            if download_method == 'distance_from_address': 
+                river_banks_graph =  ox.graph_from_address(place, distance = distance, retain_all = True, truncate_by_edge=False, simplify = False,
+                                   custom_filter= '["natural"~"water"]["water"~"river"]')                  
+            elif download_method == 'OSMplace': 
+                river_banks_graph =  ox.graph_from_place(place, retain_all = True, truncate_by_edge=False, simplify = False,
+                                   custom_filter= '["natural"~"water"]["water"~"river"]') 
+            else: 
+                river_banks_graph = ox.graph_from_polygon(place, retain_all = True, truncate_by_edge=False, simplify = False,
+                                   custom_filter= '["natural"~"water"]["water"~"river"]')                        
+            river_banks = ox.graph_to_gdfs(river_banks_graph, nodes=False, edges=True, node_geometry=False, fill_edge_geometry=True)
+            river_banks = river_banks.to_crs(crs)
+            rb = river_banks.unary_union
+            lakes = lakes.difference(rb)  
+        
+        except ox._errors.EmptyOverpassResponse: 
+            pass
+        
+        # removing possible duplicates with different tags - steams
+        try:        
+            if download_method == 'distance_from_address': 
+                steams_graph =  ox.graph_from_address(place, distance = distance, retain_all = True, truncate_by_edge=False, simplify = False,
+                                   custom_filter= '["natural"~"water"]["water"~"steam"]')                  
+            elif download_method == 'OSMplace': 
+                steams_graph =  ox.graph_from_place(place, retain_all = True, truncate_by_edge=False, simplify = False,
+                                   custom_filter= '["natural"~"water"]["water"~"steam"]') 
+            else: 
+                steams_graph = ox.graph_from_polygon(place, retain_all = True, truncate_by_edge=False, simplify = False,
+                                   custom_filter= '["natural"~"water"]["water"~"steam"]')                        
+                           
+            steams = ox.graph_to_gdfs(steams_graph, nodes=False, edges=True, node_geometry=False, fill_edge_geometry=True)
+            steams = steams.to_crs(crs)
+            st = steams.unary_union
+            lakes = lakes.difference(st)  
+        
+        except ox._errors.EmptyOverpassResponse: 
+            pass
+        
+        if lakes.type != "LineString":
+            lakes = linemerge(lakes)
+            if lakes.type != "LineString":
+                features = [i for i in lakes]
+            else: features = [lakes]
+        else: features = [lakes]
+        df = pd.DataFrame({'geometry': features})
+        lakes = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
+        lakes['length'] = lakes['geometry'].length
+        
+        # final control, possible duplicates with different tags - generic waterways
+        try: 
+            if download_method == 'distance_from_address': 
+                waterway_graph =  ox.graph_from_address(place, distance = distance, retain_all = True, truncate_by_edge=False, simplify = False,
+                                   custom_filter= '["waterway"]')                  
+            elif download_method == 'OSMplace': 
+                waterway_graph =  ox.graph_from_place(place, retain_all = True, truncate_by_edge=False, simplify = False,
+                                   custom_filter= '["waterway"]') 
+            else: 
+                waterway_graph = ox.graph_from_polygon(place, retain_all = True, truncate_by_edge=False, simplify = False,
+                                   custom_filter= '["waterway"]')     
+            waterway = ox.graph_to_gdfs(waterway_graph, nodes=False, edges=True, node_geometry=False, fill_edge_geometry=True)
+            waterway = waterway.to_crs(crs)
+            waterway = waterway.unary_union
+            if waterway.type != "LineString": 
+                features = [i for i in waterway]
+            else: 
+                features = [waterway]    
+            df = pd.DataFrame({'geometry': features})
+            waterway = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)      
+        
+        except ox._errors.EmptyOverpassResponse: 
+            waterway = None
+        
+        lakes = lakes[~lakes.intersects(waterway)]
+        lakes = lakes[lakes['length'] >=500]
     
-    lakes = _simplify_barrier(lakes) 
-    lakes = gdf_from_geometries(lakes, crs)
-    lakes = lakes[lakes['length'] >=500]
+    except ox._errors.EmptyOverpassResponse: 
+        lakes = None
+
+    # sea
+    try:
+        if download_method == 'distance_from_address': 
+            sea_graph = ox.graph_from_address(place, distance = distance, retain_all = True, truncate_by_edge=False, simplify = False,
+                           custom_filter= '["natural"~"coastline"]')
+        elif download_method == 'OSMplace': 
+            sea_graph = ox.graph_from_place(place, retain_all = True, truncate_by_edge=False, simplify = False, 
+                 custom_filter= '["natural"~"coastline"]')
+        else: sea_graph = ox.graph_from_polygon(place, retain_all = True, truncate_by_edge=False, simplify = False,
+                               custom_filter= '["natural"~"coastline"]')
+        sea = ox.graph_to_gdfs(sea_graph, nodes=False, edges=True, node_geometry= False, fill_edge_geometry=True)
+        sea = sea.to_crs(crs)
+        if sea.type != "LineString": 
+            sea = linemerge(sea)
+            if sea.type != "LineString": 
+                features = [i for i in sea]
+            else: 
+                features = [sea]
+        else: 
+            features = [sea]
+        df = pd.DataFrame({'geometry': features})
+        sea['length'] = sea['geometry'].length
+        sea = sea[['geometry', 'length']]
     
-    # sea   
-    tags = {"natural":"coastline"}
-    sea = _download_geometries(place, download_method, tags, crs, distance)
-    sea = sea.unary_union      
-    sea = _simplify_barrier(sea)
-    sea = gdf_from_geometries(sea, crs)
-    
+    except ox._errors.EmptyOverpassResponse: 
+        sea = None
+        
     water = rivers.append(lakes)
     water = water.append(sea)
     water = water.unary_union
-    water = _simplify_barrier(water)
+    
+    if water.type != "LineString":        
+        water = linemerge(water)
+        if water.type != "LineString": 
+            features = [i for i in water]
+        else: 
+            features = [water]
+    else: 
+        features = [water]
         
-    df = pd.DataFrame({'geometry': water, 'type': ['water'] * len(water)})
+    df = pd.DataFrame({'geometry': features, 'type': ['water'] * len(features)})
     water_barriers = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
     
-    return water_barriers    
-     
+    return water_barriers
     
-def _download_geometries(place, download_method, tags, crs, distance = 500.0):
-    """
-    The function downloads certain geometries from OSM, by means of OSMNX functions.
-    It returns a GeoDataFrame, that could be empty when no geometries are found, with the provided tags.
-    
-    Parameters
-    ----------
-    place: string
-        name of cities or areas in OSM: when using "OSMpolygon" please provide the name of a "relation" in OSM as an argument of "place"; when using "distance_from_address"
-        provide an existing OSM address; when using "OSMplace" provide an OSM place name
-    download_method: string {"polygon", "distance_from_address", "OSMplace"}
-        it indicates the method that should be used for downloading the data.
-    tag: dict 
-        the desired OSMN tags
-    crs: string
-        the coordinate system of the case study area
-        
-    Returns
-    -------
-    geometries_gdf: GeoDataFrame
-        the resulting GeoDataFrame
-    """    
-    if download_method == 'distance_from_address': 
-        geometries_gdf = ox.geometries_from_address(place, tags = tags, dist = distance)
-    elif download_method == 'OSMplace': 
-        geometries_gdf = ox.geometries_from_place(place, tags = tags)
-    else: 
-        geometries_gdf = ox.geometries_from_polygon(place, tags = tags)
-    
-    geometries_gdf = geometries_gdf.to_crs(crs)
-    return geometries_gdf
-    
-def railway_barriers(place, download_method, distance = 500.0, epsg = None, keep_light_rail = False):
+def railway_barriers(place, download_method,distance = None, epsg = None, keep_light_rail = False):
     """
     The function downloads overground railway structures from OSM. Such structures can be considered barriers which shape the Image of the City and obstruct sight and movement.
         
@@ -207,7 +331,7 @@ def railway_barriers(place, download_method, distance = 500.0, epsg = None, keep
     place: string
         name of cities or areas in OSM: when using "OSMpolygon" please provide the name of a "relation" in OSM as an argument of "place"; when using "distance_from_address"
         provide an existing OSM address; when using "OSMplace" provide an OSM place name
-    download_method: string {"polygon", "distance_from_address", "OSMplace"}
+    download_method: string, {"polygon", "distance_from_address", "OSMplace"}
         it indicates the method that should be used for downloading the data.
     distance: float
         it is used only if download_method == "distance from address"
@@ -218,30 +342,64 @@ def railway_barriers(place, download_method, distance = 500.0, epsg = None, keep
         
     Returns
     -------
-    railway_barriers: LineString GeoDataFrame
-        the railway barriers GeoDataFrame
-    """    
-    crs = 'EPSG:' + str(epsg)
-    tags = {"railway":"rail"}
-    railways = _download_geometries(place, download_method, tags, crs, distance)
-    # removing light_rail, in case
-    if not keep_light_rail:
-        railways = railways[railways.railway != 'light_rail']
+    LineString GeoDataFrame
+    """
+    
+    
+    crs = {'init': 'epsg:' + str(epsg)}
+    if download_method == 'distance_from_address': 
+            railway_graph = ox.graph_from_address(place, distance = distance, retain_all = True, truncate_by_edge= False, simplify = False,
+                           custom_filter= '["railway"~"rail"]')
+    elif download_method == 'OSMplace':
+        railway_graph = ox.graph_from_place(place, retain_all = True, truncate_by_edge=False, simplify = False,
+                               custom_filter= '["railway"~"rail"]')
+    else: 
+        railway_graph = ox.graph_from_polygon(place, retain_all = True, truncate_by_edge=False, simplify = False,
+                               custom_filter= '["railway"~"rail"]')                                    
+    railways = ox.graph_to_gdfs(railway_graph, nodes=False, edges=True, node_geometry=False, fill_edge_geometry=True)
+    railways = railways.to_crs(crs)
     if "tunnel" in railways.columns:
         railways["tunnel"].fillna(0, inplace = True)
         railways = railways[railways["tunnel"] == 0]     
-    
     r = railways.unary_union
+    
+    # removing light_rail, in case
+    if not keep_light_rail:
+        try:
+            if download_method == 'distance_from_address': 
+                light_graph = ox.graph_from_address(place, distance = distance, retain_all = True, truncate_by_edge=False, simplify = False,
+                      custom_filter= '["railway"~"light_rail"]' )
+            elif download_method == 'OSMplace':
+                light_graph = ox.graph_from_place(place, retain_all = True, truncate_by_edge = False, simplify = False,
+                        custom_filter= '["railway"~"light_rail"]')
+            else: 
+                light_graph = ox.graph_from_polygon(place, retain_all = True, truncate_by_edge = False, simplify = False,
+                        custom_filter= '["railway"~"light_rail"]') 
+            light_railways = ox.graph_to_gdfs(light_graph, nodes=False, edges=True, node_geometry=False, fill_edge_geometry=True)
+            light_railways = light_railways.to_crs(crs)
+            lr = light_railways.unary_union
+            r = r.difference(lr)
+        
+        except ox._errors.EmptyOverpassResponse: 
+            pass
+
     p = polygonize_full(r)
     railways = unary_union(p).buffer(10).boundary # to simpify a bit
-    railways = _simplify_barrier(railways)
+    if railways.type != "LineString": 
+        railways = linemerge(railways)
+        if railways.type != "LineString": 
+            features = [i for i in railways]
+        else: 
+            features = [railways]
+    else: 
+        features = [railways]
         
-    df = pd.DataFrame({'geometry': railways, 'type': ['railway'] * len(railways)})
+    df = pd.DataFrame({'geometry': features, 'type': ['railway'] * len(features)})
     railway_barriers = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
     
     return railway_barriers
     
-def park_barriers(place, download_method, distance = 500.0, epsg = None, min_area = 100000):
+def park_barriers(place, download_method, distance = None, epsg = None, min_area = 100000):
     """
     The function downloads parks areas with a certain extent and converts them to LineString features. Parks may break continuity in the urban structure, besides being attractive areas for pedestrians.
         
@@ -250,7 +408,7 @@ def park_barriers(place, download_method, distance = 500.0, epsg = None, min_are
     place: string
         name of cities or areas in OSM: when using "OSMpolygon" please provide the name of a "relation" in OSM as an argument of "place"; when using "distance_from_address"
         provide an existing OSM address; when using "OSMplace" provide an OSM place name
-    download_method: string {"polygon", "distance_from_address", "OSMplace"}
+    download_method: string, {"polygon", "distance_from_address", "OSMplace"}
         it indicates the method that should be used for downloading the data.
     distance: float
         it is used only if download_method == "distance from address"
@@ -261,25 +419,46 @@ def park_barriers(place, download_method, distance = 500.0, epsg = None, min_are
       
     Returns
     -------
-    park_barriers: LineString GeoDataFrame
-        the park barriers GeoDataFrame
+    LineString GeoDataFrame
     """
 
-    crs = 'EPSG:' + str(epsg)
-    tags = {"leisure": True}
-    parks_poly = _download_geometries(place, download_method, tags, crs, distance)
+    crs = {'init': 'epsg:' + str(epsg)}
+    if download_method == 'distance_from_address':
+        parks_polygon = ox.geometries_from_address(place, distance = distance, tags={"leisure": True})
+    elif download_method == 'OSMplace': 
+        parks_polygon = ox.geometries_from_place(place, tags={"leisure": True})
+    else: 
+        parks_polygon = ox.geometries_from_polygon(place, tags={"leisure": True})
     
-    parks_poly = parks_poly[parks_poly.leisure == 'park']
-    parks_poly = parks_poly[~parks_poly['geometry'].is_empty] 
-    parks_poly['area'] = parks_poly.geometry.area
-    parks_poly = parks_poly[parks_poly.area >= min_area]
+    parks_polygon = parks_polygon[parks_polygon.leisure == 'park']
+    ix_geo = parks_polygon.columns.get_loc("geometry")+1
+    to_drop = []
+    
+    for row in parks_polygon.itertuples():
+        type_geo = None
+        try: 
+            type_geo = row[ix_geo].geom_type
+        except: 
+            to_drop.append(row.Index)
+        
+    parks_polygon.drop(to_drop, axis = 0, inplace = True)
+    parks_polygon = parks_polygon.to_crs(crs)
+    parks_polygon.area = parks_polygon.geometry.area
+    parks_polygon = parks_polygon[parks_polygon.area >= min_area]
  
-    pp = parks_poly['geometry'].unary_union  
+    pp = parks_polygon['geometry'].unary_union  
     pp = polygonize_full(pp)
     parks = unary_union(pp).buffer(10).boundary # to simpify a bit
-    parks = _simplify_barrier(parks)
 
-    df = pd.DataFrame({'geometry': parks, 'type': ['park'] * len(parks)})
+    if parks.type != "LineString": 
+        parks = linemerge(parks)
+        if parks.type != "LineString": 
+            features = [i for i in parks]
+        else: features = [parks]
+    else: 
+        features = [parks]
+
+    df = pd.DataFrame({'geometry': features, 'type': ['park'] * len(features)})
     park_barriers = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
     
     return park_barriers
@@ -293,14 +472,12 @@ def along_water(edges_gdf, barriers_gdf):
     Parameters
     ----------
     edges_gdf: LineString GeoDataFrame
-        the street segmentes GeoDataFrame 
+        Street segments 
     barriers_gdf: LineString GeoDataFrame
-        the barriers GeoDataFrame
-        
+        Barriers 
     Returns
     -------
-    edges_gdf: LineString GeoDataFrame
-        the updated street segments GeoDataFrame
+    LineString GeoDataFrame
     """
     
     sindex = edges_gdf.sindex
@@ -318,24 +495,23 @@ def along_water(edges_gdf, barriers_gdf):
 def along_within_parks(edges_gdf, barriers_gdf):
     """
     The function assigns to each street segment in a GeoDataFrame the list of barrierIDs corresponding to parks which lay along the street segment.
-    Also street segments within parks are considered and the barriers are admitted.
+    Also street segments within parks are considered
+    and the barriers are admitted.
         
     Parameters
     ----------
     edges_gdf: LineString GeoDataFrame
-        the street segmentes GeoDataFrame 
+        Street segments 
     barriers_gdf: LineString GeoDataFrame
-        the barriers GeoDataFrame
-        
+        Barriers 
     Returns
     -------
-    edges_gdf: LineString GeoDataFrame
-        the updated street segments GeoDataFrame
+    LineString GeoDataFrame
     """
     
     sindex = edges_gdf.sindex
     tmp = barriers_gdf[barriers_gdf['type']=='park']
-    # edges_gdf['a_parks'] = edges_gdf.apply(lambda row: barriers_along(row['edgeID'], edges_gdf, tmp, sindex, offset = 200), axis = 1)
+    edges_gdf['a_parks'] = edges_gdf.apply(lambda row: barriers_along(row['edgeID'], edges_gdf, tmp, sindex, offset = 200), axis = 1)
     
     # polygonize parks
     park_polygons = barriers_gdf[barriers_gdf['type']=='park'].copy()
@@ -343,7 +519,8 @@ def along_within_parks(edges_gdf, barriers_gdf):
     park_polygons = gpd.GeoDataFrame(park_polygons['barrierID'], geometry = park_polygons['geometry'], crs = edges_gdf.crs)
     
     edges_gdf['w_parks'] = edges_gdf.apply(lambda row: _within_parks(row['geometry'], park_polygons), axis = 1) #within
-
+    edges_gdf['aw_parks'] = edges_gdf.apply(lambda row: list(set(row['a_parks']+row['w_parks'])), axis = 1) #along
+    edges_gdf.drop(['a_parks', 'w_parks'], axis = 1, inplace = True)
 
     return edges_gdf
     
@@ -357,9 +534,9 @@ def barriers_along(ix_line, edges_gdf, barriers_gdf, edges_gdf_sindex, offset = 
     ix_line: int
         index street segment
     edges_gdf: LineString GeoDataFrame
-        the street segmentes GeoDataFrame 
+        Street segments 
     barriers_gdf: LineString GeoDataFrame
-        the barriers GeoDataFrame
+        Barriers 
     edges_gdf_sindex: RTree Sindex
         spatial index on edges_gdf
     offset: int
@@ -367,8 +544,7 @@ def barriers_along(ix_line, edges_gdf, barriers_gdf, edges_gdf_sindex, offset = 
       
     Returns
     -------
-    barriers_along: List
-        a list of barriers along a given street segment
+    LineString GeoDataFrame
     """
     
     buffer = edges_gdf.loc[ix_line].geometry.buffer(offset)
@@ -409,8 +585,7 @@ def _within_parks(line_geometry, park_polygons):
       
     Returns
     -------
-    within: List
-        a list of street segments within a given park's polygon
+    List
     """
     
     within = []
@@ -430,20 +605,17 @@ def assign_structuring_barriers(edges_gdf, barriers_gdf):
     Parameters
     ----------
     edges_gdf: LineString GeoDataFrame
-        the street segmentes GeoDataFrame 
+        Street segments 
     barriers_gdf: LineString GeoDataFrame
-        the barriers GeoDataFrame
-        
+        Barriers 
     Returns
     -------
-    edges_gdf: LineString GeoDataFrame
-        the updated street segments GeoDataFrame
+    LineString GeoDataFrame
     """
     
     barriers_gdf = barriers_gdf.copy()
     edges_gdf = edges_gdf.copy()
-    exlcude = ['secondary_road', 'park'] # parks are disregarded
-    tmp = barriers_gdf[~barriers_gdf['type'].isin(exlcude)].copy() 
+    tmp = barriers_gdf[barriers_gdf['type'] != 'park'].copy() # parks are disregarded
     
     edges_gdf['c_barr'] = edges_gdf.apply(lambda row: _crossing_barriers(row['geometry'], tmp ), axis = 1)
     edges_gdf['sep_barr'] = edges_gdf.apply(lambda row: True if len(row['c_barr']) > 0 else False, axis = 1)
@@ -460,12 +632,11 @@ def _crossing_barriers(line_geometry, barriers_gdf):
     line_geometry: LineString 
         street segment geometry
     barriers_gdf: LineString GeoDataFrame
-        the barriers GeoDataFrame
+        Barriers 
         
     Returns
     -------
-    adjacent_barriers: List
-        a list of adjacent barriers to a given street segment
+    list
     """
     
     adjacent_barriers = []
@@ -477,29 +648,8 @@ def _crossing_barriers(line_geometry, barriers_gdf):
     adjacent_barriers = list(intersecting_barriers.barrierID)
     return adjacent_barriers
     
-def get_barriers(place, download_method, distance = 500.0, epsg = None): 
-    """
-    The function returns all the barriers (water, park, railways, major roads) within a certain urban area.
-    Certain parameter are set by default. For manipulating, use the barrier-type specific functions (see above).
-    
-    Parameters
-    ----------
-    place: string
-        name of cities or areas in OSM: when using "OSMpolygon" please provide the name of a "relation" in OSM as an argument of "place"; when using "distance_from_address"
-        provide an existing OSM address; when using "OSMplace" provide an OSM place name
-    download_method: string, {"polygon", "distance_from_address", "OSMplace"}
-        it indicates the method that should be used for downloading the data.
-    distance: float
-        it is used only if download_method == "distance from address"
-    epsg: int
-        epsg of the area considered; if None OSMNx is used for the projection
-        
-    Returns
-    -------
-    barriers_gdf: LineString GeoDataFrame
-        the barriers GeoDataFrame
-    """
-    
+def get_barriers(place, download_method, distance, epsg): 
+ 
     rb = road_barriers(place, download_method, distance, epsg, include_primary = True)
     wb = water_barriers(place, download_method, distance, epsg)
     ryb = railway_barriers(place,download_method, distance, epsg)
@@ -509,37 +659,4 @@ def get_barriers(place, download_method, distance = 500.0, epsg = None):
     barriers_gdf['barrierID'] = barriers_gdf.index.astype(int)
 
     return barriers_gdf
-   
-   
-def _simplify_barrier(geometries):
-    """
-    The function merges a list of geometries in a single geometry when possible; in any case it returns the resulting features within a list. 
     
-    Parameters
-    ----------
-    geometry: LineString or MultiLineString
-        The linear representation of a barrier.
-        
-    Returns
-    -------
-    features: list of LineString
-        the list of actual geometries
-    """
-    
-    if type(geometries) is not LineString:        
-        try:
-            geometries = linemerge(geometries)
-        except NotImplementedError:
-            geometries = [geometry if geometry.geom_type != 'Polygon' else geometry.boundary for geometry in geometries]
-            if any(isinstance(geometry, MultiLineString) for geometry in geometries):
-                pass
-            else:
-                geometries = linemerge(geometries)  
-    
-    if type(geometries) is LineString: 
-        features = [geometries]
-    else: 
-        features = geometries
-    
-    return features
-        

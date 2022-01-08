@@ -21,8 +21,7 @@ def classify_land_use(buildings_gdf, new_land_use_field, land_use_field, categor
    
     Returns
     -------
-    buildings_gdf: Polygon GeoDataFrame
-        the updated buildings' GeoDataFrame
+    GeoDataFrame
     """
     
     buildings_gdf = buildings_gdf.copy()
@@ -46,14 +45,13 @@ def land_use_from_polygons(buildings_gdf, other_source_gdf, column, land_use_fie
         buildings GeoDataFrame
 	other_source_gdf: Polygon GeoDataFrame
 		the GeoDataFrame wherein looking for land_use attributes
-    column: string
+    column: str
 		name of the column in buildings_gdf to which assign the land_use descriptor
     land_use_field: string, name of the column in other_source_gdf wherein the land_use attribute is stored
    
     Returns
     -------
-    buildings_gdf: Polygon GeoDataFrame
-        the updated buildings' GeoDataFrame
+    GeoDataFrame
     """
     
     buildings_gdf = buildings_gdf.copy()
@@ -81,7 +79,7 @@ def _assign_land_use_from_polygons(building_geometry, other_source_gdf, other_so
    
     Returns
     -------
-    Object
+    GeoDataFrame
     """   
     possible_matches_index = list(other_source_gdf_sindex.intersection(building_geometry.bounds)) # looking for intersecting geometries
     possible_matches = other_source_gdf.iloc[possible_matches_index]
@@ -121,13 +119,12 @@ def land_use_from_points(buildings_gdf, other_source_gdf, column, land_use_field
         The GeoDataFrame wherein looking for land_use attributes
     column: string
         name of the column in buildings_gdf to which assign the land_use descriptor
-    land_use_field: string
+    land_use_field: str
         name of the column in other_source_gdf, wherein the land_use attribute is stored
    
     Returns
     -------
-    buildings_gdf: Polygon GeoDataFrame
-        the updated buildings' GeoDataFrame
+    GeoDataFrame
     """
     
     buildings_gdf = buildings_gdf.copy()    
@@ -149,12 +146,12 @@ def _assign_land_use_from_points(building_geometry, other_source_gdf, other_sour
     other_source_gdf: Point GeoDataFrame
         The GeoDataFrame wherein looking for land_use attributes
     other_source_gdf_sindex: Rtree spatial index
-    land_use_field: string
+    land_use_field: str
         name of the column in other_source_gdf, wherein the land_use attribute is stored
    
     Returns
     -------
-    Object
+    GeoDataFrame
     """
 
     possible_matches_index = list(other_source_gdf_sindex.intersection(building_geometry.bounds))
