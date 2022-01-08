@@ -17,7 +17,7 @@ pd.set_option("precision", 10)
 pd.options.mode.chained_assignment = None
 
 from .utilities import *
-from .angles import *
+from .angles import angle_line_geometries
 
 ## Obtaining graphs ###############
 
@@ -36,7 +36,8 @@ def graph_fromGDF(nodes_gdf, edges_gdf, nodeID = "nodeID"):
         
     Returns
     -------
-    NetworkX undirected Graph
+    G: NetworkX.Graph
+        the undirected street network graph
     """
 
     nodes_gdf.set_index(nodeID, drop = False, inplace = True, append = False)
@@ -49,13 +50,15 @@ def graph_fromGDF(nodes_gdf, edges_gdf, nodeID = "nodeID"):
     a = (nodes_gdf.applymap(type) == list).sum()
     if len(a[a>0]): 
         to_ignore = a[a>0].index[0]
-    else: to_ignore = []
+    else: 
+        to_ignore = []
     
     for attribute_name in nodes_gdf.columns:
         if attribute_name in to_ignore: 
             continue    
         # only add this attribute to nodes which have a non-null value for it
-        else: attribute_values = {k: v for k, v in attributes[attribute_name].items() if pd.notnull(v)}
+        else: 
+            attribute_values = {k: v for k, v in attributes[attribute_name].items() if pd.notnull(v)}
         nx.set_node_attributes(G, name=attribute_name, values=attribute_values)
 
     # add the edges and attributes that are not u, v (as they're added separately) or null
@@ -69,9 +72,9 @@ def graph_fromGDF(nodes_gdf, edges_gdf, nodeID = "nodeID"):
     return G
 
 
-def multiGraph_fromGDF(nodes_gdf, edges_gdf, nodeID):
+def multiGraph_fromGDF(nodes_gdf, edges_gdf, nodeIDcolumn):
     """
-    From two GeoDataFrames (nodes and edges), it creates a NetworkX MultiGraph.
+    From two GeoDataFrames (nodes and edges), it creates a NetworkX.MultiGraph.
     
     Parameters
     ----------
@@ -79,15 +82,16 @@ def multiGraph_fromGDF(nodes_gdf, edges_gdf, nodeID):
         nodes (junctions) GeoDataFrame
     edges_gdf: LineString GeoDataFrame
         street segments GeoDataFrame
-    nodeID: str
+    nodeIDcolumn: string
         column name that indicates the node identifier column.
     
     Returns
     -------
-    NetworkX MultiGraph
+    G: NetworkX.MultiGraph
+        the street network graph
     """
     
-    nodes_gdf.set_index(nodeID, drop = False, inplace = True, append = False)
+    nodes_gdf.set_index(nodeIDcolumn, drop = False, inplace = True, append = False)
     nodes_gdf.index.name = None
     
     Mg = nx.MultiGraph()   
@@ -135,12 +139,13 @@ def dual_gdf(nodes_gdf, edges_gdf, epsg, oneway = False, angle = None):
         epsg of the area considered 
     oneway: boolean
         if true, the function takes into account the direction and therefore it may ignore certain links whereby vehichular movement is not allowed in a certain direction
-    angle: str, {'degree', 'radians'}
-        indicates how to express the angle of deflection
+    angle: string {'degree', 'radians'}
+        it indicates how to express the angle of deflection
         
     Returns
     -------
-    tuple of GeoDataFrames
+    nodes_dual, edges_dual: tuple of GeoDataFrames
+        the dual nodes and edges GeoDataFrames
     """
     
     if list(edges_gdf.index.values) != list(edges_gdf.edgeID.values): 
@@ -204,7 +209,7 @@ def dual_gdf(nodes_gdf, edges_gdf, epsg, oneway = False, angle = None):
 
 def dual_graph_fromGDF(nodes_dual, edges_dual):
     """
-    The function generates a NetworkX graph from dual-nodes and -edges GeoDataFrames.
+    The function generates a NetworkX.Graph from dual-nodes and -edges GeoDataFrames.
             
     Parameters
     ----------
@@ -215,7 +220,8 @@ def dual_graph_fromGDF(nodes_dual, edges_dual):
         
     Returns
     -------
-    NetworkX Graph
+    Dg: NetworkX.Graph
+        the dual graph of the street network
     """
    
     nodes_dual.set_index('edgeID', drop = False, inplace = True, append = False)
@@ -266,7 +272,8 @@ def dual_id_dict(dict_values, G, node_attribute):
     
     Returns
     -------
-    dictionary
+    ed_dict: dictionary
+        a dictionary where each item consists of a edgeID (key) and centrality values (for example) or other attributes (values)
     """
     
     view = dict_values.items()
@@ -279,7 +286,7 @@ def dual_id_dict(dict_values, G, node_attribute):
 
 def nodes_degree(edges_gdf):
     """
-    It returns a dictionary where keys are nodes identifier (e.g. "nodeID" and values their degree.
+    It returns a dictionary where keys are nodes identifier (e.g. "nodeID") and values their degree.
     
     Parameters
     ----------
@@ -288,7 +295,8 @@ def nodes_degree(edges_gdf):
     
     Returns
     -------
-    dictionary
+    dd: dictionary
+        a dictionary where each item consists of a nodeID (key) and degree values (values)
     """
 
     dd_u = dict(edges_gdf['u'].value_counts())
