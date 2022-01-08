@@ -1,0 +1,57 @@
+name: tests
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+    
+jobs:
+  Test:
+    name: ${{ matrix.os }}, ${{ matrix.env }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        env:
+          - ci/envs/latest.yml
+    
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Conda
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          auto-update-conda: true
+          auto-activate-base: false
+          activate-environment: test
+          environment-file: ${{ matrix.env }}
+          channel-priority: strict
+
+      - name: Install cityImage
+        shell: bash -l {0}
+        run: python setup.py install
+
+      - name: Check environment
+        shell: bash -l {0}
+        run: |
+          conda info
+          conda list
+
+      - name: Test cityImage
+        shell: bash -l {0}
+        run: |
+          pytest -v --color=yes --cov-config .coveragerc --cov=cityImage --cov-append --cov-report term-missing --cov-report xml tests
+
+      # - name: Test documentation
+        # shell: bash -l {0}
+        # if: contains(matrix.env, 'latest.yml') && contains(matrix.os, 'ubuntu')
+        # run: |
+          # ci/envs/test_documentation.sh
+
+#       - name: Black
+#         shell: bash -l {0}
+#         run: |
+#           black --check .
+
+      - uses: codecov/codecov-action@v1

@@ -10,20 +10,19 @@ from shapely.geometry import Point
 pd.set_option("precision", 10)
 
 from .utilities import scaling_columnDF, dict_to_df
-   
-## Centrality functions ###############
 
 def nodes_dict(G):
     """
-    it creates a dictionary where keys represent the node ID, and items the coordinate tuples
+    It creates a dictionary where keys represent the node ID, and items the coordinate tuples.
     
     Parameters
     ----------
-    G: NetworkX graph
+    G: NetworkX Graph
     
     Returns
     -------
-    dictionary
+    nodes_dict: dict
+        a dictionary where each item consists of a node (key) and a tuple of coordinates (value)
     """
 
     nodes_list = G.nodes()
@@ -43,18 +42,20 @@ def straightness_centrality(G, weight, normalized = True):
     centrality that refers to ‘being more directly reachable’. (Porta, S., Crucitti, P. & Latora, V., 2006b. The Network Analysis Of Urban
     Streets: A Primal Approach. Environment and Planning B: Planning and Design, 33(5), pp.705–725.)
     
-    Function readapted from: https://github.com/jcaillet/mca/blob/master/mca/centrality/overridden_nx_straightness.py
+    Function readapted from: https://github.com/jcaillet/mca/blob/master/mca/centrality/overridden_nx_straightness.py.
 
     Parameters
     ----------
-    G: NetworkX graph
-    weight: string, 
+    G: NetworkX Graph
+        the graph
+    weight: string 
         edges weight
     normalized: boolean
     
     Returns
     -------
-    dictionary
+    straightness_centrality: dict
+        a dictionary where each item consists of a node (key) and the centrality value (value)
     """
     
     path_length = functools.partial(nx.single_source_dijkstra_path_length, weight = weight)
@@ -93,23 +94,24 @@ def _euclidean_distance(xs, ys, xt, yt):
 
 def weight_nodes(nodes_gdf, services_gdf, G, field_name, radius = 400):
     """
-    Given a nodes- and a services/points-geodataframes, the function assigns an attribute to nodes in the graph G (prevously derived from 
-    nodes_gdf) based indeed on the amount of features in the services_gdf in a buffer around each node. 
+    Given a nodes' and a services/points' GeoDataFrame, the function assigns an attribute to nodes in the graph G (prevously derived from 
+    nodes_gdf) based on the amount of features in the services_gdf in a buffer around each node. 
     
     Parameters
     ----------
     nodes_gdf: Point GeoDataFrame
         nodes (junctions) GeoDataFrame
     services_gdf: Point GeoDataFrame
-    G: NetworkX graph
+        G: NetworkX Graph
     field_name: string
-        attribute name
+        the name of the nodes' attribute
     radius: float
         distance around the node within looking for point features (services)
     
     Returns
     -------
-    NetworkX graph
+    G: NetworkX.Graph
+        the updated street network graph        
     """
     
     nodes_gdf[field_name] = None
@@ -128,6 +130,7 @@ def _services_around_node(node_geometry, services_gdf, services_gdf_sindex, radi
     Parameters
     ----------
     node_geometry: Point geometry
+        the street 
     services_gdf: Point GeoDataFrame
     services_gdf_sindex: Rtree Spatial Index
     radius: float
@@ -135,7 +138,8 @@ def _services_around_node(node_geometry, services_gdf, services_gdf_sindex, radi
     
     Returns
     -------
-    Integer value
+    weight: int
+        the resulting weight of the node
     """
 
     buffer = node_geometry.buffer(radius)
@@ -157,18 +161,20 @@ def reach_centrality(G, weight, radius, attribute):
 
     Parameters
     ----------
-    G: NetworkX graph
+    G: NetworkX.Graph
+        the street network graph
     weight: string
-        edges weight
+        the street segments' weight (e.g. distance)
     radius: float
         distance from node within looking for other reachable nodes
     attribute: string
         node attribute used to compute reach centralily. It indicates the importance of the node 
-        (e.g. number of services in 50mt buffer)
+        (e.g. number of services in 50mt buffer - name of a column in the nodes_gdf GeoDataFrame)
     
     Returns
     -------
-    dictionary
+    reach_centrality: dict
+        a dictionary where each item consists of a node (key) and the centrality value (value)
     """
     
     path_length = functools.partial(nx.single_source_dijkstra_path_length, weight = weight)
@@ -189,65 +195,11 @@ def reach_centrality(G, weight, radius, attribute):
                     weight_target = G.nodes[target][attribute]
                     reach = reach + weight_target
             reach_centrality[n] = reach
-        else: reach_centrality[n]=0.0
+        else: 
+            reach_centrality[n]=0.0
 
     return reach_centrality
     
-    
-def rescale_centrality(nodes_gdf, measure, radius = 400):
-    """
-    The measure rescales precomputed centrality values within a certain radius around each node.
-    Indicate the value to rescale through the parameter "measure" (column name).
-
-    Parameters
-    ----------
-    nodes_gdf: Point GeoDataFrame
-        nodes (junctions) GeoDataFrame
-    measure: string
-    radius: float
-        distance from node within wich rescaling the betweenness centrality value
-    
-    Returns
-    -------
-    dictionary
-    """
-    
-    nodes_gdf = nodes_gdf.copy()
-    if measure not in nodes_gdf.columns: 
-        raise columnError("The column name provided was not found in the nodes GeoDataFrame")
-    spatial_index = nodes_gdf.sindex # spatial index
-    nodes_gdf[measure+"_"+str(radius)] = nodes_gdf.apply(lambda row: _rescale_centrality(row.Index, nodes_gdf, sindex, radius = radius, measure = measure), axis=1)
-        
-    return nodes_gdf
-
-def _rescale_centrality(nodeID, nodes_gdf, nodes_gdf_sindex, radius, measure):
-    """
-    It supports the rescale_centrality function.
-    
-    Parameters
-    ----------
-    nodeID: integer
-    nodes_gdf: Point GeoDataFrame
-        nodes (junctions) GeoDataFrame
-    nodes_gdf_sindex = Rtree Spatial Index
-    radius: float
-        distance around the node within looking for other nodes
-    measure: string
-    
-    Returns
-    -------
-    float value
-    """
-    
-    node_geometry = nodes_gdf.loc[nodeID].geometry
-    buffer = node_geometry.buffer(radius)
-    possible_matches_index = list(sindex.intersection(buffer.bounds))
-    possible_matches = nodes_gdf.iloc[possible_matches_index]
-    precise_matches = possible_matches[possible_matches.intersects(buffer)]
-    scaling_columnDF(precise_matches, measure) 
-        
-    return precise_matches[measure+"_sc"].loc[nodeID]
-
 def centrality(G, nodes_gdf, measure, weight, normalized = False):
     """"
     The function computes several node centrality measures.
@@ -257,77 +209,51 @@ def centrality(G, nodes_gdf, measure, weight, normalized = False):
     G: Networkx graph
     nodes_gdf: Point GeoDataFrame
         nodes (junctions) GeoDataFrame
-    measure: string
+    measure: string {"betweenness_centrality", "straightness_centrality", "closeness_centrality","information_centrality"}
+        the type of centrality to be computed 
     weight: string
-        edges weight
+        the street segments' weight (e.g. distance)
     normalized: boolean
     
     Returns
     -------
-    dictionary
-    """     
-    
+    centrality: dict
+        a dictionary where each item consists of a node (key) and the centrality value (value)
+    """    
+    centrality = {}
     if measure == "betweenness_centrality": 
-        c = nx.betweenness_centrality(G, weight = weight, normalized=normalized)
+        centrality = nx.betweenness_centrality(G, weight = weight, normalized = normalized)
     elif measure == "straightness_centrality": 
-        c = straightness_centrality(G, weight = weight, normalized=normalized)
+        centrality = straightness_centrality(G, weight = weight, normalized = normalized)
     elif measure == "closeness_centrality": 
-        c = nx.closeness_centrality(G, weight = weight, normalized=normalized)
+        centrality = nx.closeness_centrality(G, distance = weight)
     elif measure == "information_centrality": 
-        c = nx.current_flow_betweenness_centrality(G, weight = weight, solver ="lu", normalized=normalized) 
+        centrality = nx.current_flow_betweenness_centrality(G, weight = weight, solver ="lu", normalized = normalized) 
     else:
         raise nameError("The name provided is not a valid centrality name associated with a function")
     
-    return c
+    return centrality
     
-# TODO: optimise code above  
-# def local_centrality(G, measure, weight, radius = 400, normalized = False):
-    # """
-    # The function computes betweenness centrality at the local level.
-      
-    # Parameters
-    # ----------
-    # G: Networkx graph
-    # weight: string, edges weight
-    # radius: float, distance from node, within local betweenness is computed  
-    
-    # Returns
-    # -------
-    # dictionary
-    # """
-           
-    # path_length = functools.partial(nx.single_source_dijkstra_path_length, weight = weight)
-    # nodes = G.nodes()
-    # cm = {}
-    # coord_nodes = nodes_dict(G)
-
-    # for n in nodes:
-        # G_small = nx.ego_graph(G, n, radius=radius, distance="weight")
-        # if measure == "betweenness_centrality": c = nx.betweenness_centrality(G_small, weight = weight, normalized=normalized)[n]
-        # elif measure == "straightness_centrality": c = straightness_centrality(G_small, weight = weight, normalized=normalized)[n]
-        # elif measure == "closeness_centrality": c = nx.closeness_centrality(G_small, weight = weight, normalized=normalized)[n]
-        # cm[n] = c
-    
-    # return cm
-      
     
 def append_edges_metrics(edges_gdf, G, dicts, column_names):
     """"
-    The function attaches edges centrality value at the edges_gdf GeoDataFrame.
+    The function attaches edges centrality values at the edges_gdf GeoDataFrame.
       
     Parameters
     ----------
     edges_gdf: LineString GeoDataFrame
         street segments GeoDataFrame
     G: Networkx graph
+        the street network graph
     dicts: list
         list of dictionaries resulting from centrality measures
     column_names: list
-        list of strings with desired column names
+        list of strings with the desired column names for the attributes to be attached
     
     Returns
     -------
-    dictionary
+    edges_gdf: LineString GeoDataFrame
+        the updated street segments GeoDataFrame
     """    
     
     edgesID = {}
@@ -353,13 +279,11 @@ def append_edges_metrics(edges_gdf, G, dicts, column_names):
     
     return edges_gdf
     
-
     
 class Error(Exception):
     """Base class for other exceptions"""
 class columnError(Error):
     """Raised when a column name is not provided"""
-
 class nameError(Error):
     """Raised when a not supported or not existing centrality name is input"""
 
