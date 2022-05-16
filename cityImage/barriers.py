@@ -6,7 +6,7 @@ import geopandas as gpd
 from shapely.geometry import Point, LineString, Polygon, MultiPolygon, MultiLineString
 from shapely.ops import cascaded_union, linemerge, polygonize, polygonize_full, unary_union, nearest_points
 from .utilities import gdf_from_geometries
-pd.set_option("precision", 10)
+pd.set_option("display.precision", 3)
 
 def road_barriers(place, download_method, distance = 500.0, epsg = None, include_primary = False):
     """

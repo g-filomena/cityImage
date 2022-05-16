@@ -8,7 +8,7 @@ import geopandas as gpd
 
 from shapely.geometry import Point, LineString, MultiPoint, MultiLineString
 from shapely.ops import split, unary_union
-pd.set_option('precision', 10)
+pd.set_option("display.precision", 3)
 
 from .graph import graph_fromGDF, nodes_degree
 from .utilities import center_line

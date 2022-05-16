@@ -6,7 +6,7 @@ import geopandas as gpd
 from shapely.geometry import Point, LineString, Polygon, MultiPolygon, mapping, MultiLineString
 from shapely.ops import cascaded_union, linemerge
 from scipy.sparse import linalg
-pd.set_option("precision", 10)
+pd.set_option("display.precision", 3)
 
 from .utilities import scaling_columnDF
 from .angles import get_coord_angle

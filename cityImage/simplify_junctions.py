@@ -8,7 +8,7 @@ from shapely.geometry import Point, LineString, Polygon, MultiPoint
 from shapely.ops import linemerge, polygonize_full, nearest_points
 import statistics
 
-pd.set_option('precision', 10)
+pd.set_option("display.precision", 3)
 pd.options.mode.chained_assignment = None
 
 from .graph import nodes_degree

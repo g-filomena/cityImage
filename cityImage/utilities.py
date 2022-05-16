@@ -9,7 +9,7 @@ from shapely.geometry import LineString, Point, Polygon, mapping
 from shapely.ops import unary_union, transform, nearest_points
 from shapely.affinity import scale
 from functools import partial
-pd.set_option("precision", 10)
+pd.set_option("display.precision", 3)
     
 def scaling_columnDF(df, column, inverse = False):
     """

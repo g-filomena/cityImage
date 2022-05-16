@@ -7,7 +7,7 @@ import math
 
 from math import sqrt
 from shapely.geometry import Point 
-pd.set_option("precision", 10)
+pd.set_option("display.precision", 3)
 
 from .utilities import scaling_columnDF, dict_to_df
 

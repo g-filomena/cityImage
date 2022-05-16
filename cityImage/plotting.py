@@ -14,7 +14,7 @@ from matplotlib.colors import LinearSegmentedColormap, DivergingNorm
 import pylab
 import colorsys
 
-pd.set_option("precision", 10)
+pd.set_option("display.precision", 3)
 
 from .utilities import scaling_columnDF
 """
