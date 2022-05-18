@@ -8,7 +8,7 @@ from shapely.geometry import Point, LineString, Polygon, MultiPoint
 from shapely.ops import split, unary_union
 import osmnx as ox
 
-pd.set_option('precision', 10)
+pd.set_option("display.precision", 3)
 
 from .clean import duplicate_nodes, correct_edges, clean_network
 from .load import obtain_nodes_gdf, join_by_coordinates

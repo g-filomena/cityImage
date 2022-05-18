@@ -12,8 +12,7 @@ import ast
 import functools
 
 from shapely.geometry import Point, LineString
-
-pd.set_option("precision", 10)
+pd.set_option("display.precision", 3)
 pd.options.mode.chained_assignment = None
 
 from .utilities import *
