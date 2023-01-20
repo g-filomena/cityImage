@@ -4,10 +4,12 @@ import geopandas as gpd
 import math
 import pyproj
 
+from typing import List
 from math import sqrt
-from shapely.geometry import LineString, Point, Polygon, mapping
+from shapely.geometry import LineString, Point, Polygon, MultiPoint, mapping
 from shapely.ops import unary_union, transform, nearest_points
 from shapely.affinity import scale
+from shapely.geometry.base import BaseGeometry
 from functools import partial
 pd.set_option("display.precision", 3)
     
@@ -56,8 +58,8 @@ def dict_to_df(list_dict, list_col):
     
 def center_line(line_geometryA, line_geometryB): 
     """
-    Given two LineStrings, it derives the corresponding center line
-    
+    Given two LineStrings, it derives the corresponding center line (to be checked)
+
     Parameters
     ----------
     line_geometryA: LineString 
@@ -70,133 +72,50 @@ def center_line(line_geometryA, line_geometryB):
     center_line: LineString
         the resulting center line
     """
-    
-    cl_coords = center_line_coords(line_geometryA, line_geometryB)    
-    line_coordsA = list(line_geometryA.coords)
-            
-    cl_coords[0] = line_coordsA[0]
-    cl_coords[-1] = line_coordsA[-1]
-    center_line = LineString([coor for coor in cl_coords])
 
+    if (line_geometryA is None) or (line_geometryB is None):
+        raise ValueError("Both input geometries must be valid LineStrings")
+    if not all(isinstance(geom, LineString) for geom in [line_geometryA, line_geometryB]):
+        raise ValueError("Both input geometries must be valid LineStrings")
+    if not all(geom.is_valid for geom in [line_geometryA, line_geometryB]):
+        raise ValueError("Both input geometries must be valid LineStrings")
+    
+    if line_geometryA.coords[0] != line_geometryB.coords[-1]:
+        line_geometryB = reversed(line_geometryB)
+    
+    merged_line = linemerge([line_geometryA, line_geometryB])
+    center_line = LineString(merged_line.interpolate(0.5))
+    
     return center_line
 
-def center_line_coords(line_geometryA, line_geometryB):
+def min_distance_geometry_gdf(geometry, gdf):
     """
-    Given two LineStrings, it derives the corresponding center line's sequence of coordinates
+    Given a geometry and a geodataframe, this function finds the minimum distance between the 
+    geometry and the geodataframe, and returns the index of the closest geometry in the geodataframe.
     
     Parameters
     ----------
-    line_geometryA: LineString 
-        the first line
-    line_geometryB: LineString
-        the second line
-    
-    Returns:
-    ----------
-    center_line_coords: list
-        the resulting center line's sequence of coords
-    """
-
-    line_coordsA = list(line_geometryA.coords)
-    line_coordsB = list(line_geometryB.coords)
-    
-    if ((line_coordsA[0] == line_coordsB[-1]) | (line_coordsA[-1] == line_coordsB[0])): 
-        line_coordsB.reverse()  
-    
-    if line_coordsA == line_coordsB:
-        center_line_coords = line_coordsA
-    
-    else:
-        while len(line_coordsA) > len(line_coordsB):
-            index = int(len(line_coordsA)/2)
-            del line_coordsA[index]
-        while len(line_coordsB) > len(line_coordsA):
-            index = int(len(line_coordsB)/2)
-            del line_coordsB[index]      
+    geometry: shapely.geometry.*
+        The geometry to find the closest distance to
+    gdf: geopandas.GeoDataFrame
+        The geodataframe to find the closest distance from
         
-        center_line_coords = line_coordsA
-        for n, i in enumerate(line_coordsA):
-            link = LineString([coor for coor in [line_coordsA[n], line_coordsB[n]]])
-            np = link.centroid.coords[0]           
-            center_line_coords[n] = np
-    
-    return center_line_coords
-
-        
-def split_line_at_interpolation(point, line_geometry):
+    Returns
+    -------
+    tuple
+        a tuple containing the minimum distance and the index of the closest geometry in the geodataframe
     """
-    Given a LineString, it interpolates a given point and it returns a Tuple of the two resulting lines and the interpolation Point.
+    # Convert the geodataframe's geometry to a MultiPoint object
+    gdf_geometry = MultiPoint(gdf.geometry)
     
-    Parameters
-    ----------
-    point: Point 
-        the point
-    line_geometry: LineString
-        the line
+    # Find the minimum distance between the input geometry and the MultiPoint object
+    min_dist = geometry.distance(gdf_geometry)
     
-    Returns:
-    ----------
-    result: tuple
-        a tuple containing the two resulting lines and the interpolation point.
-    """
+    # Get the index of the closest point in the geodataframe
+    closest_index = gdf_geometry.nearest_points(geometry)[1]
     
-    line_coords = list(line_geometry.coords)
-    starting_point = Point(line_coords[0])
-    np = nearest_points(point, line_geometry)[1]
-    distance_start = line_geometry.project(np)
-    
-    new_line_A = []
-    new_line_B = []
+    return min_dist, closest_index
 
-    if len(line_coords) == 2:
-        new_line_A = [line_coords[0],  np.coords[0]]
-        new_line_B = [np.coords[0], line_coords[-1]]
-        line_geometry_A = LineString([coor for coor in new_line_A])
-        line_geometry_B = LineString([coor for coor in new_line_B])
-
-    else:
-        new_line_A.append(line_coords[0])
-        new_line_B.append(np.coords[0])
-
-        for n, i in enumerate(line_coords):
-            if (n == 0) | (n == len(line_coords)-1): 
-                continue
-            if line_geometry.project(Point(i)) < distance_start: 
-                new_line_A.append(i)
-            else: new_line_B.append(i)
-
-        new_line_A.append(np.coords[0])
-        new_line_B.append(line_coords[-1])
-        line_geometry_A = LineString([coor for coor in new_line_A])
-        line_geometry_B = LineString([coor for coor in new_line_B])
-    
-    result = ((line_geometry_A, line_geometry_B), np)    
-    return result
-
-def distance_geometry_gdf(geometry, gdf):
-    """
-    Given a geometry and a GeoDataFrame, it returns the minimum distance between the geometry and the GeoDataFrame. 
-    It provides also the index of the closest geometry in the GeoDataFrame.
-    
-    Parameters
-    ----------
-    geometry: Point, LineString or Polygon
-    gdf: GeoDataFrame
-    
-    Returns:
-    ----------
-    distance, index: tuple
-        the closest distance from the geometry, and the index of the closest geometry in the gdf
-    """
-    
-    gdf = gdf.copy()
-    gdf["dist"] = gdf.apply(lambda row: geometry.distance(row['geometry']),axis=1)
-    geoseries = gdf.iloc[gdf["dist"].argmin()]
-    distance  = geoseries.dist
-    index = geoseries.name
-    return (distance, index)
-
-def merge_lines(line_geometries):
     """
     Given a list of line_geometries wich are connected by common "to" and "from" vertexes, the function infers the sequence, based on the coordinates, 
     and returns a merged LineString feature. As compared to existing shapely functions, this function readjusts the sequence of coordinates if they are not sequential 
@@ -213,36 +132,39 @@ def merge_lines(line_geometries):
         the resulting LineString
     """
     
-    first = list(line_geometries[0].coords)
-    second = list(line_geometries[1].coords)
-    coords = []
+def merge_line_geometries(line_geometries: List[LineString]) -> LineString:
+    """
+    Given a list of LineString geometries, this function reorders the geometries in the correct sequence based on their starting and ending point,
+    and returns a merged LineString feature.
     
-    # determining directions
-    reverse = False
-    if first[0] == second[0]: 
-        reverse = True
-        first.reverse()
-    if first[-1] == second[-1]: 
-        second.reverse()
-    if first[0] == second[-1]:
-        first.reverse()
-        second.reverse()
-        reverse = True
+    Parameters:
+        line_geometries (List[LineString]): A list of LineString geometries to be merged.
+        
+    Returns:
+        LineString: A merged LineString feature.
+    """
     
-    coords = first + second
-    last = second
-    for n,i in enumerate(line_geometries):
-        if n < 2: 
-            continue
-        next_coords = list(i.coords)
-        if (next_coords[-1] == last[-1]):
-            next_coords.reverse()
-            last = next_coords
-            
-    if reverse:
-        coords.reverse()
-    newLine = LineString([coor for coor in coords])
-    return newLine
+    if not all(isinstance(line, LineString) for line in line_geometries):
+        raise ValueError("Input must be a list of LineString geometries")
+    if not all(isinstance(line, BaseGeometry) for line in line_geometries):
+        raise ValueError("Input must be a list of valid geometries")
+    if len(line_geometries) < 2:
+        raise ValueError("At least 2 LineStrings are required to merge")
+    
+    # Create a dictionary to store the "from" and "to" vertexes of each LineString as keys
+    lines = {(line.coords[0], line.coords[-1]): line for line in line_geometries}
+
+    line_geometries = sorted(line_geometries, key=lambda line: (line.coords[0], line.coords[-1]))
+    merged = []
+    first_line = line_geometries.pop(0)
+    merged.append(first_line)
+    for line in line_geometries:
+        if merged[-1].coords[-1] == line.coords[0]:
+            merged.append(line)
+        elif merged[-1].coords[-1] == line.coords[-1]:
+            merged.append(LineString(list(reversed(line.coords))))
+    
+    return LineString(list(merged))
             
 def envelope_wgs(gdf):
     """
@@ -334,4 +256,62 @@ def gdf_from_geometries(geometries, crs):
     gdf = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
     gdf['length'] = gdf['geometry'].length
     return gdf
+    
+def line_at_centroid(line_geometry, offset):
+    """
+    Given a LineString, it creates a LineString that intersects the given geometry at its centroid.
+    The offset determines the distance from the original line.
+    This fictional line can be used to count precisely the number of trajectories intersecting a segment.
+    This function should be executed per row by means of the df.apply(lambda row : ..) function. 
+    
+    Parameters
+    ----------
+    line_geometry: LineString
+        A street segment geometry
+    offset: float
+        The offset from the geometry
+    
+    Returns
+    -------
+    LineString
+    """
+    
+    left = line_geometry.parallel_offset(offset, 'left')
+    right =  line_geometry.parallel_offset(offset, 'right')
+    
+    if left.geom_type == 'MultiLineString': 
+        left = merge_disconnected_lines(left)
+    if right.geom_type == 'MultiLineString': 
+        right = merge_disconnected_lines(right)   
+    
+    if (left.is_empty == True) & (right.is_empty == False): 
+        left = line_geometry
+    if (right.is_empty == True) & (left.is_empty == False): 
+        right = line_geometry
+    
+    left_centroid = left.interpolate(0.5, normalized = True)
+    right_centroid = right.interpolate(0.5, normalized = True)
+   
+    fict = LineString([left_centroid, right_centroid])
+    return(fict)
+    
+def sum_at_centroid(line_geometry, bus_lines, column):
+    """
+    Given a LineString geometry, it counts all the geometries in a LineString GeoDataFrame (the GeoDataFrame containing GPS trajectories).
+    This function should be executed per row by means of the df.apply(lambda row : ..) function.
+        
+    Parameters
+    ----------
+    line_geometry: LineString
+        A street segment geometry
+    tracks_gdf: LineString GeoDataFrame
+        A set of GPS tracks 
+    
+    Returns
+    -------
+    int
+    """
+    
+    freq = bus_lines[bus_lines.geometry.intersects(line_geometry)][column].sum()
+    return freq
     

@@ -11,6 +11,7 @@ from math import sqrt
 import ast
 import functools
 
+from collections import Counter
 from shapely.geometry import Point, LineString
 pd.set_option("display.precision", 3)
 pd.options.mode.chained_assignment = None
@@ -46,11 +47,7 @@ def graph_fromGDF(nodes_gdf, edges_gdf, nodeID = "nodeID"):
     attributes = nodes_gdf.to_dict()
     
     # ignore fields containing values of type list
-    a = (nodes_gdf.applymap(type) == list).sum()
-    if len(a[a>0]): 
-        to_ignore = a[a>0].index[0]
-    else: 
-        to_ignore = []
+    to_ignore = nodes_gdf.select_dtypes(include=['list']).columns
     
     for attribute_name in nodes_gdf.columns:
         if attribute_name in to_ignore: 
@@ -96,11 +93,7 @@ def multiGraph_fromGDF(nodes_gdf, edges_gdf, nodeIDcolumn):
     Mg = nx.MultiGraph()   
     Mg.add_nodes_from(nodes_gdf.index)
     attributes = nodes_gdf.to_dict()
-    
-    a = (nodes_gdf.applymap(type) == list).sum()
-    if len(a[a>0]): 
-        to_ignore = a[a>0].index[0]
-    else: to_ignore = []
+    to_ignore = nodes_gdf.select_dtypes(include=['list']).columns
     
     for attribute_name in nodes_gdf.columns:
         if attribute_name in to_ignore: 
@@ -110,12 +103,9 @@ def multiGraph_fromGDF(nodes_gdf, edges_gdf, nodeIDcolumn):
         nx.set_node_attributes(Mg, name=attribute_name, values=attribute_values)
 
     # add the edges and attributes that are not u, v, key (as they're added separately) or null
-    for _, row in edges_gdf.iterrows():
-        attrs = {}
-        for label, value in row.iteritems():
-            if (label not in ['u', 'v', 'key']) and (isinstance(value, list) or pd.notnull(value)):
-                attrs[label] = value
-        Mg.add_edge(row['u'], row['v'], key=row['key'], **attrs)
+    for row in edges_gdf.itertuples():
+        attrs = {label: value for label, value in row._asdict().items() if (label not in ['u', 'v', 'key']) and (isinstance(value, list) or pd.notnull(value))}
+        Mg.add_edge(row.u, row.v, key=row.key, **attrs)
       
     return Mg
     
@@ -147,15 +137,20 @@ def dual_gdf(nodes_gdf, edges_gdf, epsg, oneway = False, angle = None):
         the dual nodes and edges GeoDataFrames
     """
     
-    if list(edges_gdf.index.values) != list(edges_gdf.edgeID.values): 
-        edges_gdf.index = edges_gdf.edgeID
-        edges_gdf.index.name = None
+
+    edges_gdf.index = edges_gdf.edgeID
+    edges_gdf.index.name = None
     
     # computing centroids                                       
     centroids_gdf = edges_gdf.copy()
     centroids_gdf['centroid'] = centroids_gdf['geometry'].centroid
-    centroids_gdf['intersecting'] = None
-             
+
+     # find_intersecting segments and storing them in the centroids gdf
+    # Create a new column 'intersecting' with a list of indexes of rows that have matching 'u' or 'v' values
+    centroids_gdf['intersecting'] = centroids_gdf.apply(lambda row: list(centroids_gdf[(centroids_gdf['u'] == row['u'])|(centroids_gdf['u'] == row['v'])|(centroids_gdf['v'] == row['v'])|
+                        (centroids_gdf['v'] == row['u'])].index), axis=1)
+
+
     # find_intersecting segments and storing them in the centroids gdf
     centroids_gdf['intersecting'] = centroids_gdf.apply(lambda row: list(centroids_gdf.loc[(centroids_gdf['u'] == row['u'])|(centroids_gdf['u'] == row['v'])|
                                                     (centroids_gdf['v'] == row['v'])|(centroids_gdf['v'] == row['u'])].index), axis=1)
@@ -164,45 +159,38 @@ def dual_gdf(nodes_gdf, edges_gdf, epsg, oneway = False, angle = None):
                                                 if row['oneway'] == 1 else list(centroids_gdf.loc[(centroids_gdf['u'] == row['v']) | ((centroids_gdf['v'] == row['v']) & (centroids_gdf['oneway'] == 0)) | 
                                                 (centroids_gdf['u'] == row['u']) | ((centroids_gdf['v'] == row['u']) & (centroids_gdf['oneway'] == 0))].index), axis = 1)
     
-    # creating vertexes representing street segments (centroids)
-    centroids_data = centroids_gdf.drop(['geometry', 'centroid'], axis = 1)
-    if epsg is None: 
-        crs = nodes_gdf.crs
-    else: crs = {'init': 'epsg:' + str(epsg)}
-    nodes_dual = gpd.GeoDataFrame(centroids_data, crs=crs, geometry=centroids_gdf['centroid'])
-    nodes_dual['x'], nodes_dual['y'] = [x.coords.xy[0][0] for x in centroids_gdf['centroid']],[y.coords.xy[1][0] for y in centroids_gdf['centroid']]
-    nodes_dual.index =  nodes_dual.edgeID
-    nodes_dual.index.name = None
-    
+    if epsg is not None: 
+        centroids_gdf = centroids_gdf.to_crs({'init': 'epsg:' + str(epsg)})
+
+    centroids_gdf = centroids_gdf.assign(x = [point.x for point in centroids_gdf['centroid']], y = [point.y for point in centroids_gdf['centroid']])
+    centroids_gdf.index = centroids_gdf.edgeID
+    centroids_gdf.index.name = None
+        
     # creating fictious links between centroids
     edges_dual = pd.DataFrame(columns=['u','v', 'geometry', 'length'])
-    ix_length = nodes_dual.columns.get_loc('length')+1
-    ix_intersecting = nodes_dual.columns.get_loc('intersecting')+1
-    ix_geo = nodes_dual.columns.get_loc('geometry')+1
 
     # connecting nodes which represent street segments share a linked in the actual street network   
-    processed = []
+    processed = set()
     for row in nodes_dual.itertuples():                                           
         # intersecting segments:  # i is the edgeID                                      
-        for intersecting in row[ix_intersecting]:
+        for intersecting in getattr(row, 'intersecting'):
             if ((row.Index == intersecting) | ((row.Index, intersecting) in processed) | ((intersecting, row.Index) in processed)): 
-                continue
-            length_intersecting =  nodes_dual.loc[intersecting]['length']
-            distance = (row[ix_length]+length_intersecting)/2
-        
+                    continue
+            length_intersecting =  getattr(nodes_dual.loc[intersecting], 'length')
+            distance = (getattr(row, 'length') + length_intersecting) / 2
             # from the first centroid to the centroid intersecting segment 
-            ls = LineString([row[ix_geo], nodes_dual.loc[intersecting]['geometry']])
-            edges_dual.loc[-1] = [row.Index, intersecting, ls, distance] 
-            edges_dual.index = edges_dual.index + 1
-            processed.append((row.Index, intersecting))
+            ls = LineString([getattr(row, 'geometry'), getattr(nodes_dual.loc[intersecting], 'geometry')])
+            edges_dual = edges_dual.append({'u': row.Index, 'v': intersecting, 'geometry': ls, 'length': distance}, ignore_index=True)
+            processed.add((row.Index, intersecting))
             
     edges_dual = edges_dual.sort_index(axis=0)
     edges_dual = gpd.GeoDataFrame(edges_dual[['u', 'v', 'length']], crs=crs, geometry=edges_dual['geometry'])
     
     # setting angle values in degrees and radians
-    if (angle is None) | (angle == 'degree') | (angle != 'radians'):
-        edges_dual['deg'] = edges_dual.apply(lambda row: angle_line_geometries(edges_gdf.loc[row['u']].geometry, edges_gdf.loc[row['v']].geometry, degree = True, deflection = True), axis = 1)
-    else: edges_dual['rad'] = edges_dual.apply(lambda row: angle_line_geometries(edges_gdf.loc[row['u']].geometry, edges_gdf.loc[row['v']].geometry, degree = False, deflection = True), axis = 1)
+    if angle != 'radians':
+        edges_dual['deg'] = edges_dual.apply(lambda row: angle_line_geometries(edges_gdf.loc[row['u']].geometry, edges_gdf.loc[row['v']].geometry, degree = True, measure = 'deflection'), axis = 1)
+    else: 
+        edges_dual['rad'] = edges_dual.apply(lambda row: angle_line_geometries(edges_gdf.loc[row['u']].geometry, edges_gdf.loc[row['v']].geometry, degree = False, measure = 'deflection'), axis = 1)
         
     return nodes_dual, edges_dual
 
@@ -231,10 +219,7 @@ def dual_graph_fromGDF(nodes_dual, edges_dual):
     Dg.add_nodes_from(nodes_dual.index)
     attributes = nodes_dual.to_dict()
     
-    a = (nodes_dual.applymap(type) == list).sum()
-    if len(a[a>0]): 
-        to_ignore = a[a>0].index[0]
-    else: to_ignore = []
+    to_ignore = nodes_dual.select_dtypes(include=['list']).columns
     
     for attribute_name in nodes_dual.columns:
         # only add this attribute to nodes which have a non-null value for it
@@ -246,10 +231,7 @@ def dual_graph_fromGDF(nodes_dual, edges_dual):
     # add the edges and attributes that are not u, v, key (as they're added
     # separately) or null
     for _, row in edges_dual.iterrows():
-        attrs = {}
-        for label, value in row.iteritems():
-            if (label not in ['u', 'v']) and (isinstance(value, list) or pd.notnull(value)):
-                attrs[label] = value
+        attrs = {label:value for label, value in row.iteritems() if (label not in ['u', 'v']) and (isinstance(value, list) or pd.notnull(value))}
         Dg.add_edge(row['u'], row['v'], **attrs)
 
     return Dg
@@ -275,13 +257,8 @@ def dual_id_dict(dict_values, G, node_attribute):
         a dictionary where each item consists of a edgeID (key) and centrality values (for example) or other attributes (values)
     """
     
-    view = dict_values.items()
-    ed_list = list(view)
-    ed_dict = {}
-    for p in ed_list: 
-        ed_dict[G.nodes[p[0]][node_attribute]] = p[1] # attribute and measure
-        
-    return ed_dict
+    ed_list = [(G.nodes[node][node_attribute], value) for node, value in dict_values.items()]
+    return dict(ed_list)
 
 def nodes_degree(edges_gdf):
     """
@@ -298,7 +275,7 @@ def nodes_degree(edges_gdf):
         a dictionary where each item consists of a nodeID (key) and degree values (values)
     """
 
-    dd_u = dict(edges_gdf['u'].value_counts())
-    dd_v = dict(edges_gdf['v'].value_counts())
-    dd = {k: dd_u.get(k, 0) + dd_v.get(k, 0) for k in set(dd_u) | set(dd_v)}
+    dd_u = Counter(edges_gdf['u'])
+    dd_v = Counter(edges_gdf['v'])
+    dd = dict(dd_u + dd_v)
     return dd 

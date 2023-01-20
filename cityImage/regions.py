@@ -14,7 +14,7 @@ from shapely.ops import cascaded_union, linemerge, nearest_points
 pd.set_option("display.precision", 3)
 
 from .graph import graph_fromGDF, dual_id_dict
-from .utilities import dict_to_df, distance_geometry_gdf
+from .utilities import dict_to_df, min_distance_geometry_gdf
 
 def identify_regions(dual_graph, edges_gdf, weight = None):
     """
@@ -169,7 +169,7 @@ def _assign_district_to_node(node_geometry, edges_gdf, sindex, column):
     n = point.buffer(20)
     possible_matches_index = list(sindex.intersection(n.bounds))
     pm = edges_gdf.iloc[possible_matches_index].copy()
-    dist = distance_geometry_gdf(point, pm)
+    dist = min_distance_geometry_gdf(point, pm)
     district = edges_gdf.loc[dist[1]][column]
     return district
     
@@ -272,8 +272,8 @@ def _assign_district_to_node_from_polygons(node_geometry, partitions_gdf, column
     GeoDataFrames
     """
     
-    point = node_geometry
-    dist = distance_geometry_gdf(point, partitions_gdf)
+    point = node_geometry  
+    dist = min_distance_geometry_gdf(point, partitions_gdf)
     district = partitions_gdf.loc[dist[1]][column]
     return district        
     
@@ -371,8 +371,9 @@ def _amend_node_membership(nodeID, nodes_gdf, edges_gdf, column):
     tmp_nodes = tmp_nodes[tmp_nodes[column].isin(list(districts_sorted[0:2].index))]
     tmp_edges = edges_gdf[((edges_gdf.u == nodeID) & (edges_gdf.v.isin(tmp_nodes.nodeID))) |
                           ((edges_gdf.v == nodeID) & (edges_gdf.u.isin(tmp_nodes.nodeID)))]
-    closest = distance_geometry_gdf(nodes_gdf.loc[nodeID].geometry, tmp_nodes)[1]
-    new_district = tmp_nodes.loc[closest][column]
+    
+    closest = min_distance_geometry_gdf(nodes_gdf.loc[nodeID].geometry, tmp_nodes)[1]
+    new_district = tmp_nodes.loc[closest_ix][column]
     return new_district
     
 def find_gateways(nodes_gdf, edges_gdf, column):

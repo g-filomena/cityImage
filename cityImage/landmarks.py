@@ -2,6 +2,7 @@ import osmnx as ox
 import pandas as pd
 import numpy as np
 import geopandas as gpd
+import pyvista as pv
 
 from shapely.geometry import Point, LineString, Polygon, MultiPolygon, mapping, MultiLineString
 from shapely.ops import cascaded_union, linemerge
@@ -15,7 +16,8 @@ from .angles import get_coord_angle
 This set of functions is designed for extracting the computational Image of The City.
 Computational landmarks can be extracted employing the following functions.
 """
-  
+ def downloadError(Exception):
+    pass
  
 def get_buildings_fromSHP(path, epsg, case_study_area = None, distance_from_center = 1000, height_field = None, base_field = None, land_use_field = None):
     """    
@@ -48,37 +50,38 @@ def get_buildings_fromSHP(path, epsg, case_study_area = None, distance_from_cent
     
     # computing area, reassigning columns
     obstructions_gdf["area"] = obstructions_gdf["geometry"].area
-    if height_field is not None: 
+
+    if height_field: 
         obstructions_gdf["height"] = obstructions_gdf[height_field]
-    if base_field is None: 
-        obstructions_gdf["base"] = 0.0
-        if height_field is not None: 
-            obstructions_gdf["height_r"] = obstructions_gdf["height"]
-    else: 
+        obstructions_gdf["height_r"] = obstructions_gdf["height"]
+    else:
+        obstructions_gdf["height"] = None
+        obstructions_gdf["height_r"] = None
+
+    if base_field:
         obstructions_gdf["base"] = obstructions_gdf[base_field]
-        if height_field is not None: 
-            obstructions_gdf["height_r"] = obstructions_gdf["height"]+obstructions_gdf["base"] # relative_height
-    if land_use_field is not None: 
+        if "height_r" in obstructions_gdf:
+            obstructions_gdf["height_r"] += obstructions_gdf["base"]
+    else:
+        obstructions_gdf["base"] = 0.0
+
+    if land_use_field:
         obstructions_gdf["land_use_raw"] = obstructions_gdf[land_use_field]
     else:
         obstructions_gdf["land_use_raw"] = None
-        
+
     # dropping small buildings and buildings with null height
-    obstructions_gdf = obstructions_gdf[obstructions_gdf["area"] >= 50]
-    if height_field is not None: 
-        obstructions_gdf = obstructions_gdf[obstructions_gdf["height"] >= 1]
+    obstructions_gdf = obstructions_gdf[(obstructions_gdf["area"] >= 50) & (obstructions_gdf["height"] >= 1)]
     obstructions_gdf = obstructions_gdf[["height", "height_r", "base","geometry", "area", "land_use_raw"]]
-    
     # assigning ID
     obstructions_gdf["buildingID"] = obstructions_gdf.index.values.astype(int)
     
     # if case-study area and distance not defined
-    if (case_study_area is None) & (distance_from_center is None):
+    if (case_study_area is None) and (distance_from_center is None):
         buildings_gdf = obstructions_gdf.copy()
         return buildings_gdf, obstructions_gdf
 
-    # if case-study area is not defined
-    if (case_study_area is None): 
+    if case_study_area is None:
         case_study_area = obstructions_gdf.geometry.unary_union.centroid.buffer(distance_from_center)
 
     buildings_gdf = obstructions_gdf[obstructions_gdf.geometry.within(case_study_area)]
@@ -111,17 +114,16 @@ def get_buildings_fromOSM(place, download_method, epsg = None, distance = 1000):
     """   
     
     columns_to_keep = ['amenity', 'building', 'geometry', 'historic', 'land_use_raw']
+    download_options = {"distance_from_address", "OSMplace", "from_point", "OSMpolygon"}
 
-    if download_method == "distance_from_address": 
-        buildings_gdf = ox.geometries_from_address(address = place, dist = distance, tags={"building": True})
-    elif download_method == "OSMplace": 
-        buildings_gdf = ox.geometries_from_place(place, tags={"building": True})
-    elif download_method == "from_point": 
-        buildings_gdf = ox.geometries_from_point(center_point = place, dist = distance, tags={"building": True})
-    elif download_method == "OSMpolygon": 
-        buildings_gdf = ox.geometries_from_polygon(place, tags={"building": True})
-    else: raise downloadError('Provide a download method amongst {"from_point", "distance_from_address", "OSMplace", "OSMpolygon}')
-    
+    if download_method not in download_options:
+        raise downloadError('Provide a download method amongst {}'.format(download_options))
+
+    buildings_gdf = ox.geometries_from_address(address = place, dist = distance, tags={"building": True}) if download_method == "distance_from_address" else \
+                    ox.geometries_from_place(place, tags={"building": True}) if download_method == "OSMplace" else \
+                    ox.geometries_from_point(center_point = place, dist = distance, tags={"building": True}) if download_method == "from_point" else \
+                    ox.geometries_from_polygon(place, tags={"building": True})
+                    
     if epsg is None:
         buildings_gdf = ox.projection.project_gdf(buildings_gdf)
     else:
@@ -129,17 +131,19 @@ def get_buildings_fromOSM(place, download_method, epsg = None, distance = 1000):
         buildings_gdf = buildings_gdf.to_crs(crs)
 
     buildings_gdf['land_use_raw'] = None
-    for column in buildings_gdf.columns: 
-        if column.startswith('building:use:'): 
-            buildings_gdf.loc[pd.notnull(buildings_gdf[column]), 'land_use_raw'] = column[13:]
-        if column not in columns_to_keep: 
-            buildings_gdf.drop(column, axis = 1, inplace = True)
+    buildings_gdf.loc[:, 'land_use_raw'] = buildings_gdf.filter(regex='^building:use:').apply(lambda x: x.name[13:] if x.notnull().any() else None)
+    buildings_gdf.drop(columns=[col for col in buildings_gdf.columns if col not in columns_to_keep], inplace=True)
 
+    # remove the empty geometries
     buildings_gdf = buildings_gdf[~buildings_gdf['geometry'].is_empty]
-    buildings_gdf['building'].replace('yes', np.nan, inplace = True)
-    buildings_gdf['building'][buildings_gdf['building'].isnull()] = buildings_gdf['amenity']
-    buildings_gdf['land_use_raw'][buildings_gdf['land_use_raw'].isnull()] = buildings_gdf['building']
-    buildings_gdf['land_use_raw'][buildings_gdf['land_use_raw'].isnull()] = 'residential'
+    # replace 'yes' with NaN in 'building' column
+    buildings_gdf['building'].replace('yes', np.nan, inplace=True)
+    # fill missing values in 'building' column with 'amenity' values
+    buildings_gdf['building'].fillna(value=buildings_gdf['amenity'], inplace=True)
+    # fill missing values in 'land_use_raw' column with 'building' values
+    buildings_gdf['land_use_raw'].fillna(value=buildings_gdf['building'], inplace=True)
+    # fill remaining missing values in 'land_use_raw' column with 'residential'
+    buildings_gdf['land_use_raw'].fillna(value='residential', inplace=True)
 
     buildings_gdf = buildings_gdf[['geometry', 'historic', 'land_use_raw']]
     buildings_gdf['area'] = buildings_gdf.geometry.area
@@ -206,43 +210,22 @@ def attach_attributes(buildings_gdf, attributes_gdf, height_field, base_field, l
     """  
     
     buildings_gdf = buildings_gdf.copy()
-    attributes_gdf['area'] = attributes_gdf.geometry.area
-    attributes_gdf = attributes_gdf[attributes_gdf.area > 50].copy()
+    attributes_gdf = attributes_gdf[attributes_gdf.geometry.area > 50].copy()
     attributes_gdf[land_use_field] = attributes_gdf[land_use_field].where(pd.notnull(attributes_gdf[land_use_field]), None)
-    if land_use_field in buildings_gdf:
-        buildings_gdf.drop(land_use_field, axis = 1, inplace = True)
-    buildings_gdf = gpd.sjoin(buildings_gdf, attributes_gdf[['area', 'geometry', height_field, land_use_field]], how="left", op= 'intersects')
+    buildings_gdf = gpd.sjoin(buildings_gdf, attributes_gdf[['geometry', height_field, land_use_field]], how="left", op='intersects')
     
-    buildings_gdf['land_use_raw'] = None
-    new_buildings_gdf = buildings_gdf.copy()
-    new_buildings_gdf = new_buildings_gdf[0:0]
-    buildings_gdf.reset_index(inplace = True, drop = True)
-
-    new_index = 0
-    builgindIDs = buildings_gdf.buildingID.unique()
-    
-    for bID in builgindIDs:
-        gdf_tmp = buildings_gdf[buildings_gdf.buildingID == bID].copy()
-        new_buildings_gdf.loc[new_index] = gdf_tmp.iloc[0]
-        
-        if len(gdf_tmp) == 1:
-            new_buildings_gdf.at[new_index,'land_use_raw'] = gdf_tmp.iloc[0][land_use_field]
-        else:
-            index_lu = gdf_tmp['area_right'].idxmax()
-            land_use = gdf_tmp.loc[index_lu][land_use_field]
-            if land_use is None:
-                pass
-            else:
-                new_buildings_gdf.at[new_index,'land_use_raw'] = land_use
-       
-        new_buildings_gdf.at[new_index, 'height'] = gdf_tmp[height_field].max()
-        new_buildings_gdf.at[new_index, 'base'] = gdf_tmp[base_field].max()
-        new_index += 1
-        
+    new_buildings_gdf = buildings_gdf.groupby("buildingID").agg({
+                                                                'geometry': 'first',
+                                                                height_field: 'max',
+                                                                base_field: 'max',
+                                                                land_use_field: lambda x: x.value_counts().idxmax()
+                                                                }).reset_index()
+                                                                
+    new_buildings_gdf.rename(columns={height_field: "height", base_field: "base", land_use_field: "land_use_raw"}, inplace=True)
     new_buildings_gdf['area'] = new_buildings_gdf.geometry.area
-    new_buildings_gdf.drop([land_use_field, 'area_left', 'area_right', 'index_right'], axis = 1, inplace = True)
-    
+    new_buildings_gdf.drop([height_field, base_field, land_use_field], axis=1, inplace=True)
     return new_buildings_gdf
+
 
        
 def structural_score(buildings_gdf, obstructions_gdf, edges_gdf, max_expansion_distance = 300, distance_along = 50, radius = 150):
@@ -275,20 +258,15 @@ def structural_score(buildings_gdf, obstructions_gdf, edges_gdf, max_expansion_d
     """  
     
     buildings_gdf = buildings_gdf.copy()
-    if (obstructions_gdf is None): 
-        obstructions_gdf = buildings_gdf.copy()
-    # spatial index
+    obstructions_gdf = buildings_gdf if obstructions_gdf is None else obstructions_gdf
     sindex = obstructions_gdf.sindex
     street_network = edges_gdf.geometry.unary_union
 
-    # distance from road
-    buildings_gdf["road"] =  buildings_gdf.apply(lambda row: row["geometry"].distance(street_network), axis = 1)
-    # 2d advance visibility
-    buildings_gdf["2dvis"] = buildings_gdf.apply(lambda row: _advance_visibility(row["geometry"], obstructions_gdf, sindex, max_expansion_distance = max_expansion_distance,
-                                distance_along = distance_along), axis = 1)
-    # neighbours
-    buildings_gdf["neigh"] = buildings_gdf.apply(lambda row: _number_neighbours(row["geometry"], obstructions_gdf, sindex, radius = radius), axis = 1)
-    
+    buildings_gdf["road"] = buildings_gdf.geometry.distance(street_network)
+    buildings_gdf["2dvis"] = buildings_gdf.geometry.apply(lambda row: _advance_visibility(row, obstructions_gdf, sindex, max_expansion_distance=
+                                    max_expansion_distance, distance_along=distance_along))
+    buildings_gdf["neigh"] = buildings_gdf.geometry.apply(lambda row: _number_neighbours(row, obstructions_gdf, sindex, radius=radius))
+
     return buildings_gdf
     
 def _number_neighbours(building_geometry, obstructions_gdf, obstructions_sindex, radius):
@@ -340,73 +318,75 @@ def _advance_visibility(building_geometry, obstructions_gdf, obstructions_sindex
     -------
     float
     """
-      
-    # creating buffer
+
+  
+  # creating buffer
     origin = building_geometry.centroid
-    if building_geometry.geom_type == 'MultiPolygon':
-        building_geometry = building_geometry.convex_hull
-    exteriors = list(building_geometry.exterior.coords)
-    no_holes = Polygon(exteriors)
-    max_expansion_distance = max_expansion_distance + origin.distance(building_geometry.envelope.exterior)
-    
-    # identifying obstructions in an area of x (max_expansion_distance) mt around the building
-    possible_obstacles_index = list(obstructions_sindex.intersection(origin.buffer(max_expansion_distance).bounds))
-    possible_obstacles = obstructions_gdf.iloc[possible_obstacles_index]
-    possible_obstacles = obstructions_gdf[obstructions_gdf.geometry != building_geometry]
-    possible_obstacles = obstructions_gdf[~obstructions_gdf.geometry.within(no_holes)]
+    building_geometry = building_geometry.convex_hull if building_geometry.geom_type == 'MultiPolygon' else building_geometry
+    max_expansion_distance += origin.distance(building_geometry.envelope.exterior)
 
-    start = 0.0
-    i = start
-    list_lines = [] # list of lines
-    
+    angles = np.arange(0, 360, distance_along)
+    coords = np.array([get_coord_angle([origin.x, origin.y], distance=max_expansion_distance, angle=i) for i in angles])
+    lines = [LineString([origin, Point(x)]) for x in coords]
+    obstacles = obstructions_gdf[obstructions_gdf.crosses(unary_union(lines))]
+    obstacles = obstacles[obstacles.geometry != building_geometry]
+    obstacles = obstacles[~obstacles.geometry.within(building_geometry.convex_hull)]
+
     # creating lines all around the building till a defined distance
-    while(i <= 360):
-        coords = get_coord_angle([origin.x, origin.y], distance = max_expansion_distance, angle = i)
-        line = LineString([origin, Point(coords)])
-        
-        # finding actual obstacles to this line
-        obstacles = possible_obstacles[possible_obstacles.crosses(line)]
+    if len(obstacles) > 0:
+        ob = cascaded_union(obstacles.geometry)
+        lines = [line.intersection(ob) for line in lines]
+    lines = [LineString([origin, Point(x.coords[0])]) if type(x) == LineString else LineString([origin, Point(x[0].coords[0])]) for x in lines]
 
-        
-        """
-        if there are obstacles: indentify where the line from the origin is interrupted, create the geometry and
-        append it to the list of lines
-        """
-        
-        if len(obstacles) > 0:
-            ob = cascaded_union(obstacles.geometry)
-            t = line.intersection(ob)
-            # taking the coordinates
-            try: 
-                intersection = t[0].coords[0]
-            except: 
-                intersection = t.coords[0]
-            lineNew = LineString([origin, Point(intersection)])
-        
-        # the line is not interrupted, keeping the original one
-        else: 
-            lineNew = line 
-
-        list_lines.append(lineNew)
-        # increase the angle
-        i = i+distance_along
-   
     # creating a polygon of visibility based on the lines and their progression, taking into account the origin Point too    
-    list_points = [Point(origin)]
-    for i in list_lines: 
-        list_points.append(Point(i.coords[1]))
-    list_points.append(Point(origin))
-    poly = Polygon([[p.x, p.y] for p in list_points])
-    
-    # subtracting the area of the building and computing the area of the polygon (area of visibility)
-    try: 
-        poly_vis = poly.difference(building_geometry)
-    except:
-        pp = poly.buffer(0)
-        poly_vis = pp.difference(building_geometry)      
+    poly = Polygon([[p.x, p.y] for p in [origin] + lines + [origin]])
+    poly_vis = poly.difference(building_geometry)
+    if poly_vis.is_empty:
+        poly_vis = poly.buffer(0).difference(building_geometry) 
     
     return poly_vis.area
+
+def visibility_graph(building_geometry, obstructions_gdf):
+    # Create a visibility graph from the obstructions
+    visibility_graph = vg.VisibilityGraph()
+    visibility_graph.from_polygons(list(obstructions_gdf['geometry'].values))
     
+    # Get the visibility polygon for the building
+    visible_area = visibility_graph.visibility_polygon(building_geometry.centroid.coords[0])
+    
+    # Return the visible area
+    return visible_area    
+    
+    
+def check_3d_intersection(sight_lines: np.ndarray, buildings: np.ndarray, heights: np.ndarray) -> np.ndarray:
+    building_cuboids = pv.PolyData(np.column_stack((buildings, np.zeros(buildings.shape), np.zeros(buildings.shape), heights, heights, np.zeros(buildings.shape))))
+    sight_lines_3d = pv.Line(sight_lines[:,0], sight_lines[:,1])
+    return ~building_cuboids.intersects_line(sight_lines_3d)
+
+def compute_3d_sight_lines(points: gpd.GeoDataFrame, buildings: gpd.GeoDataFrame, distance_along: float) -> gpd.GeoDataFrame:
+    # Create an empty GeoDataFrame to store the sight lines
+    sight_lines = gpd.GeoDataFrame(columns=['geometry', 'buildingID', 'nodeID', 'height'])
+    # Get the exterior of the buildings
+    building_exterior = buildings.geometry.exterior
+    # Get the number of intervals to sample
+    num_intervals = (building_exterior.length / distance_along).astype(int)
+    # Using numpy array operations to get the building points at intervals and creating the linestring
+    building_points = np.array([np.array(building_exterior.interpolate(distance_along*i)) for i in range(
+        num_intervals)])
+    sight_lines_points = np.array([np.array([(point.x, point.y, point.z), (building_points[i][0], building_points[i][1], buildings.loc[i, 'height'])]) for i, point in points.iterrows()])
+    # Get the buildings coordinates
+    building_coords = np.array([[building.exterior.coords[i] for i in range(len(building.exterior.coords))] for building in buildings.geometry])
+    # Get the heights
+    building_heights = buildings["height"].values
+    # Filter the sightlines that intersects the buildings
+    mask = check_3d_intersection(sight_lines_points, building_coords, building_heights)
+    # Create the geodataframe
+    sight_lines['geometry'] = [LineString(i) for i in sight_lines_points[mask]]
+    sight_lines['buildingID'] = np.repeat(buildings.index.values, num_intervals)[mask]
+    sight_lines['nodeID'] = np.tile(points.index.values, len(buildings))[mask]
+    sight_lines['height'] = np.repeat(building_heights, num_intervals)[mask]
+
+   
 def visibility_score(buildings_gdf, sight_lines = pd.DataFrame({'a' : []}), method = 'longest'):
 
     """
@@ -429,43 +409,33 @@ def visibility_score(buildings_gdf, sight_lines = pd.DataFrame({'a' : []}), meth
     buildings_gdf["fac"] = 0.0
     if ("height" not in buildings_gdf.columns) | (sight_lines.empty): 
         return buildings_gdf, sight_lines
-    
-    sight_lines = sight_lines.copy()
+
     sight_lines['nodeID'] = sight_lines['nodeID'].astype(int)
     sight_lines['buildingID'] = sight_lines['buildingID'].astype(int)
-    
-    #facade area (roughly computed)
-    buildings_gdf["fac"] = buildings_gdf.apply(lambda row: _facade_area(row["geometry"], row["height"]), axis = 1)
 
-    
-    # 3d visibility
-    sight_lines = sight_lines.copy()
-    sight_lines.drop(["Shape_Leng", "DIST_ALONG", "visible", "Visibility"], axis = 1, inplace = True, errors = "ignore")
+    buildings_gdf["fac"] = buildings_gdf.apply(lambda row: _facade_area(row["geometry"], row["height"]), axis = 1)
     sight_lines["length"] = sight_lines["geometry"].length
     sight_lines = sight_lines.sort_values(['buildingID', 'nodeID', 'length'],ascending=[False, False, False]).drop_duplicates(['buildingID', 'nodeID'], keep='first')
     sight_lines.reset_index(inplace = True, drop = True)
-       
-    # stats
+
     stats = sight_lines.groupby('buildingID').agg({'length': ['mean','max', 'count']}) 
     stats.columns = stats.columns.droplevel(0)
-    stats.rename(columns = {"count": "nr_lines"}, inplace = True)  
-        
-    # computing score on rescaled values
-    stats["max"].fillna((stats["max"].min()), inplace = True) # longest sight_line to each building
-    stats["mean"].fillna((stats["mean"].min()), inplace = True) # average distance sigh_lines to each buildings
-    stats["nr_lines"].fillna((stats["nr_lines"].min()), inplace = True) # number of sigh_lines to each buildings
-    stats.reset_index(inplace = True)
-    col = ["max", "mean", "nr_lines"]      
+    stats.rename(columns = {"count": "nr_lines"}, inplace = True)
 
-    for i in col: 
+    stats["max"].fillna((stats["max"].min()), inplace = True)
+    stats["mean"].fillna((stats["mean"].min()), inplace = True)
+    stats["nr_lines"].fillna((stats["nr_lines"].min()), inplace = True)
+    stats.reset_index(inplace = True)
+    col = ["max", "mean", "nr_lines"]
+
+    for i in col:
         scaling_columnDF(stats, i)
-    # computing the 3d visibility score
+
     if method == 'longest':
         stats["3dvis"] = stats["max_sc"]
     elif method == 'combined':
         stats["3dvis"] = stats["max_sc"]*0.5+stats["mean_sc"]*0.25+stats["nr_lines_sc"]*0.25
 
-    # merging and building the final output
     buildings_gdf = pd.merge(buildings_gdf, stats[["buildingID", "3dvis"]], on = "buildingID", how = "left") 
     buildings_gdf['3dvis'] = buildings_gdf['3dvis'].where(pd.notnull(buildings_gdf['3dvis']), 0.0)
     
@@ -517,25 +487,30 @@ def get_historical_buildings_fromOSM(place, download_method, epsg = None, distan
     
     columns = ['geometry', 'historic']
 
-    if download_method == "distance_from_address": 
-        historic_buildings = ox.geometries_from_address(address = place, dist = distance, tags={"building": True})
-    elif download_method == "OSMplace": 
-        historic_buildings = ox.geometries_from_place(place = place, tags={"building": True})
-    elif download_method == "from_point": 
-        historic_buildings = ox.geometries_from_point(center_point = place, dist = distance, tags={"building": True})
-    elif download_method == "polygon": 
-        historic_buildings = ox.geometries_from_polygon(polygon = place, tags={"building": True})
-    else: 
-        raise downloadError('Provide a download method amongst {"from_point", "distance_from_address", "OSMplace"}')
+    method_mapping = {
+        "distance_from_address": ox.geometries_from_address,
+        "OSMplace": ox.geometries_from_place,
+        "from_point": ox.geometries_from_point,
+        "polygon": ox.geometries_from_polygon
+    }
+
+    try:
+        download_method_func = method_mapping[download_method]
+        if download_method == "distance_from_address":
+            historic_buildings = download_method_func(address = place, dist = distance, tags={"building": True})
+        elif download_method == "from_point":
+            historic_buildings = download_method_func(center_point = place, dist = distance, tags={"building": True})
+        else:
+            historic_buildings = download_method_func(place = place, tags={"building": True})
+    except KeyError:
+        raise downloadError('Provide a download method amongst {"from_point", "distance_from_address", "OSMplace", "polygon"}')
     
     if 'heritage' in historic_buildings:
         columns.append('heritage')
     historic_buildings = historic_buildings[columns]
-    
-    if 'heritage' in historic_buildings:
-        historic_buildings = historic_buildings[~(historic_buildings.historic.isnull() & historic_buildings.heritage.isnull())]
-    else:
-        historic_buildings = historic_buildings[~historic_buildings.historic.isnull()]
+
+    condition = (~historic_buildings.historic.isnull()) | (~historic_buildings.heritage.isnull())
+    historic_buildings = historic_buildings[condition]
     
     if epsg is None:
         historic_buildings = ox.projection.project_gdf(historic_buildings)
@@ -543,8 +518,7 @@ def get_historical_buildings_fromOSM(place, download_method, epsg = None, distan
         crs = 'EPSG:'+str(epsg)
         historic_buildings = historic_buildings.to_crs(crs)
 
-    historic_buildings["historic"] = 1
-    historic_buildings["historic"][historic_buildings["historic"] != 0] = 1
+    historic_buildings.loc[historic_buildings["historic"] != 0, "historic"] = 1
     historic_buildings = historic_buildings[['geometry', 'historic']]
     historic_buildings['area'] = historic_buildings.geometry.area
        
@@ -682,19 +656,17 @@ def _compute_pragmatic_meaning_building(building_geometry, building_land_use, bu
     -------
     float
     """
-
+     
+    # Create a buffer around the building of the specified radius
     buffer = building_geometry.buffer(radius)
-    possible_matches_index = list(buildings_gdf_sindex.intersection(buffer.bounds))
-    possible_matches = buildings_gdf.iloc[possible_matches_index]
-    pm = possible_matches [possible_matches.intersects(buffer)]
-    neigh = pm.groupby(["land_use"], as_index = True)["nr"].sum() 
-
-    Nj = neigh.loc[building_land_use] # nr of neighbours with same land_use
-    # Pj = Nj/N
-    Pj = 1-(Nj/pm["nr"].sum()) # inverting the value
-        
-    return Pj
-        
+    # Perform a spatial join between the buffer and the buildings_gdf, keeping only the buildings within the buffer
+    neighbours = geopandas.sjoin(buildings_gdf, buildings_gdf.loc[buildings_gdf.intersects(buffer)], op='within')
+    # Group the neighbours by land use and count the number of occurrences
+    neigh_counts = neighbours.groupby(["land_use"])["nr"].count()
+    # Compute the pragmatic meaning score
+    Nj = neigh_counts.loc[building_land_use]
+    Pj = 1-(Nj/neighbours["nr"].count())
+    return Pj          
         
 def compute_global_scores(buildings_gdf, g_cW, g_iW):
     """
@@ -722,8 +694,8 @@ def compute_global_scores(buildings_gdf, g_cW, g_iW):
     # scaling
     col = ["3dvis", "fac", "height", "area","2dvis", "cult", "prag"]
     col_inverse = ["neigh", "road"]
-    
-    if ("height" not in buildings_gdf.columns) or (("height" in buildings_gdf.columns) and (buildings_gdf.height.max == 0.0)):
+
+    if ("height" not in buildings_gdf.columns) or (("height" in buildings_gdf.columns) and (buildings_gdf.height.max() == 0.0)):
         buildings_gdf[['height','3dvis', 'fac']]  = 0.0
         if g_cW['vScore'] != 0.0:
             to_add = g_cW['vScore']/3
@@ -731,34 +703,22 @@ def compute_global_scores(buildings_gdf, g_cW, g_iW):
             g_cW['cScore'] += to_add
             g_cW['pScore'] += to_add
             g_cW['vScore'] = 0.0
-      
-    for i in col: 
-        if buildings_gdf[i].max() == 0.0: 
+
+    for i in col + col_inverse:
+        if buildings_gdf[i].max() == 0.0:
             buildings_gdf[i+"_sc"] = 0.0
-        else: 
-            scaling_columnDF(buildings_gdf, i)
-    
-    for i in col_inverse: 
-        if buildings_gdf[i].max() == 0.0: 
-            buildings_gdf[i+"_sc"] = 0.0
-        else: 
-            scaling_columnDF(buildings_gdf, i, inverse = True) 
+        else:
+            scaling_columnDF(buildings_gdf, i, inverse = i in col_inverse)
   
     # computing scores   
     buildings_gdf["vScore"] = buildings_gdf["fac_sc"]*g_iW["fac"] + buildings_gdf["height_sc"]*g_iW["height"] + buildings_gdf["3dvis_sc"]*g_iW["3dvis"]
     buildings_gdf["sScore"] = buildings_gdf["area_sc"]*g_iW["area"] + buildings_gdf["neigh_sc"]*g_iW["neigh"] + buildings_gdf["2dvis_sc"]*g_iW["2dvis"] + buildings_gdf["road_sc"]*g_iW["road"]
     
-    # rescaling components
     col = ["vScore", "sScore"]
-    for i in col: 
-        if buildings_gdf[i].max() == 0.0: 
-            buildings_gdf[i+"_sc"] = 0.0
-        else: 
-            scaling_columnDF(buildings_gdf, i)
+    buildings_gdf = buildings_gdf.assign(**{f'{i}_sc': scaling_columnDF(buildings_gdf, i) if buildings_gdf[i].max() != 0.0 else 0.0 for i in col})
     
     buildings_gdf["cScore"] = buildings_gdf["cult_sc"]
     buildings_gdf["pScore"] = buildings_gdf["prag_sc"]
-    
     # final global score
     buildings_gdf["gScore"] = (buildings_gdf["vScore_sc"]*g_cW["vScore"] + buildings_gdf["sScore_sc"]*g_cW["sScore"] + 
                                buildings_gdf["cScore"]*g_cW["cScore"] + buildings_gdf["pScore"]*g_cW["pScore"])
@@ -801,9 +761,18 @@ def compute_local_scores(buildings_gdf, l_cW, l_iW, radius = 1500):
     buildings_gdf["lScore"] = 0.0
     buildings_gdf["vScore_l"], buildings_gdf["sScore_l"] = 0.0, 0.0
     
-    # recomputing the scores per each building in relation to its neighbours, in an area whose extent is regulated by the parameter "radius"
-    buildings_gdf["lScore"] = buildings_gdf.apply(lambda row: _building_local_score(row["geometry"], row["buildingID"], buildings_gdf, sindex, l_cW, l_iW, radius), axis = 1)
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future_scores = {executor.submit(_building_local_score, row["geometry"], row["buildingID"], buildings_gdf, sindex, l_cW, l_iW, radius): row["buildingID"] 
+                                            for _, row in buildings_gdf.iterrows()}
+        for future in concurrent.futures.as_completed(future_scores):
+            buildingID = future_scores[future]
+            try:
+                score = future.result()
+                buildings_gdf.loc[buildingID, "lScore"] = score
+            except Exception as exc:
+                print(f'{buildingID} generated an exception: {exc}')
     scaling_columnDF(buildings_gdf, "lScore")
+    
     return buildings_gdf
     
 def _building_local_score(building_geometry, buildingID, buildings_gdf, buildings_gdf_sindex, l_cW, l_iW, radius):
@@ -830,42 +799,28 @@ def _building_local_score(building_geometry, buildingID, buildings_gdf, building
                                              
     col = ["3dvis", "fac", "height", "area","2dvis", "cult","prag"]
     col_inverse = ["neigh", "road"]
+    col_all = col + col_inverse
     
     buffer = building_geometry.buffer(radius)
     possible_matches_index = list(buildings_gdf_sindex.intersection(buffer.bounds))
-    possible_matches = buildings_gdf.iloc[possible_matches_index].copy()
-    pm = possible_matches[possible_matches.intersects(buffer)]
+    pm = buildings_gdf.loc[possible_matches_index].copy()
+    pm = pm[pm.intersects(buffer)]
     
-    # rescaling the values 
-    for i in col: 
-        if pm[i].max() == 0.0: 
-            pm[i+"_sc"] = 0.0
-        else:
-            scaling_columnDF(pm, i) 
-    for i in col_inverse: 
-        if pm[i].max() == 0.0: 
-            pm[i+"_sc"] = 0.0
-        else:
-            scaling_columnDF(pm, i, inverse = True)
-    
-    # and recomputing scores
-    pm["vScore_l"] =  pm["fac_sc"]*l_iW["fac"] + pm["height_sc"]*l_iW["height"] + pm["3dvis"]*l_iW["3dvis"]
-    pm["sScore_l"] =  pm["area_sc"]*l_iW["area"]+ pm["neigh_sc"]*l_iW["neigh"] + pm["road_sc"]*l_iW["road"] + pm["2dvis_sc"]*l_iW["fac"]
+    # rescaling the values
+    pm[col_all + [col+"_sc" for col in col_all]] = (pm[col_all] != 0.0).select(
+        lambda x: scaling_columnDF(pm, x, inverse = x in col_inverse), 0.0)
+    # recomputing scores
+    pm["vScore_l"] = pm["fac_sc"]*l_iW["fac"] + pm["height_sc"]*l_iW["height"] + pm["3dvis"]*l_iW["3dvis"]
+    pm["sScore_l"] = pm["area_sc"]*l_iW["area"]+ pm["neigh_sc"]*l_iW["neigh"] + pm["road_sc"]*l_iW["road"] + pm["2dvis_sc"]*l_iW["fac"]
     pm["cScore_l"] = pm["cult_sc"]
     pm["pScore_l"] = pm["prag_sc"]
-    
-    col_rs = ["vScore_l", "sScore_l"]
-    for i in col_rs: 
-        if pm[i].max() == 0.0: 
-            pm[i+"_sc"] = 0.0
-        else:
-            scaling_columnDF(pm, i)
+    pm[["vScore_l", "sScore_l"] + [col+"_sc" for col in ["vScore_l", "sScore_l"]]] = (pm[["vScore_l", "sScore_l"]] != 0.0).select(
+        lambda x: scaling_columnDF(pm, x), 0.0)
         
-    pm["lScore"] =  pm["vScore_l_sc"]*l_cW["vScore"] + pm["sScore_l_sc"]*l_cW["sScore"] + pm["cScore_l"]*l_cW["cScore"] + pm["pScore_l"]*l_cW["pScore"]
-    score = float("{0:.3f}".format(pm["lScore"].loc[buildingID]))
-    # return the so obtined score
+    pm["lScore"] = pm["vScore_l_sc"]*l_cW["vScore"] + pm["sScore_l_sc"]*l_cW["sScore"] + pm["cScore_l"]*l_cW["cScore"] + pm["pScore_l"]*l_cW["pScore"]
+    score = float("{0:.3f}".format(pm.loc[buildingID, "lScore"]))
     return score
-
+    
 class Error(Exception):
     """Base class for other exceptions"""
 

@@ -34,9 +34,68 @@ def get_coord_angle(origin, distance, angle):
     coord = (origin[0] + disp_x, origin[1] + disp_y)
     return coord
 
-def angle_line_geometries(line_geometryA, line_geometryB, degree = False, deflection = False, angular_change = False):
+class Settings():
+        """
+    A class to store and compare the coordinates of two line geometries.
+    
+    Attributes:
+        x_originA (float): The x-coordinate of the first point of the first line geometry.
+        y_originA (float): The y-coordinate of the first point of the first line geometry.
+        x_secondA (float): The x-coordinate of the second point of the first line geometry.
+        y_secondA (float): The y-coordinate of the second point of the first line geometry.
+        x_destinationA (float): The x-coordinate of the last point of the first line geometry.
+        y_destinationA (float): The y-coordinate of the last point of the first line geometry.
+        x_second_lastA (float): The x-coordinate of the second-last point of the first line geometry.
+        y_second_lastA (float): The y-coordinate of the second-last point of the first line geometry.
+        x_originB (float): The x-coordinate of the first point of the second line geometry.
+        y_originB (float): The y-coordinate of the first point of the second line geometry.
+        x_secondB (float): The x-coordinate of the second point of the second line geometry.
+        y_secondB (float): The y-coordinate of the second point of the second line geometry.
+        x_destinationB (float): The x-coordinate of the last point of the second line geometry.
+        y_destinationB (float): The y-coordinate of the last point of the second line geometry.
+        x_second_lastB (float): The x-coordinate of the second-last point of the second line geometry.
+        y_second_lastB (float): The y-coordinate of the second-last point of the second line geometry.
+        conditionOne (bool): Whether the last point of the first line geometry is the same as the last point of the second line geometry.
+        conditionTwo (bool): Whether the last point of the first line geometry is the same as the first point of the second line geometry.
+        conditionThree (bool): Whether the first point of the first line geometry is the same as the first point of the second line geometry.
+        conditionFour (bool): Whether the first point of the first line geometry is the same as the last point of the second line geometry.
+        """
+    
+    def set_coordinates(self, coords, prefix):
+        """
+        Set the coordinates for a line.
+
+        Parameters:
+        coords (list): A list of coordinates in the form [(x1, y1), (x2, y2), ...]
+        prefix (str): A string prefix to be added to the variable names for the coordinates.
+                      For example, if "A" is passed as the prefix, the coordinates will be stored as
+                      self.x_originA, self.y_originA, etc.
+        """
+        self.x_origin, self.y_origin = float("{0:.10f}".format(coords[0][0])), float("{0:.10f}".format(coords[0][1]))
+        self.x_second, self.y_second = float("{0:.10f}".format(coords[1][0])), float("{0:.10f}".format(coords[1][1]))
+        self.x_destination, self.y_destination = float("{0:.10f}".format(coords[-1][0])), float("{0:.10f}".format(coords[-1][1]))
+        self.x_second_last, self.y_second_last = float("{0:.10f}".format(coords[-2][0])), float("{0:.10f}".format(coords[-2][1]))
+    
+    
+    def __init__(coordsA, coordsB):
+        """
+        Initializes the class with the coordinates of two line geometries.
+        
+        Args:
+            coordsA (list): A list of coordinates of the first line geometry.
+            coordsB (list): A list of coordinates of the second line geometry.
+        """
+        set_coordinates(coordsA, 'A')
+        set_coordinates(coordsB, 'B')
+        
+        self.conditionOne = coordsA[-1] == coordsB[-1]
+        self.conditionTwo = coordsA[-1] == coordsB[0]
+        self.conditionThree = coordsA[0] == coordsB[0]
+        self.conditionFour = coordsA[0] == coordsB[-1]
+
+def angle_line_geometries(line_geometryA, line_geometryB, degree = False, calculation_type = False):
     """
-    Given two LineStrings it computes the deflection angle between them. Returns value in degrees or radians.
+    Given two LineStrings it computes the angle between them. Returns value in degrees or radians.
     
     Parameters
     ----------
@@ -46,92 +105,31 @@ def angle_line_geometries(line_geometryA, line_geometryB, degree = False, deflec
         the other line; it must share a vertex with line_geometryA
     degree: boolean
         if True it returns value in degree, otherwise in radians
-    deflection: boolean
-        if True it computes angle of incidence between the two lines, otherwise angle between vectors
-    angular_change: boolean
-        LineStrings are formed by two vertexes "from" and to". Within the function, four vertexes (2 per line) are considered; two of them are equal and shared between the lines.
-        The common vertex is used to compute the angle, along with another vertex per line. If True it computes angle of incidence between the two lines, on the basis of the vertex in common and the second following
-        (intermediate, if existing) vertexes forming each of the line. For example, if the line_geometryA has 3 vertexes composing its geometry, from, to and an intermediate one, the latter is used to compute 
-        the angle along with the one which is shared with line_geometryB. When False, the angle is computed by using exclusively from and to nodes, without considering intermediate vertexes which form the line geometries.
-        
+    calculation_type: string
+        one of: 'vectors', 'angular_change', 'deflection'
+        'vectors': computes angle between vectors
+        'angular_change': computes angle of incidence between the two lines,
+        'deflection': computes angle of incidence between the two lines, on the basis of the vertex in common and the second following(intermediate, if existing) vertexes forming each of the line.
+    
     Returns:
     ----------
     angle: float
         the resulting angle in radians or degrees
     """
-           
+    
+    valid_calculation_types = ['vectors', 'angular_change', 'deflection']
+    if not isinstance(line_geometryA, LineString) or not isinstance(line_geometryB, LineString):
+        raise TypeError("Both input must be of type shapely.geometry.LineString")
+    if line_geometryA.length < 2 or line_geometryB.length < 2:
+        raise ValueError("Both LineString must have at least 2 coordinates")
+    if calculation_type not in valid_calculation_types:
+        raise ValueError(f"Invalid calculation type. Choose one of: {valid_calculation_types}.")  
     # extracting coordinates and createing lines
-    coordsA = list(line_geometryA.coords)
-    x_originA, y_originA = float("{0:.10f}".format(coordsA[0][0])), float("{0:.10f}".format(coordsA[0][1]))
-    x_secondA, y_secondA = float("{0:.10f}".format(coordsA[1][0])), float("{0:.10f}".format(coordsA[1][1]))
-    x_destinationA, y_destinationA = float("{0:.10f}".format(coordsA[-1][0])), float("{0:.10f}".format(coordsA[-1][1]))
-    x_second_lastA, y_second_lastA = float("{0:.10f}".format(coordsA[-2][0])), float("{0:.10f}".format(coordsA[-2][1]))
-    
-    coordsB = list(line_geometryB.coords)
-    x_originB, y_originB = float("{0:.10f}".format(coordsB[0][0])), float("{0:.10f}".format(coordsB[0][1]))
-    x_secondB, y_secondB = float("{0:.10f}".format(coordsB[1][0])), float("{0:.10f}".format(coordsB[1][1]))
-    x_destinationB, y_destinationB  = float("{0:.10f}".format(coordsB[-1][0])), float("{0:.10f}".format(coordsB[-1][1]))
-    x_second_lastB, y_second_lastB  = float("{0:.10f}".format(coordsB[-2][0])), float("{0:.10f}".format(coordsB[-2][1]))
-    
-    if angular_change:
-        if (x_destinationA, y_destinationA) == (x_destinationB, y_destinationB):
-            lineA = ((x_second_lastA, y_second_lastA), (x_destinationA, y_destinationA))
-            lineB = ((x_destinationB, y_destinationB), (x_second_lastB, y_second_lastB))
+    coordsA = list(line_geometryA.coords
+    coordsB = list(line_geometryB.coords
+    setting = Setting(coordsA, coordsB)
+    lineA, lineB = _prepare_lines(Setting, calculation_type):
 
-        elif (x_destinationA, y_destinationA) == (x_originB, y_originB):
-            lineA = ((x_second_lastA, y_second_lastA), (x_destinationA, y_destinationA))
-            lineB = ((x_originB, y_originB), (x_secondB, y_secondB))
-
-        elif (x_originA, y_originA) == (x_originB, y_originB):
-            lineA = ((x_secondA, y_secondA), (x_originA, y_originA))
-            lineB = ((x_originB, y_originB), (x_secondB, y_secondB))
-
-        elif (x_originA, y_originA) == (x_destinationB, y_destinationB):
-            lineA = ((x_secondA, y_secondA), (x_originA, y_originA))
-            lineB = ((x_destinationB, y_destinationB), (x_second_lastB, y_second_lastB))
-        # no common vertex      
-        else: raise AngleError("The lines do not intersect! provide lines wich have a common vertex")
-    
-    # deflection on the entire lines
-    elif deflection:
-        if (x_destinationA, y_destinationA) == (x_destinationB, y_destinationB):
-            lineA = ((x_originA, y_originA), (x_destinationA, y_destinationA))
-            lineB = ((x_destinationB, y_destinationB), (x_originB, y_originB))
-
-        elif (x_destinationA, y_destinationA) == (x_originB, y_originB):
-            lineA = ((x_originA, y_originA), (x_destinationA, y_destinationA))
-            lineB = ((x_originB, y_originB), (x_destinationB, y_destinationB))
-
-        elif (x_originA, y_originA) == (x_originB, y_originB):
-            lineA = ((x_destinationA, y_destinationA), (x_originA, y_originA))
-            lineB = ((x_originB, y_originB), (x_destinationB, y_destinationB))
-
-        elif (x_originA, y_originA) == (x_destinationB, y_destinationB):
-            lineA = ((x_destinationA, y_destinationA), (x_originA, y_originA))
-            lineB = ((x_destinationB, y_destinationB), (x_originB, y_originB))
-        # no common vertex   
-        else: raise AngleError("The lines do not intersect! provide lines wich have a common vertex")
-    
-    # angle between vectors
-    else:
-        if (x_destinationA, y_destinationA) == (x_destinationB, y_destinationB):
-            lineA = ((x_destinationA, y_destinationA), (x_originA, y_originA))
-            lineB = ((x_destinationB, y_destinationB), (x_originB, y_originB))
-
-        elif (x_destinationA, y_destinationA) == (x_originB, y_originB):
-            lineA = ((x_destinationA, y_destinationA), (x_originA, y_originA))
-            lineB = ((x_originB, y_originB), (x_destinationB, y_destinationB))
-
-        elif (x_originA, y_originA) == (x_originB, y_originB):
-            lineA = ((x_originA, y_originA), (x_destinationA, y_destinationA))
-            lineB = ((x_originB, y_originB), (x_destinationB, y_destinationB))
-
-        elif (x_originA, y_originA) == (x_destinationB, y_destinationB):
-            lineA = ((x_originA, y_originA), (x_destinationA, y_destinationA))
-            lineB = ((x_destinationB, y_destinationB),(x_originB, y_originB)) 
-        # no common vertex   
-        else: raise AngleError("The lines do not intersect! provide lines wich have a common vertex")
-    
     # Get nicer vector form
     vA = [(lineA[0][0]-lineA[1][0]), (lineA[0][1]-lineA[1][1])]
     vB = [(lineB[0][0]-lineB[1][0]), (lineB[0][1]-lineB[1][1])]
@@ -157,109 +155,61 @@ def angle_line_geometries(line_geometryA, line_geometryB, degree = False, deflec
     if degree:
         angle = angle_deg
     return angle
-    
-def difference_angle_line_geometries(line_geometryA, line_geometryB):
+
+def _prepare_lines(Setting, calculation_type):
     """
-    Given two LineStrings it computes the difference of the angles that they form with the Y-axis. Returns value in degrees or radians.
+    Given a Setting object and a calculation type, this function returns the lines that will be used to compute the angle.
     
     Parameters
     ----------
-    line_geometryA: LineString
-        the first line
-    line_geometryB: LineString
-        the other line; it must share a vertex with line_geometryA
-            
-    Returns:
-    ----------
-    difference_angle: float
-        the resulting difference in degrees
+    Setting: object
+        an object of the Setting class, which contains information about the lines
+    calculation_type: string
+        one of: 'vectors', 'angular_change', 'deflection'
+        'vectors': computes angle between vectors
+        'angular_change': computes angle of incidence between the two lines,
+        'deflection': computes angle of incidence between the two lines, on the basis of the vertex in common and the second following(intermediate, if existing) vertexes forming each of the line.
+        
+    Returns
+    -------
+    lineA: tuple
+        coordinates of the first line
+    lineB: tuple
+        coordinates of the second line
+    
+    Raises
+    ------
+    AngleError: if the lines do not have a common vertex
     """
-           
-    # extracting coordinates and createing lines
-    coordsA = list(line_geometryA.coords)
-    x_originA, y_originA = float("{0:.10f}".format(coordsA[0][0])), float("{0:.10f}".format(coordsA[0][1]))
-    x_destinationA, y_destinationA = float("{0:.10f}".format(coordsA[-1][0])), float("{0:.10f}".format(coordsA[-1][1]))
-    
-    coordsB = list(line_geometryB.coords)
-    x_originB, y_originB = float("{0:.10f}".format(coordsB[0][0])), float("{0:.10f}".format(coordsB[0][1]))
-    x_destinationB, y_destinationB  = float("{0:.10f}".format(coordsB[-1][0])), float("{0:.10f}".format(coordsB[-1][1]))
-    
-    if x_originA == x_destinationA: 
-        angle_A = np.pi/2
-    else: angle_A = np.arctan((y_destinationA-y_originA)/(x_destinationA-x_originA))  
-    if x_originB == x_destinationB: 
-        angle_B = np.pi/2  
-    else: angle_B = np.arctan((y_destinationB-y_originB)/(x_destinationB-x_originB)) 
-    angle_A = math.degrees(angle_A)%360
-    angle_B = math.degrees(angle_B)%360
-    
-    if angle_A > 180: 
-        angle_A = angle_A-180
-    if angle_B > 180: 
-        angle_B = angle_B-180
-    difference_angle = abs(angle_A - angle_B)
-        
-    return difference_angle
-    
-def is_parallel(line_geometry_A, line_geometry_B, hard = False):
-    
-    difference_angle = difference_angle_line_geometries(line_geometry_A, line_geometry_B)
-    if (difference_angle <= 30):
-        return True
-        
-    line_coordsA = list(line_geometry_A.coords)
-    line_coordsB = list(line_geometry_B.coords)
-    if ((len(line_coordsA) == 2) | (len(line_coordsB) == 2)): 
-        return False
-       
-    if not hard:
-        # remove first coordinates (A,B)
-        line_geometry_A = LineString([coor for coor in line_coordsA[1:]])
-        line_geometry_B = LineString([coor for coor in line_coordsB[1:]])
-        difference_angle = difference_angle_line_geometries(line_geometry_A, line_geometry_B)
-        if (difference_angle <= 20) & (difference_angle >= -20): 
-            return True
-        
-        # remove first (A) and last (B)
-        line_geometry_B = LineString([coor for coor in line_coordsB[:-1]])
-        difference_angle = difference_angle_line_geometries(line_geometry_A, line_geometry_B)
-        if (difference_angle <= 20) & (difference_angle >= -20): 
-            return True
-        
-        # remove last (A) and first (B)
-        line_geometry_A = LineString([coor for coor in line_coordsA[:-1]])
-        line_geometry_B = LineString([coor for coor in line_coordsB[1:]])
-        difference_angle = difference_angle_line_geometries(line_geometry_A, line_geometry_B)
-        if (difference_angle <= 20) & (difference_angle >= -20): 
-            return True
-        
-        # remove last coordinates (A, B)
-        line_geometry_A = LineString([coor for coor in line_coordsA[:-1]])
-        line_geometry_B = LineString([coor for coor in line_coordsB[:-1]])
-        difference_angle = difference_angle_line_geometries(line_geometry_A, line_geometry_B)
-        if (difference_angle <= 20) & (difference_angle >= -20): 
-            return True
-        
-        if ((len(line_coordsA) == 3) | (len(line_coordsB) == 3)):
-            return False
-        line_geometry_A = LineString([coor for coor in line_coordsA[1:-1]])
-        line_geometry_B = LineString([coor for coor in line_coordsB[1:-1]])
-        difference_angle = difference_angle_line_geometries(line_geometry_A, line_geometry_B)
-        if (difference_angle <= 20) & (difference_angle >= -20): 
-            return True
-        
-    return False   
-    
-def is_continuation(ix_lineA, ix_lineB, edges_gdf):
 
-    nameA = edges_gdf.loc[ix_lineA]['name']
-    nameB = edges_gdf.loc[ix_lineB]['name']
-    line_geometry_A = edges_gdf.loc[ix_lineA]['geometry']
-    line_geometry_B = edges_gdf.loc[ix_lineB]['geometry']
-    if is_parallel(line_geometry_A, line_geometry_B, hard = True): 
-        return True
-    return ((nameA == nameB) & (is_parallel(line_geometry_A, line_geometry_B, hard = False)))   
-    
+    if calculation_type == "angular_change":
+        lines = {
+            Setting.conditionOne: ((Setting.x_second_lastA, Setting.y_second_lastA), (Setting.x_destinationA, Setting.y_destinationA)),
+            Setting.conditionTwo: ((Setting.x_second_lastA, Setting.y_second_lastA), (Setting.x_destinationA, Setting.y_destinationA)),
+            Setting.conditionThree: ((Setting.x_secondA, Setting.y_secondA), (Setting.x_originA, Setting.y_originA)),
+            Setting.conditionFour: ((Setting.x_secondA, Setting.y_secondA), (Setting.x_originA, Setting.y_originA))
+        }
+    elif calculation_type == "deflection":
+        lines = {
+            Setting.conditionOne: ((Setting.x_originA, Setting.y_originA), (Setting.x_destinationA, Setting.y_destinationA)),
+            Setting.conditionTwo: ((Setting.x_second_lastA, Setting.y_second_lastA), (Setting.x_destinationA, Setting.y_destinationA)),
+            Setting.conditionThree: ((Setting.x_secondA, Setting.y_secondA), (Setting.x_originA, Setting.y_originA)),
+            Setting.conditionFour: ((Setting.x_secondA, Setting.y_secondA), (Setting.x_originA, Setting.y_originA))
+        }
+    else # calculation_type == "vectors":
+        lines = {
+            Setting.conditionOne: ((Setting.x_destinationA, Setting.y_destinationA), (Setting.x_originA, Setting.y_originA)),
+            Setting.conditionTwo: ((Setting.x_destinationA, Setting.y_destinationA), (Setting.x_originA, Setting.y_originA)),
+            Setting.conditionThree: ((Setting.x_originA, Setting.y_originA), (Setting.x_destinationA, Setting.y_destinationA)),
+            Setting.conditionFour: ((Setting.x_originA, Setting.y_originA), (Setting.x_destinationA, Setting.y_destinationA))
+        }
+    try:
+        lineA, lineB = lines[Setting.conditionOne or Setting.conditionTwo or Setting.conditionThree or Setting.conditionFour]
+    except KeyError:
+        raise AngleError("The lines do not intersect! provide lines which have a common vertex")   
+    return lineA, lineB
+     
+         
 class Error(Exception):
     """Base class for other exceptions"""
     

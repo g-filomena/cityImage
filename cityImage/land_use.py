@@ -27,14 +27,14 @@ def classify_land_use(buildings_gdf, new_land_use_field, land_use_field, categor
     
     buildings_gdf = buildings_gdf.copy()
     
-    # reclassifying: replacing original values with relative categories
-    buildings_gdf[new_land_use_field] = buildings_gdf[land_use_field]
-    for n, category in enumerate(categories):
-        buildings_gdf[new_land_use_field] = buildings_gdf[new_land_use_field].map(lambda x: strings[n] if x in category else x)
+    # Create a new column with the same values as the land_use_field column
+    buildings_gdf[new_land_use_field] = buildings_gdf[land_use_field].copy()
+    # Create a dictionary to map the old category values to the new strings
+    map_dict = {category: strings[n] for n, category in enumerate(categories)}
+    # Use the map function and the dictionary to update the new column
+    buildings_gdf[new_land_use_field].replace(map_dict, inplace=True)
     
     return buildings_gdf
-
-def land_use_from_polygons(buildings_gdf, other_source_gdf, column, land_use_field):
     """
     It assigns land-use attributes to buildings in a buildings GeoDataFrame, looking for possible matches in "other_source_gdf", a Polygon GeoDataFrame
     Possible matches here means the buildings in "other_source_gdf" whose area of interesection with the examined building (y), covers at least
@@ -55,6 +55,8 @@ def land_use_from_polygons(buildings_gdf, other_source_gdf, column, land_use_fie
     buildings_gdf: Polygon GeoDataFrame
         the updated buildings' GeoDataFrame
     """
+def land_use_from_polygons(buildings_gdf, other_source_gdf, column, land_use_field):
+
     
     buildings_gdf = buildings_gdf.copy()
     buildings_gdf[column] = None
@@ -66,6 +68,25 @@ def land_use_from_polygons(buildings_gdf, other_source_gdf, column, land_use_fie
     return buildings_gdf
     
 def _assign_land_use_from_polygons(building_geometry, other_source_gdf, other_source_gdf_sindex, land_use_field):
+
+    # Find the possible matches
+    possible_matches_index = list(other_source_gdf_sindex.intersection(building_geometry.bounds))
+    possible_matches = other_source_gdf.iloc[possible_matches_index]
+    # Keep only the polygons that intersect with the building
+    pm = possible_matches[possible_matches.intersects(building_geometry)]
+    if len(pm) == 0: 
+        return None # no intersecting features in the other_source_gdf
+    # calculate area of intersection between building and each possible match
+    pm["area"] = pm.loc[pm.intersects(building_geometry), 'geometry'].apply(lambda row: row.intersection(building_geometry).area)
+    # sort the matches based on the extent of the area of intersection
+    pm = pm.sort_values(by="area", ascending=False)
+    # Assign the match land-use category if the area of intersection covers at least 60% of the building's area
+    if pm["area"].iloc[0] >= (building_geometry.area * 0.60): 
+        return pm[land_use_field].iloc[0]
+    
+    return None
+
+
     """
     It assigns land-use attributes to a building, looking for possible matches in "other_source_gdf".
      
@@ -83,31 +104,6 @@ def _assign_land_use_from_polygons(building_geometry, other_source_gdf, other_so
     -------
     Object
     """   
-    possible_matches_index = list(other_source_gdf_sindex.intersection(building_geometry.bounds)) # looking for intersecting geometries
-    possible_matches = other_source_gdf.iloc[possible_matches_index]
-    pm = possible_matches[possible_matches.intersects(building_geometry)]
-    pm["area"] = 0.0
-    if (len(pm) == 0): 
-        return None# no intersecting features in the other_source_gdf
-
-    for row in pm.itertuples(): # for each possible candidate, computing the extension of the area of intersection
-        other_geometry = pm.loc[row.Index]['geometry']
-        try:
-            overlapping_area = other_geometry.intersection(building_geometry).area
-        except: 
-            continue
-        pm.at[row.Index, "area"] = overlapping_area
-
-    # sorting the matches based on the extent of the area of intersection
-    pm = pm.sort_values(by="area", ascending=False).reset_index()
-    # assigning the match land-use category if the area of intersection covers at least 60% of the building's areas
-    if (pm["area"].iloc[0] >= (building_geometry.area * 0.60)): 
-        return pm[land_use_field].iloc[0]
-     
-    return None
-
-
-
 def land_use_from_points(buildings_gdf, other_source_gdf, column, land_use_field):
     """
     It assigns land-use attributes to buildings in "buildings_gdf", looking for possible matches in "other_source_gdf", a Point GeoDataFrame.
