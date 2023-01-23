@@ -54,7 +54,7 @@ Js2Py==0.71
 json5==0.9.8
 jsonschema==4.6.0
 jupyter-client==7.3.4
-jupyter-core==4.10.0
+jupyter-core==4.11.2
 jupyter-server==1.17.1
 jupyterlab==3.4.3
 jupyterlab-pygments==0.2.2
