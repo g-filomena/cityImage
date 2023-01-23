@@ -19,7 +19,7 @@ cligj==0.7.2
 cloudpickle==2.2.0
 colorama==0.4.4
 contextily==1.2.0
-cryptography==37.0.2
+cryptography==38.0.3
 cycler==0.11.0
 dask==2022.12.0
 debugpy==1.6.0
