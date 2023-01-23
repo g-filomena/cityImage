@@ -16,7 +16,7 @@ from .angles import get_coord_angle
 This set of functions is designed for extracting the computational Image of The City.
 Computational landmarks can be extracted employing the following functions.
 """
- def downloadError(Exception):
+def downloadError(Exception):
     pass
  
 def get_buildings_fromSHP(path, epsg, case_study_area = None, distance_from_center = 1000, height_field = None, base_field = None, land_use_field = None):
@@ -497,11 +497,11 @@ def get_historical_buildings_fromOSM(place, download_method, epsg = None, distan
     try:
         download_method_func = method_mapping[download_method]
         if download_method == "distance_from_address":
-            historic_buildings = download_method_func(address = place, dist = distance, tags={"building": True})
+            historic_buildings = download_method_func(place, dist = distance, tags={"building": True})
         elif download_method == "from_point":
-            historic_buildings = download_method_func(center_point = place, dist = distance, tags={"building": True})
+            historic_buildings = download_method_func(place, dist = distance, tags={"building": True})
         else:
-            historic_buildings = download_method_func(place = place, tags={"building": True})
+            historic_buildings = download_method_func(place, tags={"building": True})
     except KeyError:
         raise downloadError('Provide a download method amongst {"from_point", "distance_from_address", "OSMplace", "polygon"}')
     
@@ -509,8 +509,10 @@ def get_historical_buildings_fromOSM(place, download_method, epsg = None, distan
         columns.append('heritage')
     historic_buildings = historic_buildings[columns]
 
-    condition = (~historic_buildings.historic.isnull()) | (~historic_buildings.heritage.isnull())
-    historic_buildings = historic_buildings[condition]
+    if 'heritage' in historic_buildings:
+        historic_buildings = historic_buildings[~(historic_buildings.historic.isnull() & historic_buildings.heritage.isnull())]
+    else:
+        historic_buildings = historic_buildings[~historic_buildings.historic.isnull()]
     
     if epsg is None:
         historic_buildings = ox.projection.project_gdf(historic_buildings)

@@ -55,11 +55,11 @@ def dict_to_df(list_dict, list_col):
     df.columns = list_col
     
     return df
-    
+     
 def center_line(line_geometryA, line_geometryB): 
     """
-    Given two LineStrings, it derives the corresponding center line (to be checked)
-
+    Given two LineStrings, it derives the corresponding center line
+    
     Parameters
     ----------
     line_geometryA: LineString 
@@ -72,20 +72,29 @@ def center_line(line_geometryA, line_geometryB):
     center_line: LineString
         the resulting center line
     """
+    line_coordsA = list(line_geometryA.coords)
+    line_coordsB = list(line_geometryB.coords)
+    # If not, reverse the coordinates of B
+    if line_coordsA[0] != line_coordsB[-1]:
+        line_coordsB = line_coordsB[::-1]
 
-    if (line_geometryA is None) or (line_geometryB is None):
-        raise ValueError("Both input geometries must be valid LineStrings")
-    if not all(isinstance(geom, LineString) for geom in [line_geometryA, line_geometryB]):
-        raise ValueError("Both input geometries must be valid LineStrings")
-    if not all(geom.is_valid for geom in [line_geometryA, line_geometryB]):
-        raise ValueError("Both input geometries must be valid LineStrings")
-    
-    if line_geometryA.coords[0] != line_geometryB.coords[-1]:
-        line_geometryB = reversed(line_geometryB)
-    
-    merged_line = linemerge([line_geometryA, line_geometryB])
-    center_line = LineString(merged_line.interpolate(0.5))
-    
+    # Remove the middle point of the longer list until both lists have the same length
+    while len(line_coordsA) != len(line_coordsB):
+        if len(line_coordsA) > len(line_coordsB):
+            del line_coordsA[int(len(line_coordsA)/2)]
+        else:
+            del line_coordsB[int(len(line_coordsB)/2)]
+
+    # Calculate the center line coordinates
+    center_line_coords = [[(a[0] + b[0])/2, (a[1] + b[1])/2] for a, b in zip(line_coordsA, line_coordsB)]
+
+    # Assign the first and last point of the line A to the first and last point of the center line 
+    center_line_coords[0] = line_coordsA[0]
+    center_line_coords[-1] = line_coordsA[-1]
+    center_line = LineString([coor for coor in center_line_coords])
+
+    # Create a LineString object from the center line coordinates
+
     return center_line
 
 def min_distance_geometry_gdf(geometry, gdf):

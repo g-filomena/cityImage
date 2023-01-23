@@ -39,15 +39,12 @@ def road_barriers(place, download_method, distance = 500.0, epsg = None, include
     to_keep = ['trunk', 'motorway']
     if include_primary:
         to_keep.append('primary')
-        
+
     tags = {'highway': True}
     roads = _download_geometries(place, download_method, tags, crs, distance)
     roads = roads[roads.highway.isin(to_keep)]
     # exclude tunnels
-    if "tunnel" in roads.columns:
-        roads["tunnel"].fillna(0, inplace = True)
-        roads = roads[roads["tunnel"] == 0] 
-       
+    roads = roads[roads["tunnel"].fillna(1) != 1]
     roads = roads.unary_union
     roads = _simplify_barrier(roads)
     df = pd.DataFrame({'geometry': roads, 'type': ['road'] * len(roads)})
@@ -88,10 +85,7 @@ def secondary_road_barriers(place, download_method, distance = 500.0, epsg = Non
     roads = _download_geometries(place, download_method, tags, crs, distance)
     roads = roads[roads.highway.isin(to_keep)]
     # exclude tunnels
-    if "tunnel" in roads.columns:
-        roads["tunnel"].fillna(0, inplace = True)
-        roads = roads[roads["tunnel"] == 0] 
-       
+    roads = roads[roads["tunnel"].fillna(1) != 1]
     roads = roads.unary_union
     roads = _simplify_barrier(roads)
     df = pd.DataFrame({'geometry': roads, 'type': ['secondary_road'] * len(roads)})
@@ -99,8 +93,6 @@ def secondary_road_barriers(place, download_method, distance = 500.0, epsg = Non
        
     return road_barriers
 
-
-def water_barriers(place, download_method, distance = 500.0, lakes_area = 1000, epsg = None):
     """
     The function downloads water bodies from OSM. Lakes, rivers and see coastlines can be considered structuring barriers.
         
@@ -121,50 +113,36 @@ def water_barriers(place, download_method, distance = 500.0, lakes_area = 1000, 
     water_barriers: LineString GeoDataFrame
         the water barriers GeoDataFrame
     """
+def water_barriers(place, download_method, distance = 500.0, lakes_area = 1000, epsg = None):
+
     
     crs = 'EPSG:' + str(epsg)
-    # rivers and canals
-    tags = {"waterway":True}  
-    rivers = _download_geometries(place, download_method, tags, crs, distance)
-    rivers = rivers[(rivers.waterway == 'river') | (rivers.waterway == 'canal')]
-    if "tunnel" in rivers.columns:
-        rivers["tunnel"].fillna(0, inplace = True)
-        rivers = rivers[rivers["tunnel"] == 0] 
+    water_barriers = gpd.GeoDataFrame(crs=crs)
+    tags =  {"waterway": True, "natural": "water", "natural":"coastline"}
+    
+    for tag_type, tag_value in [("waterway", True), ("natural", "water"), ("natural", "coastline")]:
+        tags = {tag_type:tag_value}
+        geometries = _download_geometries(place, download_method, tags, crs, distance)
         
-    rivers = rivers.unary_union
-    rivers = _simplify_barrier(rivers)
-    rivers = gdf_from_geometries(rivers, crs)
-    
-    # lakes   
-    tags = {"natural":"water"}
-    lakes = _download_geometries(place, download_method, tags, crs, distance)  
-    to_remove = ['river', 'stream', 'canal', 'riverbank', 'reflecting_pool', 'reservoir', 'bay']
-    lakes = lakes[~lakes.water.isin(to_remove)]
-    lakes['area'] = lakes.geometry.area
-    lakes = lakes[lakes.area > lakes_area]
-    lakes = lakes.unary_union
-    
-    lakes = _simplify_barrier(lakes) 
-    lakes = gdf_from_geometries(lakes, crs)
-    lakes = lakes[lakes['length'] >=500]
-    
-    # sea   
-    tags = {"natural":"coastline"}
-    sea = _download_geometries(place, download_method, tags, crs, distance)
-    sea = sea.unary_union      
-    sea = _simplify_barrier(sea)
-    sea = gdf_from_geometries(sea, crs)
-    
-    water = rivers.append(lakes)
-    water = water.append(sea)
-    water = water.unary_union
-    water = _simplify_barrier(water)
+        if tag_type == "waterway":
+            geometries = geometries[(geometries.waterway == 'river') | (geometries.waterway == 'canal')]
+            if "tunnel" in geometries.columns:
+                geometries["tunnel"].fillna(0, inplace = True)
+                geometries = geometries[geometries["tunnel"] == 0]
         
-    df = pd.DataFrame({'geometry': water, 'type': ['water'] * len(water)})
-    water_barriers = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
+        elif tag_type == "natural" and tag_value == "water":
+            to_remove = ['river', 'stream', 'canal', 'riverbank', 'reflecting_pool', 'reservoir', 'bay']
+            geometries = geometries[~geometries.water.isin(to_remove)]
+            geometries['area'] = geometries.geometry.area
+            geometries = geometries[geometries.area > lakes_area]
+        
+        geometries = geometries.unary_union
+        geometries = _simplify_barrier(geometries)
+        water_barriers = water_barriers.append(gdf_from_geometries(geometries, crs))
     
-    return water_barriers    
-     
+    water_barriers = water_barriers.unary_union
+    water_barriers = _simplify_barrier(water_barriers)
+    return water_barriers
     
 def _download_geometries(place, download_method, tags, crs, distance = 500.0):
     """
@@ -188,12 +166,20 @@ def _download_geometries(place, download_method, tags, crs, distance = 500.0):
     geometries_gdf: GeoDataFrame
         the resulting GeoDataFrame
     """    
-    if download_method == 'distance_from_address': 
-        geometries_gdf = ox.geometries_from_address(place, tags = tags, dist = distance)
-    elif download_method == 'OSMplace': 
-        geometries_gdf = ox.geometries_from_place(place, tags = tags)
-    else: 
-        geometries_gdf = ox.geometries_from_polygon(place, tags = tags)
+    
+    download_method_dict = {
+        'distance_from_address': ox.geometries_from_address,
+        'OSMplace': ox.geometries_from_place,
+        'polygon': ox.geometries_from_polygon
+    }
+    download_func = download_method_dict.get(download_method)
+    if download_func:
+        if download_method == 'distance_from_address':
+            geometries_gdf = download_func(place, tags = tags, dist = distance)
+        else:
+            geometries_gdf = download_func(place, tags = tags)
+    else:
+        raise ValueError(f"Invalid download method: {download_method}")
     
     geometries_gdf = geometries_gdf.to_crs(crs)
     return geometries_gdf
@@ -227,9 +213,8 @@ def railway_barriers(place, download_method, distance = 500.0, epsg = None, keep
     # removing light_rail, in case
     if not keep_light_rail:
         railways = railways[railways.railway != 'light_rail']
-    if "tunnel" in railways.columns:
-        railways["tunnel"].fillna(0, inplace = True)
-        railways = railways[railways["tunnel"] == 0]     
+    railways["tunnel"].fillna(0, inplace = True)
+    railways = railways[railways["tunnel"] == 0]     
     
     r = railways.unary_union
     p = polygonize_full(r)
@@ -372,29 +357,20 @@ def barriers_along(ix_line, edges_gdf, barriers_gdf, edges_gdf_sindex, offset = 
     """
     
     buffer = edges_gdf.loc[ix_line].geometry.buffer(offset)
-    barriers_along = []
-    intersecting_barriers = barriers_gdf[barriers_gdf.geometry.intersects(buffer)]
-    touching_barriers = barriers_gdf[barriers_gdf.geometry.touches(edges_gdf.loc[ix_line].geometry)]
-    intersecting_barriers = intersecting_barriers[~intersecting_barriers.barrierID.isin(list(touching_barriers.barrierID))]
-    if len(intersecting_barriers) == 0: 
+    intersecting_barriers = barriers_gdf[barriers_gdf.geometry.intersects(buffer) & ~barriers_gdf.geometry.touches(edges_gdf.loc[ix_line].geometry)]
+    if intersecting_barriers.empty:
         return []
-    
-    possible_matches_index = list(edges_gdf_sindex.intersection(buffer.bounds))
-    pm = edges_gdf.iloc[possible_matches_index]
-    pm.drop(ix_line, axis = 0, inplace = True)
-    
-    for ix, barrier in intersecting_barriers.iterrows():
+    possible_matches = edges_gdf.iloc[list(edges_gdf_sindex.intersection(buffer.bounds))].drop(ix_line)
+    barriers_along = []
+    for _, barrier in intersecting_barriers.iterrows():
         midpoint = edges_gdf.loc[ix_line].geometry.interpolate(0.5, normalized = True)
         line = LineString([midpoint, nearest_points(midpoint, barrier['geometry'])[1]])
-        if len(pm[pm.geometry.intersects(line)]) >= 1: 
+        if not possible_matches[possible_matches.geometry.intersects(line)].empty:
             continue
         barriers_along.append(barrier['barrierID'])
     
-    if len(barriers_along) == 0: 
-        return []
     return barriers_along
     
-
     
 def _within_parks(line_geometry, park_polygons):
     """
@@ -411,15 +387,19 @@ def _within_parks(line_geometry, park_polygons):
     -------
     within: List
         a list of street segments within a given park's polygon
-    """
+    """  
     
-    within = []
-    intersecting_parks = park_polygons[park_polygons.geometry.intersects(line_geometry)]
-    touching_parks = park_polygons[park_polygons.geometry.touches(line_geometry)]
+    
+    park_sindex = park_polygons.sindex
+    possible_matches_index = list(park_sindex.intersection(line_geometry.bounds))
+    possible_matches = park_polygons.iloc[possible_matches_index]
+    intersecting_parks = possible_matches[possible_matches.geometry.intersects(line_geometry)]
+    touching_parks = possible_matches[possible_matches.geometry.touches(line_geometry)]
     if len(intersecting_parks) == 0: 
-        return within
+        return []
     intersecting_parks = intersecting_parks[~intersecting_parks.barrierID.isin(list(touching_parks.barrierID))]
     within = list(intersecting_parks.barrierID)
+   
     return within
     
 

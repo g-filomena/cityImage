@@ -27,7 +27,7 @@ def nodes_dict(G: nx.Graph) -> dict:
    
     return {item: (G.nodes[item]["x"], G.nodes[item]["y"]) for item in G.nodes()}
     
- def straightness_centrality(G, weight, normalized = True):
+def straightness_centrality(G, weight, normalized = True):
     """
     Straightness centrality compares the length of the path between two nodes with the straight line that links them capturing a 
     centrality that refers to ‘being more directly reachable’. (Porta, S., Crucitti, P. & Latora, V., 2006b. The Network Analysis Of Urban
@@ -48,30 +48,35 @@ def nodes_dict(G: nx.Graph) -> dict:
     straightness_centrality: dict
         a dictionary where each item consists of a node (key) and the centrality value (value)
     """
+    path_length = functools.partial(nx.single_source_dijkstra_path_length, weight = weight)
     nodes = G.nodes()
     straightness_centrality = {}
+
+    # Initialize dictionary containing all the node id and coordinates
     coord_nodes = nodes_dict(G)
-    
-    # Get the shortest path lengths and Euclidean distances between all nodes
-    sp = nx.single_source_dijkstra_path_length(G, weight=weight)
-    euclidean_dist = np.array([[_euclidean_distance(*coord_nodes[n]+coord_nodes[target]) for target in nodes] for n in nodes])
-    
+
     for n in nodes:
-        if len(sp[n]) > 0 and len(G) > 1:
-            # Compute the straightness centrality for the current node
-            network_dist = np.array([sp[n].get(target, np.inf) for target in nodes])
-            straightness = np.sum(euclidean_dist[n] / network_dist)
+        straightness = 0
+        sp = path_length(G,n)
+
+        if len(sp) > 0 and len(G) > 1:
+            # start computing the sum of euclidean distances
+            for target in sp:
+                if n != target and target in coord_nodes:
+                    network_dist = sp[target]
+                    euclidean_dist = _euclidean_distance(*coord_nodes[n]+coord_nodes[target])
+                    straightness = straightness + (euclidean_dist/network_dist)
+
             straightness_centrality[n] = straightness * (1.0/(len(G)-1.0))
             if normalized: 
-                if len(sp[n]) > 1:
-                    s = (len(G) - 1.0) / (len(sp[n]) - 1.0)
+                if len(sp)> 1:
+                    s = (len(G) - 1.0) / (len(sp) - 1.0)
                     straightness_centrality[n] *= s
-                else: 
-                    straightness_centrality[n] = 0.0
+                else: straightness_centrality[n] = 0.0
         else:
             straightness_centrality[n] = 0.0
-    
-    return straightness_centrality   
+
+    return straightness_centrality  
     
 def _euclidean_distance(xs, ys, xt, yt):
     """ xs stands for x source and xt for x target """
@@ -106,21 +111,21 @@ def weight_nodes(nodes_gdf, services_gdf, G, field_name, radius = 400):
     
     """
     
-    # Create an R-tree spatial index for the services_gdf
-    services_index = index.Index()
-    for i, row in services_gdf.iterrows():
-        services_index.insert(i, row.geometry.bounds)
-    
-    # Create an empty column in the nodes_gdf for the field_name
-    nodes_gdf[field_name] = None
-    
-    # Use vectorized operations to calculate the weight for all nodes
-    nodes_gdf[field_name] = nodes_gdf.apply(lambda row: len(list(services_index.intersection(row.geometry.buffer(radius).bounds))), axis=1)
-    
-    # Assign the weight to the corresponding node in the G graph
-    for n in G.nodes(): 
-        G.nodes[n][field_name] = nodes_gdf[field_name].loc[n]
-    
+    # create a spatial index for services_gdf
+    sindex = services_gdf.sindex
+
+    for n, node in nodes_gdf.iterrows():
+        # get a buffer around the node
+        buffer = node["geometry"].buffer(radius)
+        # get the possible matches from services_gdf using the spatial index
+        possible_matches_index = list(sindex.intersection(buffer.bounds))
+        possible_matches = services_gdf.iloc[possible_matches_index]
+        # get the precise matches using the buffer
+        precise_matches = possible_matches[possible_matches.intersects(buffer)]
+        weight = len(precise_matches)
+        nodes_gdf.at[n, field_name] = weight
+        G.nodes[n][field_name] = weight
+
     return G
 
 def reach_centrality(G, weight, radius, attribute):

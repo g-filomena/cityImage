@@ -153,7 +153,7 @@ def get_network_fromSHP(path, epsg, dict_columns = {}, other_columns = []):
     
     # linking on coordinates
     nodes_gdf["nodeID"] = nodes_gdf.index.values.astype(int)
-    nodes_gdf, edges_gdf = join_by_coordinates(nodes_gdf, edges_gdf)
+    nodes_gdf, edges_gdf = join_nodes_edges_by_coordinates(nodes_gdf, edges_gdf)
     edges_gdf["length"] = edges_gdf["geometry"].length # computing length
     nodes_gdf['height'] = 2 # this will be used for 3d visibility analysis
     
@@ -173,21 +173,17 @@ def obtain_nodes_gdf(edges_gdf, crs):
     -------
     Point GeoDataFrames
     """
-    
-    edges_gdf["from"] = edges_gdf.apply(lambda row: row.geometry.coords[0], axis = 1)
-    edges_gdf["to"] = edges_gdf.apply(lambda row: row.geometry.coords[-1], axis = 1)
-    unique_nodes_tmp = list(edges_gdf["to"].unique()) + list(edges_gdf["from"].unique())
-    unique_nodes = list(set(unique_nodes_tmp))
-    #preparing nodes geodataframe
-    nodes_data = pd.DataFrame.from_records(unique_nodes, columns=["x", "y"]).astype("float")
+      
+    unique_nodes = pd.concat([edges_gdf.geometry.apply(lambda row: row.coords[0]), edges_gdf.geometry.apply(lambda row: row.coords[-1])]).unique()
+    nodes_data = pd.DataFrame(list(unique_nodes), columns=["x", "y"]).astype("float")
     geometry = [Point(xy) for xy in zip(nodes_data.x, nodes_data.y)]
-   
     nodes_gdf = gpd.GeoDataFrame(nodes_data, crs=crs, geometry=geometry)
     nodes_gdf.reset_index(drop=True, inplace = True)
+    nodes_gdf["nodeID"] = nodes_gdf.index.values.astype("int64")
     
     return nodes_gdf
     
-def join_by_coordinates(nodes_gdf, edges_gdf):
+def join_nodes_edges_by_coordinates(nodes_gdf, edges_gdf):
 
     """
     The function merge the u-v nodes information, from the nodes GeoDataFrame, with the edges_gdf GeoDataFrame.
@@ -204,27 +200,18 @@ def join_by_coordinates(nodes_gdf, edges_gdf):
     -------
     tuple of GeoDataFrames
     """
-    
+       
     if not "nodeID" in nodes_gdf.columns: 
         nodes_gdf["nodeID"] = nodes_gdf.index.values.astype("int64")
-    edges_gdf["from"] = edges_gdf.apply(lambda row: row.geometry.coords[0], axis = 1)
-    edges_gdf["to"] = edges_gdf.apply(lambda row: row.geometry.coords[-1], axis = 1)
     nodes_gdf["coordinates"] = list(zip(nodes_gdf.x, nodes_gdf.y))
-
-    edges_tmp = pd.merge(edges_gdf, nodes_gdf[["nodeID","coordinates"]], how="left", left_on="from", right_on="coordinates")
-    edges_tmp.drop(edges_tmp[["coordinates"]], axis = 1, inplace = True)
-    edges_tmp.rename(columns = {"nodeID":"u"}, inplace = True)
-    
-    edges_gdf = pd.merge(edges_tmp, nodes_gdf[["nodeID","coordinates"]], how="left", left_on="to", right_on="coordinates")
-    edges_gdf = edges_gdf.drop(edges_gdf[["coordinates", "from", "to"]], axis = 1)
-    edges_gdf = edges_gdf.rename(columns = {"nodeID":"v"})
-    nodes_gdf.drop(["coordinates"], axis = 1, inplace = True)
-    
+    edges_gdf["u"] = edges_gdf.geometry.apply(lambda row: row.coords[0]).map(nodes_gdf.set_index('coordinates').nodeID)
+    edges_gdf["v"] = edges_gdf.geometry.apply(lambda row: row.coords[-1]).map(nodes_gdf.set_index('coordinates').nodeID)
     return nodes_gdf, edges_gdf
+    
 
 def reset_index_street_network_gdfs(nodes_gdf, edges_gdf):
     """
-    The function simply reset the indexes of the two dataframes.
+    The function simply resets the indexes of the two dataframes.
      
     Parameters
     ----------
@@ -252,7 +239,7 @@ def reset_index_street_network_gdfs(nodes_gdf, edges_gdf):
     nodes_gdf.drop(["old_nodeID", "index"], axis = 1, inplace = True, errors = "ignore")
     edges_gdf = edges_gdf.reset_index(drop=True)
     edges_gdf["edgeID"] = edges_gdf.index.values.astype(int)
-    
+        
     return nodes_gdf, edges_gdf
     
 class Error(Exception):

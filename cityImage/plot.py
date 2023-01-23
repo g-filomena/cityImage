@@ -6,6 +6,7 @@ import matplotlib.colors as cols
 import matplotlib.patches as mpatches
 import matplotlib.ticker as ticker
 
+from matplotlib.lines import Line2D  
 from mpl_toolkits.axes_grid1 import make_axes_locatable, ImageGrid
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
 from matplotlib.colors import LinearSegmentedColormap, TwoSlopeNorm
@@ -57,7 +58,8 @@ class Plot():
         self.fig.suptitle(title, color = "white" if black_background else "black", fontsize=20, fontfamily = 'Times New Roman')
         self.fig.subplots_adjust(top=0.92)
         self.ax.axis("equal")
-            rect = self.fig.patch 
+        
+        rect = self.fig.patch 
         if black_background: 
             self.text_color = "white"
             rect.set_facecolor("black")
@@ -66,19 +68,19 @@ class Plot():
             rect.set_facecolor("white")
         
         # background black or white - basic settings
-        rect = fig.patch 
+        rect = self.fig.patch 
         if black_background: 
-            text_color = "white"
+            self.text_color = "white"
             rect.set_facecolor("black")
         else: 
-            text_color = "black"
+            self.text_color = "black"
             rect.set_facecolor("white")
         
         self.font_size_primary = figsize[0]+figsize[0]*0.3
         self.font_size_secondary = figsize[0]
-        self.fig.subtitle(title, color = text_color, fontsize=font_size_primary, fontfamily = 'Times New Roman')
+        self.fig.suptitle(title, color = self.text_color, fontsize= self.font_size_primary, fontfamily = 'Times New Roman')
         self.fig.subplots_adjust(top=0.92)
-        self.text_color = text_color
+
                 
 class MultiPlot():
     """
@@ -98,7 +100,7 @@ class MultiPlot():
     
         self.fig, self.grid = plt.subplots(nrows = nrows, ncols = ncols, figsize = figsize)
 
-        rect = fig.patch 
+        rect = self.fig.patch 
         if black_background: 
             self.text_color = "white"
             rect.set_facecolor("black")
@@ -110,11 +112,13 @@ class MultiPlot():
         self.font_size_secondary = figsize[0]
         
         if title is not None:
-            fig.subtitle(title, color = text_color, fontsize = self.font_size_secondary, fontfamily = 'Times New Roman', 
+            fig.suptitle(title, color = self.text_color, fontsize = self.font_size_secondary, fontfamily = 'Times New Roman', 
                          ha = 'center', va = 'center') 
             fig.subplots_adjust(top=0.92)
          
-   """
+def _single_plot(ax, gdf, column = None, scheme = None, bins = None, classes = 7, norm = None, cmap = None, color = 'red', alpha = 1.0, 
+                legend = False, geometry_size = 1.0,  geometry_size_column = None, geometry_size_factor = None, zorder = 0):
+    """
     It plots the geometries of a GeoDataFrame, coloring on the bases of the values contained in column, using a given scheme, on the provided Axes.
     If only "column" is provided, a categorical map is depicted.
     If no column is provided, a plain map is shown.
@@ -158,37 +162,39 @@ class MultiPlot():
     zorder: int   
         zorder of this layer; e.g. if 0, plots first, thus main GeoDataFrame on top; if 1, plots last, thus on top.
     """  
-def _single_plot(ax, gdf, column = None, scheme = None, bins = None, classes = 7, norm = None, cmap = None, color = 'red', alpha = 1.0, 
-                legend = False, geometry_size = 1.0,  geometry_size_column = None, geometry_size_factor = None, zorder = 0):
- 
     
     gdf = gdf.copy()
-    categorical = True
+    if (norm is not None) | (scheme is not None):
+        categorical = False
+    else:
+        categorical = True
     if (column is not None): 
         if (gdf[column].dtype != 'O' ):
             gdf = gdf.reindex(gdf[column].abs().sort_values(ascending = True).index)
+        elif not categorical:
+            gdf[column] = gdf[column].astype(float)
     
     # categorical map
-    if any(val is None for val in (column, scheme, norm, cmap)):
-        cmap = rand_cmap(len(gdf[column].unique()))       
-    
-    if (norm is not None) | (scheme is not None):
-        legend = False
-        categorical = False
+    if (column is not None) & (scheme is None) & (norm is None) & (cmap is None): 
+        cmap = rand_cmap(len(gdf[column].unique()))         
+        
+    if (norm is not None) | (scheme is not None):    
         color = None
         if cmap is None:
             cmap = kindlmann()
         if norm is not None:
             scheme = None
+            legend = False
         
-    if (column is not None) and (not categorical):
-        if(gdf[column].dtype == 'O'):
-            gdf[column] = gdf[column].astype(float)
-   
-    c_k = {'bins':bins, "k" : len(bins)} if bins else {"k" : classes}
-    scheme = 'User_Defined' if bins else None
-    
-    geometry_type = gdf.geometry.geom_type[0]
+    if bins is None: 
+        c_k = dict()
+        if classes is not None:
+            c_k = {"k" : classes}
+    else: 
+        c_k = {'bins':bins, "k" : len(bins)}
+        scheme = 'User_Defined'
+        
+    geometry_type = gdf.iloc[0].geometry.geom_type
     if geometry_type == 'Point':    
         if (geometry_size_factor is not None): 
             scaling_columnDF(gdf, column)
@@ -292,7 +298,7 @@ def plot_gdf(gdf, column = None, title = None, black_background = True, figsize 
     
     # fig,ax set up
     plot = Plot(figsize = figsize, black_background = black_background, title = title)
-    fig, ax = plot.fig, plot.grid
+    fig, ax = plot.fig, plot.ax
     
     ax.set_aspect("equal")
     _set_axes_frame(axes_frame, ax, black_background, plot.text_color)
@@ -420,7 +426,7 @@ def plot_gdfs(list_gdfs = [], column = None, ncols = 2, main_title = None, title
             
     for n, ax in enumerate(grid):
         ax.set_aspect("equal")
-        set_axes_frame(axes_frame, ax, black_background, multiPlot.text_color)    
+        _set_axes_frame(axes_frame, ax, black_background, multiPlot.text_color)    
 
         if n > len(list_gdfs)-1: 
             continue # when odd nr of gdfs    
@@ -449,7 +455,7 @@ def plot_gdfs(list_gdfs = [], column = None, ncols = 2, main_title = None, title
             _generate_legend_ax(ax, (multiPlot.font_size_secondary), black_background)
     
     if cbar:
-        _set_colorbar(multiPlot, cmap, norm = norm, ticks = cbar_ticks, symbol = cbar_max_symbol, cbar_min_max = cbar_min_max, 
+        _set_colorbar(multiPlot, cmap, norm = norm, ticks = cbar_ticks, symbol = cbar_max_symbol, min_max = cbar_min_max, 
                     shrinkage = cbar_shrinkage)
             
     return fig
@@ -547,7 +553,7 @@ def plot_gdf_grid(gdf = None, columns = [], ncols = 2, titles = [], black_backgr
         
         column = columns[n]
         if len(titles) > 0:          
-            ax.set_title(titles[n], loc='center', fontfamily = 'Times New Roman', fontsize = multiPlot.font_size, color = multiPlot.text_color, 
+            ax.set_title(titles[n], loc='center', fontfamily = 'Times New Roman', fontsize = multiPlot.font_size_primary, color = multiPlot.text_color, 
             pad = 15)
         
         if (n == ncols*nrows/2) & legend & (scheme == 'User_Defined'):
@@ -568,9 +574,9 @@ def plot_gdf_grid(gdf = None, columns = [], ncols = 2, titles = [], black_backgr
                     geometry_size_factor = geometry_size_factor)
                             
         if legend_fig:
-            _generate_legend_fig(ax, nrows, multiPlot.text_color, multiPlot.font_size-5, black_background)
+            _generate_legend_fig(ax, nrows, multiPlot.text_color, multiPlot.font_size_secondary, black_background)
         elif legend_ax:
-            _generate_legend_ax(ax, (multiPlot.font_size-5), black_background)
+            _generate_legend_ax(ax, (multiPlot.font_size_secondary), black_background)
 
     if cbar:   
         _set_colorbar(plot = multiPlot, cmap = cmap, norm = norm, ticks = cbar_ticks, symbol = cbar_max_symbol, min_max = cbar_min_max, 
@@ -612,7 +618,7 @@ def plot_multiplex_network(multiplex_graph, multiplex_edges):
         if d["station"]:
             node_sizes.append(9)
             node_colors.append("#ec1a30")
-        elif d["z"] == 1
+        elif d["z"] == 1:
             node_sizes.append(0.0)
             node_colors.append("#ffffcc")
         elif d["z"] == 0:
@@ -691,8 +697,10 @@ def _generate_legend_fig(ax, nrows, ncols, text_color, font_size, black_backgrou
     leg.get_frame().set_facecolor('none')
     
     for handle in leg.legendHandles:
-        handle._legmarker.set_markersize(15)
-
+        if not isinstance(handle, Line2D):
+            handle._legmarker.set_markersize(15)
+        else: 
+            break
 def _generate_legend_ax(ax, font_size, black_background):
     """ 
     It generate the legend for a figure.
@@ -718,7 +726,10 @@ def _generate_legend_ax(ax, font_size, black_background):
     leg.set_zorder(102)
     
     for handle in leg.legendHandles:
-        handle._legmarker.set_markersize(12)
+        if not isinstance(handle, Line2D):
+            handle._legmarker.set_markersize(12)
+        else:
+            break
     if not black_background:
         leg.get_frame().set_facecolor('black')
         leg.get_frame().set_alpha(0.90)  
@@ -852,8 +863,13 @@ def _set_colorbar(plot = None, cmap = None, norm = None, ticks = 5, symbol = Fal
     cbar_min_max: boolean
         if True, it only shows the ">" and "<" as labels of the lowest and highest ticks' the colorbar
     """
+    
+    if isinstance(plot, Plot):
+        ax = plot.ax
+    else:
+        ax = plot.grid
         
-    cb = plot.fig.colorbar(cm.ScalarMappable(norm=norm, cmap=cmap), ax=plot.grid, shrink = shrinkage)
+    cb = plot.fig.colorbar(cm.ScalarMappable(norm=norm, cmap=cmap), ax = ax, shrink = shrinkage)
     tick_locator = ticker.MaxNLocator(nbins=ticks)
     cb.locator = tick_locator
     cb.update_ticks()

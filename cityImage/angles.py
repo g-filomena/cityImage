@@ -35,7 +35,7 @@ def get_coord_angle(origin, distance, angle):
     return coord
 
 class Settings():
-        """
+    """
     A class to store and compare the coordinates of two line geometries.
     
     Attributes:
@@ -55,10 +55,8 @@ class Settings():
         y_destinationB (float): The y-coordinate of the last point of the second line geometry.
         x_second_lastB (float): The x-coordinate of the second-last point of the second line geometry.
         y_second_lastB (float): The y-coordinate of the second-last point of the second line geometry.
-        conditionOne (bool): Whether the last point of the first line geometry is the same as the last point of the second line geometry.
-        conditionTwo (bool): Whether the last point of the first line geometry is the same as the first point of the second line geometry.
-        conditionThree (bool): Whether the first point of the first line geometry is the same as the first point of the second line geometry.
-        conditionFour (bool): Whether the first point of the first line geometry is the same as the last point of the second line geometry.
+        lineA (Tuple): The coordinates of the first line used to calculate the angle
+        lineB (Tuple): The coordinates of the second linne used to calculate the angle
         """
     
     def set_coordinates(self, coords, prefix):
@@ -71,13 +69,86 @@ class Settings():
                       For example, if "A" is passed as the prefix, the coordinates will be stored as
                       self.x_originA, self.y_originA, etc.
         """
-        self.x_origin, self.y_origin = float("{0:.10f}".format(coords[0][0])), float("{0:.10f}".format(coords[0][1]))
-        self.x_second, self.y_second = float("{0:.10f}".format(coords[1][0])), float("{0:.10f}".format(coords[1][1]))
-        self.x_destination, self.y_destination = float("{0:.10f}".format(coords[-1][0])), float("{0:.10f}".format(coords[-1][1]))
-        self.x_second_last, self.y_second_last = float("{0:.10f}".format(coords[-2][0])), float("{0:.10f}".format(coords[-2][1]))
+        setattr(self, 'x_origin'+ prefix, float("{0:.10f}".format(coords[0][0])))
+        setattr(self, 'y_origin'+ prefix, float("{0:.10f}".format(coords[0][1])))
+        setattr(self, 'x_second'+ prefix, float("{0:.10f}".format(coords[1][0])))
+        setattr(self, 'y_second'+ prefix, float("{0:.10f}".format(coords[1][1])))
+        setattr(self, 'x_destination'+ prefix, float("{0:.10f}".format(coords[-1][0])))
+        setattr(self, 'y_destination'+ prefix, float("{0:.10f}".format(coords[-1][1])))
+        setattr(self, 'x_second_last'+ prefix, float("{0:.10f}".format(coords[-2][0])))
+        setattr(self, 'y_second_last'+ prefix, float("{0:.10f}".format(coords[-2][1])))
     
-    
-    def __init__(coordsA, coordsB):
+    def set_conditions(self, calculation_type):
+        """
+        Given a Setting object and a calculation type, this function returns the lines that will be used to compute the angle.
+
+        Parameters
+        ----------
+        Setting: object
+            an object of the Setting class, which contains information about the lines
+        calculation_type: string
+            one of: 'vectors', 'angular_change', 'deflection'
+            'vectors': computes angle between vectors
+            'angular_change': computes angle of incidence between the two lines,
+            'deflection': computes angle of incidence between the two lines, on the basis of the vertex in common and the second following(intermediate, if existing) vertexes forming each of the line.
+
+        Raises
+        ------
+        AngleError: if the lines do not have a common vertex
+        """
+        if calculation_type == "angular_change":
+            if (self.x_destinationA, self.y_destinationA) == (self.x_destinationB, self.y_destinationB):
+                self.lineA = ((self.x_second_lastA, self.y_second_lastA), (self.x_destinationA, self.y_destinationA))
+                self.lineB = ((self.x_destinationB, self.y_destinationB), (self.x_second_lastB, self.y_second_lastB))
+            elif (self.x_destinationA, self.y_destinationA) == (self.x_originB, self.y_originB):
+                self.lineA = ((self.x_second_lastA, self.y_second_lastA), (self.x_destinationA, self.y_destinationA))
+                self.lineB = ((self.x_originB, self.y_originB), (self.x_secondB, self.y_secondB))
+            elif (self.x_originA, self.y_originA) == (self.x_originB, self.y_originB):
+                self.lineA = ((self.x_secondA, self.y_secondA), (self.x_originA, self.y_originA))
+                self.lineB = ((self.x_originB, self.y_originB), (self.x_secondB, self.y_secondB))
+            elif (self.x_originA, self.y_originA) == (self.x_destinationB, self.y_destinationB):
+                self.lineA = ((self.x_secondA, self.y_secondA), (self.x_originA, self.y_originA))
+                self.lineB = ((self.x_destinationB, self.y_destinationB), (self.x_second_lastB, self.y_second_lastB))
+            # no common vertex      
+            else: 
+                raise AngleError("The lines do not intersect! provide lines wich have a common vertex")
+
+        # deflection on the entire lines
+        elif calculation_type == "deflection":
+            if (self.x_destinationA, self.y_destinationA) == (self.x_destinationB, self.y_destinationB):
+                self.lineA = ((self.x_originA, self.y_originA), (self.x_destinationA, self.y_destinationA))
+                self.lineB = ((self.x_destinationB, self. y_destinationB), (self.x_originB, self.y_originB))
+            elif (self.x_destinationA, self.y_destinationA) == (self.x_originB, self.y_originB):
+                self.lineA = ((self.x_originA, self.y_originA), (self.x_destinationA, self.y_destinationA))
+                self.lineB = ((self.x_originB, self.y_originB), (self.x_destinationB, self.y_destinationB))
+            elif (self.x_originA, self.y_originA) == (self.x_originB, self.y_originB):
+                self.lineA = ((self.x_destinationA, self.y_destinationA), (self.x_originA, self.y_originA))
+                self.lineB = ((self.x_originB, self.y_originB), (self.x_destinationB, self.y_destinationB))
+            elif (self.x_originA, self.y_originA) == (self.x_destinationB, self.y_destinationB):
+                self.lineA = ((self.x_destinationA, self.y_destinationA), (self.x_originA, self.y_originA))
+                self.lineB = ((self.x_destinationB, self.y_destinationB), (self.x_originB, self.y_originB))
+            # no common vertex   
+            else: 
+                raise AngleError("The lines do not intersect! provide lines wich have a common vertex")
+        
+        else: # calculation_type == "vectors"
+            if (self.x_destinationA, self.y_destinationA) == (self.x_destinationB, self.y_destinationB):
+                self.lineA = ((self.x_destinationA, self.y_destinationA), (self.x_originA, self.y_originA))
+                self.lineB = ((self.x_destinationB, self.y_destinationB), (self.x_originB, self.y_originB))
+            elif (self.x_destinationA, self.y_destinationA) == (self.x_originB, self.y_originB):
+                self.lineA = ((self.x_destinationA, self.y_destinationA), (self.x_originA, self.y_originA))
+                self.lineB = ((self.x_originB, self.y_originB), (self.x_destinationB, self.y_destinationB))
+            elif (self.x_originA, self.y_originA) == (self.x_originB, self.y_originB):
+                self.lineA = ((self.x_originA, self.y_originA), (self.x_destinationA, self.y_destinationA))
+                self.lineB = ((self.x_originB, self.y_originB), (self.x_destinationB, self.y_destinationB))
+            elif (self.x_originA, self.y_originA) == (self.x_destinationB, self.y_destinationB):
+                self.lineA = ((self.x_originA, self.y_originA), (self.x_destinationA, self.y_destinationA))
+                self.lineB = ((self.x_destinationB, self.y_destinationB),(self.x_originB, self.y_originB)) 
+            # no common vertex   
+            else:
+                raise AngleError("The lines do not intersect! provide lines wich have a common vertex")
+   
+    def __init__(self, coordsA, coordsB, calculation_type):
         """
         Initializes the class with the coordinates of two line geometries.
         
@@ -85,15 +156,11 @@ class Settings():
             coordsA (list): A list of coordinates of the first line geometry.
             coordsB (list): A list of coordinates of the second line geometry.
         """
-        set_coordinates(coordsA, 'A')
-        set_coordinates(coordsB, 'B')
-        
-        self.conditionOne = coordsA[-1] == coordsB[-1]
-        self.conditionTwo = coordsA[-1] == coordsB[0]
-        self.conditionThree = coordsA[0] == coordsB[0]
-        self.conditionFour = coordsA[0] == coordsB[-1]
+        self.set_coordinates(coordsA, 'A')
+        self.set_coordinates(coordsB, 'B')
+        self.set_conditions(calculation_type)
 
-def angle_line_geometries(line_geometryA, line_geometryB, degree = False, calculation_type = False):
+def angle_line_geometries(line_geometryA, line_geometryB, degree = False, calculation_type = 'vector'):
     """
     Given two LineStrings it computes the angle between them. Returns value in degrees or radians.
     
@@ -120,16 +187,18 @@ def angle_line_geometries(line_geometryA, line_geometryB, degree = False, calcul
     valid_calculation_types = ['vectors', 'angular_change', 'deflection']
     if not isinstance(line_geometryA, LineString) or not isinstance(line_geometryB, LineString):
         raise TypeError("Both input must be of type shapely.geometry.LineString")
-    if line_geometryA.length < 2 or line_geometryB.length < 2:
-        raise ValueError("Both LineString must have at least 2 coordinates")
     if calculation_type not in valid_calculation_types:
         raise ValueError(f"Invalid calculation type. Choose one of: {valid_calculation_types}.")  
     # extracting coordinates and createing lines
-    coordsA = list(line_geometryA.coords
-    coordsB = list(line_geometryB.coords
-    setting = Setting(coordsA, coordsB)
-    lineA, lineB = _prepare_lines(Setting, calculation_type):
-
+    coordsA = list(line_geometryA.coords)
+    coordsB = list(line_geometryB.coords)
+    
+    if len(coordsA) < 2 or len(coordsB) < 2:
+        raise ValueError("Both LineString must have at least 2 coordinates")
+    settings = Settings(coordsA, coordsB, calculation_type)
+    
+    lineA, lineB = settings.lineA, settings.lineB
+        
     # Get nicer vector form
     vA = [(lineA[0][0]-lineA[1][0]), (lineA[0][1]-lineA[1][1])]
     vB = [(lineB[0][0]-lineB[1][0]), (lineB[0][1]-lineB[1][1])]
@@ -156,73 +225,9 @@ def angle_line_geometries(line_geometryA, line_geometryB, degree = False, calcul
         angle = angle_deg
     return angle
 
-def _prepare_lines(Setting, calculation_type):
-    """
-    Given a Setting object and a calculation type, this function returns the lines that will be used to compute the angle.
-    
-    Parameters
-    ----------
-    Setting: object
-        an object of the Setting class, which contains information about the lines
-    calculation_type: string
-        one of: 'vectors', 'angular_change', 'deflection'
-        'vectors': computes angle between vectors
-        'angular_change': computes angle of incidence between the two lines,
-        'deflection': computes angle of incidence between the two lines, on the basis of the vertex in common and the second following(intermediate, if existing) vertexes forming each of the line.
-        
-    Returns
-    -------
-    lineA: tuple
-        coordinates of the first line
-    lineB: tuple
-        coordinates of the second line
-    
-    Raises
-    ------
-    AngleError: if the lines do not have a common vertex
-    """
-
-    if calculation_type == "angular_change":
-        lines = {
-            Setting.conditionOne: ((Setting.x_second_lastA, Setting.y_second_lastA), (Setting.x_destinationA, Setting.y_destinationA)),
-            Setting.conditionTwo: ((Setting.x_second_lastA, Setting.y_second_lastA), (Setting.x_destinationA, Setting.y_destinationA)),
-            Setting.conditionThree: ((Setting.x_secondA, Setting.y_secondA), (Setting.x_originA, Setting.y_originA)),
-            Setting.conditionFour: ((Setting.x_secondA, Setting.y_secondA), (Setting.x_originA, Setting.y_originA))
-        }
-    elif calculation_type == "deflection":
-        lines = {
-            Setting.conditionOne: ((Setting.x_originA, Setting.y_originA), (Setting.x_destinationA, Setting.y_destinationA)),
-            Setting.conditionTwo: ((Setting.x_second_lastA, Setting.y_second_lastA), (Setting.x_destinationA, Setting.y_destinationA)),
-            Setting.conditionThree: ((Setting.x_secondA, Setting.y_secondA), (Setting.x_originA, Setting.y_originA)),
-            Setting.conditionFour: ((Setting.x_secondA, Setting.y_secondA), (Setting.x_originA, Setting.y_originA))
-        }
-    else # calculation_type == "vectors":
-        lines = {
-            Setting.conditionOne: ((Setting.x_destinationA, Setting.y_destinationA), (Setting.x_originA, Setting.y_originA)),
-            Setting.conditionTwo: ((Setting.x_destinationA, Setting.y_destinationA), (Setting.x_originA, Setting.y_originA)),
-            Setting.conditionThree: ((Setting.x_originA, Setting.y_originA), (Setting.x_destinationA, Setting.y_destinationA)),
-            Setting.conditionFour: ((Setting.x_originA, Setting.y_originA), (Setting.x_destinationA, Setting.y_destinationA))
-        }
-    try:
-        lineA, lineB = lines[Setting.conditionOne or Setting.conditionTwo or Setting.conditionThree or Setting.conditionFour]
-    except KeyError:
-        raise AngleError("The lines do not intersect! provide lines which have a common vertex")   
-    return lineA, lineB
-     
          
 class Error(Exception):
     """Base class for other exceptions"""
     
 class AngleError(Error):
     """Raised when not-intersecting lines are provided for computing angles"""
-    
-    
-            
-            
-            
-            
-            
-            
-
-
-    
