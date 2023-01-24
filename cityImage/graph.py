@@ -58,7 +58,7 @@ def graph_fromGDF(nodes_gdf, edges_gdf, nodeID = "nodeID"):
     # add the edges and attributes that are not u, v (as they're added separately) or null
     for _, row in edges_gdf.iterrows():
         attrs = {}
-        for label, value in row.iteritems():
+        for label, value in row.items():
             if (label not in ['u', 'v']) and (isinstance(value, list) or pd.notnull(value)):  
                 attrs[label] = value
         G.add_edge(row['u'], row['v'], **attrs)
@@ -234,7 +234,7 @@ def dual_graph_fromGDF(nodes_dual, edges_dual):
     # add the edges and attributes that are not u, v, key (as they're added
     # separately) or null
     for _, row in edges_dual.iterrows():
-        attrs = {label:value for label, value in row.iteritems() if (label not in ['u', 'v']) and (isinstance(value, list) or pd.notnull(value))}
+        attrs = {label:value for label, value in row.items() if (label not in ['u', 'v']) and (isinstance(value, list) or pd.notnull(value))}
         Dg.add_edge(row['u'], row['v'], **attrs)
 
     return Dg
