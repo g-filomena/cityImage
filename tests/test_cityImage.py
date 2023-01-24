@@ -15,28 +15,32 @@ import cityImage as ci
 place = "Susa, Italy"
 download_method = 'OSMplace'
 epsg_york = 2019
+epsg_susa = 3003
 OSMPolygon = 'Susa (44287)'
 address = 'Susa, via Roma 1'
 distance = 1500
 location = (45.1383, 7.0509)
-nodes_gdf, edges_gdf, edges_gdf_II = None, None, None
+nodes_gdf, edges_gdf = None, None
+nodes_gdf_susa, edges_gdf_susa = None, None
 graph = None 
 
 # Test load.py
 def test_loadOSM():
-    global edges_gdf_II
-    epsg_susa = 3003
-    _, edges_gdf_IV = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg_susa)
-    polygon = ci.convex_hull_wgs(edges_gdf_IV)
-    nodes_gdf_II, edges_gdf_II = ci.get_network_fromOSM(polygon, 'polygon', network_type = "all", epsg = epsg_susa)
-    nodes_gdf_III, edges_gdf_III = ci.get_network_fromOSM(address, 'distance_from_address', network_type = "all", 
+    global nodes_gdf_susa
+    global edges_gdf_susa
+    global epsg_susa
+    
+    nodes_gdf_susa, edges_gdf_susa = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg_susa)
+    polygon = ci.convex_hull_wgs(edges_gdf_susa)
+    _, _ = ci.get_network_fromOSM(polygon, 'polygon', network_type = "all", epsg = epsg_susa)
+    _, _ = ci.get_network_fromOSM(address, 'distance_from_address', network_type = "all", 
                                                           epsg = epsg_susa, distance = distance)
     
 def test_loadSHP_topology():  
     global nodes_gdf
     global edges_gdf
     global epsg_york
-    input_path = 'C:/Users/G.Filomena/Scripts/cityImage/tests/input/York_street_network.shp'
+    input_path = '/tests/input/York_street_network.shp'
     dict_columns = {"roadType_field": "type",  "direction_field": "oneway", "speed_field": "maxspeed", "name_field": "name"}    
     nodes_gdf, edges_gdf = ci.get_network_fromSHP(input_path, epsg_york, dict_columns = dict_columns, other_columns = [])
     # fix topology
@@ -98,7 +102,7 @@ def test_centrality():
 def test_plot():
     global nodes_gdf
     global edges_gdf
-    global edges_gdf_II
+    global edges_gdf_susa
     
     tmp_nodes = nodes_gdf.copy()
     base_map_dict = {'base_map_gdf': edges_gdf, 'base_map_alpha' : 0.4, 'base_map_geometry_size' : 1.1, 'base_map_zorder' : 0}
@@ -120,9 +124,31 @@ def test_plot():
     cmap = ci.cmap_from_colors(['red', 'blue'])
     plot_edges = ci.plot_gdf(edges_gdf, column = 'Eb', black_background = True, scheme = 'Fisher_Jenks', cmap = cmap, 
                              norm = None, legend = False, **cbar_dict)
-    plot_multi = ci.plot_gdfs([edges_gdf, edges_gdf_II], column = "length", black_background = True, scheme = 'Fisher_Jenks', 
+    plot_multi = ci.plot_gdfs([edges_gdf, edges_gdf_susa], column = "length", black_background = True, scheme = 'Fisher_Jenks', 
                               cmap = cmap, **cbar_dict)
+   
+def test_regions():
+    global nodes_gdf_susa
+    global edges_gdf_susa
+    global epsg_susa
     
+    graph_susa = ci.graph_fromGDF(nodes_gdf_susa, edges_gdf_susa, nodeID = 'nodeID')
+    nodes_dual, edges_dual = ci.dual_gdf(nodes_gdf_susa, edges_gdf_susa, epsg = epsg_susa, oneway = False, angle = 'degree')
+    dual_graph = ci.dual_graph_fromGDF(nodes_dual, edges_dual)
+    
+    dual_regions = ci.identify_regions(dual_graph, edges_gdf_susa, weight = None)
+    primal_regions = ci.identify_regions_primal(graph_susa, nodes_gdf_susa, weight = None)
+    
+    polygons_gdf = ci.polygonise_partitions(dual_regions, 'p_topo', convex_hull = False, buffer = 30)
+    polygons_gdf = ci.polygonise_partitions(dual_regions, 'p_topo', convex_hull = True, buffer = 30)
+    edges_updated = ci.districts_to_edges_from_nodes(primal_regions, edges_gdf_susa, 'p_topo')
+    nodes_updated = ci.district_to_nodes_from_edges(nodes_gdf_susa, dual_regions, 'p_topo')
+    
+    nodes_gdf_susa = ci.district_to_nodes_from_polygons(nodes_gdf_susa, polygons_gdf, 'p_topo')
+    min_size_district = 10
+    nodes_gdf_susa = ci.amend_nodes_membership(nodes_gdf_susa, edges_gdf_susa, 'p_topo', min_size_district = min_size_district)
+    nodes_gdf_susa = ci.find_gateways(nodes_gdf_susa, edges_gdf_susa, 'p_topo')
+   
 # # Test barriers.py
 # def test_barriers(): 
 
@@ -178,24 +204,5 @@ def test_plot():
     # plot_flat = ci.plot_gdf(buildings_gdf, black_background = True, fig_size = 15)
     
     
-# def test_regions():
-        
-    # nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "drive", epsg = epsg)
-    # graph = ci.graph_fromGDF(nodes_gdf, edges_gdf, nodeID = 'nodeID')
-    # nodes_dual, edges_dual = ci.dual_gdf(nodes_gdf, edges_gdf, epsg = epsg, oneway = False, angle = 'degree')
-    # dual_graph = ci.dual_graph_fromGDF(nodes_dual, edges_dual)
-    
-    # dual_regions = ci.identify_regions(dual_graph, edges_gdf, weight = None)
-    # primal_regions = ci.identify_regions_primal(graph, nodes_gdf, weight = None)
-    
-    # polygons_gdf = ci.polygonise_partitions(dual_regions, 'p_topo', convex_hull = False, buffer = 30)
-    # polygons_gdf = ci.polygonise_partitions(dual_regions, 'p_topo', convex_hull = True, buffer = 30)
-    # edges_updated = ci.districts_to_edges_from_nodes(primal_regions, edges_gdf, 'p_topo')
-    # nodes_updated = ci.district_to_nodes_from_edges(nodes_gdf, dual_regions, 'p_topo')
-    
-    # nodes_gdf_ped, edges_gdf_ped = ci.get_network_fromOSM(place, 'OSMplace', network_type = "walk", epsg = epsg)
-    # nodes_gdf_ped = ci.district_to_nodes_from_polygons(nodes_gdf_ped, polygons_gdf, 'p_topo')
-    # min_size_district = 10
-    # nodes_gdf_ped = ci.amend_nodes_membership(nodes_gdf_ped, edges_gdf_ped, 'p_topo', min_size_district = min_size_district)
-    # nodes_gdf_ped = ci.find_gateways(nodes_gdf_ped, edges_gdf_ped, 'p_topo')
+
 
