@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 with open("README.md", "r") as readme_file: 
     readme = readme_file.read()
 
-requirements = ["osmnx>=0.11", "seaborn>=0.10.0",  "matplotlib>=3.1", "networkx>=2.4", "python-louvain>=0.13", "Shapely==1.7.0", "Rtree>=0.9"]
+requirements = ["osmnx>=1.3", "python-louvain>=0.16", "pyvista=0.37"]
     
 setup(
     name="cityImage",
