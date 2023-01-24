@@ -124,10 +124,9 @@ def test_barriers():
     global place
     global epsg_susa
     
-    barriers_gdf = ci.get_barriers(place, download_method, epsg = epsg_susa)
+    barriers_gdf = ci.get_barriers(place, download_method, epsg = epsg_susa, parks_min_area = 200)
     # assign barriers to street network
     edges_gdf_updated = ci.along_within_parks(edges_gdf_susa, barriers_gdf)
-    edges_gdf_updated_sindex = edges_gdf_updated.sindex
     edges_gdf_updated = ci.along_water(edges_gdf_susa, barriers_gdf)
     edges_gdf_updated = ci.along_within_parks(edges_gdf_updated, barriers_gdf)
     edges_gdf_updated = ci.assign_structuring_barriers(edges_gdf_updated, barriers_gdf)
