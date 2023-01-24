@@ -99,31 +99,26 @@ def center_line(line_geometryA, line_geometryB):
 
 def min_distance_geometry_gdf(geometry, gdf):
     """
-    Given a geometry and a geodataframe, this function finds the minimum distance between the 
-    geometry and the geodataframe, and returns the index of the closest geometry in the geodataframe.
+    Given a geometry and a GeoDataFrame, it returns the minimum distance between the geometry and the GeoDataFrame. 
+    It provides also the index of the closest geometry in the GeoDataFrame.
     
     Parameters
     ----------
-    geometry: shapely.geometry.*
-        The geometry to find the closest distance to
-    gdf: geopandas.GeoDataFrame
-        The geodataframe to find the closest distance from
-        
-    Returns
-    -------
-    tuple
-        a tuple containing the minimum distance and the index of the closest geometry in the geodataframe
+    geometry: Point, LineString or Polygon
+    gdf: GeoDataFrame
+    
+    Returns:
+    ----------
+    distance, index: tuple
+        the closest distance from the geometry, and the index of the closest geometry in the gdf
     """
-    # Convert the geodataframe's geometry to a MultiPoint object
-    gdf_geometry = MultiPoint(gdf.geometry)
     
-    # Find the minimum distance between the input geometry and the MultiPoint object
-    min_dist = geometry.distance(gdf_geometry)
-    
-    # Get the index of the closest point in the geodataframe
-    closest_index = gdf_geometry.nearest_points(geometry)[1]
-    
-    return min_dist, closest_index
+    gdf = gdf.copy()
+    gdf["dist"] = gdf.apply(lambda row: geometry.distance(row['geometry']),axis=1)
+    geoseries = gdf.iloc[gdf["dist"].argmin()]
+    distance  = geoseries.dist
+    index = geoseries.name
+    return distance, index
 
     """
     Given a list of line_geometries wich are connected by common "to" and "from" vertexes, the function infers the sequence, based on the coordinates, 
