@@ -34,7 +34,7 @@ def test_loadSHP_topology():
     global nodes_gdf
     global edges_gdf
     epsg = 2019 
-    input_path = 'input/York_street_network.shp'
+    input_path = 'tests/input/York_street_network.shp'
     dict_columns = {"roadType_field": "type",  "direction_field": "oneway", "speed_field": "maxspeed", "name_field": "name"}    
     nodes_gdf, edges_gdf = ci.get_network_fromSHP(input_path, epsg, dict_columns = dict_columns, other_columns = [])
     # fix topology
