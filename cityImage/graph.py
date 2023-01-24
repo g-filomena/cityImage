@@ -47,13 +47,8 @@ def graph_fromGDF(nodes_gdf, edges_gdf, nodeID = "nodeID"):
     attributes = nodes_gdf.to_dict()
     
     # ignore fields containing values of type list
-    a = (nodes_gdf.applymap(type) == list).sum()
-    to_ignore = []
-    if len(a[a>0]): 
-        to_ignore = a[a>0].index[0]      
-    
     for attribute_name in nodes_gdf.columns:
-        if attribute_name in to_ignore: 
+        if nodes_gdf[attribute_name].apply(lambda x: type(x) == list).any(): 
             continue    
         # only add this attribute to nodes which have a non-null value for it
         else: 
@@ -96,14 +91,9 @@ def multiGraph_fromGDF(nodes_gdf, edges_gdf, nodeIDcolumn):
     Mg = nx.MultiGraph()   
     Mg.add_nodes_from(nodes_gdf.index)
     attributes = nodes_gdf.to_dict()
-    
-    a = (nodes_gdf.applymap(type) == list).sum()
-    to_ignore = []
-    if len(a[a>0]): 
-        to_ignore = a[a>0].index[0]
-    
+      
     for attribute_name in nodes_gdf.columns:
-        if attribute_name in to_ignore: 
+        if nodes_gdf[attribute_name].apply(lambda x: type(x) == list).any(): 
             continue 
         # only add this attribute to nodes which have a non-null value for it
         attribute_values = {k:v for k, v in attributes[attribute_name].items() if pd.notnull(v)}
@@ -233,15 +223,10 @@ def dual_graph_fromGDF(nodes_dual, edges_dual):
     Dg = nx.Graph()   
     Dg.add_nodes_from(nodes_dual.index)
     attributes = nodes_dual.to_dict()
-    
-    to_ignore = []
-    a = (nodes_dual.applymap(type) == list).sum()
-    if len(a[a>0]): 
-        to_ignore = a[a>0].index[0]
-    
+       
     for attribute_name in nodes_dual.columns:
         # only add this attribute to nodes which have a non-null value for it
-        if attribute_name in to_ignore: 
+        if nodes_dual[attribute_name].apply(lambda x: type(x) == list).any(): 
             continue
         attribute_values = {k:v for k, v in attributes[attribute_name].items() if pd.notnull(v)}
         nx.set_node_attributes(Dg, name=attribute_name, values=attribute_values)
