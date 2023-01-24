@@ -324,7 +324,7 @@ def plot_gdf(gdf, column = None, title = None, black_background = True, figsize 
             max_value = gdf[column].max()
             norm = plt.Normalize(vmin = min_value, vmax = max_value)
             
-        _set_colorbar(plot, cmap, norm = norm, ticks = cbar_ticks, symbol = cbar_max_symbol, min_max = cbar_min_max, shrinkage = cbar_shrinkage)
+        _generate_colorbar(plot, cmap, norm = norm, ticks = cbar_ticks, symbol = cbar_max_symbol, min_max = cbar_min_max, shrinkage = cbar_shrinkage)
     
     return fig    
                       
@@ -436,11 +436,8 @@ def plot_gdfs(list_gdfs = [], column = None, ncols = 2, main_title = None, title
             ax.set_title(titles[n], loc='center', fontfamily = 'Times New Roman', fontsize = multiPlot.font_size_primary, color = multiPlot.text_color,  
             pad = 15)
             
-        if (n == ncols*nrows/2) & legend & (scheme == 'User_Defined'):
-            legend_ax = True
-            legend_fig = True
-        elif legend & (scheme != 'User_Defined'):
-            legend_ax = True
+        legend_ax = (legend) & ((n == ncols*nrows/2) & (scheme == 'User_Defined') or (scheme != 'User_Defined'))
+        legend_fig = (n == ncols*nrows/2) & (legend) & (scheme == 'User_Defined')
         
         geometry_size_column = column
         if geometry_size_columns != []:
@@ -455,7 +452,7 @@ def plot_gdfs(list_gdfs = [], column = None, ncols = 2, main_title = None, title
             _generate_legend_ax(ax, (multiPlot.font_size_secondary), black_background)
     
     if cbar:
-        _set_colorbar(multiPlot, cmap, norm = norm, ticks = cbar_ticks, symbol = cbar_max_symbol, min_max = cbar_min_max, 
+        _generate_colorbar(multiPlot, cmap, norm = norm, ticks = cbar_ticks, symbol = cbar_max_symbol, min_max = cbar_min_max, 
                     shrinkage = cbar_shrinkage)
             
     return fig
@@ -529,7 +526,8 @@ def plot_gdf_grid(gdf = None, columns = [], ncols = 2, titles = [], black_backgr
         nrows, ncols = int(len(columns)/3), 3
         if (len(columns)%3 != 0): 
             nrows = nrows+1
-            
+     
+    nrows = (len(columns) + ncols - 1) // ncols 
     multiPlot = MultiPlot(figsize = figsize, nrows = nrows, ncols = ncols, black_background = black_background)
     fig, grid = multiPlot.fig, multiPlot.grid   
     legend_fig = False
@@ -541,9 +539,7 @@ def plot_gdf_grid(gdf = None, columns = [], ncols = 2, titles = [], black_backgr
             max_value = max([gdf[column].max() for column in columns])
             norm = plt.Normalize(vmin = min_value, vmax = max_value)
     
-    if nrows > 1: 
-        axes = [item for sublist in grid for item in sublist]
-    for n, ax in enumerate(axes):
+    for n, ax in enumerate(grid.flat):
         
         ax.set_aspect("equal")
         _set_axes_frame(axes_frame, ax, black_background, multiPlot.text_color)
@@ -552,19 +548,13 @@ def plot_gdf_grid(gdf = None, columns = [], ncols = 2, titles = [], black_backgr
             continue # when odd nr of columns
         
         column = columns[n]
-        if len(titles) > 0:          
+        if titles:          
             ax.set_title(titles[n], loc='center', fontfamily = 'Times New Roman', fontsize = multiPlot.font_size_primary, color = multiPlot.text_color, 
             pad = 15)
         
-        if (n == ncols*nrows/2) & legend & (scheme == 'User_Defined'):
-            legend_ax = True
-            legend_fig = True
-        elif legend & ((scheme != 'User_Defined')):
-            legend_ax = True
-        else: 
-            legend_ax = False
-            legend_fig = False
-         
+        legend_ax = (legend) & ((n == ncols*nrows/2) & (scheme == 'User_Defined') or (scheme != 'User_Defined'))
+        legend_fig = (n == ncols*nrows/2) & (legend) & (scheme == 'User_Defined')
+                 
         geometry_size_column = column
         if geometry_size_columns != []:
             geometry_size_column = geometry_size_columns[n]
@@ -579,7 +569,7 @@ def plot_gdf_grid(gdf = None, columns = [], ncols = 2, titles = [], black_backgr
             _generate_legend_ax(ax, (multiPlot.font_size_secondary), black_background)
 
     if cbar:   
-        _set_colorbar(plot = multiPlot, cmap = cmap, norm = norm, ticks = cbar_ticks, symbol = cbar_max_symbol, min_max = cbar_min_max, 
+        _generate_colorbar(plot = multiPlot, cmap = cmap, norm = norm, ticks = cbar_ticks, symbol = cbar_max_symbol, min_max = cbar_min_max, 
                     shrinkage = cbar_shrinkage)
 
     return fig
@@ -735,110 +725,9 @@ def _generate_legend_ax(ax, font_size, black_background):
         leg.get_frame().set_alpha(0.90)  
     else:
         leg.get_frame().set_facecolor('white')
-        leg.get_frame().set_alpha(0.90)  
- 
-def generate_grid_colorbar(cmap, fig, grid, nrows, ncols, text_color, font_size, norm = None, ticks = 5, symbol = False, cbar_min_max = False):
-    """ 
-    It generates a colorbar for an entire grid of axes.
+        leg.get_frame().set_alpha(0.90)   
     
-    Parameters
-    ----------
-    cmap: string, matplotlib.colors.LinearSegmentedColormap
-        see matplotlib colormaps for a list of possible values or pass a colormap
-    fig: matplotlib.figure.Figure
-        The figure container for the current plot
-    grid: array of Axes, mpl_toolkits.axes_grid1.axes_grid.ImageGrid
-        the list of Axes or the ImageGrid object
-    nrows: int
-        the number of "rows" in the grid/figure
-    ncols: int
-        the number of "columns" in the grid/figure
-    text_color: string
-        the text color    
-    font_size: int
-        the colorbar's labels text size
-    norm: array
-        a class that specifies a desired data normalisation into a [min, max] interval
-    ticks: int
-        the number of ticks along the colorbar
-    symbol: boolean
-        if True, it shows the ">" next to the highest tick's label in the colorbar (useful when normalising)
-    cbar_min_max: boolean
-        if True, it only shows the ">" and "<" as labels of the lowest and highest ticks' the colorbar
-    """
-    
-    if font_size is None: 
-        font_size = 20
-    
-    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
-    sm._A = []
-    vr_p = 1/30.30
-    hr_p = 0.5/30.30
-    ax = grid[0]
- 
-    if ncols == 2:
-        width = ax.get_position().x1*ncols-hr_p-ax.get_position().x0
-    else:
-        width = ax.get_position().x1*(ncols-1)+0.10
-
-    if nrows == 1: 
-        pos = [ax.get_position().x0+width, ax.get_position().y0, 0.027, ax.get_position().height]
-    elif nrows%2 == 0:
-        y0 = (ax.get_position().y0-(ax.get_position().height*(nrows-1))-vr_p)+(nrows/2-0.5)*ax.get_position().height
-        pos = [ax.get_position().x0+width, y0, 0.027, ax.get_position().height]
-    else:
-        ax = grid[nrows-1]
-        pos = [ax.get_position().x0+width, ax.get_position().y0, 0.027, ax.get_position().height]
-
-    _set_colorbar(fig, pos, sm, norm, text_color, font_size, ticks, symbol, cbar_min_max)    
-    
-def generate_row_colorbar(cmap, fig, ax, ncols, text_color, font_size, norm = None, ticks = 5, symbol = False, cbar_min_max = False):
-    """ 
-    It generates a colorbar for a specific row of a figure.
-    
-    Parameters
-    ----------
-    cmap: string, matplotlib.colors.LinearSegmentedColormap
-        see matplotlib colormaps for a list of possible values or pass a colormap
-    fig: matplotlib.figure.Figure
-        The figure container for the current plot    
-    ax: matplotlib.axes object
-        the Axes on which plotting
-    ncols: int
-        the number of "columns" in the grid/figure
-    text_color: string
-        the text color
-    font_size: int
-        the colorbar's labels text size
-    norm: array
-        a class that specifies a desired data normalisation into a [min, max] interval
-    ticks: int
-        the number of ticks along the colorbar
-    symbol: boolean
-        if True, it shows the ">" next to the highest tick's label in the colorbar (useful when normalising)
-    cbar_min_max: boolean
-        if True, it only shows the ">" and "<" as labels of the lowest and highest ticks' the colorbar
-    """
-    
-    if font_size is None: 
-        font_size = 20
-    
-    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
-    sm._A = []
-    vr_p = 1/30.30
-    hr_p = 0.5/30.30
-    
-    width = ax.get_position().x1
-    if ncols == 2:
-        width = ax.get_position().x1*ncols-hr_p-ax.get_position().x0
-    elif ncols > 2:
-        width = ax.get_position().x1*(ncols-1)-hr_p*ncols
-    pos = [ax.get_position().x0+width, ax.get_position().y0, 0.05, ax.get_position().height]
-    
-    _set_colorbar(fig, pos, sm, norm, text_color, font_size, ticks, symbol, cbar_min_max)    
-    
-    
-def _set_colorbar(plot = None, cmap = None, norm = None, ticks = 5, symbol = False, min_max = False, shrinkage = 0.95):
+def _generate_colorbar(plot = None, cmap = None, norm = None, ticks = 5, symbol = False, min_max = False, shrinkage = 0.95):
     """ 
     It plots a colorbar, given some settings.
     
