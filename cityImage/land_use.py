@@ -4,7 +4,6 @@ import geopandas as gpd
 
 from shapely.geometry import Point, LineString, Polygon, MultiPolygon, mapping, MultiLineString
 from shapely.ops import cascaded_union, linemerge
-from scipy.sparse import linalg
 pd.set_option("display.precision", 3)
 
 def classify_land_use(buildings_gdf, new_land_use_field, land_use_field, categories, strings):
