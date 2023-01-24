@@ -44,10 +44,13 @@ def road_barriers(place, download_method, distance = 500.0, epsg = None, include
     roads = _download_geometries(place, download_method, tags, crs, distance)
     roads = roads[roads.highway.isin(to_keep)]
     # exclude tunnels
-    roads = roads[roads["tunnel"].fillna(1) != 1]
+    if "tunnel" in roads.columns:
+        roads['tunnel'].fillna(0, inplace=True)
+        roads = roads[roads.tunnel == 0]
+        
     roads = roads.unary_union
     roads = _simplify_barrier(roads)
-    df = pd.DataFrame({'geometry': roads, 'type': ['road'] * len(roads)})
+    df = pd.DataFrame({'geometry': roads, 'barrier_type': ['road'] * len(roads)})
     road_barriers = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
        
     return road_barriers
@@ -85,10 +88,13 @@ def secondary_road_barriers(place, download_method, distance = 500.0, epsg = Non
     roads = _download_geometries(place, download_method, tags, crs, distance)
     roads = roads[roads.highway.isin(to_keep)]
     # exclude tunnels
-    roads = roads[roads["tunnel"].fillna(1) != 1]
+    if "tunnel" in roads.columns:
+        roads['tunnel'].fillna(0, inplace=True)
+        roads = roads[roads.tunnel == 0]
+        
     roads = roads.unary_union
     roads = _simplify_barrier(roads)
-    df = pd.DataFrame({'geometry': roads, 'type': ['secondary_road'] * len(roads)})
+    df = pd.DataFrame({'geometry': roads, 'barrier_type': ['secondary_road'] * len(roads)})
     road_barriers = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
        
     return road_barriers
@@ -115,34 +121,67 @@ def secondary_road_barriers(place, download_method, distance = 500.0, epsg = Non
     """
 def water_barriers(place, download_method, distance = 500.0, lakes_area = 1000, epsg = None):
 
-    
     crs = 'EPSG:' + str(epsg)
-    water_barriers = gpd.GeoDataFrame(crs=crs)
     tags =  {"waterway": True, "natural": "water", "natural":"coastline"}
     
-    for tag_type, tag_value in [("waterway", True), ("natural", "water"), ("natural", "coastline")]:
-        tags = {tag_type:tag_value}
-        geometries = _download_geometries(place, download_method, tags, crs, distance)
-        
-        if tag_type == "waterway":
-            geometries = geometries[(geometries.waterway == 'river') | (geometries.waterway == 'canal')]
-            if "tunnel" in geometries.columns:
-                geometries["tunnel"].fillna(0, inplace = True)
-                geometries = geometries[geometries["tunnel"] == 0]
-        
-        elif tag_type == "natural" and tag_value == "water":
-            to_remove = ['river', 'stream', 'canal', 'riverbank', 'reflecting_pool', 'reservoir', 'bay']
-            geometries = geometries[~geometries.water.isin(to_remove)]
-            geometries['area'] = geometries.geometry.area
-            geometries = geometries[geometries.area > lakes_area]
-        
-        geometries = geometries.unary_union
-        geometries = _simplify_barrier(geometries)
-        water_barriers = water_barriers.append(gdf_from_geometries(geometries, crs))
+    # rivers
+    tags = {"waterway":True}  
+    rivers = _download_geometries(place, download_method, tags, crs, distance)
+    rivers = rivers[(rivers.waterway == 'river') | (rivers.waterway == 'canal')]
+    rivers = rivers.unary_union
+    rivers = _simplify_barrier(rivers)
+    rivers = gdf_from_geometries(rivers, crs)
     
-    water_barriers = water_barriers.unary_union
-    water_barriers = _simplify_barrier(water_barriers)
+    # lakes   
+    tags = {"natural":"water"}
+    lakes = _download_geometries(place, download_method, tags, crs, distance)  
+    to_remove = ['river', 'stream', 'canal', 'riverbank', 'reflecting_pool', 'reservoir', 'bay']
+    lakes = lakes[~lakes.water.isin(to_remove)]
+    lakes['area'] = lakes.geometry.area
+    lakes = lakes[lakes.area > lakes_area]
+    lakes = lakes.unary_union
+    lakes = _simplify_barrier(lakes) 
+    lakes = gdf_from_geometries(lakes, crs)
+    lakes = lakes[lakes['length'] >=500]
+    
+    # sea   
+    tags = {"natural":"coastline"}
+    sea = _download_geometries(place, download_method, tags, crs, distance)
+    sea = sea.unary_union      
+    sea = _simplify_barrier(sea)
+    sea = gdf_from_geometries(sea, crs)
+    
+    water = pd.concat([rivers, lakes, sea])
+    water = water.unary_union
+    water = _simplify_barrier(water)
+        
+    df = pd.DataFrame({'geometry': water, 'barrier_type': ['water'] * len(water)})
+    water_barriers = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
+
     return water_barriers
+    
+        # for tag_type, tag_value in [("waterway", True), ("natural", "water"), ("natural", "coastline")]:
+        # tags = {tag_type:tag_value}
+        # geometries = _download_geometries(place, download_method, tags, crs, distance)
+        
+        # if tag_type == "waterway":
+            # geometries = geometries[(geometries.waterway == 'river') | (geometries.waterway == 'canal')]
+            # if "tunnel" in geometries.columns:
+                # geometries["tunnel"].fillna(0, inplace = True)
+                # geometries = geometries[geometries["tunnel"] == 0]
+        
+        # elif tag_type == "natural" and tag_value == "water":
+            # to_remove = ['river', 'stream', 'canal', 'riverbank', 'reflecting_pool', 'reservoir', 'bay']
+            # geometries = geometries[~geometries.water.isin(to_remove)]
+            # geometries['area'] = geometries.geometry.area
+            # geometries = geometries[geometries.area > lakes_area]
+        
+        # geometries = geometries.unary_union
+        # geometries = _simplify_barrier(geometries)
+        # water_barriers = water_barriers.append(gdf_from_geometries(geometries, crs))
+    
+    # water_barriers = water_barriers.unary_union
+    # water_barriers = _simplify_barrier(water_barriers)
     
 def _download_geometries(place, download_method, tags, crs, distance = 500.0):
     """
@@ -213,15 +252,16 @@ def railway_barriers(place, download_method, distance = 500.0, epsg = None, keep
     # removing light_rail, in case
     if not keep_light_rail:
         railways = railways[railways.railway != 'light_rail']
-    railways["tunnel"].fillna(0, inplace = True)
-    railways = railways[railways["tunnel"] == 0]     
-    
+    if "tunnel" in railways.columns:
+        railways['tunnel'].fillna(0, inplace=True)
+        railways = railways[railways.tunnel == 0]
+        
     r = railways.unary_union
     p = polygonize_full(r)
     railways = unary_union(p).buffer(10).boundary # to simpify a bit
     railways = _simplify_barrier(railways)
         
-    df = pd.DataFrame({'geometry': railways, 'type': ['railway'] * len(railways)})
+    df = pd.DataFrame({'geometry': railways, 'barrier_type': ['railway'] * len(railways)})
     railway_barriers = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
     
     return railway_barriers
@@ -264,7 +304,7 @@ def park_barriers(place, download_method, distance = 500.0, epsg = None, min_are
     parks = unary_union(pp).buffer(10).boundary # to simpify a bit
     parks = _simplify_barrier(parks)
 
-    df = pd.DataFrame({'geometry': parks, 'type': ['park'] * len(parks)})
+    df = pd.DataFrame({'geometry': parks, 'barrier_type': ['park'] * len(parks)})
     park_barriers = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
     
     return park_barriers
@@ -289,7 +329,7 @@ def along_water(edges_gdf, barriers_gdf):
     """
     
     sindex = edges_gdf.sindex
-    tmp = barriers_gdf[barriers_gdf['type'].isin(['water'])]
+    tmp = barriers_gdf[barriers_gdf['barrier_type'].isin(['water'])]
     edges_gdf['ac_rivers'] = edges_gdf.apply(lambda row: barriers_along(row['edgeID'], edges_gdf, tmp, sindex, offset = 200), axis = 1)
     edges_gdf['c_rivers'] = edges_gdf.apply(lambda row: _crossing_barriers(row['geometry'], tmp), axis = 1)
     edges_gdf['bridge'] = edges_gdf.apply(lambda row: True if len(row['c_rivers']) > 0 else False, axis = 1)
@@ -319,11 +359,11 @@ def along_within_parks(edges_gdf, barriers_gdf):
     """
     
     sindex = edges_gdf.sindex
-    tmp = barriers_gdf[barriers_gdf['type']=='park']
+    tmp = barriers_gdf[barriers_gdf['barrier_type']=='park']
     # edges_gdf['a_parks'] = edges_gdf.apply(lambda row: barriers_along(row['edgeID'], edges_gdf, tmp, sindex, offset = 200), axis = 1)
     
     # polygonize parks
-    park_polygons = barriers_gdf[barriers_gdf['type']=='park'].copy()
+    park_polygons = barriers_gdf[barriers_gdf['barrier_type']=='park'].copy()
     park_polygons['geometry'] = park_polygons.apply(lambda row: (polygonize_full(row['geometry']))[0][0], axis = 1)
     park_polygons = gpd.GeoDataFrame(park_polygons['barrierID'], geometry = park_polygons['geometry'], crs = edges_gdf.crs)
     
@@ -423,7 +463,7 @@ def assign_structuring_barriers(edges_gdf, barriers_gdf):
     barriers_gdf = barriers_gdf.copy()
     edges_gdf = edges_gdf.copy()
     exlcude = ['secondary_road', 'park'] # parks are disregarded
-    tmp = barriers_gdf[~barriers_gdf['type'].isin(exlcude)].copy() 
+    tmp = barriers_gdf[~barriers_gdf['barrier_type'].isin(exlcude)].copy() 
     
     edges_gdf['c_barr'] = edges_gdf.apply(lambda row: _crossing_barriers(row['geometry'], tmp ), axis = 1)
     edges_gdf['sep_barr'] = edges_gdf.apply(lambda row: True if len(row['c_barr']) > 0 else False, axis = 1)
@@ -457,7 +497,7 @@ def _crossing_barriers(line_geometry, barriers_gdf):
     adjacent_barriers = list(intersecting_barriers.barrierID)
     return adjacent_barriers
     
-def get_barriers(place, download_method, distance = 500.0, epsg = None): 
+def get_barriers(place, download_method, distance = 500.0, epsg = None, parks_min_area = 100000): 
     """
     The function returns all the barriers (water, park, railways, major roads) within a certain urban area.
     Certain parameter are set by default. For manipulating, use the barrier-type specific functions (see above).
@@ -480,10 +520,10 @@ def get_barriers(place, download_method, distance = 500.0, epsg = None):
         the barriers GeoDataFrame
     """
     
-    rb = road_barriers(place, download_method, distance, epsg, include_primary = True)
-    wb = water_barriers(place, download_method, distance, epsg)
-    ryb = railway_barriers(place,download_method, distance, epsg)
-    pb = park_barriers(place,download_method, distance, epsg, min_area = 100000)
+    rb = road_barriers(place, download_method, distance, epsg = epsg, include_primary = True)
+    wb = water_barriers(place, download_method, distance, epsg = epsg)
+    ryb = railway_barriers(place,download_method, distance, epsg = epsg)
+    pb = park_barriers(place,download_method, distance, epsg = epsg, min_area = parks_min_area)
     barriers_gdf = pd.concat([rb, wb, ryb, pb])
     barriers_gdf.reset_index(inplace = True, drop = True)
     barriers_gdf['barrierID'] = barriers_gdf.index.astype(int)
@@ -497,29 +537,25 @@ def _simplify_barrier(geometries):
     
     Parameters
     ----------
-    geometry: LineString or MultiLineString
-        The linear representation of a barrier.
+    geometry: Shapely Geometry
+        The geommetric representation of a barrier.
         
     Returns
     -------
     features: list of LineString
         the list of actual geometries
     """
-    
-    if type(geometries) is not LineString:        
-        try:
-            geometries = linemerge(geometries)
-        except NotImplementedError:
-            geometries = [geometry if geometry.geom_type != 'Polygon' else geometry.boundary for geometry in geometries]
-            if any(isinstance(geometry, MultiLineString) for geometry in geometries):
-                pass
-            else:
-                geometries = linemerge(geometries)  
-    
-    if type(geometries) is LineString: 
+  
+    if type(geometries) is Polygon: 
+        features = [geometries.boundary]
+    elif type(geometries) is LineString: 
         features = [geometries]
-    else: 
-        features = geometries
+    elif type(geometries) is MultiLineString:
+        features = list(geometries.geoms)
+    elif type(geometries) is MultiPolygon:
+        features = list(geometries.boundary.geoms)
+    else:
+        return []
     
     return features
         
