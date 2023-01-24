@@ -14,7 +14,7 @@ import cityImage as ci
 
 place = "Susa, Italy"
 download_method = 'OSMplace'
-epsg = 3003
+epsg_york = 2019
 OSMPolygon = 'Susa (44287)'
 address = 'Susa, via Roma 1'
 distance = 1500
@@ -25,30 +25,34 @@ graph = None
 # Test load.py
 def test_loadOSM():
     global edges_gdf_II
-    _, edges_gdf_IV = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg)
+    epsg_susa = 3003
+    _, edges_gdf_IV = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg_susa)
     polygon = ci.convex_hull_wgs(edges_gdf_IV)
-    nodes_gdf_II, edges_gdf_II = ci.get_network_fromOSM(polygon, 'polygon', network_type = "all", epsg = epsg)
-    nodes_gdf_III, edges_gdf_III = ci.get_network_fromOSM(address, 'distance_from_address', network_type = "all", epsg = epsg, distance = distance)
+    nodes_gdf_II, edges_gdf_II = ci.get_network_fromOSM(polygon, 'polygon', network_type = "all", epsg = epsg_susa)
+    nodes_gdf_III, edges_gdf_III = ci.get_network_fromOSM(address, 'distance_from_address', network_type = "all", 
+                                                          epsg = epsg_susa, distance = distance)
     
 def test_loadSHP_topology():  
     global nodes_gdf
     global edges_gdf
-    epsg = 2019 
-    input_path = 'tests/input/York_street_network.shp'
+    global epsg_york
+    input_path = 'C:/Users/G.Filomena/Scripts/cityImage/tests/input/York_street_network.shp'
     dict_columns = {"roadType_field": "type",  "direction_field": "oneway", "speed_field": "maxspeed", "name_field": "name"}    
-    nodes_gdf, edges_gdf = ci.get_network_fromSHP(input_path, epsg, dict_columns = dict_columns, other_columns = [])
+    nodes_gdf, edges_gdf = ci.get_network_fromSHP(input_path, epsg_york, dict_columns = dict_columns, other_columns = [])
     # fix topology
-    nodes_gdf, edges_gdf = ci.clean_network(nodes_gdf, edges_gdf, dead_ends = True, remove_islands = True, same_uv_edges = True, self_loops = True, fix_topology = False)
+    nodes_gdf, edges_gdf = ci.clean_network(nodes_gdf, edges_gdf, dead_ends = True, remove_islands = True, 
+                                            same_uv_edges = True, self_loops = True, fix_topology = False)
     
 # Test graph.py
 def test_graph():
     global nodes_gdf
     global edges_gdf
     global graph
+    global epsg_york
     
     graph = ci.graph_fromGDF(nodes_gdf, edges_gdf, nodeID = 'nodeID')
     multi_graph_fromGDF = ci.multiGraph_fromGDF(nodes_gdf, edges_gdf, 'nodeID')
-    nodes_dual, edges_dual = ci.dual_gdf(nodes_gdf, edges_gdf, epsg = epsg, oneway = False, angle = 'degree')
+    nodes_dual, edges_dual = ci.dual_gdf(nodes_gdf, edges_gdf, epsg = epsg_york, oneway = False, angle = 'degree')
     dual_graph = ci.dual_graph_fromGDF(nodes_dual, edges_dual)
 
 # Test angles.py
@@ -69,9 +73,9 @@ def test_centrality():
     global graph
     global nodes_gdf
     global edges_gdf
-    
+    global epsg_york
     weight = 'length'
-    services = ox.geometries_from_address(address, tags = {'amenity':True}, dist = distance).to_crs(epsg=epsg)
+    services = ox.geometries_from_address(address, tags = {'amenity':True}, dist = distance).to_crs(epsg=epsg_york)
     services = services[services['geometry'].geom_type == 'Point']
     graph = ci.weight_nodes(nodes_gdf, services, graph, field_name = 'services', radius = 50)
 
@@ -90,7 +94,7 @@ def test_centrality():
         
     Eb = nx.edge_betweenness_centrality(graph, weight = weight, normalized = False)
     edges_gdf = ci.append_edges_metrics(edges_gdf, graph, [Eb], ['Eb'])
-
+    
 def test_plot():
     global nodes_gdf
     global edges_gdf
