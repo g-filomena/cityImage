@@ -360,8 +360,8 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_islands = True
                 
         # Reordering coordinates to allow for comparison between edges
         edges_gdf['coords'] = [list(c.coords) for c in edges_gdf.geometry]
-        edges_gdf['coords'][(edges_gdf.u.astype(str)+"-"+edges_gdf.v.astype(str)) != edges_gdf.code] = [list(x.coords)[::-1] for x in edges_gdf.geometry]
-        
+        edges_gdf.loc[(edges_gdf.u.astype(str)+"-"+edges_gdf.v.astype(str)) != edges_gdf.code]['coords'] = [x[::-1] for x in edges_gdf[(edges_gdf.u.astype(str)+"-"+edges_gdf.v.astype(str)) != edges_gdf.code].coords]
+            
         # dropping duplicate-geometries edges
         geometries = edges_gdf['geometry'].apply(lambda geom: geom.wkb)
         edges_gdf = edges_gdf.loc[geometries.drop_duplicates().index]
