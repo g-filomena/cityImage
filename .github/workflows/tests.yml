@@ -43,6 +43,16 @@ jobs:
         run: |
           pytest -v --color=yes --cov-config .coveragerc --cov=cityImage --cov-append --cov-report term-missing --cov-report xml tests
 
+
+      - name: Upload coverage to Codecov
+        if: success()
+        uses: codecov/codecov-action@v2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: coverage.xml
+          flags: unittests
+          name: codecov-python
+      
       # - name: Test documentation
         # shell: bash -l {0}
         # if: contains(matrix.env, 'latest.yml') && contains(matrix.os, 'ubuntu')
