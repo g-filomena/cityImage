@@ -372,7 +372,7 @@ def _amend_node_membership(nodeID, nodes_gdf, edges_gdf, column):
     tmp_edges = edges_gdf[((edges_gdf.u == nodeID) & (edges_gdf.v.isin(tmp_nodes.nodeID))) |
                           ((edges_gdf.v == nodeID) & (edges_gdf.u.isin(tmp_nodes.nodeID)))]
     
-    closest = min_distance_geometry_gdf(nodes_gdf.loc[nodeID].geometry, tmp_nodes)[1]
+    closest_ix = min_distance_geometry_gdf(nodes_gdf.loc[nodeID].geometry, tmp_nodes)[1]
     new_district = tmp_nodes.loc[closest_ix][column]
     return new_district
     
