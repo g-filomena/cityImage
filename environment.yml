@@ -34,7 +34,9 @@ dependencies:
     - geopandas==0.12.2
     - idna==3.4
     - imageio==2.25.0
+    - joblib==1.2.0
     - kiwisolver==1.4.4
+    - mapclassify==2.5.0
     - matplotlib==3.6.3
     - munch==2.5.0
     - networkx==3.0
@@ -51,8 +53,12 @@ dependencies:
     - pytz==2022.7.1
     - pyvista==0.37.0
     - requests==2.28.2
+    - scikit-learn==1.2.0
+    - scipy==1.10.0
     - scooby==0.7.0
     - shapely==2.0.0
     - six==1.16.0
+    - threadpoolctl==3.1.0
     - urllib3==1.26.14
     - vtk==9.2.5
+prefix: C:\Users\G.Filomena\miniconda3\envs\cityImage

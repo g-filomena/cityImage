@@ -15,8 +15,10 @@ fonttools=4.38.0=pypi_0
 geopandas=0.12.2=pypi_0
 idna=3.4=pypi_0
 imageio=2.25.0=pypi_0
+joblib=1.2.0=pypi_0
 kiwisolver=1.4.4=pypi_0
 libffi=3.4.2=hd77b12b_6
+mapclassify=2.5.0=pypi_0
 matplotlib=3.6.3=pypi_0
 munch=2.5.0=pypi_0
 networkx=3.0=pypi_0
@@ -36,11 +38,14 @@ python-louvain=0.16=pypi_0
 pytz=2022.7.1=pypi_0
 pyvista=0.37.0=pypi_0
 requests=2.28.2=pypi_0
+scikit-learn=1.2.0=pypi_0
+scipy=1.10.0=pypi_0
 scooby=0.7.0=pypi_0
 setuptools=65.6.3=py310haa95532_0
 shapely=2.0.0=pypi_0
 six=1.16.0=pypi_0
 sqlite=3.40.1=h2bbff1b_0
+threadpoolctl=3.1.0=pypi_0
 tk=8.6.12=h2bbff1b_0
 tzdata=2022g=h04d1e81_0
 urllib3=1.26.14=pypi_0
