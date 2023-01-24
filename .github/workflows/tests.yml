@@ -53,5 +53,4 @@ jobs:
 #         shell: bash -l {0}
 #         run: |
 #           black --check .
-      - name: Upload Coverage to Codecov
-      - uses: codecov/codecov-action@v2
+
