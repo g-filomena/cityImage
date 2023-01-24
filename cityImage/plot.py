@@ -200,14 +200,14 @@ def _single_plot(ax, gdf, column = None, scheme = None, bins = None, classes = 7
             scaling_columnDF(gdf, column)
             gdf['geometry_size'] = np.where(gdf[column+'_sc'] >= 0.20, gdf[column+'_sc']*geometry_size_factor, 0.40) # marker size
             geometry_size = gdf['geometry_size']
-
+          
         gdf.plot(ax = ax, column = column, markersize = geometry_size, categorical = categorical, color = color, scheme = scheme, cmap = cmap, 
                 norm = norm, alpha = alpha, legend = legend, classification_kwds = c_k, zorder = zorder) 
         
     elif geometry_type == 'LineString':
         if geometry_size_factor is not None:
             geometry_size = [(abs(value)*geometry_size_factor) if (abs(value)*geometry_size_factor) > 1.1 else 1.1 for value in gdf[column]]
-        
+       
         gdf.plot(ax = ax, column = column, categorical = categorical, color = color, linewidth = geometry_size, scheme = scheme, alpha = alpha, 
             cmap = cmap, norm = norm, legend = legend, classification_kwds = c_k, capstyle = 'round', joinstyle = 'round', zorder = zorder) 
                 
@@ -720,12 +720,7 @@ def _generate_legend_ax(ax, font_size, black_background):
             handle._legmarker.set_markersize(12)
         else:
             break
-    if not black_background:
-        leg.get_frame().set_facecolor('black')
-        leg.get_frame().set_alpha(0.90)  
-    else:
-        leg.get_frame().set_facecolor('white')
-        leg.get_frame().set_alpha(0.90)   
+    leg.get_frame().set_facecolor('none')
     
 def _generate_colorbar(plot = None, cmap = None, norm = None, ticks = 5, symbol = False, min_max = False, shrinkage = 0.95):
     """ 
