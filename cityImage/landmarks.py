@@ -387,9 +387,9 @@ def compute_3d_sight_lines(nodes_gdf: gpd.GeoDataFrame, buildings_gdf: gpd.GeoDa
     buildings_sindex = buildings_gdf.sindex
     
     sight_lines['visible'] = sight_lines.apply(lambda row: intervisibility(row.geometry, row.buildingID, row.start, row.stop, buildings_gdf, buildings_sindex), axis =1)
-    sight_lines = sight_lines[sight_lines['visibile'] == True]
+    sight_lines = sight_lines[sight_lines['visible'] == True]
     sight_lines.drop(['start', 'stop', 'observer', 'target', 'visible'], axis = 1, inplace = True)
-    sight_lines = sight_lines.set_geometry('geometry)').set_crs(buildings_gdf.crs)
+    sight_lines = sight_lines.set_geometry('geometry').set_crs(buildings_gdf.crs)
     
     return sight_lines
    
