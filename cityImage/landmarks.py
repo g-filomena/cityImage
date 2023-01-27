@@ -19,7 +19,8 @@ Computational landmarks can be extracted employing the following functions.
 def downloadError(Exception):
     pass
  
-def get_buildings_fromSHP(path, epsg, case_study_area = None, distance_from_center = 1000, height_field = None, base_field = None, land_use_field = None):
+def get_buildings_fromSHP(path: str, epsg: int, case_study_area = None, distance_from_center: float = 1000, height_field: str = None, base_field: 
+    str = None, land_use_field: str = None) -> gpd.GeoDataFrame:
     """    
     The function take a sets of buildings, returns two smaller GDFs of buildings: the case-study area, plus a larger area containing other 
     buildings, called "obstructions" (for analyses which include adjacent buildings). If the area for clipping the obstructions is not
@@ -51,28 +52,13 @@ def get_buildings_fromSHP(path, epsg, case_study_area = None, distance_from_cent
     # computing area, reassigning columns
     obstructions_gdf["area"] = obstructions_gdf["geometry"].area
 
-    if height_field: 
-        obstructions_gdf["height"] = obstructions_gdf[height_field]
-        obstructions_gdf["height_r"] = obstructions_gdf["height"]
-    else:
-        obstructions_gdf["height"] = None
-        obstructions_gdf["height_r"] = None
-
-    if base_field:
-        obstructions_gdf["base"] = obstructions_gdf[base_field]
-        if "height_r" in obstructions_gdf:
-            obstructions_gdf["height_r"] += obstructions_gdf["base"]
-    else:
-        obstructions_gdf["base"] = 0.0
-
-    if land_use_field:
-        obstructions_gdf["land_use_raw"] = obstructions_gdf[land_use_field]
-    else:
-        obstructions_gdf["land_use_raw"] = None
+    obstructions_gdf["height"] = obstructions_gdf.get(height_field) or None
+    obstructions_gdf["base"] = obstructions_gdf.get(base_field) or 0.0
+    obstructions_gdf["land_use_raw"] = obstructions_gdf.get(land_use_field) or None
 
     # dropping small buildings and buildings with null height
     obstructions_gdf = obstructions_gdf[(obstructions_gdf["area"] >= 50) & (obstructions_gdf["height"] >= 1)]
-    obstructions_gdf = obstructions_gdf[["height", "height_r", "base","geometry", "area", "land_use_raw"]]
+    obstructions_gdf = obstructions_gdf[["height", "base","geometry", "area", "land_use_raw"]]
     # assigning ID
     obstructions_gdf["buildingID"] = obstructions_gdf.index.values.astype(int)
     
@@ -89,7 +75,7 @@ def get_buildings_fromSHP(path, epsg, case_study_area = None, distance_from_cent
 
     return buildings_gdf, obstructions_gdf
     
-def get_buildings_fromOSM(place, download_method, epsg = None, distance = 1000):
+def get_buildings_fromOSM(place, download_method: str, epsg = None, distance = 1000) -> gpd.GeoDataFrame:
     """    
     The function downloads and cleans buildings footprint geometries and create a buildings GeoDataFrames for the area of interest.
     The function exploits OSMNx functions for downloading the data as well as for projecting it.
@@ -155,28 +141,23 @@ def get_buildings_fromOSM(place, download_method, epsg = None, distance = 1000):
     
     return buildings_gdf
 
-def simplify_footprints(buildings_gdf, crs):
+def simplify_footprints(buildings_gdf: gpd.GeoDataFrame, crs: int) -> gpd.GeoDataFrame:
     """    
-    The function downloads and cleans buildings footprint geometries and create a buildings GeoDataFrames for the area of interest.
-    The function exploits OSMNx functions for downloading the data as well as for projecting it.
-    The land use classification for each building is extracted. Only relevant columns are kept.   
+    The function simplifies the building footprint geometries and creates a new GeoDataFrame for the area of interest.
+    The function extracts the individual parts of the multi-part geometries and creates a new GeoDataFrame with single part geometries.
+    It also assigns the original CRS to the new GeoDataFrame.
             
     Parameters
     ----------
-    place: string, tuple
-        name of cities or areas in OSM: when using "from point" please provide a (lat, lon) tuple to create the bounding box around it; when using "distance_from_address"
-        provide an existing OSM address; when using "OSMplace" provide an OSM place name
-    download_method: string, {"from_point", "distance_from_address", "OSMplace"}
-        it indicates the method that should be used for downloading the data.
-    epsg: int
-        epsg of the area considered; if None OSMNx is used for the projection
-    distance: float
-        Specify distance from address or point
+    buildings_gdf: gpd.GeoDataFrame
+        GeoDataFrame containing building footprint geometries
+    crs: int
+        CRS of the input GeoDataFrame
     
     Returns
     -------
-    buildings_gdf: Polygon GeoDataFrame
-        the buildings GeoDataFrame
+    single_parts_gdf: Polygon GeoDataFrame
+        the new GeoDataFrame with simplified single part building footprint geometries
     """  
     
     buildings_gdf = buildings_gdf.copy()
@@ -185,34 +166,34 @@ def simplify_footprints(buildings_gdf, crs):
     
     return single_parts_gdf
 
-def attach_attributes(buildings_gdf, attributes_gdf, height_field, base_field, land_use_field):
-    """    
-    The function downloads and cleans buildings footprint geometries and create a buildings GeoDataFrames for the area of interest.
-    The function exploits OSMNx functions for downloading the data as well as for projecting it.
-    The land use classification for each building is extracted. Only relevant columns are kept.   
-            
+def attach_attributes(buildings_gdf: gpd.GeoDataFrame, attributes_gdf: gpd.GeoDataFrame, height_field: str, base_field: str, land_use_field: str) -> gpd.GeoDataFrame:
+    """
+    Attach attributes to buildings GeoDataFrame by intersecting it with another GeoDataFrame.
+    
     Parameters
     ----------
-    place: string, tuple
-        name of cities or areas in OSM: when using "from point" please provide a (lat, lon) tuple to create the bounding box around it; when using "distance_from_address"
-        provide an existing OSM address; when using "OSMplace" provide an OSM place name
-    download_method: string, {"from_point", "distance_from_address", "OSMplace"}
-        it indicates the method that should be used for downloading the data.
-    epsg: int
-        epsg of the area considered; if None OSMNx is used for the projection
-    distance: float
-        Specify distance from address or point
-    
+    buildings_gdf : Polygon GeoDataFrame
+        GeoDataFrame containing building footprint geometries
+    attributes_gdf : Polygon GeoDataFrame
+        GeoDataFrame containing attributes to be attached to the buildings
+    height_field : string
+        Column name of the height attribute in the attributes_gdf
+    base_field : string
+        Column name of the base attribute in the attributes_gdf
+    land_use_field : string
+        Column name of the land use attribute in the attributes_gdf
+        
     Returns
     -------
-    new_buildings_gdf: Polygon GeoDataFrame
-        the buildings GeoDataFrame
-    """  
+    new_buildings_gdf : Polygon GeoDataFrame
+        The modified GeoDataFrame containing the building footprints, as well as the heigh
+     
     
     buildings_gdf = buildings_gdf.copy()
     attributes_gdf = attributes_gdf[attributes_gdf.geometry.area > 50].copy()
     attributes_gdf[land_use_field] = attributes_gdf[land_use_field].where(pd.notnull(attributes_gdf[land_use_field]), None)
     buildings_gdf = gpd.sjoin(buildings_gdf, attributes_gdf[['geometry', height_field, land_use_field]], how="left", op='intersects')
+    """
     
     new_buildings_gdf = buildings_gdf.groupby("buildingID").agg({
                                                                 'geometry': 'first',
@@ -225,8 +206,6 @@ def attach_attributes(buildings_gdf, attributes_gdf, height_field, base_field, l
     new_buildings_gdf['area'] = new_buildings_gdf.geometry.area
     new_buildings_gdf.drop([height_field, base_field, land_use_field], axis=1, inplace=True)
     return new_buildings_gdf
-
-
        
 def structural_score(buildings_gdf, obstructions_gdf, edges_gdf, max_expansion_distance = 300, distance_along = 50, radius = 150):
     """
@@ -294,7 +273,6 @@ def _number_neighbours(building_geometry, obstructions_gdf, obstructions_sindex,
     return len(precise_neigh)
 
 def _advance_visibility(building_geometry, obstructions_gdf, obstructions_sindex, max_expansion_distance = 600, distance_along = 20):
-
     """
     It creates a 2d polygon of visibility around a building. The extent of this polygon is assigned as a 2d advance
     visibility measure. The polygon is built constructing lines around the centroid, breaking them at obstructions and connecting 
@@ -358,34 +336,117 @@ def visibility_graph(building_geometry, obstructions_gdf):
     return visible_area    
     
     
-def check_3d_intersection(sight_lines: np.ndarray, buildings: np.ndarray, heights: np.ndarray) -> np.ndarray:
-    building_cuboids = pv.PolyData(np.column_stack((buildings, np.zeros(buildings.shape), np.zeros(buildings.shape), heights, heights, np.zeros(buildings.shape))))
-    sight_lines_3d = pv.Line(sight_lines[:,0], sight_lines[:,1])
-    return ~building_cuboids.intersects_line(sight_lines_3d)
 
-def compute_3d_sight_lines(points: gpd.GeoDataFrame, buildings: gpd.GeoDataFrame, distance_along: float) -> gpd.GeoDataFrame:
-    # Create an empty GeoDataFrame to store the sight lines
-    sight_lines = gpd.GeoDataFrame(columns=['geometry', 'buildingID', 'nodeID', 'height'])
-    # Get the exterior of the buildings
-    building_exterior = buildings.geometry.exterior
-    # Get the number of intervals to sample
-    num_intervals = (building_exterior.length / distance_along).astype(int)
-    # Using numpy array operations to get the building points at intervals and creating the linestring
-    building_points = np.array([np.array(building_exterior.interpolate(distance_along*i)) for i in range(
-        num_intervals)])
-    sight_lines_points = np.array([np.array([(point.x, point.y, point.z), (building_points[i][0], building_points[i][1], buildings.loc[i, 'height'])]) for i, point in points.iterrows()])
-    # Get the buildings coordinates
-    building_coords = np.array([[building.exterior.coords[i] for i in range(len(building.exterior.coords))] for building in buildings.geometry])
-    # Get the heights
-    building_heights = buildings["height"].values
-    # Filter the sightlines that intersects the buildings
-    mask = check_3d_intersection(sight_lines_points, building_coords, building_heights)
-    # Create the geodataframe
-    sight_lines['geometry'] = [LineString(i) for i in sight_lines_points[mask]]
-    sight_lines['buildingID'] = np.repeat(buildings.index.values, num_intervals)[mask]
-    sight_lines['nodeID'] = np.tile(points.index.values, len(buildings))[mask]
-    sight_lines['height'] = np.repeat(building_heights, num_intervals)[mask]
+def compute_3d_sight_lines(nodes_gdf: gpd.GeoDataFrame, buildings_gdf: gpd.GeoDataFrame, distance_along: float, distance_min_observer_target: float ) -> gpd.GeoDataFrame:
+    """
+    Computes the 3D sight lines between observer nodes and target buildings, based on a given distance along the line of sight and a minimum distance between observer and target.
+    
+    Parameters
+    ----------
+    nodes_gdf (gpd.GeoDataFrame): A GeoDataFrame containing the observer nodes, with at least a Point geometry column
+    buildings_gdf (gpd.GeoDataFrame): A GeoDataFrame containing the target buildings, with at least a Polygon geometry column
+    distance_along (float): The distance along the line of sight to extend the sight lines
+    distance_min_observer_target (float): The minimum distance between observer and target, to avoid self-intersections
+    
+    Returns:
+    ----------
+    gpd.GeoDataFrame: A GeoDataFrame containing the computed sight lines, with at least the columns 'observer' and 'target'
+    
+    """
+    
+    nodes_gdf = nodes_gdf.copy()
+    buildings_gdf = buildings_gdf.copy()
+    
+    if 'base' not in buildings_gdf.columns:
+        buildings_gdf["base"] = 0.0
+    
+    def add_height(exterior, base, height):
+        coords = exterior.coords
+        new_coords = [Point(x, y, height-base) for x, y in coords]
+        return LineString(new_coords)
 
+    building_exteriors = buildings_gdf.apply(lambda row: add_height(row.geometry.exterior, row.base, row.height), axis=1)
+    num_intervals = [max(1, int(exterior.length / distance_along)) for exterior in building_exteriors]
+    buildings_gdf['target'] = pd.Series([([(exterior.interpolate(min(exterior.length/2, distance_along)*i)) for i in range(x)]) 
+              for exterior, x in zip(building_exteriors, num_intervals)], index=buildings_gdf.index)
+    
+    nodes_gdf['observer'] = nodes_gdf.apply(lambda row: Point(row.geometry.x, row.geometry.y, row.height), axis=1)
+    tmp_buildings = buildings_gdf.explode('target')
+    tmp_nodes = nodes_gdf[['nodeID', 'observer']].copy()
+    tmp_buildings = tmp_buildings[['buildingID', 'target']].copy()
+    
+    sight_lines = pd.merge(tmp_nodes.assign(key=1), tmp_buildings.assign(key=1), on='key').drop('key', axis=1)
+    sight_lines['distance']= [p1.distance(p2) for p1, p2 in zip(sight_lines.observer, sight_lines.target)]
+    sight_lines = sight_lines[sight_lines['distance'] >= distance_min_observer_target]
+    sight_lines['geometry'] = [LineString([p1, p2]) for p1, p2 in zip(sight_lines.observer, sight_lines.target)]
+    sight_lines.reset_index(drop = True, inplace = True)
+
+    buildings_gdf['building_3d'] = [polygon_2d_to_3d(geo, base, height) for geo,base, height in zip(buildings_gdf['geometry'], buildings_gdf['base'], buildings_gdf['height'])]
+    sight_lines['start'] = [[observer.x, observer.y, observer.z] for observer in sight_lines.observer]
+    sight_lines['stop'] =[[target.x, target.y, target.z] for target in sight_lines.target]
+    buildings_sindex = buildings_gdf.sindex
+    
+    sight_lines['visible'] = sight_lines.apply(lambda row: intervisibility(row.geometry, row.buildingID, row.start, row.stop, buildings_gdf, buildings_sindex), axis =1)
+    sight_lines = sight_lines[sight_lines['visibile'] == True]
+    sight_lines.drop(['start', 'stop', 'observer', 'target', 'visible'], axis = 1, inplace = True)
+    sight_lines = sight_lines.set_geometry('geometry)').set_crs(buildings_gdf.crs)
+    
+    return sight_lines
+   
+def intervisibility(line2d, buildingID, start, stop, buildings_gdf, buildings_sindex) -> bool:
+    """
+    Check if a line of sight between two points is obstructed by any buildings.
+    
+    Parameters:
+        line2d (shapely.geometry.LineString): The 2D line of sight to check for obstruction.
+        buildingID (int): The ID of the building that the line of sight originates from.
+        start (Tuple[float, float, float]): The starting point of the line of sight in the form of (x, y, z).
+        stop (Tuple[float, float, float]): The ending point of the line of sight in the form of (x, y, z).
+    
+    Returns:
+        bool: True if the line of sight is not obstructed, False otherwise.
+    """
+     
+    # first just check for 2d intersections
+    possible_matches_index = list(buildings_sindex.intersection(line2d.buffer(5).bounds)) # looking for possible candidates in the external GDF
+    possible_matches = buildings_gdf.loc[possible_matches_index]
+    pm = possible_matches[possible_matches.intersects(line2d)]
+    pm = pm[pm.buildingID != buildingID]
+    if len(pm) == 0:
+        return True
+    
+    # if there are, check for 3d ones
+    visible = True
+    for _, row_building in pm.iterrows():
+        building_3d = row_building.building_3d.extract_surface().triangulate()
+        points, intersections = building_3d.ray_trace(start, stop)
+        if len(intersections) > 0:
+            return False
+            
+    return visible 
+    
+def polygon_2d_to_3d(building_polygon, base, height):
+               
+    poly_points = building_polygon.exterior.coords
+        
+    def reorient_coords(xy):
+        value = 0
+        for i in range(len(xy)):
+            x1, y1 = xy[i]
+            x2, y2 = xy[(i+1)%len(xy)]
+            value += (x2-x1)*(y2+y1)
+        if value > 0:
+            return xy
+        else:
+            return xy[::-1]
+
+    xy = reorient_coords(poly_points)
+    xyz_base = [(x,y,base) for x,y in xy]
+    faces = [len(xyz_base), *range(len(xyz_base))]
+    polygon = pv.PolyData(xyz_base, faces=faces)
+    
+    return polygon.extrude((0, 0, height - base), capping=True)
+   
    
 def visibility_score(buildings_gdf, sight_lines = pd.DataFrame({'a' : []}), method = 'longest'):
 
