@@ -207,7 +207,7 @@ def attach_attributes(buildings_gdf: gpd.GeoDataFrame, attributes_gdf: gpd.GeoDa
     new_buildings_gdf.drop([height_field, base_field, land_use_field], axis=1, inplace=True)
     return new_buildings_gdf
        
-def structural_score(buildings_gdf, obstructions_gdf, edges_gdf, max_expansion_distance = 300, distance_along = 50, radius = 150):
+def structural_score(buildings_gdf, obstructions_gdf, edges_gdf, max_expansion_distance = 300, distance_along = 10, radius = 150):
     """
     The function computes the structural properties of each building properties.
     
@@ -242,7 +242,7 @@ def structural_score(buildings_gdf, obstructions_gdf, edges_gdf, max_expansion_d
     street_network = edges_gdf.geometry.unary_union
 
     buildings_gdf["road"] = buildings_gdf.geometry.distance(street_network)
-    buildings_gdf["2dvis"] = buildings_gdf.geometry.apply(lambda row: _advance_visibility(row, obstructions_gdf, sindex, max_expansion_distance=
+    buildings_gdf["2dvis"] = buildings_gdf.geometry.apply(lambda row: building_visibility_polygon(row, obstructions_gdf, sindex, max_expansion_distance=
                                     max_expansion_distance, distance_along=distance_along))
     buildings_gdf["neigh"] = buildings_gdf.geometry.apply(lambda row: _number_neighbours(row, obstructions_gdf, sindex, radius=radius))
 
@@ -268,11 +268,11 @@ def _number_neighbours(building_geometry, obstructions_gdf, obstructions_sindex,
         
     buffer = building_geometry.buffer(radius)
     possible_neigh_index = list(obstructions_sindex.intersection(buffer.bounds))
-    possible_neigh = obstructions_gdf.iloc[possible_neigh_index]
+    possible_neigh = obstructions_gdf.loc[possible_neigh_index]
     precise_neigh = possible_neigh[possible_neigh.intersects(buffer)]
     return len(precise_neigh)
 
-def _advance_visibility(building_geometry, obstructions_gdf, obstructions_sindex, max_expansion_distance = 600, distance_along = 20):
+def building_visibility_polygon(building_geometry, obstructions_gdf, obstructions_sindex, max_expansion_distance = 600, distance_along = 10):
     """
     It creates a 2d polygon of visibility around a building. The extent of this polygon is assigned as a 2d advance
     visibility measure. The polygon is built constructing lines around the centroid, breaking them at obstructions and connecting 
@@ -297,45 +297,43 @@ def _advance_visibility(building_geometry, obstructions_gdf, obstructions_sindex
     float
     """
 
-  
-  # creating buffer
+    # creating buffer
     origin = building_geometry.centroid
     building_geometry = building_geometry.convex_hull if building_geometry.geom_type == 'MultiPolygon' else building_geometry
     max_expansion_distance += origin.distance(building_geometry.envelope.exterior)
 
     angles = np.arange(0, 360, distance_along)
-    coords = np.array([get_coord_angle([origin.x, origin.y], distance=max_expansion_distance, angle=i) for i in angles])
+    coords = np.array([ci.get_coord_angle([origin.x, origin.y], distance=max_expansion_distance, angle=i) for i in angles])
     lines = [LineString([origin, Point(x)]) for x in coords]
+    
     obstacles = obstructions_gdf[obstructions_gdf.crosses(unary_union(lines))]
     obstacles = obstacles[obstacles.geometry != building_geometry]
     obstacles = obstacles[~obstacles.geometry.within(building_geometry.convex_hull)]
-
+    print(len(obstacles))
     # creating lines all around the building till a defined distance
+    
     if len(obstacles) > 0:
         ob = cascaded_union(obstacles.geometry)
-        lines = [line.intersection(ob) for line in lines]
-    lines = [LineString([origin, Point(x.coords[0])]) if type(x) == LineString else LineString([origin, Point(x[0].coords[0])]) for x in lines]
+
+        intersections = [line.intersection(ob) for line in lines]    
+        clipped_lines = [LineString([origin, Point(intersection.geoms[0].coords[0])]) 
+                         if ((type(intersection) == MultiLineString) & (not intersection.is_empty)) 
+                        else  LineString([origin, Point(intersection.coords[0])]) 
+                         if ((type(intersection) == LineString) & (not intersection.is_empty))                               
+                         else LineString([origin, Point(intersection[0].coords[0])]) 
+                         if ((type(intersection) == Point) & (not intersection.is_empty))
+                         else line for intersection, line in zip(intersections, lines)]
+    # the line are not interrupted, keeping the original ones
+    else:
+        clipped_lines = lines
 
     # creating a polygon of visibility based on the lines and their progression, taking into account the origin Point too    
-    poly = Polygon([[p.x, p.y] for p in [origin] + lines + [origin]])
+    poly = Polygon([[p.x, p.y] for p in [origin] + [Point(line.coords[1]) for line in clipped_lines ] + [origin]])
     poly_vis = poly.difference(building_geometry)
     if poly_vis.is_empty:
         poly_vis = poly.buffer(0).difference(building_geometry) 
     
-    return poly_vis.area
-
-def visibility_graph(building_geometry, obstructions_gdf):
-    # Create a visibility graph from the obstructions
-    visibility_graph = vg.VisibilityGraph()
-    visibility_graph.from_polygons(list(obstructions_gdf['geometry'].values))
-    
-    # Get the visibility polygon for the building
-    visible_area = visibility_graph.visibility_polygon(building_geometry.centroid.coords[0])
-    
-    # Return the visible area
-    return visible_area    
-    
-    
+    return poly_vis.area  
 
 def compute_3d_sight_lines(nodes_gdf: gpd.GeoDataFrame, buildings_gdf: gpd.GeoDataFrame, distance_along: float, distance_min_observer_target: float ) -> gpd.GeoDataFrame:
     """
