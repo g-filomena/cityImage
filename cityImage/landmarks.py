@@ -145,7 +145,7 @@ def get_buildings_fromOSM(place, download_method: str, epsg = None, distance = 1
     
     return buildings_gdf
 
-def structural_score(buildings_gdf, obstructions_gdf, edges_gdf, advance_vis_expansion_distance = 300, radius_neighbours = 150):
+def structural_score(buildings_gdf, obstructions_gdf, edges_gdf, advance_vis_expansion_distance = 300, neighbours_radius = 150):
     """
     The function computes the "Structural Landmark Component" sub-scores of each building.
     It considers:
@@ -163,7 +163,7 @@ def structural_score(buildings_gdf, obstructions_gdf, edges_gdf, advance_vis_exp
         obstructions GeoDataFrame  
     advance_vis_expansion_distance: float
         2d advance visibility - it indicates up to which distance from the building boundaries the 2dvisibility polygon can expand.
-    radius_neighbours: float
+    neighbours_radius: float
         neighbours - research radius for other adjacent buildings.
         
     Returns
@@ -180,7 +180,7 @@ def structural_score(buildings_gdf, obstructions_gdf, edges_gdf, advance_vis_exp
     buildings_gdf["road"] = buildings_gdf.geometry.distance(street_network)
     buildings_gdf["2dvis"] = buildings_gdf.geometry.apply(lambda row: visibility_polygon2d(row, obstructions_gdf, sindex, max_expansion_distance=
                                     advance_vis_expansion_distance))
-    buildings_gdf["neigh"] = buildings_gdf.geometry.apply(lambda row: number_neighbours(row, obstructions_gdf, sindex, radius=radius_neighbours))
+    buildings_gdf["neigh"] = buildings_gdf.geometry.apply(lambda row: number_neighbours(row, obstructions_gdf, sindex, radius=neighbours_radius))
 
     return buildings_gdf
     
@@ -346,7 +346,7 @@ def compute_3d_sight_lines(nodes_gdf, buildings_gdf, distance_along = 200, dista
     
     return sight_lines
    
-def intervisibility(line2d, buildingID, start, stop, buildings_gdf, buildings_sindex) -> bool:
+def intervisibility(line2d, buildingID, start, stop, buildings_gdf, buildings_sindex):
     """
     Check if a 3d line of sight between two points is obstructed by any buildings.
     
@@ -385,7 +385,6 @@ def intervisibility(line2d, buildingID, start, stop, buildings_gdf, buildings_si
             
     return visible 
   
-   
 def visibility_score(buildings_gdf, sight_lines = pd.DataFrame({'a' : []}), method = 'longest'):
     """
     The function calculates the sub-scores of the "Visibility Landmark Component".
@@ -592,7 +591,7 @@ def cultural_score(buildings_gdf, historical_elements_gdf = pd.DataFrame({'a' : 
 
     # spatial index
     sindex = historical_elements_gdf.sindex 
-    buildings_gdf["cult"] = buildings_gdf.geometry.apply(lambda row: _cultural_score_building(row, historical_elements_gdf, sindex, score = historical_score), axis = 1)
+    buildings_gdf["cult"] = buildings_gdf.geometry.apply(lambda row: _cultural_score_building(row, historical_elements_gdf, sindex, score = historical_score))
     return buildings_gdf
 
 def pragmatic_score(buildings_gdf, research_radius = 200):
