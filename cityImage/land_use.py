@@ -27,15 +27,16 @@ def classify_land_use(buildings_gdf, new_land_use_field, land_use_field, categor
     
     # Create a new column with the same values as the land_use_field column
     buildings_gdf[new_land_use_field] = buildings_gdf[land_use_field].copy()
-    # Create a dictionary to map the old category values to the new strings
-    map_dict = {category: strings[n] for n, category in enumerate(categories)}
-    # Use the map function and the dictionary to update the new column
-    buildings_gdf[new_land_use_field].replace(map_dict, inplace=True)
+    # reclassifying: replacing original values with relative categories
+    buildings_gdf[new_land_use_field] = buildings_gdf[land_use_field]
+    
+    for n, category in enumerate(categories):
+        buildings_gdf[new_land_use_field] = buildings_gdf[new_land_use_field].map(lambda x: strings[n] if x in category else x)
     
     return buildings_gdf
 
 
-def land_use_from_other_gdf(buildings_gdf, other_gdf, column, land_use_field):
+def land_use_from_other_gdf(buildings_gdf, other_gdf, new_land_use_field, land_use_field):
     """
     It assigns land-use attributes to buildings in a buildings GeoDataFrame, looking for possible matches in "other_gdf", a Polygon or Point GeoDataFrame
     Polygon: Possible matches here means the buildings in "other_gdf" whose area of interesection with the examined building (y), covers at least
@@ -50,7 +51,7 @@ def land_use_from_other_gdf(buildings_gdf, other_gdf, column, land_use_field):
         buildings GeoDataFrame
 	other_gdf: Point or Polygon GeoDataFrame
 		the GeoDataFrame wherein looking for land_use attributes
-    column: string
+    new_land_use_field: string
 		name of the column in buildings_gdf to which assign the land_use descriptor
     land_use_field: string, 
         name of the column in other_gdf wherein the land_use attribute is stored
@@ -62,19 +63,19 @@ def land_use_from_other_gdf(buildings_gdf, other_gdf, column, land_use_field):
     """
         
     buildings_gdf = buildings_gdf.copy()    
-    buildings_gdf[column] = None
+    buildings_gdf[new_land_use_field] = None
     
-    if (other_gdf.iloc[0].geom_type == 'Point'):
+    if (other_gdf.iloc[0].geometry.geom_type == 'Point'):
         other_gdf["nr"] = 1
     
     # spatial index
     sindex = other_gdf.sindex
         
-    if (other_gdf.iloc[0].geom_type == 'Point'):
-        buildings_gdf[column] = buildings_gdf.geometry.apply(lambda row: _land_use_from_points(row, other_gdf,
+    if (other_gdf.iloc[0].geometry.geom_type == 'Point'):
+        buildings_gdf[new_land_use_field] = buildings_gdf.geometry.apply(lambda row: _land_use_from_points(row, other_gdf,
                                                                                          sindex, land_use_field))
     else:
-        buildings_gdf[column] = buildings_gdf.geometry.apply(lambda row: _land_use_from_polygons(row, other_gdf,
+        buildings_gdf[new_land_use_field] = buildings_gdf.geometry.apply(lambda row: _land_use_from_polygons(row, other_gdf,
                                                                                               sindex, land_use_field))
     return buildings_gdf
     
