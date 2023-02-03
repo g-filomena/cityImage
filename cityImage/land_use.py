@@ -64,7 +64,7 @@ def land_use_from_other_gdf(buildings_gdf, other_gdf, column, land_use_field):
     buildings_gdf = buildings_gdf.copy()    
     buildings_gdf[column] = None
     
-    if (other_gdf.iloc[0].geom_type == 'Point')
+    if (other_gdf.iloc[0].geom_type == 'Point'):
         other_gdf["nr"] = 1
     
     # spatial index
@@ -76,7 +76,6 @@ def land_use_from_other_gdf(buildings_gdf, other_gdf, column, land_use_field):
     else:
         buildings_gdf[column] = buildings_gdf.geometry.apply(lambda row: _land_use_from_polygons(row, other_gdf,
                                                                                               sindex, land_use_field))
-    
     return buildings_gdf
     
 def _land_use_from_polygons(building_geometry, other_gdf, other_gdf_sindex, land_use_field):
