@@ -11,6 +11,7 @@ from shapely.ops import unary_union, transform, nearest_points
 from shapely.affinity import scale
 from shapely.geometry.base import BaseGeometry
 from functools import partial
+import pyvista as pv
 pd.set_option("display.precision", 3)
     
 def scaling_columnDF(df, column, inverse = False):
@@ -362,8 +363,8 @@ def polygon_2d_to_3d(building_polygon, base, height):
     poly_points = building_polygon.exterior.coords
         
     def reorient_coords(xy):
-    
-            """Reorient the coordinates of the polygon
+        """
+        Reorient the coordinates of the polygon
         
         This function reorients the coordinates of a polygon if the polygon
         has counterclockwise orientation.
