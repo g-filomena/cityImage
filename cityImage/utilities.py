@@ -318,4 +318,81 @@ def sum_at_centroid(line_geometry, bus_lines, column):
     
     freq = bus_lines[bus_lines.geometry.intersects(line_geometry)][column].sum()
     return freq
+
+def polygons_gdf_multiparts_to_singleparts(polygons_gdf):
+    """    
+    The function extracts the individual parts of the multi-part geometries and creates a new GeoDataFrame with single part geometries.
+            
+    Parameters
+    ----------
+    buildings_gdf: gpd.GeoDataFrame
+        GeoDataFrame containing building footprint geometries
+    
+    Returns
+    -------
+    single_parts_gdf: Polygon GeoDataFrame
+        the new GeoDataFrame with simplified single part building footprint geometries
+    """  
+    
+    polygons_gdf = polygons_gdf.copy()
+    single_parts = gpd.geoseries.GeoSeries([geom for geom in buildings_gdf.unary_union.geoms])
+    single_parts_gdf = gpd.GeoDataFrame(geometry=single_parts, crs = polygons_gdf.crs)
+    
+    return single_parts_gdf
+    
+def polygon_2d_to_3d(building_polygon, base, height):
+    """
+    Convert a 2D polygon to a 3D polygon. This function takes a 2D polygon (building_polygon) and extrudes it into 3D space, creating a pv.PolyData,
+    creating a 3D polygon with a base and a height elevation.
+    
+    Parameters
+    ----------
+    building_polygon (shapely.geometry.Polygon): 
+        2D polygon to be extruded
+    base (float): 
+        base height of the 3D polygon
+    height (float): 
+        height of the 3D polygon
+    
+    Returns:
+    ----------
+    pv.PolyData: A 3D polygon
+    """
+    
+    poly_points = building_polygon.exterior.coords
+        
+    def reorient_coords(xy):
+    
+            """Reorient the coordinates of the polygon
+        
+        This function reorients the coordinates of a polygon if the polygon
+        has counterclockwise orientation.
+        
+        Args:
+        xy (list): List of tuples, each representing a coordinate of the polygon
+        
+        Returns:
+        list: Reoriented list of tuples representing the polygon's coordinates
+        """
+        value = 0
+        for i in range(len(xy)):
+            x1, y1 = xy[i]
+            x2, y2 = xy[(i+1)%len(xy)]
+            value += (x2-x1)*(y2+y1)
+        if value > 0:
+            return xy
+        else:
+            return xy[::-1]
+
+    # Reorient the coordinates of the polygon
+    xy = reorient_coords(poly_points)
+    # Create 3D coordinates with the base height
+    xyz_base = [(x,y,base) for x,y in xy]
+    # Create faces of the polygon
+    faces = [len(xyz_base), *range(len(xyz_base))]
+    # Create the 3D polygon using pyvista
+    polygon = pv.PolyData(xyz_base, faces=faces)
+    
+    # Extrude the 3D polygon to the specified height
+    return polygon.extrude((0, 0, height - base), capping=True)
     
