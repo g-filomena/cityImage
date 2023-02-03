@@ -325,7 +325,7 @@ def polygons_gdf_multiparts_to_singleparts(polygons_gdf):
             
     Parameters
     ----------
-    buildings_gdf: gpd.GeoDataFrame
+    polygons_gdf: gpd.GeoDataFrame
         GeoDataFrame containing building footprint geometries
     
     Returns
@@ -335,7 +335,7 @@ def polygons_gdf_multiparts_to_singleparts(polygons_gdf):
     """  
     
     polygons_gdf = polygons_gdf.copy()
-    single_parts = gpd.geoseries.GeoSeries([geom for geom in buildings_gdf.unary_union.geoms])
+    single_parts = gpd.geoseries.GeoSeries([geom for geom in polygons_gdf.unary_union.geoms])
     single_parts_gdf = gpd.GeoDataFrame(geometry=single_parts, crs = polygons_gdf.crs)
     
     return single_parts_gdf
