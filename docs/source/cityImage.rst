@@ -17,7 +17,7 @@ cityImage.barriers module
 .. automodule:: cityImage.barriers
     :members:
 
-cityImage.cleaning_network module
+cityImage.clean module
 ---------------------------------
 
 .. automodule:: cityImage.cleaning_network
@@ -57,18 +57,6 @@ cityImage.regions module
 ------------------------
 
 .. automodule:: cityImage.regions
-    :members:
-
-cityImage.simplification module
--------------------------------
-
-.. automodule:: cityImage.simplification
-    :members:
-
-cityImage.transport_network module
-----------------------------------
-
-.. automodule:: cityImage.transport_network
     :members:
 
 cityImage.utilities module
