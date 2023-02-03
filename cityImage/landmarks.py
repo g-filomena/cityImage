@@ -372,14 +372,14 @@ def intervisibility(line2d, buildingID, start, stop, buildings_gdf, buildings_si
     # if there is no 2d intersection, it is not necessary to check for the 3d one.
     possible_matches_index = list(buildings_sindex.intersection(line2d.buffer(5).bounds)) # looking for possible candidates in the external GDF
     possible_matches = buildings_gdf.iloc[possible_matches_index]
-    pm = possible_matches[possible_matches.intersects(line2d)]
-    pm = pm[pm.buildingID != buildingID]
-    if len(pm) == 0:
+    matches = possible_matches[possible_matches.intersects(line2d)]
+    matches = matches[matches.buildingID != buildingID]
+    if len(matches) == 0:
         return True
     
     # if there are 2d intersections, check for 3d ones
     visible = True
-    for _, row_building in pm.iterrows():
+    for _, row_building in matches.iterrows():
         building_3d = row_building.building_3d.extract_surface().triangulate()
         points, intersections = building_3d.ray_trace(start, stop)
         if len(intersections) > 0:
@@ -580,14 +580,14 @@ def cultural_score(buildings_gdf, historical_elements_gdf = pd.DataFrame({'a' : 
         """
         possible_matches_index = list(historical_elements_gdf_sindex.intersection(building_geometry.bounds)) # looking for possible candidates in the external GDF
         possible_matches = historical_elements_gdf.iloc[possible_matches_index]
-        pm = possible_matches[possible_matches.intersects(building_geometry)]
+        matches = possible_matches[possible_matches.intersects(building_geometry)]
 
         if (score is None):
-            cs = len(pm) # score only based on number of intersecting elements
-        elif len(pm) == 0: 
+            cs = len(matches) # score only based on number of intersecting elements
+        elif len(matches) == 0: 
             cs = 0
         else: 
-            cs = pm[score].sum() # otherwise sum the scores of the intersecting elements
+            cs = matches[score].sum() # otherwise sum the scores of the intersecting elements
         
         return cs
 
@@ -641,11 +641,11 @@ def pragmatic_score(buildings_gdf, research_radius = 200):
         buffer = building_geometry.buffer(radius)
         possible_matches_index = list(buildings_gdf_sindex.intersection(buffer.bounds))
         possible_matches = buildings_gdf.iloc[possible_matches_index]
-        pm = possible_matches[possible_matches.intersects(buffer)]
-        neigh = pm.groupby(["land_use"], as_index = True)["nr"].sum() 
+        matches = possible_matches[possible_matches.intersects(buffer)]
+        neigh = matches.groupby(["land_use"], as_index = True)["nr"].sum() 
 
         Nj = neigh.loc[building_land_use] # nr of neighbours with same land_use
-        Pj = 1-(Nj/pm["nr"].sum()) # inverting the value # Pj = Nj/N
+        Pj = 1-(Nj/matches["nr"].sum()) # inverting the value # Pj = Nj/N
             
         return Pj    
         
@@ -725,7 +725,7 @@ def compute_global_scores(buildings_gdf, global_indexes_weights, global_componen
     buildings_gdf["gScore"] = (buildings_gdf["vScore_sc"]*global_components_weights["vScore"] + buildings_gdf["sScore_sc"]*global_components_weights["sScore"] + 
                                buildings_gdf["cScore"]*global_components_weights["cScore"] + buildings_gdf["pScore"]*global_components_weights["pScore"])
 
-    scaling_columnDF(buildings_gdf, "gScore")
+    buildings_gdf["gScore_sc"] = scaling_columnDF(buildings_gdf["gScore"])
     
     return buildings_gdf
 
@@ -788,43 +788,43 @@ def compute_local_scores(buildings_gdf, local_indexes_weights, local_components_
         buffer = building_geometry.buffer(radius)
         possible_matches_index = list(buildings_gdf_sindex.intersection(buffer.bounds))
         possible_matches = buildings_gdf.iloc[possible_matches_index].copy()
-        pm = pm[pm.intersects(buffer)]
+        matches = possible_matches[possible_matches.intersects(buffer)]
                     
         # rescaling the values 
         for column in col + col_inverse: 
-            if pm[column].max() == 0.0: 
-                pm[column+"_sc"] = 0.0
+            if matches[column].max() == 0.0: 
+                matches[column+"_sc"] = 0.0
             else:
-                pm[column+"_sc"] = scaling_columnDF(pm[column], inverse = column in col_inverse)
+                matches[column+"_sc"] = scaling_columnDF(matches[column], inverse = column in col_inverse)
       
         # recomputing scores
-        vScore_terms = [pm["fac_sc"] * local_indexes_weights["fac"],
-                        pm["height_sc"] * local_indexes_weights["height"],
-                        pm["3dvis"] * local_indexes_weights["3dvis"]]
-        pm["vScore_l"] = sum(vScore_terms)
+        vScore_terms = [matches["fac_sc"] * local_indexes_weights["fac"],
+                        matches["height_sc"] * local_indexes_weights["height"],
+                        matches["3dvis"] * local_indexes_weights["3dvis"]]
+        matches["vScore_l"] = sum(vScore_terms)
 
-        sScore_terms = [pm["area_sc"] * local_indexes_weights["area"],
-                        pm["neigh_sc"] * local_indexes_weights["neigh"],
-                        pm["road_sc"] * local_indexes_weights["road"],
-                        pm["2dvis_sc"] * local_indexes_weights["fac"]]
-        pm["sScore_l"] = sum(sScore_terms)
+        sScore_terms = [matches["area_sc"] * local_indexes_weights["area"],
+                        matches["neigh_sc"] * local_indexes_weights["neigh"],
+                        matches["road_sc"] * local_indexes_weights["road"],
+                        matches["2dvis_sc"] * local_indexes_weights["fac"]]
+        matches["sScore_l"] = sum(sScore_terms)
        
-        pm["cScore_l"] = pm["cult_sc"]
-        pm["pScore_l"] = pm["prag_sc"]
+        matches["cScore_l"] = matches["cult_sc"]
+        matches["pScore_l"] = matches["prag_sc"]
         
         for column in ["vScore_l", "sScore_l"]: 
-            if pm[column].max() == 0.0: 
-                pm[column+"_sc"] = 0.0
+            if matches[column].max() == 0.0: 
+                matches[column+"_sc"] = 0.0
             else:
-                pm[column+"_sc"] = scaling_columnDF(pm[column])
+                matches[column+"_sc"] = scaling_columnDF(matches[column])
         
-        lScore_terms = [pm["vScore_l_sc"]*local_components_weights["vScore"],
-                        pm["sScore_l_sc"]*local_components_weights["sScore"],
-                        pm["cScore_l"]*local_components_weights["cScore"], 
-                        pm["pScore_l"]*local_components_weights["pScore"]]
-        pm["lScore"] = sum(lScore_terms)
+        lScore_terms = [matches["vScore_l_sc"]*local_components_weights["vScore"],
+                        matches["sScore_l_sc"]*local_components_weights["sScore"],
+                        matches["cScore_l"]*local_components_weights["cScore"], 
+                        matches["pScore_l"]*local_components_weights["pScore"]]
+        matches["lScore"] = sum(lScore_terms)
         
-        local_score = float("{0:.3f}".format(pm.loc[buildingID, "lScore"]))
+        local_score = float("{0:.3f}".format(matches.loc[buildingID, "lScore"]))
         
         return local_score
     
@@ -840,7 +840,7 @@ def compute_local_scores(buildings_gdf, local_indexes_weights, local_components_
             except Exception as exc:
                 print(f'{buildingID} generated an exception: {exc}')
     
-    scaling_columnDF(buildings_gdf, "lScore")
+    buildings_gdf["lScore_sc"] = scaling_columnDF(buildings_gdf["lScore"])
     
     return buildings_gdf
     
