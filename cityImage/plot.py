@@ -197,7 +197,7 @@ def _single_plot(ax, gdf, column = None, scheme = None, bins = None, classes = 7
     geometry_type = gdf.iloc[0].geometry.geom_type
     if geometry_type == 'Point':    
         if (geometry_size_factor is not None): 
-            scaling_columnDF(gdf, column)
+            gdf[column+'_sc'] = scaling_columnDF(gdf[column])
             gdf['geometry_size'] = np.where(gdf[column+'_sc'] >= 0.20, gdf[column+'_sc']*geometry_size_factor, 0.40) # marker size
             geometry_size = gdf['geometry_size']
           
