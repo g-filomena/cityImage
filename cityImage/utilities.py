@@ -14,24 +14,23 @@ from functools import partial
 import pyvista as pv
 pd.set_option("display.precision", 3)
     
-def scaling_columnDF(df, column, inverse = False):
+def scaling_columnDF(column, inverse = False):
     """
     It rescales the values in a dataframe's columns from 0 to 1
     
     Parameters
     ----------
-    df: pandas DataFrame
-        a DataFrame
-    column: string
-        the column name, representing the column to rescale
+    column: pd.Series
+        the pd.Series to rescale
     inverse: boolean
         if true, rescales from 1 to 0 instead of 0 to 1
     ----------
     """
     
-    df[column+"_sc"] = (df[column]-df[column].min())/(df[column].max()-df[column].min())
+    scaled = pd.Series((column-column.min())/(column.max()-column.min()))
     if inverse: 
-        df[column+"_sc"] = 1-(df[column]-df[column].min())/(df[column].max()-df[column].min())
+        scaled = 1-scaled
+    return scaled
         
     
 def dict_to_df(list_dict, list_col):
