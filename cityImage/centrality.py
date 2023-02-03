@@ -9,7 +9,7 @@ from math import sqrt
 from shapely.geometry import Point 
 pd.set_option("display.precision", 3)
 
-from .utilities import scaling_columnDF, dict_to_df
+from .utilities import dict_to_df
 
 def nodes_dict(G: nx.Graph) -> dict:
     """
