@@ -58,9 +58,16 @@ def get_buildings_fromSHP(path, epsg, case_study_area = None, distance_from_cent
     # computing area, reassigning columns
     obstructions_gdf["area"] = obstructions_gdf["geometry"].area
 
-    obstructions_gdf["height"] = obstructions_gdf.get(height_field) or None
-    obstructions_gdf["base"] = obstructions_gdf.get(base_field) or 0.0
-    obstructions_gdf["land_use_raw"] = obstructions_gdf.get(land_use_field) or None
+    if height_field is not None: 
+       obstructions_gdf["height"] = obstructions_gdf[height_field]
+    if base_field is None: 
+        obstructions_gdf["base"] = 0.0
+    else: 
+        obstructions_gdf["base"] = obstructions_gdf[base_field]
+    if land_use_field is not None: 
+        obstructions_gdf["land_use_raw"] = obstructions_gdf[land_use_field]
+    else:
+        obstructions_gdf["land_use_raw"] = None
 
     # dropping small buildings and buildings with null height
     obstructions_gdf = obstructions_gdf[(obstructions_gdf["area"] >= 50) & (obstructions_gdf["height"] >= 1)]
