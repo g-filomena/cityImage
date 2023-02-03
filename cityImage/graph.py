@@ -16,7 +16,6 @@ from shapely.geometry import Point, LineString
 pd.set_option("display.precision", 3)
 pd.options.mode.chained_assignment = None
 
-from .utilities import *
 from .angles import angle_line_geometries
 
 ## Obtaining graphs ###############
@@ -193,9 +192,11 @@ def dual_gdf(nodes_gdf, edges_gdf, epsg, oneway = False, angle = None):
     
     # setting angle values in degrees and radians
     if angle != 'radians':
-        edges_dual['deg'] = edges_dual.apply(lambda row: angle_line_geometries(edges_gdf.loc[row['u']].geometry, edges_gdf.loc[row['v']].geometry, degree = True, calculation_type = 'deflection'), axis = 1)
+        edges_dual['deg'] = edges_dual.apply(lambda row: angle_line_geometries(edges_gdf.loc[row['u']].geometry, edges_gdf.loc[row['v']].geometry, degree = True, 
+                                            calculation_type = 'deflection'), axis = 1)
     else: 
-        edges_dual['rad'] = edges_dual.apply(lambda row: angle_line_geometries(edges_gdf.loc[row['u']].geometry, edges_gdf.loc[row['v']].geometry, degree = False, calculation_type = 'deflection'), axis = 1)
+        edges_dual['rad'] = edges_dual.apply(lambda row: angle_line_geometries(edges_gdf.loc[row['u']].geometry, edges_gdf.loc[row['v']].geometry, degree = False, 
+                                            calculation_type = 'deflection'), axis = 1)
         
     return nodes_dual, edges_dual
 
