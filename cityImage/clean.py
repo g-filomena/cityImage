@@ -253,7 +253,7 @@ def prepare_dataframes(nodes_gdf, edges_gdf):
     
     return nodes_gdf, edges_gdf    
     
-def simplify_same_uv_edges(edges_gdf):
+def simplify_same_vertexes_edges(edges_gdf):
     """
     This function is used to simplify edges that have the same start and end point (i.e. 'u' and 'v' values) 
     in the edges_gdf GeoDataFrame. It removes duplicate edges that have similar geometry, keeping only the one 
@@ -305,7 +305,7 @@ def simplify_same_uv_edges(edges_gdf):
 
 
                     
-def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_islands = True, same_uv_edges = True, self_loops = False, fix_topology = False):
+def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_islands = True, same_vertexes_edges = True, self_loops = False, fix_topology = False):
     """
     It calls a series of functions to clean nodes and edges GeoDataFrames.
     It handles:
@@ -327,9 +327,9 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_islands = True
         if true remove dead ends
     remove_disconnected_islands: boolean
         if true checks the existence of disconnected islands within the network and deletes corresponding graph components
-    same_uv_edges: boolean
+    same_vertexes_edges: boolean
         if true, it considers as duplicates couple of edges with same vertexes but different geometry. If one of the edges is 1% longer than the other, the longer is deleted; 
-        otherwise a center line is built to replace the same_uv_edges.
+        otherwise a center line is built to replace the same vertexes edges.
     fix_topology: boolean
         if true, it breaks lines at intersections with other lines in the streets GeoDataFrame, apart from segments categorised as bridges or tunnels in OSM.
    
@@ -347,7 +347,7 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_islands = True
         nodes_gdf, edges_gdf = remove_disconnected_islands(nodes_gdf, edges_gdf, 'nodeID')
 
     cycle = 0
-    while (((not is_edges_simplified(edges_gdf)) & same_uv_edges) | (not is_nodes_simplified(nodes_gdf, edges_gdf)) | (cycle == 0)):
+    while (((not is_edges_simplified(edges_gdf)) & same_vertexes_edges) | (not is_nodes_simplified(nodes_gdf, edges_gdf)) | (cycle == 0)):
 
         edges_gdf['length'] = edges_gdf['geometry'].length # recomputing length, to account for small changes
         cycle += 1
@@ -371,7 +371,7 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_islands = True
         edges_gdf.drop_duplicates(['tmp'], keep = 'first', inplace = True)
         
         # edges with different geometries but same u-v nodes pairs
-        edges_gdf = simplify_same_uv_edges(edges_gdf)
+        edges_gdf = simplify_same_vertexes_edges(edges_gdf)
   
         if dead_ends: 
             nodes_gdf, edges_gdf = fix_dead_ends(nodes_gdf, edges_gdf)
