@@ -9,6 +9,7 @@ from .load import*
 from .angles import *
 from .barriers import *
 from .centrality import *
+from .colors import*
 from .clean import *
 from .graph import *
 from .landmarks import *
