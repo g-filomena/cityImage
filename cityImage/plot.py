@@ -269,7 +269,8 @@ def plot_grid_gdfs_column(gdfs = [], column = None, ncols = 1, nrows = 1, titles
     
     for n, ax in enumerate(multiPlot.grid.flat):
         if n > len(gdfs)-1: 
-            continue         
+            ax.set_visible(False)    
+            continue    
         gdf = gdfs[n]
           
         parameters = {'ax' : ax, 'n' : n, 'multiPlot' : multiPlot, 'column' : column , 'gdf' : gdf, 'titles' : titles, 
@@ -350,7 +351,8 @@ def plot_grid_gdf_columns(gdf, columns = [], ncols = 1, nrows = 1, titles = [], 
     
     for n, ax in enumerate(multiPlot.grid.flat):
         if n > len(columns)-1: 
-            continue         
+            ax.set_visible(False)    
+            continue
         column = columns[n]      
             
         parameters = {'ax' : ax, 'n' : n, 'multiPlot' : multiPlot, 'column' : column , 'gdf' : gdf, 'titles' : titles, 
@@ -431,7 +433,7 @@ def plotOn_ax(ax, gdf, column = None, scheme = None, bins = None, classes = 7, n
     c_k = dict(k=classes) if bins is None else dict(bins=bins, k=len(bins))
     scheme = 'User_Defined' if bins is not None else scheme
     
-    parameters  = {'ax' : ax, 'column' : column, 'classification_kwds' : c_k, 'scheme' : scheme, 'norm' : norm, 
+    parameters = {'ax' : ax, 'column' : column, 'classification_kwds' : c_k, 'scheme' : scheme, 'norm' : norm, 
                    'cmap' : cmap, 'categorical' : categorical, 'color' : color, 'alpha' : alpha, 'legend' : legend, 
                    'zorder': zorder}  
                    
