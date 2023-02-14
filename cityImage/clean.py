@@ -170,58 +170,65 @@ def simplify_graph(nodes_gdf, edges_gdf):
         if len(to_edit) == 0: 
             return(nodes_gdf, edges_gdf)
     
+    sindex = edges_gdf.sindex
+   
     for nodeID in to_edit:
-        tmp = edges_gdf[(edges_gdf['u'] == nodeID) | (edges_gdf['v'] == nodeID)].copy()  
-
-        if len(tmp) == 0: 
+        node_geometry = nodes_gdf.loc[nodeID].geometry
+        possible_matches_index = list(sindex.intersection(node_geometry.bounds))
+        
+        if len(possible_matches_index) == 0: 
             nodes_gdf.drop(nodeID, axis = 0, inplace = True)
             continue
+        possible_matches = edges_gdf.iloc[possible_matches_index]
+        tmp = possible_matches[possible_matches.intersects(node_geometry)]
         if len(tmp) == 1: 
             continue # possible dead end
         
-        # dead end identified
-        index_first, index_second = tmp.iloc[0].edgeID, tmp.iloc[1].edgeID # first segment index
-        
+        # pseudo junction identified
+        first, second = tmp.iloc[0], tmp.iloc[1]
+        index_first, index_second = first.edgeID, second.edgeID # first segment index
+
         # Identifying the relationship between the two segments.
         # New node_u and node_v are assigned accordingly. A list of ordered coordinates is obtained for 
         # merging the geometries. 4 conditions:
-        if (tmp.iloc[0]['u'] == tmp.iloc[1]['u']):  
-            edges_gdf.at[index_first,'u'] = edges_gdf.loc[index_first]['v']
-            edges_gdf.at[index_first,'v'] = edges_gdf.loc[index_second]['v']
-            line_coordsA, line_coordsB = list(tmp.iloc[0]['geometry'].coords), list(tmp.iloc[1]['geometry'].coords)    
+        if (first['u'] == second['u']):  
+            edges_gdf.at[index_first,'u'] = first['v']
+            edges_gdf.at[index_first,'v'] = second['v']
+            line_coordsA, line_coordsB = list(first.coords), list(second.coords)    
             line_coordsA.reverse()
         
-        elif (tmp.iloc[0]['u'] == tmp.iloc[1]['v']): 
-            edges_gdf.at[index_first,'u'] = edges_gdf.loc[index_second]['u']
-            line_coordsA, line_coordsB = list(tmp.iloc[1]['geometry'].coords), list(tmp.iloc[0]['geometry'].coords)               
+        elif (first['u'] == second['v']): 
+            edges_gdf.at[index_first,'u'] = second['u']
+            line_coordsA, line_coordsB = list(second.coords), list(first.coords)               
         
-        elif (tmp.iloc[0]['v'] == tmp.iloc[1]['u']): 
-            edges_gdf.at[index_first,'v'] = edges_gdf.loc[index_second]['v']
-            line_coordsA, line_coordsB = list(tmp.iloc[0]['geometry'].coords), list(tmp.iloc[1]['geometry'].coords)  
+        elif (first['v'] == second['u']): 
+            edges_gdf.at[index_first,'v'] = second['v']
+            line_coordsA, line_coordsB = list(first.coords), list(second.coords)  
         
-        else: # (tmp.iloc[0]['v'] == tmp.iloc[1]['v']) 
-            edges_gdf.at[index_first,'v'] = edges_gdf.loc[index_second]['u']
-            line_coordsA, line_coordsB = list(tmp.iloc[0]['geometry'].coords), list(tmp.iloc[1]['geometry'].coords)
+        else: # (first['v'] == second['v']) 
+            edges_gdf.at[index_first,'v'] =  second['u']
+            line_coordsA, line_coordsB = list(first.coords), list(second.coords)
             line_coordsB.reverse()
 
-        # checking that none edges with node_u == node_v have been created, if yes: drop them
-        if edges_gdf.loc[index_first].u == edges_gdf.loc[index_first].v: 
-            edges_gdf.drop([index_first, index_second], axis = 0, inplace = True)
-            nodes_gdf.drop(nodeID, axis = 0, inplace = True)
-            continue
-        
         # obtaining coordinates-list in consistent order and merging
         new_line = line_coordsA + line_coordsB
         merged_line = LineString([coor for coor in new_line]) 
         edges_gdf.at[index_first, 'geometry'] = merged_line
         
         if 'pedestrian' in edges_gdf.columns: #type of street 
-            if edges_gdf.loc[index_second]['pedestrian']: 
+            if second.pedestrian: 
                 edges_gdf.at[index_first, 'pedestrian'] = 1        
+        
         # dropping the second segment, as the new geometry was assigned to the first edge
-        edges_gdf.drop(index_second, axis = 0, inplace = True)
-        nodes_gdf.drop(nodeID, axis = 0, inplace = True)
+        edges_gdf = edges_gdf.drop(index_second, axis = 0)
+        nodes_gdf = nodes_gdf.drop(nodeID, axis = 0)
     
+    # checking that none edges with node_u == node_v have been created, if yes: drop them
+    edges_gdf.drop(['u', 'v'], inplace = True, axis =1)
+    nodes_gdf = obtain_nodes_gdf(edges_gdf, edges_gdf.crs)
+    nodes_gdf, edges_gdf = join_nodes_edges_by_coordinates(nodes_gdf, edges_gdf)
+    edges_gdf = edges_gdf[~((edges_gdf['u'] == edges_gdf['v']) & (edges_gdf['geometry'].length < 1.00))] #eliminate node-lines
+
     return nodes_gdf, edges_gdf
 
 def prepare_dataframes(nodes_gdf, edges_gdf):
@@ -269,8 +276,6 @@ def simplify_same_vertexes_edges(edges_gdf):
     edges_gdf: LineString GeoDataFrame
         street segments GeoDataFrame
     """
-
-
     to_drop = set()
     if not edges_gdf.duplicated('code').any():
         return edges_gdf
@@ -302,9 +307,7 @@ def simplify_same_vertexes_edges(edges_gdf):
     edges_gdf = edges_gdf.drop(list(to_drop), axis = 0)
     
     return edges_gdf
-
-
-                    
+                   
 def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_islands = True, same_vertexes_edges = True, self_loops = False, fix_topology = False):
     """
     It calls a series of functions to clean nodes and edges GeoDataFrames.
@@ -345,9 +348,11 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_islands = True
         nodes_gdf, edges_gdf = fix_dead_ends(nodes_gdf, edges_gdf)
     if remove_islands:
         nodes_gdf, edges_gdf = remove_disconnected_islands(nodes_gdf, edges_gdf, 'nodeID')
-
+    if fix_topology: 
+        nodes_gdf, edges_gdf = fix_network_topology(nodes_gdf, edges_gdf)
+        
     cycle = 0
-    while (((not is_edges_simplified(edges_gdf)) & same_vertexes_edges) | (not is_nodes_simplified(nodes_gdf, edges_gdf)) | (cycle == 0)):
+    while ((not is_edges_simplified(edges_gdf) & same_vertexes_edges) | (not is_nodes_simplified(nodes_gdf, edges_gdf)) | (cycle == 0)):
 
         edges_gdf['length'] = edges_gdf['geometry'].length # recomputing length, to account for small changes
         cycle += 1
@@ -357,21 +362,21 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_islands = True
             edges_gdf = edges_gdf[edges_gdf['u'] != edges_gdf['v']] #eliminate loops
         
         edges_gdf = edges_gdf[~((edges_gdf['u'] == edges_gdf['v']) & (edges_gdf['geometry'].length < 1.00))] #eliminate node-lines
-                
-        # Reordering coordinates to allow for comparison between edges
-        edges_gdf['coords'] = [list(c.coords) for c in edges_gdf.geometry]
-        edges_gdf.loc[(edges_gdf.u.astype(str)+"-"+edges_gdf.v.astype(str)) != edges_gdf.code]['coords'] = [x[::-1] for x in edges_gdf[(edges_gdf.u.astype(str)+"-"+edges_gdf.v.astype(str)) != edges_gdf.code].coords]
-            
+                            
         # dropping duplicate-geometries edges
         geometries = edges_gdf['geometry'].apply(lambda geom: geom.wkb)
         edges_gdf = edges_gdf.loc[geometries.drop_duplicates().index]
         
-        # dropping edges with same geometry but with coords in different orders (depending on their directions)    
+        # dropping edges with same geometry but with coords in different orders (depending on their directions)  
+        # Reordering coordinates to allow for comparison between edges        
+        edges_gdf['coords'] = [list(c.coords) for c in edges_gdf.geometry]
+        edges_gdf.loc[(edges_gdf.u.astype(str)+"-"+edges_gdf.v.astype(str)) != edges_gdf.code]['coords'] = [x[::-1] for x in edges_gdf[(edges_gdf.u.astype(str)+"-"+edges_gdf.v.astype(str)) != edges_gdf.code].coords]        
         edges_gdf['tmp'] = edges_gdf['coords'].apply(tuple, 1)  
         edges_gdf.drop_duplicates(['tmp'], keep = 'first', inplace = True)
         
         # edges with different geometries but same u-v nodes pairs
-        edges_gdf = simplify_same_vertexes_edges(edges_gdf)
+        if same_vertexes_edges:
+            edges_gdf = simplify_same_vertexes_edges(edges_gdf)
   
         if dead_ends: 
             nodes_gdf, edges_gdf = fix_dead_ends(nodes_gdf, edges_gdf)
@@ -379,8 +384,6 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_islands = True
         # only keep nodes which are actually used by the edges in the GeoDataFrame
         to_keep = list(set(list(edges_gdf['u'].unique()) + list(edges_gdf['v'].unique())))
         nodes_gdf = nodes_gdf[nodes_gdf['nodeID'].isin(to_keep)]
-        if fix_topology: 
-            nodes_gdf, edges_gdf = fix_network_topology(nodes_gdf, edges_gdf)
         
         # simplify the graph                           
         nodes_gdf, edges_gdf = simplify_graph(nodes_gdf, edges_gdf) 
@@ -398,10 +401,9 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_islands = True
     
     return nodes_gdf, edges_gdf
 
-def fix_network_topology(nodes_gdf, edges_gdf):
+def fix_network_topology(nodes_gdf, edges_gdf, use_z = False):
     """
     It breaks lines at intersections with other lines in the streets GeoDataFrame, apart from segments categorised as bridges or tunnels in OSM (if such attribut is provided)
-
     Parameters
     ----------
     nodes_gdf: Point GeoDataFrame
@@ -414,24 +416,33 @@ def fix_network_topology(nodes_gdf, edges_gdf):
     nodes_gdf, edges_gdf: tuple of GeoDataFrames
         the cleaned junctions and street segments GeoDataFrame
     """
-     
+    
     nodes_gdf, edges_gdf = nodes_gdf.copy(), edges_gdf.copy()
-    edges_gdf.drop(['u', 'v'], inplace = True, axis =1)
+
+    to_preserve = []
     columns = ['bridge', 'tunnel']
     bridge_tunnels = edges_gdf.empty().copy()
-    
     for column in columns:
         if column in edges_gdf.columns:
             edges_gdf[column].fillna(0, inplace=True)
             bridge_tunnels = pd.concat([bridge_tunnels, edges_gdf[edges_gdf[column] != 0]], ignore_index=True)
-
+    if len(bridge_tunnels) > 0:
+        to_preserve = bridge_tunnels.edgeID.unique()
+        
     old_edges_gdf = edges_gdf.copy()
+    sindex = old_edges.sindex 
     
     for row in old_edges_gdf.itertuples():
+        if old_edges_gdf.loc[row.Index].edgeID in to_preserve:
+            continue
         
         line_geometry = old_edges_gdf.loc[row.Index].geometry
+        possible_matches_index = list(sindex.intersection(line_geometry.buffer(5).bounds))
+        possible_matches = old_edges_gdf.iloc[possible_matches_index].copy()
+        tmp = possible_matches[possible_matches.intersects(line_geometry)]
+        
         tmp = old_edges_gdf[old_edges_gdf.geometry.intersects(line_geometry)].copy()
-        tmp.drop(row.Index, axis = 0, inplace = True)
+        tmp = tmp.drop(row.Index, axis = 0)
         
         union = tmp.unary_union
         intersections = line_geometry.intersection(union)
@@ -447,22 +458,27 @@ def fix_network_topology(nodes_gdf, edges_gdf):
                 new_collection.append(point) # only checking the others
         
         if len(new_collection) == 0: 
-            continue    
+            continue 
        
         geometry_collection = MultiPoint([point.coords[0] for point in new_collection])  
         # including the intersecting geometries in the coordinates sequence of the line and split
         new_line_geometries = _split_line_at_MultiPoint(line_geometry, geometry_collection) 
 
         for n, line in enumerate(new_line_geometries): # assigning the resulting geometries
-            index = row.Index if n == 0 else max(edges_gdf.index) + 1
+            if n == 0: 
+                index = row.Index
+            else: 
+                index = max(edges_gdf.index)+1
             # copy attributes
             edges_gdf.loc[index] = edges_gdf.loc[row.Index]  
             # and assign geometry an new edgeID 
             edges_gdf.at[index, 'geometry'] = line
             edges_gdf.at[index, 'edgeID'] = index 
-                                  
+            
+    edges_gdf.drop(['u', 'v'], inplace = True, axis =1)
     nodes_gdf = obtain_nodes_gdf(edges_gdf, edges_gdf.crs)
     nodes_gdf, edges_gdf = join_nodes_edges_by_coordinates(nodes_gdf, edges_gdf)
+    
     return nodes_gdf, edges_gdf
           
 def _split_line_at_MultiPoint(line_geometry, intersection):   
@@ -496,11 +512,26 @@ def _split_line_at_MultiPoint(line_geometry, intersection):
         line_geometry = LineString([coor for coor in new_line_coords])
                      
     lines = split(line_geometry, intersection)   
-    return 
-
-    return nodes_gdf, edges_gdf
+    return lines
 
 def remove_disconnected_islands(nodes_gdf, edges_gdf, nodeID):
+    """
+    Remove disconnected islands from a graph.
+
+    Parameters:
+    -----------
+    nodes_gdf : GeoDataFrame
+        A GeoDataFrame with the nodes information
+    edges_gdf : GeoDataFrame
+        A GeoDataFrame with the edges information
+    nodeID : str
+        name of the field containing the nodeIDs
+
+    Returns
+    -------
+    nodes_gdf, edges_gdf: tuple of GeoDataFrames
+        the simplified junctions and street segments GeoDataFrame
+    """
     Ng = graph_fromGDF(nodes_gdf, edges_gdf, nodeID)
     if not nx.is_connected(Ng):  
         largest_component = max(nx.connected_components(Ng), key=len)
@@ -514,8 +545,6 @@ def remove_disconnected_islands(nodes_gdf, edges_gdf, nodeID):
         edges_gdf = edges_gdf[(edges_gdf.u.isin(nodes_gdf.nodeID)) & (edges_gdf.v.isin(nodes_gdf.nodeID))]
         
     return nodes_gdf, edges_gdf
-  
-
 
 def correct_edges(nodes_gdf, edges_gdf):
     """
