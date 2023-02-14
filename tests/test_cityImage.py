@@ -48,7 +48,7 @@ def test_loadSHP_topology():
     nodes_gdf_y, edges_gdf_y = ci.get_network_fromSHP(input_path, epsg_york, dict_columns = dict_columns, other_columns = [])
     # fix topology
     nodes_gdf_y, edges_gdf_y = ci.clean_network(nodes_gdf_y, edges_gdf_y, dead_ends = True, remove_islands = True, 
-                                                same_vertexes_edges = True, self_loops = True, fix_topology = False)
+                                                same_vertexes_edges = True, self_loops = True, fix_topology = True)
     
 def test_graph():
     global nodes_gdf
