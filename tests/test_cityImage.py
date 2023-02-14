@@ -44,7 +44,7 @@ def test_loadSHP_topology():
     global edges_gdf_y
     global epsg_york
     input_path = 'tests/input/York_street_network.shp'
-    dict_columns = {"roadType_field": "type",  "direction_field": "oneway", "speed_field": "maxspeed", "name_field": "name"}    
+    dict_columns = {"roadType_field": "type", "direction_field": "oneway", "speed_field": "maxspeed", "name_field": "name"}    
     nodes_gdf_y, edges_gdf_y = ci.get_network_fromSHP(input_path, epsg_york, dict_columns = dict_columns, other_columns = [])
     # fix topology
     nodes_gdf_y, edges_gdf_y = ci.clean_network(nodes_gdf_y, edges_gdf_y, dead_ends = True, remove_islands = True, 
@@ -84,7 +84,7 @@ def test_centrality():
     services = services[services['geometry'].geom_type == 'Point']
     graph = ci.weight_nodes(nodes_gdf, services, graph, field_name = 'services', radius = 50)
 
-    Rc = ci.reach_centrality(graph,  weight = weight, radius = 400, attribute = 'services')
+    Rc = ci.reach_centrality(graph, weight = weight, radius = 400, attribute = 'services')
     Bc = ci.centrality(graph, nodes_gdf, measure = 'betweenness_centrality', weight = weight, normalized = False)
     Sc = ci.centrality(graph, nodes_gdf, measure = 'straightness_centrality', weight = weight, normalized = False)
     Cc = ci.centrality(graph, nodes_gdf, measure = 'closeness_centrality', weight = weight, normalized = False)
@@ -147,11 +147,11 @@ def test_landmarks():
     _ = ci.get_buildings_fromOSM(location, download_method = 'from_point', epsg = epsg_susa, distance = 1000)
     
     # weights
-    global_indexes_weights = {'3dvis': 0.50, 'fac': 0.30, 'height': 0.20, 'area': 0.30, '2dvis':0.30, 'neigh': 0.20 , 'road': 0.20}
+    global_indexes_weights = {'3dvis': 0.50, 'fac': 0.30, 'height': 0.20, 'area': 0.30, '2dvis':0.30, 'neigh': 0.20, 'road': 0.20}
     global_components_weights = {'vScore': 0.50, 'sScore' : 0.30, 'cScore': 0.20, 'pScore': 0.10}   
 
-    local_indexes_weights = {'3dvis': 0.50, 'fac': 0.30, 'height': 0.20, 'area': 0.40, '2dvis': 0.00, 'neigh': 0.30 , 'road': 0.30}
-    local_components_weights = {'vScore': 0.25, 'sScore' : 0.35, 'cScore':0.10 , 'pScore': 0.30}
+    local_indexes_weights = {'3dvis': 0.50, 'fac': 0.30, 'height': 0.20, 'area': 0.40, '2dvis': 0.00, 'neigh': 0.30, 'road': 0.30}
+    local_components_weights = {'vScore': 0.25, 'sScore' : 0.35, 'cScore':0.10, 'pScore': 0.30}
     
     buildings_gdf = ci.get_buildings_fromOSM(place, download_method = 'OSMplace', epsg = epsg_susa)
     buildings_gdf['height'] = np.random.choice([10, 1, 50], buildings_gdf.shape[0]) 
@@ -181,9 +181,11 @@ def test_plot():
     
     tmp_nodes = nodes_gdf.copy()
     base_map_dict = {'base_map_gdf': edges_gdf, 'base_map_alpha' : 0.4, 'base_map_geometry_size' : 1.1, 'base_map_zorder' : 0}
-    # Lynch's bins - only for variables from 0 to 1    
+   
 
     tmp_nodes['Bc_sc'] = ci.scaling_columnDF(tmp_nodes['Bc'])
+
+    # Lynch's bins - only for variables from 0 to 1 
     scheme_dict = {'column' : "Bc_sc", 'bins' : [0.125, 0.25, 0.5, 0.75, 1.00], 'scheme' : 'User_Defined'}
     cmap = ci.kindlmann()
     plot = ci.plot_gdf(title = 'Example', gdf = tmp_nodes, black_background = True, cmap = cmap, legend = True, axes_frame = True, 
@@ -200,22 +202,20 @@ def test_plot():
     
     #2x2 legend
     scheme_dict = {'bins' : [0.125, 0.25, 0.5, 0.75, 1.00], 'scheme' : 'User_Defined'}
-    plot = ci.plot_grid_gdf_columns(gdf = tmp_nodes , columns = columns, black_background = True, cmap = cmap, nrows= 2, ncols = 2, 
+    plot = ci.plot_grid_gdf_columns(gdf = tmp_nodes, columns = columns, black_background = True, cmap = cmap, nrows= 2, ncols = 2, 
                          figsize = (15,7), classes = 5, legend = True, axes_frame = True, **scheme_dict, titles = columns)
     
     # 4x2 white
-    plot = ci.plot_grid_gdf_columns(gdf = tmp_nodes , columns = columns+columns, black_background = False,
+    plot = ci.plot_grid_gdf_columns(gdf = tmp_nodes, columns = columns+columns, black_background = False,
                          cmap = cmap, nrows= 4, ncols = 2, classes = 6, scheme = 'quantiles', legend = True, figsize = (20, 10), 
                          axes_frame = True, fontsize = 15, titles = columns+columns)
-                         
-                         
+                            
     #3 x 1
     columns = ['Bc', 'Sc', 'Cc']
     plot = ci.plot_grid_gdf_columns(gdf = tmp_nodes, columns = columns, black_background = True, cmap = cmap, ncols = 1, nrows = 3,
-                        classes = 5, legend = True, figsize = (9,9), **scheme_dict, axes_frame = True,
-                         titles = columns)
+                        classes = 5, legend = True, figsize = (9,9), **scheme_dict, axes_frame = True, titles = columns)
     #1x3
-    plot = ci.plot_grid_gdf_columns(gdf = tmp_nodes, columns = columns, black_background = True, cmap = cmap, ncols = 3, nrows =1,
+    plot = ci.plot_grid_gdf_columns(gdf = tmp_nodes, columns = columns, black_background = True, cmap = cmap, ncols = 3, nrows = 1,
                         classes = 5, legend = True, figsize = (12,4), **scheme_dict, axes_frame = True, titles = columns)                     
     
     # edges
@@ -238,9 +238,10 @@ def test_plot():
                     **base_map_dict)                        
      
     cmap = ci.rand_cmap(nlabels = len(buildings_gdf.land_use.unique()))
-    plot_buildings = ci.plot_gdf(buildings_gdf, column = 'land_use', black_background = True, legend = True, figsize = (25,10))
+    plot_buildings = ci.plot_gdf(buildings_gdf, column = 'land_use', black_background = True, legend = True, 
+                             figsize = (25,10))
 
-# def test_landuse():
+def test_landuse():
 
     epsg = 25832
     input_path = 'tests/input/Muenster_buildings.shp'
@@ -305,7 +306,7 @@ def test_plot():
      
     attributes_gdf = ci.classify_land_use(attributes_gdf, new_land_use_field = 'land_use', land_use_field = 'lu_eng', categories= categories, strings = strings)   
     attributes_gdf['land_use'] = attributes_gdf['land_use'] .str.lower()   
-    buildings_gdf = ci.land_use_from_other_gdf(buildings_shp, other_gdf =  attributes_gdf, new_land_use_field = 'land_use' , land_use_field = 'land_use')
+    buildings_gdf = ci.land_use_from_other_gdf(buildings_shp, other_gdf =  attributes_gdf, new_land_use_field = 'land_use', land_use_field = 'land_use')
     _ = ci.polygons_gdf_multiparts_to_singleparts(attributes_gdf)
     
     
