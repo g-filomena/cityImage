@@ -113,11 +113,12 @@ def min_distance_geometry_gdf(geometry, gdf):
         the closest distance from the geometry, and the index of the closest geometry in the gdf
     """
     
-    gdf = gdf.copy()
-    gdf["dist"] = gdf.apply(lambda row: geometry.distance(row['geometry']),axis=1)
-    geoseries = gdf.iloc[gdf["dist"].argmin()]
-    distance  = geoseries.dist
-    index = geoseries.name
+    sindex = gdf.sindex
+    closest = sindex.nearest(geometry, return_distance = True)
+    iloc = closest[0][1][0]
+    distance = closest[1][0]
+    index = gdf.iloc[iloc].name 
+   
     return distance, index
 
     """
