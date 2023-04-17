@@ -429,11 +429,15 @@ def plotOn_ax(ax, gdf, column = None, scheme = None, bins = None, classes = 7, n
             
     elif (column is not None) & (cmap is None):
         cmap = rand_cmap(len(gdf[column].unique())) 
+        if len(gdf[column].unique()):
+            cmap = None
+            color = 'red'
         
     c_k = dict(k=classes) if bins is None else dict(bins=bins, k=len(bins))
     scheme = 'User_Defined' if bins is not None else scheme
     
     parameters = {'ax' : ax, 'column' : column, 'classification_kwds' : c_k, 'scheme' : scheme, 'norm' : norm, 
+    parameters = {'ax' : ax, 'column' : column, 'classification_kwds' : c_k, 'scheme' : scheme, 'norm' : norm,
                    'cmap' : cmap, 'categorical' : categorical, 'color' : color, 'alpha' : alpha, 'legend' : legend, 
                    'zorder': zorder}  
                    
