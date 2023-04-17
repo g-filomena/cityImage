@@ -325,7 +325,7 @@ def compute_3d_sight_lines(nodes_gdf, buildings_gdf, distance_along = 200, dista
               for exterior, x in zip(building_exteriors_roof, num_intervals)], index=buildings_gdf.index)
     
     # create a new column in the nodes GeoDataFrame with the Point objects representing the observer positions
-    nodes_gdf['observer'] = nodes_gdf.apply(lambda row: Point(row.geometry.x, row.geometry.y, row.height), axis=1)
+    nodes_gdf['observer'] = nodes_gdf.apply(lambda row: Point(row.geometry.x, row.geometry.y, row.z), axis=1)
     # create a temporary dataframe with building targets
     tmp_buildings = buildings_gdf.explode('target')
     tmp_nodes = nodes_gdf[['nodeID', 'observer']].copy()
