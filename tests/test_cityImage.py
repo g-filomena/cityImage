@@ -39,12 +39,13 @@ def test_loadOSM():
     _, _ = ci.get_network_fromOSM(address, 'distance_from_address', network_type = "all", 
                                                           epsg = epsg_susa, distance = distance)
     
-def test_loadSHP_topology():  
+def test_loadSHP_clean():  
     global nodes_gdf_y
     global edges_gdf_y
     global epsg_york
     input_path = 'tests/input/York_street_network.shp'
-    dict_columns = {"roadType_field": "type", "direction_field": "oneway", "speed_field": "maxspeed", "name_field": "name"}    
+    dict_columns = {"highway": "type", "oneway": "oneway", "lanes" :None, 
+                "maxspeed": "maxspeed", "name": "name"}    
     nodes_gdf_y, edges_gdf_y = ci.get_network_fromSHP(input_path, epsg_york, dict_columns = dict_columns, other_columns = [])
     # fix topology
     nodes_gdf_y, edges_gdf_y = ci.clean_network(nodes_gdf_y, edges_gdf_y, dead_ends = True, remove_islands = True, 
