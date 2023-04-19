@@ -58,6 +58,7 @@ dependencies:
     - scooby==0.7.0
     - shapely==2.0.0
     - six==1.16.0
+    - tqdm==4.64.1
     - threadpoolctl==3.1.0
     - urllib3==1.26.14
     - vtk==9.2.5
