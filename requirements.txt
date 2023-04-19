@@ -10,4 +10,5 @@ python=3.10.9=h966fe2a_0
 python-louvain=0.16=pypi_0
 pyvista=0.37.0=pypi_0
 shapely=2.0.0=pypi_0
+tqdm==4.64.1=pypi_0
 
