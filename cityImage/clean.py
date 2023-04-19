@@ -6,6 +6,7 @@ import networkx as nx
 import pandas as pd
 import numpy as np
 import geopandas as gpd
+from tqdm import tqdm
 
 from shapely.geometry import Point, LineString, MultiPoint, MultiLineString
 from shapely.ops import split, unary_union
@@ -175,7 +176,7 @@ def simplify_graph(nodes_gdf, edges_gdf, nodes_to_keep_regardless = []):
         tmp_nodes = nodes_gdf[(nodes_gdf.nodeID.isin(to_edit_list)) & (~nodes_gdf.nodeID.isin(nodes_to_keep_regardless))].copy()
         to_edit = list(tmp_nodes.nodeID)
       
-    for nodeID in to_edit:
+    for nodeID in tqdm(to_edit, desc = "Removing Pseudo Nodes"):
         tmp = edges_gdf[(edges_gdf.u == nodeID) | (edges_gdf.v == nodeID)].copy()
         
         if len(tmp) == 0: 
@@ -188,7 +189,7 @@ def simplify_graph(nodes_gdf, edges_gdf, nodes_to_keep_regardless = []):
         first_edge, second_edge = tmp.iloc[0], tmp.iloc[1]
         nodes_gdf, edges_gdf = merge_pseudo_edges(first_edge, second_edge, nodeID, nodes_gdf, edges_gdf)
         
-    edges_gdf = edges_gdf[~((edges_gdf['u'] == edges_gdf['v']) & (edges_gdf['geometry'].length < 1.00))] #eliminate node-lines
+    edges_gdf = edges_gdf[edges_gdf['u'] != edges_gdf['v']] #eliminate node-lines
 
     return nodes_gdf, edges_gdf
 
@@ -199,34 +200,33 @@ def merge_pseudo_edges(first_edge, second_edge, nodeID, nodes_gdf, edges_gdf):
     second_coords = second_edge['geometry'].coords
     
     if (first_edge['u'] == second_edge['u']):  
-        edges_gdf.at[index_first,'u'] = edges_gdf.loc[index_first]['v']
-        edges_gdf.at[index_first,'v'] = edges_gdf.loc[index_second]['v']
+        edges_gdf.at[index_first,'u'] = first_edge['v']
+        edges_gdf.at[index_first,'v'] = second_edge['v']
         line_coordsA, line_coordsB = list(first_coords), list(second_coords)    
         line_coordsA.reverse()
 
     elif (first_edge['u'] == second_edge['v']): 
-        edges_gdf.at[index_first,'u'] = edges_gdf.loc[index_second]['u']
+        edges_gdf.at[index_first,'u'] = second_edge['u']
         line_coordsA, line_coordsB = list(second_coords), list(first_coords)                    
 
     elif (first_edge['v'] == second_edge['u']): 
-        edges_gdf.at[index_first,'v'] = edges_gdf.loc[index_second]['v']
+        edges_gdf.at[index_first,'v'] = second_edge['v']
         line_coordsA, line_coordsB = list(first_coords), list(second_coords)  
 
     else: # (first_edge['v'] == second_edge['v']) 
-        edges_gdf.at[index_first,'v'] = edges_gdf.loc[index_second]['u']
+        edges_gdf.at[index_first,'v'] = second_edge['u']
         line_coordsA, line_coordsB = list(first_coords), list(second_coords)
         line_coordsB.reverse()
 
-    # checking that none edges with node_u == node_v have been created, if yes: drop them
+    # checking that none edges with node_u == node_v has been created, if yes: drop it
     if edges_gdf.loc[index_first].u == edges_gdf.loc[index_first].v: 
-        edges_gdf.drop([index_first, index_second], axis = 0, inplace = True)
+        edges_gdf = edges_gdf.drop([index_first, index_second], axis = 0)
         nodes_gdf = nodes_gdf.drop(nodeID, axis = 0)
         return nodes_gdf, edges_gdf
 
     # obtaining coordinates-list in consistent order and merging
-    new_line = line_coordsA + line_coordsB
-    merged_line = LineString([coor for coor in new_line]) 
-    edges_gdf.at[index_first, 'geometry'] = merged_line
+    merged_line = line_coordsA + line_coordsB
+    edges_gdf.at[index_first, 'geometry'] = LineString([coor for coor in merged_line]) 
         
     if 'ped' in edges_gdf.columns: #type of street 
         if second_edge.ped: 
@@ -315,7 +315,8 @@ def simplify_same_vertexes_edges(edges_gdf):
     
     return edges_gdf
                    
-def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_islands = True, same_vertexes_edges = True, self_loops = False, fix_topology = False, nodes_to_keep_regardless = []):
+def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_islands = True, same_vertexes_edges = True, self_loops = False, fix_topology = False, preserve_direction = False, 
+                    nodes_to_keep_regardless = []):
     """
     It calls a series of functions to clean nodes and edges GeoDataFrames.
     It handles:
@@ -369,8 +370,10 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_islands = True
         nodes_gdf, edges_gdf = duplicate_nodes(nodes_gdf, edges_gdf)
         if self_loops: 
             edges_gdf = edges_gdf[edges_gdf['u'] != edges_gdf['v']] #eliminate loops
+        if dead_ends: 
+            nodes_gdf, edges_gdf = fix_dead_ends(nodes_gdf, edges_gdf)
         
-        edges_gdf = edges_gdf[~((edges_gdf['u'] == edges_gdf['v']) & (edges_gdf['geometry'].length < 1.00))] #eliminate node-lines
+        edges_gdf = edges_gdf[edges_gdf['u'] != edges_gdf['v']] #eliminate node-lines
                             
         # dropping duplicate-geometries edges
         geometries = edges_gdf['geometry'].apply(lambda geom: geom.wkb)
@@ -379,18 +382,17 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_islands = True
         # dropping edges with same geometry but with coords in different orders (depending on their directions)  
         # Reordering coordinates to allow for comparison between edges        
         edges_gdf['coords'] = [list(c.coords) for c in edges_gdf.geometry]
-        edges_gdf.loc[(edges_gdf.u.astype(str)+"-"+edges_gdf.v.astype(str)) != edges_gdf.code]['coords'] = [x[::-1] for x in edges_gdf[(edges_gdf.u.astype(str)+"-"
-                                                                               +edges_gdf.v.astype(str)) != edges_gdf.code].coords]        
+        if not preserve_direction:
+            condition = ((edges_gdf.u.astype(str)+"-"+edges_gdf.v.astype(str)) != edges_gdf.code)
+            edges_gdf.loc[condition, 'coords'] = pd.Series([x[::-1] for x in edges_gdf.loc[condition]['coords']], index = edges_gdf.loc[condition].index)                                                                               
+        
         edges_gdf['tmp'] = edges_gdf['coords'].apply(tuple, 1)  
         edges_gdf.drop_duplicates(['tmp'], keep = 'first', inplace = True)
-        
+            
         # edges with different geometries but same u-v nodes pairs
         if same_vertexes_edges:
             edges_gdf = simplify_same_vertexes_edges(edges_gdf)
   
-        if dead_ends: 
-            nodes_gdf, edges_gdf = fix_dead_ends(nodes_gdf, edges_gdf)
-        
         # only keep nodes which are actually used by the edges in the GeoDataFrame
         to_keep = list(set(list(edges_gdf['u'].unique()) + list(edges_gdf['v'].unique())))
         nodes_gdf = nodes_gdf[nodes_gdf['nodeID'].isin(to_keep)]
