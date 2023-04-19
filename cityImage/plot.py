@@ -429,7 +429,8 @@ def plotOn_ax(ax, gdf, column = None, scheme = None, bins = None, classes = 7, n
             
     elif (column is not None) & (cmap is None):
         cmap = rand_cmap(len(gdf[column].unique())) 
-        if len(gdf[column].unique()):
+        if len(gdf[column].unique()) == 1:
+            legend = False
             cmap = None
             color = 'red'
         
@@ -518,74 +519,6 @@ def plot_baseMap(gdf = None, ax = None, color = None, geometry_size = None, alph
     if gdf.iloc[0].geometry.geom_type == 'Polygon':
         gdf.plot(ax = ax, color = color, alpha = alpha, zorder = zorder)
     
-
-def plot_multiplex_network(multiplex_graph, multiplex_edges):
-    """
-    Plots a multiplex network graph with 3D visualization.
-    
-    Parameters:
-    - multiplex_graph (networkx.MultiGraph): A multiplex network graph object.
-    - multiplex_edges (GeoDataFrame): A GeoDataFrame containing the edges of the graph.
-    
-    Returns:
-    - matplotlib.figure.Figure: A 3D figure object containing the plotted multiplex network.
-    """
-    
-    # Extract node coordinates and attributes
-    node_xs = [float(node["x"]) for node in multiplex_graph.nodes.values()]
-    node_ys = [float(node["y"]) for node in multiplex_graph.nodes.values()]
-    node_zs = np.array([float(node["z"])*2000 for node in multiplex_graph.nodes.values()])
-    node_sizes = []
-    node_colors = []
-
-    # Determine size and color for each node based on attributes
-    for i, d in multiplex_graph.nodes(data=True):
-        if d["station"]:
-            node_sizes.append(9)
-            node_colors.append("#ec1a30")
-        elif d["z"] == 1:
-            node_sizes.append(0.0)
-            node_colors.append("#ffffcc")
-        elif d["z"] == 0:
-            node_sizes.append(8)
-            node_colors.append("#ff8566")
-
-    lines = []
-    line_widths = []
-    default_line_width = 0.4
-    
-    # Extract edge coordinates and attributes
-    for u, v, data in multiplex_graph.edges(data=True):
-        xs, ys = data["geometry"].xy
-        zs = [multiplex_graph.node[u]["z"]*2000 for i in range(len(xs))]
-        if data["layer"] == "intra_layer": 
-            zs = [0, 2000]
-        
-        lines.append([list(a) for a in zip(xs, ys, zs)])
-        if data["layer"] == "intra_layer": 
-            line_widths.append(0.2)
-        elif data["pedestrian"] == 1: 
-            line_widths.append(0.1)
-        else: 
-            line_widths.append(default_line_width)
-
-    # Set up figure and 3D axis
-    fig_height = 40
-    west, south, east, north = multiplex_edges.total_bounds
-    bbox_aspect_ratio = (north - south) / (east - west)*1.5
-    fig_width = fig_height + 90 / bbox_aspect_ratio/1.5
-    fig = plt.figure(figsize=(15, 15))
-    ax = fig.gca(projection="3d")
-    ax.add_collection3d(Line3DCollection(lines, linewidths=line_widths, alpha=1, color="#ffffff", zorder=1))
-    ax.scatter(node_xs, node_ys, node_zs, s=node_sizes, c=node_colors, zorder=2)
-    ax.update(xlim=(west, east), ylim=(south, north), zlim=(0,2500), aspect='equal', axis='off', margins=0)
-    ax.tick_params(which="both", direction="in")
-    fig.canvas.draw()
-    ax.set_facecolor("black")
-    ax.set_aspect("equal")
-
-    return fig
-
 def generate_legend_fig(ax, plot):
     """ 
     It generates the legend for an entire figure.
