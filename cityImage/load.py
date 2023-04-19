@@ -127,6 +127,37 @@ def get_network_fromSHP(path, epsg, dict_columns = {}, other_columns = []):
     # try reading street network from directory
     crs = 'EPSG:' + str(epsg)
     edges_gdf = gpd.read_file(path)
+    
+    return get_network_fromGDF(edges_gdf, epsg, dict_columns = dict_columns, other_columns = other_columns)
+    
+    
+def get_network_fromGDF(edges_gdf, epsg, dict_columns = {}, other_columns = []):
+    """
+    The function loads a vector lines shapefile from a specified directory, along with the epsg coordinate code.
+    It creates two GeoDataFrame, one for street junctions (nodes) and one for street segments (edges).
+    The GeoDataFrames are built assuming a planar undirected graph. 
+    The "case_study_area" polygon is optional and when provided is used to select geometries within the area + a buffer of x meters, fixed by the researcher (distance_from_boundary)
+     
+    Parameters
+    ----------
+    path: string
+        the local path where the .shp file is stored
+    epsg: int
+        epsg of the area considered 
+    dict_columns: dict
+        it should be structured as: {"highway": "roadType_field",  "oneway": "direction_field", "lanes": "nr. lanes", "maxspeed": "speed_field", "name": "name_field"}
+        Replace the items with the field names in the input data (if the relative attributes are relevant and existing)
+    other_columns: list
+        other columns to be preserved in the edges_gdf GeoDataFrame
+    
+    Returns
+    -------
+    tuple of GeoDataFrames
+    """
+    
+    # try reading street network from directory
+    crs = 'EPSG:' + str(epsg)
+
     try:
         edges_gdf = edges_gdf.to_crs(crs)
     except:
@@ -164,7 +195,9 @@ def get_network_fromSHP(path, epsg, dict_columns = {}, other_columns = []):
         nodes_gdf['z'] = 2.0
     
     return nodes_gdf, edges_gdf
-    
+
+
+
 def obtain_nodes_gdf(edges_gdf, crs):
     """
     It obtains the nodes GeoDataFrame from the unique coordinates pairs in the edges_gdf GeoDataFrame.
