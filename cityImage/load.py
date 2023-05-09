@@ -180,7 +180,7 @@ def get_network_fromGDF(edges_gdf, epsg, dict_columns = {}, other_columns = []):
     edges_gdf = edges_gdf[standard_columns + new_columns + other_columns]
     
     # edges_gdf["geometry"] = edges_gdf.apply(lambda row: LineString([coor for coor in [row["geometry"].coords[i][0:2] for i in range(0, len(row["geometry"].coords))]]), axis = 1)
-    edges_gdf = fix_multiparts(edges_gdf)    
+    edges_gdf = fix_multiparts_LineString_gdf(edges_gdf)    
     
     # assign indexes
     edges_gdf.reset_index(inplace=True, drop=True)
