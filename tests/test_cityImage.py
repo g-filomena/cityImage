@@ -250,60 +250,59 @@ def test_landuse():
     attributes_gdf = gpd.read_file('tests/input/Muenster_buildings_attributes.shp').to_crs('EPSG:'+str(epsg))  
     
     adult_entertainment = ['brothel','casino', 'swingerclub', 'stripclub', 'nightclub', 'gambling'] 
-    agriculture = ['shed', 'silo', 'greenhouse', 'stable', 'agricultural and forestry',  'greenhouse (botany)',  
-                   'building in the botanical garden']
-    attractions = ['attractions',   'attraction','aquarium', 'monument',  'gatehouse', 'terrace', 'tower', 'attraction and Leisure',
-                   'information', 'viewpoint', 'tourist information center', 'recreation and amusement park',  'zoo',
-                   'exhibition hall, trade hall', 'boathouse', 'bath house, thermal baths', 'entertainment hall', 'sauna']
-    business_services = ['bank', 'service','offices', 'foundation', 'office', 'atm', 'bureau_de_change', 'post_office', 
-                  'post_office;atm', 'coworking_space', 'conference_centre',  'trade and services', 'trade and services building',
-                          'customs office', 'insurance', 'tax_office', 'post', 'administrative building',  'facility building',
-                          'residential building with trade and services', 'data_center', 'tax office']
-    commercial = [ 'commercial',  'retail', 'pharmacy', 'commercial;educa', 'shop', 'supermarket', 'books', 'commercial services',
+    agriculture = ['shed', 'silo', 'greenhouse', 'stable', 'agricultural and forestry', 'greenhouse (botany)', 'building in the botanical garden']
+    attractions = ['attractions', 'attraction','aquarium', 'monument', 'gatehouse', 'terrace', 'tower', 'attraction and Leisure',
+        'information', 'viewpoint', 'tourist information center', 'recreation and amusement park',  'zoo',
+        'exhibition hall, trade hall', 'boathouse', 'bath house, thermal baths', 'entertainment hall', 'sauna']
+    business_services = ['bank', 'service','offices', 'foundation', 'office', 'atm', 'bureau_de_change', 'post_office',
+        'post_office;atm', 'coworking_space', 'conference_centre', 'trade and services', 'trade and services building',
+        'customs office', 'insurance', 'tax_office', 'post', 'administrative building', 'facility building',
+        'residential building with trade and services', 'data_center', 'tax office']
+    commercial = [ 'commercial', 'retail', 'pharmacy', 'commercial;educa', 'shop', 'supermarket', 'books', 'commercial services',
                   'commercial land', 'car_wash', 'internet_cafe', 'driving_school', 'marketplace', 'fuel', 'car_sharing', 
-                  'commercial and industry buidling',  'crematorium', 'commercial building', 'commercial and industry building',  
+                  'commercial and industry buidling', 'crematorium', 'commercial building', 'commercial and industry building',
                   'commercial building to traffic facilities (general)', 'funeral parlor', 'gas station', 'car wash',
                   'pumping station','boat_rental', 'boat_sharing',  'bicycle_rental', 'car_rental', 'dive_centre'] 
     culture = ['club_house','gallery', 'arts_centre','cultural facility', 'cultural_centre', 'theatre', 'cinema', 'studio',
                 'exhibition_centre', 'music_school', 'theater','castle', 'museum', 'culture']
-    eating_drinking = ['bbq', 'restaurant', 'fast_food', 'cafe', 'bar',  'pub', 'accommodation, eating and drinking', 
+    eating_drinking = ['bbq', 'restaurant', 'fast_food', 'cafe', 'bar', 'pub', 'accommodation, eating and drinking', 
                        'ice_cream', 'kitchen', 'food_court', 'cafe;restaurant', 'biergarten']
     education_research = ['university', 'research', 'university building', 'education and research', 'research_institute']
     emergency_service = [ 'fire brigade','fire_station','police', 'emergency service', 'resque_station', 'ranger_station',  
                          'security']
     general_education = ['school', 'college', 'kindergarten', 'education', 'education and health', 'childcare',
-                 'language_school', 'children home',  'nursery',  'general education school']
-    hospitality = [ 'hotel',  'hostel', 'guest_house',  'building for accommodation',  'hotel, motel, pension',  'refuge']
+                 'language_school', 'children home', 'nursery', 'general education school']
+    hospitality = [ 'hotel', 'hostel', 'guest_house', 'building for accommodation', 'hotel, motel, pension', 'refuge']
     industrial = ['industrial', 'factory', 'construction', 'manufacturing and production', 'gasometer', 'workshop', 
                   'production building']
     medical_care = ['hospital', 'doctors', 'dentist','clinic','veterinary', 'medical Care', 'nursing_home',  
                     'sanatorium, nursing home', 'retirement home', 'healthcare']
-    military_detainment = ['general aviation', 'barracks',  'military', 'penitentiary', 'prison']
-    other = ['toilets', 'picnic_site','hut', 'storage_tank', 'canopy','toilet',  'bunker, shelter',  'warehouse',  'converter',
+    military_detainment = ['general aviation', 'barracks', 'military', 'penitentiary', 'prison']
+    other = ['toilets', 'picnic_site','hut', 'storage_tank',' canopy','toilet', 'bunker, shelter', 'warehouse', 'converter',
              'garage', 'garages','parking'] 
-    public = ['townhall', 'public_building',  'library','civic', 'courthouse', 'public', 'embassy',
-              'public infrastructure', 'community_centre', 'court',  'district government', 
+    public = ['townhall', 'public_building', 'library','civic', 'courthouse', 'public', 'embassy',
+              'public infrastructure', 'community_centre', 'court', 'district government', 
               'residential building with public facilities']
     religious = ['church', 'place_of_worship','convent', 'rectory', 'chapel', 'religious building', 'monastery', 'nuns home',
-                  'vocational school',  'cathedral']
+                  'vocational school', 'cathedral']
     residential = [ 'apartments', None, 'NaN', 'residential','flats', 'houses', 'building', 'residential land', 
                    'residential building', 'student dorm', 'building usage mixed with living']
     social = ['social_facility', 'community_centre', 'community buidling', 'dormitory', 'social_centre', 'social serives building', 
-             'social services',  'community hall',  'commercial social facility',  'recreational']
+             'social services', 'community hall', 'commercial social facility', 'recreational']
     sport = ['stadium', 'sport and entertainment', 'sports or exercise facility', 'gym', 'sports building', 'sports hall', 
-             'horse riding school',  'swimming pool',  'sport hall', 'bowling hall',  'indoor swimming pool']
+             'horse riding school', 'swimming pool', 'sport hall', 'bowling hall', 'indoor swimming pool']
     transport = ['transport', 'road transport', 'station', 'subway_entrance', 'bus_station', 'shipping facility building', 
-                 'train_station',  'railway building']
+                 'train_station', 'railway building']
     utilities = ['gas supply', 'electricity supply', 'electricity substation', 'waste treatment building',
-                'water supply', 'waste water treatment plant', 'smokestack', 'supply systems', 'waste management', 'water works',
-                  'heating plant', 'boiler house',  'telecommunication']      
+        'water supply', 'waste water treatment plant', 'smokestack', 'supply systems', 'waste management', 'water works',
+        'heating plant', 'boiler house', 'telecommunication']      
           
     categories = [adult_entertainment, agriculture, attractions, business_services, commercial, culture, eating_drinking,
                   education_research, emergency_service, general_education, hospitality, industrial, medical_care, military_detainment,
                   other, public, religious, residential, social, sport, transport, utilities]
     strings = ['adult_entertainment', 'agriculture', 'attractions', 'business_services', 'commercial', 'culture', 'eating_drinking',
                 'education_research', 'emergency_service', 'general_education', 'hospitality', 'industrial', 'medical_care', 
-               'military_detainment', 'other', 'public', 'religious', 'residential', 'social', 'sport', 'transport', 'utilities']
+                'military_detainment', 'other', 'public', 'religious', 'residential', 'social', 'sport', 'transport', 'utilities']
      
     attributes_gdf = ci.classify_land_use(attributes_gdf, new_land_use_field = 'land_use', land_use_field = 'lu_eng', categories= categories, strings = strings)   
     attributes_gdf['land_use'] = attributes_gdf['land_use'] .str.lower()   
