@@ -373,7 +373,7 @@ def fix_multiparts_LineString_gdf(gdf):
 
     if 'MultiLineString' in gdf.geometry.type.unique():
         condition = (gdf.geometry.type == 'MultiLineString')
-        gdf.loc[condition, 'geometry'] = pd.Series([linemerge(geo) for geo in gdf[condition].geometry], index = gdf[condition].index)
+        gdf.loc[condition, 'geometry'] = gpd.GeoSeries([linemerge(geo) for geo in gdf[condition].geometry], index = gdf[condition].index)
         
         if 'MultiLineString' in gdf.geometry.type.unique():
             multi_gdf = gdf[gdf.geometry.type == 'MultiLineString'].copy()
