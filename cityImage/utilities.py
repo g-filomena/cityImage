@@ -7,7 +7,7 @@ import pyproj
 from typing import List
 from math import sqrt
 from shapely.geometry import LineString, Point, Polygon, MultiPoint, mapping
-from shapely.ops import unary_union, transform, nearest_points, split
+from shapely.ops import unary_union, transform, nearest_points, split, linemerge
 from shapely.affinity import scale
 from shapely.geometry.base import BaseGeometry
 from functools import partial
