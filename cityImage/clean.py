@@ -480,12 +480,6 @@ def fix_network_topology_at_nodes(nodes_gdf, edges_gdf):
     edges_gdf['fixing'] = [True if len(to_fix) > 0 else False for to_fix in edges_gdf['to_fix']]
     to_fix = edges_gdf[edges_gdf['fixing'] == True].copy()
     edges_gdf = edges_gdf[edges_gdf['fixing'] == False]
-    
-    # apply _split_line_at_MultiPoint to each row of self_loops using apply method
-    new_geometries = to_fix.progress_apply(lambda row: split_line_at_MultiPoint(row.geometry, 
-                                                                            [Point(coord) for coord in row.to_fix]), axis=1)
-    
-    to_fix = edges_gdf[edges_gdf['fixing'] == True].copy()
     return add_fixed_edges(edges_gdf, to_fix)
 
 def fix_network_topology(nodes_gdf, edges_gdf):
@@ -501,10 +495,11 @@ def fix_network_topology(nodes_gdf, edges_gdf):
         tmp = possible_matches[possible_matches.intersects(line_geometry)]
         tmp = tmp.drop(ix, axis = 0)
         union = tmp.unary_union
-    
+        
+        actual_intersections = []
         intersections = line_geometry.intersection(union)
         if intersections is None:
-            pass       
+            return actual_intersections      
         if intersections.geom_type == 'Point': 
             intersections = [intersections]
         else:
@@ -513,7 +508,6 @@ def fix_network_topology(nodes_gdf, edges_gdf):
         segment_vertices = [coords[0], coords[-1]]
         intersection_points = [intersection for intersection in intersections if intersection.geom_type == 'Point']
 
-        actual_intersections = []
         for point in intersection_points: # existing vertices
             if (point.coords[0] not in coords):
                 pass
@@ -527,6 +521,7 @@ def fix_network_topology(nodes_gdf, edges_gdf):
     edges_gdf['to_fix'] = edges_gdf.progress_apply(lambda row: find_intersections(row.name, row.geometry, row.coords), axis=1)
     edges_gdf['fixing'] = [True if len(to_fix) > 0 else False for to_fix in edges_gdf['to_fix']]
     to_fix = edges_gdf[edges_gdf['fixing'] == True].copy()
+    edges_gdf = edges_gdf[edges_gdf['fixing'] == False]    
     return add_fixed_edges(edges_gdf, to_fix)
     
 def remove_disconnected_islands(nodes_gdf, edges_gdf, nodeID):
