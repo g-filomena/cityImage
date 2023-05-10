@@ -369,7 +369,7 @@ def polygons_gdf_multiparts_to_singleparts(polygons_gdf):
 
 def fix_multiparts_LineString_gdf(gdf):
     
-    gdf = gdf.gdf()
+    gdf = gdf.copy()
 
     if 'MultiLineString' in gdf.geometry.type.unique():
         condition = (gdf.geometry.type == 'MultiLineString')
