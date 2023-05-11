@@ -448,8 +448,8 @@ def add_fixed_edges(edges_gdf, to_fix_gdf):
     # concatenate the dataframes and assign to edges_gdf
     edges_gdf = pd.concat([edges_gdf, rows], ignore_index=True)
     edges_gdf.drop(['u', 'v', 'to_fix', 'fixing', 'coords'], inplace=True, axis=1)
-    nodes_gdf = ci.obtain_nodes_gdf(edges_gdf, edges_gdf.crs)
-    nodes_gdf, edges_gdf = ci.join_nodes_edges_by_coordinates(nodes_gdf, edges_gdf)
+    nodes_gdf = obtain_nodes_gdf(edges_gdf, edges_gdf.crs)
+    nodes_gdf, edges_gdf = join_nodes_edges_by_coordinates(nodes_gdf, edges_gdf)
     
     return nodes_gdf, edges_gdf
    
@@ -500,6 +500,9 @@ def fix_network_topology(nodes_gdf, edges_gdf):
         intersections = line_geometry.intersection(union)
         if intersections is None:
             return actual_intersections      
+        if intersections.geom_type == 'LineString': 
+            return actual_intersections     
+        
         if intersections.geom_type == 'Point': 
             intersections = [intersections]
         else:
