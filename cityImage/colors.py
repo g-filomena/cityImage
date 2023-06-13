@@ -1,27 +1,31 @@
-import pandas as pd, numpy as np
-
+import numpy as np
 import matplotlib.colors as mc
 from matplotlib.colors import LinearSegmentedColormap, TwoSlopeNorm
-
 import colorsys
 import mapclassify, pylab, colorsys
 
-pd.set_option("display.precision", 3)
-
 def random_colors_list(nlabels, vmin = 0.8, vmax = 1.0, hsv = False):
     """ 
-    It generates a list of random HSV colors, given the number of classes, 
-    min and max values in the HSV spectrum.
+    Generates a list of random HSV colors given the number of classes, 
+    minimum and maximum values in the HSV spectrum.
     
     Parameters
     ----------
-       
+    nlabels : int
+        The number of classes or labels for which colors are generated.
+    vmin : float
+        The minimum value in the HSV spectrum. Default is 0.8
+    vmax : float
+        The maximum value in the HSV spectrum. Default is 1.0
+    hsv : bool
+        Indicates whether to return colors in HSV format (True) or convert them to RGB format (False).
+        Default is False
+    
     Returns
     -------
-    cmap: matplotlib.colors.LinearSegmentedColormap
-        the color map
+    colors : list
+        A list of random HSV colors or RGB colors, depending on the value of `hsv`.
     """
-    
     randRGBcolors = []
     randHSVcolors = [(np.random.uniform(low=0.0, high=0.95),
                       np.random.uniform(low=0.4, high=0.95),
@@ -99,34 +103,42 @@ def kindlmann():
     
 def normalize(n, range1, range2):
     """ 
-    It generate the legend for a figure.
+    Normalizes a value `n` from one range to another range.
     
     Parameters
     ----------
-    ax:
-    
-    nrows:
-    
+    n : float or int
+        The value to be normalized
+    range1 : tuple or list
+        The original range of values [min, max] from which `n` is taken
+    range2 : tuple or list
+        The target range of values [min, max] to which `n` will be normalized
     
     Returns
     -------
-    cmap:  matplotlib.colors.Colormap
-        the color map
-    """  
+    float or int
+        The normalized value of `n` in the target range.
+    """ 
     delta1 = range1[1] - range1[0]
     delta2 = range2[1] - range2[0]
     return (delta2 * (n - range1[0]) / delta1) + range2[0]  
          
 def lighten_color(color, amount=0.5):
-    """
+    """ 
     Lightens the given color by multiplying (1-luminosity) by the given amount.
-    Input can be matplotlib color string, hex string, or RGB tuple.
-
-    Examples:
-    >> lighten_color('g', 0.3)
-    >> lighten_color('#F034A3', 0.6)
-    >> lighten_color((.3,.55,.1), 0.5)
-    """
+    
+    Parameters
+    ----------
+    color : str or tuple
+        The color to be lightened. It can be a matplotlib color string, hex string, or RGB tuple
+    amount : float, optional
+        The amount by which to lighten the color. Default value is 0.5
+    
+    Returns
+    -------
+    tuple
+        The lightened color in RGB format
+    """ 
     try:
         c = mc.cnames[color]
     except:
