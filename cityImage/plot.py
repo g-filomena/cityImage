@@ -16,39 +16,32 @@ pd.set_option("display.precision", 3)
 from .utilities import scaling_columnDF
 from .colors import rand_cmap, random_colors_list, kindlmann, lighten_color
 
-"""
-Plotting functions
-
-"""
-
-## Plotting
-    
 class Plot():
     """
     Class for creating a basic matplotlib plot with a title and customizable settings.
 
     Parameters
     ----------
-    figsize : tuple
+    figsize: tuple
         Tuple of width and height for the figure.
-    black_background : bool
+    black_background: bool
         Whether to set the background color as black.
-    title : str
+    title: str
         Title for the plot.
 
     Attributes
     ----------
-    fig : matplotlib Figure
+    fig: matplotlib.figure.Figure
         Figure object for the plot.
-    ax : matplotlib Axes
+    ax: matplotlib.axes object
         Axes object for the plot.
-    title : str
+    title: str
         Title for the plot.
-    text_color : str
+    text_color: str
         Color for text elements, white if black_background is True and black otherwise.
-    font_size_primary : int
+    font_size_primary: int
         Font size for the title.
-    font_size_secondary : int
+    font_size_secondary: int
         Font size for secondary elements.
     """
     
@@ -71,18 +64,40 @@ class MultiPlot():
     """
     A class for creating multi-plot figures.
     
-    Parameters:
-    figsize (tuple): The size of the figure in inches.
-    nrows (int): The number of rows of subplots in the figure.
-    ncols (int): The number of columns of subplots in the figure.
-    black_background (bool): Whether to use a black background for the figure.
-    title (str, optional): Title of the figure. Default is None.
+    Attributes:
+    ----------
+    figsize: tuple
+        The size of the figure (width, height) in inches.
+    nrows: int
+        The number of rows in the grid layout.
+    ncols: int
+        The number of columns in the grid layout.
+    black_background : bool
+        Specifies whether the plot has a black background (True) or white background (False).
+    fontsize: int
+        The font size to be used in the plot.
+    title: str or None, optional
+        The title of the figure. If None, no title is displayed.    
     """
     def __init__(self, figsize, nrows, ncols, black_background, fontsize, title = None):
         """
         Initializes the MultiPlot class.
-        """
         
+        Parameters
+        ----------
+        figsize: tuple
+            The size of the figure (width, height) in inches.
+        nrows: int
+            The number of rows in the grid layout.
+        ncols: int
+            The number of columns in the grid layout.
+        black_background : bool
+            Specifies whether the plot has a black background (True) or white background (False).
+        fontsize: int
+            The font size to be used in the plot.
+        title: str or None, optional
+            The title of the figure. If None, no title is displayed.
+        """
         self.ncols = ncols
         self.fig, self.grid = plt.subplots(nrows = nrows, ncols = ncols, figsize = figsize)
         self.black_background = black_background
@@ -99,8 +114,8 @@ class MultiPlot():
 def plot_gdf(gdf, column = None, title = None, black_background = True, figsize = (15,15), scheme = None, bins = None, 
             classes = None, norm = None, cmap = None, color = None, alpha = None, legend = False, geometry_size = 1.0, 
             geometry_size_column = None, fontsize = 15, geometry_size_factor = None, cbar = False, cbar_ticks = 5, 
-            cbar_max_symbol = False, cbar_min_max = False, cbar_shrinkage = 0.75, axes_frame = False, 
-            base_map_gdf = pd.DataFrame({"a" : []}), base_map_color = None, base_map_alpha = 0.4, base_map_geometry_size = 1.1,  
+            cbar_max_symbol = False, cbar_min_max = False, cbar_shrink = 0.75, axes_frame = False, 
+            base_map_gdf = pd.DataFrame({"a": []}), base_map_color = None, base_map_alpha = 0.4, base_map_geometry_size = 1.1,  
             base_map_zorder = 0):
 
     """
@@ -111,57 +126,59 @@ def plot_gdf(gdf, column = None, title = None, black_background = True, figsize 
     Parameters
     ----------
     gdf: GeoDataFrame
-        GeoDataFrame to be plotted 
-    column: string
-        Column on which the plot is based
-    title: string 
-        title of the plot
-    black_background: boolean 
-        black background or white
+        GeoDataFrame to be plotted.
+    column: str
+        Column on which the plot is based.
+    title: str
+        Title of the plot.
+    black_background: bool
+        Specifies whether the plot has a black background (True) or white background (False).
     fig_size: float
-        size of the figure's side extent
-    scheme: string
-        classification method, choose amongst: https://pysal.org/mapclassify/api.html
+        Size of the figure's side extent.
+    scheme: str
+        Classification method. Choose amongst the options listed at https://pysal.org/mapclassify/api.html.
     bins: list
-        bins defined by the user
+        Bins defined by the user.
     classes: int
-        number of classes for categorising the data when scheme is not "None"
+        Number of classes for categorizing the data when scheme is not "None".
     norm: array
-        a class that specifies a desired data normalisation into a [min, max] interval
-    cmap: string, matplotlib.colors.LinearSegmentedColormap
-        see matplotlib colormaps for a list of possible values or pass a colormap
-    color: string
-        categorical color applied to all geometries when not using a column to color them
+        A class that specifies a desired data normalization into a [min, max] interval.
+    cmap: str or matplotlib.colors.LinearSegmentedColormap
+        Color map for the plot. See matplotlib colormaps for a list of possible values or pass a colormap.
+    color: str
+        Categorical color applied to all geometries when not using a column to color them.
     alpha: float
-        alpha value of the plotted layer
-    legend: boolean
-        if True, show legend, otherwise don't
-    cbar: boolean
-        if True, show colorbar, otherwise don't; when True it doesn't show legend
+        Alpha value of the plotted layer.
+    legend: bool
+        If True, show the legend; otherwise, don't.
+    cbar: bool
+        If True, show the colorbar; otherwise, don't. When True, the legend is not shown.
     cbar_ticks: int
-        number of ticks along the colorbar
-    cbar_max_symbol: boolean
-        if True, it shows the ">" next to the highest tick's label in the colorbar (useful when normalising)
-    cbar_min_max: boolean
-        if True, it only shows the ">" and "<" as labels of the lowest and highest ticks' the colorbar
-    axes_frame: boolean
-        if True, it shows the axes' frame
+        Number of ticks along the colorbar.
+    cbar_max_symbol: bool
+        If True, show the ">" next to the highest tick's label in the colorbar (useful when normalizing).
+    cbar_min_max: bool
+        If True, only show the ">" and "<" as labels of the lowest and highest ticks' the colorbar.
+    cbar_shrink:
+        Fraction by which to multiply the size of the colorbar.    
+    axes_frame: bool
+        If True, show the axes' frame.
     geometry_size: float
-        point size value, when plotting a Point GeoDataFrame
-    geometry_size_factor: float 
-        when provided, it rescales the column provided, if any, from 0 to 1 and it uses the geometry_size_factor to rescale the marker size 
-        accordingly 
-        (e.g. rescaled variable's value [0-1] * factor), when plotting a Point GeoDataFrame
+        Point size value when plotting a Point GeoDataFrame or Width value when plotting LineString GeoDataFrame.
+    geometry_size_factor: float
+        Rescaling factor for the column provided, if any. The column is rescaled from 0 to 1, and the
+        geometry_size_factor is used to rescale the marker size accordingly
+        (e.g., rescaled variable's value [0-1] * factor) when plotting a Point GeoDataFrame.
     base_map_gdf: GeoDataFrame
-        a desired additional layer to use as a base map        
-    base_map_color: string
-        color applied to all geometries of the base map
+        Additional layer to use as a base map.
+    base_map_color: str
+        Color applied to all geometries of the base map.
     base_map_alpha: float
-        base map's alpha value
+        Base map's alpha value.
     base_map_geometry_size: float
-        base map's marker size when the base map is a Point GeoDataFrame
-    base_map_zorder: int   
-        zorder of the layer; e.g. if 0, plots first, thus main GeoDataFrame on top; if 1, plots last, thus on top.
+        Base map's marker size when the base map is a Point GeoDataFrame.
+    base_map_zorder: int
+        Z-order of the layer. If 0, plots first, thus main GeoDataFrame on top; if 1, plots last, thus on top.
         
     Returns
     -------
@@ -197,7 +214,8 @@ def plot_gdf(gdf, column = None, title = None, black_background = True, figsize 
                 zorder = zorder, legend = legend)
 
     if cbar:
-        generate_colorbar(plot, cmap, norm = norm, ticks = cbar_ticks, symbol = cbar_max_symbol, min_max = cbar_min_max, shrinkage = cbar_shrinkage)
+        generate_colorbar(plot = multiPlot, cmap = cmap, norm = norm, cbar_ticks = cbar_ticks, cbar_max_symbol = cbar_max_symbol, cbar_min_max = cbar_min_max, 
+                    cbar_shrink = cbar_shrink)
     elif legend: 
         generate_legend_ax(ax, plot) 
 
@@ -205,7 +223,7 @@ def plot_gdf(gdf, column = None, title = None, black_background = True, figsize 
  
 def plot_grid_gdfs_column(gdfs = [], column = None, ncols = 1, nrows = 1, titles = [], black_background = True, figsize = (15,15), scheme = None, bins = None, 
                     classes = None, norm = None, cmap = None, color = None, alpha = None, legend = False, cbar = False, 
-                    cbar_ticks = 5, cbar_max_symbol = False, cbar_min_max = False, cbar_shrinkage = 0.75, axes_frame = False, 
+                    cbar_ticks = 5, cbar_max_symbol = False, cbar_min_max = False, cbar_shrink = 0.75, axes_frame = False, 
                     fontsize = 15, geometry_size = None, geometry_size_columns = [], geometry_size_factor = None):
     """
     It plots the geometries of a GeoDataFrame, coloring on the bases of the values contained in the provided columns, using a given scheme.
@@ -215,47 +233,49 @@ def plot_grid_gdfs_column(gdfs = [], column = None, ncols = 1, nrows = 1, titles
     Parameters
     ----------
     gdf: GeoDataFrame
-        GeoDataFrame to be plotted 
-    column: string
-        Column on which the plot is based
-    title: string 
-        title of the plot
+        GeoDataFrame to be plotted.
+    column: str
+        Column on which the plot is based.
+    title: str
+        Title of the plot.
     black_background: boolean 
-        black background or white
+        Black background or white.
     fig_size: float
-        size figure extent
-    scheme: string
-        classification method, choose amongst: https://pysal.org/mapclassify/api.html
+        Size figure extent.
+    scheme: str
+        Classification method. Choose amongst the options listed at https://pysal.org/mapclassify/api.html.
     bins: list
-        bins defined by the user
+        Bins defined by the user.
     classes: int
-        number of classes for categorising the data when scheme is not "None"
+        Number of classes for categorizing the data when scheme is not "None".
     norm: array
-        a class that specifies a desired data normalisation into a [min, max] interval
-    cmap: string, matplotlib.colors.LinearSegmentedColormap
-        see matplotlib colormaps for a list of possible values or pass a colormap
-    color: string
-        categorical color applied to all geometries when not using a column to color them
+        A class that specifies a desired data normalization into a [min, max] interval.
+    cmap: str or matplotlib.colors.LinearSegmentedColormap
+        Color map for the plot. See matplotlib colormaps for a list of possible values or pass a colormap.
+    color: str
+        Categorical color applied to all geometries when not using a column to color them.
     alpha: float
-        alpha value of the plotted layer
-    legend: boolean
-        if True, show legend, otherwise don't
-    cbar: boolean
-        if True, show colorbar, otherwise don't; when True it doesn't show legend
+        Alpha value of the plotted layer.
+    legend: bool
+        If True, show the legend; otherwise, don't.
+    cbar: bool
+        If True, show the colorbar; otherwise, don't. When True, the legend is not shown.
     cbar_ticks: int
-        number of ticks along the colorbar
-    cbar_max_symbol: boolean
-        if True, it shows the ">" next to the highest tick's label in the colorbar (useful when normalising)
-    cbar_min_max: boolean
-        if True, it only shows the ">" and "<" as labels of the lowest and highest ticks' the colorbar
-    axes_frame: boolean
-        if True, it shows the axes' frame
+        Number of ticks along the colorbar.
+    cbar_max_symbol: bool
+        If True, show the ">" next to the highest tick's label in the colorbar (useful when normalizing).
+    cbar_min_max: bool
+        If True, only show the ">" and "<" as labels of the lowest and highest ticks' the colorbar.
+    cbar_shrink:
+        Fraction by which to multiply the size of the colorbar. 
+    axes_frame: bool
+        If True, show the axes' frame.
     geometry_size: float
-        point size value, when plotting a Point GeoDataFrame
-    geometry_size_factor: float 
-        when provided, it rescales the column provided, if any, from 0 to 1 and it uses the geometry_size_factor to rescale the marker 
-        size accordingly 
-        (e.g. rescaled variable's value [0-1] * factor), when plotting a Point GeoDataFrame
+        Point size value when plotting a Point GeoDataFrame or Width value when plotting LineString GeoDataFrame.
+    geometry_size_factor: float
+        Rescaling factor for the column provided, if any. The column is rescaled from 0 to 1, and the
+        geometry_size_factor is used to rescale the marker size accordingly
+        (e.g., rescaled variable's value [0-1] * factor) when plotting a Point GeoDataFrame.
     """   
    
     if (len(gdfs)+1 != ncols*nrows) & (len(gdfs) != ncols*nrows):
@@ -273,21 +293,21 @@ def plot_grid_gdfs_column(gdfs = [], column = None, ncols = 1, nrows = 1, titles
             continue    
         gdf = gdfs[n]
           
-        parameters = {'ax' : ax, 'n' : n, 'multiPlot' : multiPlot, 'column' : column , 'gdf' : gdf, 'titles' : titles, 
-                      'scheme' : scheme, 'bins' : bins, 'classes' : classes, 'norm' : norm, 'cmap' : cmap, 
-                      'color' : color, 'alpha' : alpha, 'legend' : legend, 'axes_frame' : axes_frame,
-                      'geometry_size' : geometry_size, 'geometry_size_columns' : geometry_size_columns, 'geometry_size_factor' : geometry_size_factor}        
+        parameters = {'ax': ax, 'n': n, 'multiPlot': multiPlot, 'column': column , 'gdf': gdf, 'titles': titles, 
+                      'scheme': scheme, 'bins': bins, 'classes': classes, 'norm': norm, 'cmap': cmap, 
+                      'color': color, 'alpha': alpha, 'legend': legend, 'axes_frame': axes_frame,
+                      'geometry_size': geometry_size, 'geometry_size_columns': geometry_size_columns, 'geometry_size_factor': geometry_size_factor}        
         subplot(**parameters)    
             
     if (cbar) & (not legend):  
-        generate_colorbar(plot = multiPlot, cmap = cmap, norm = norm, ticks = cbar_ticks, symbol = cbar_max_symbol, min_max = cbar_min_max, 
-                    shrinkage = cbar_shrinkage)
+        generate_colorbar(plot = multiPlot, cmap = cmap, norm = norm, cbar_ticks = cbar_ticks, cbar_max_symbol = cbar_max_symbol, cbar_min_max = cbar_min_max, 
+                    cbar_shrink = cbar_shrink)
 
     return multiPlot.fig                      
 
 def plot_grid_gdf_columns(gdf, columns = [], ncols = 1, nrows = 1, titles = [], black_background = True, figsize = (15,15), scheme = None, bins = None, 
                           classes = None, norm = None, cmap = None, color = None, alpha = None, legend = False, cbar = False, 
-                          cbar_ticks = 5, cbar_max_symbol = False, cbar_min_max = False, cbar_shrinkage = 0.75, axes_frame = False, 
+                          cbar_ticks = 5, cbar_max_symbol = False, cbar_min_max = False, cbar_shrink = 0.75, axes_frame = False, 
                           fontsize = 15, geometry_size = None, geometry_size_columns = [], geometry_size_factor = None):
     """
     It plots the geometries of a GeoDataFrame, coloring on the bases of the values contained in the provided columns, using a given scheme.
@@ -297,49 +317,50 @@ def plot_grid_gdf_columns(gdf, columns = [], ncols = 1, nrows = 1, titles = [], 
     Parameters
     ----------
     gdf: GeoDataFrame
-        GeoDataFrame to be plotted 
-    column: string
-        Column on which the plot is based
-    title: string 
-        title of the plot
+        GeoDataFrame to be plotted.
+    column: str
+        Column on which the plot is based.
+    title: str
+        Title of the plot.
     black_background: boolean 
-        black background or white
+        Black background or white.
     fig_size: float
-        size figure extent
-    scheme: string
-        classification method, choose amongst: https://pysal.org/mapclassify/api.html
+        Size figure extent.
+    scheme: str
+        Classification method. Choose amongst the options listed at https://pysal.org/mapclassify/api.html.
     bins: list
-        bins defined by the user
+        Bins defined by the user.
     classes: int
-        number of classes for categorising the data when scheme is not "None"
+        Number of classes for categorizing the data when scheme is not "None".
     norm: array
-        a class that specifies a desired data normalisation into a [min, max] interval
-    cmap: string, matplotlib.colors.LinearSegmentedColormap
-        see matplotlib colormaps for a list of possible values or pass a colormap
-    color: string
-        categorical color applied to all geometries when not using a column to color them
+        A class that specifies a desired data normalization into a [min, max] interval.
+    cmap: str or matplotlib.colors.LinearSegmentedColormap
+        Color map for the plot. See matplotlib colormaps for a list of possible values or pass a colormap.
+    color: str
+        Categorical color applied to all geometries when not using a column to color them.
     alpha: float
-        alpha value of the plotted layer
-    legend: boolean
-        if True, show legend, otherwise don't
-    cbar: boolean
-        if True, show colorbar, otherwise don't; when True it doesn't show legend
+        Alpha value of the plotted layer.
+    legend: bool
+        If True, show the legend; otherwise, don't.
+    cbar: bool
+        If True, show the colorbar; otherwise, don't. When True, the legend is not shown.
     cbar_ticks: int
-        number of ticks along the colorbar
-    cbar_max_symbol: boolean
-        if True, it shows the ">" next to the highest tick's label in the colorbar (useful when normalising)
-    cbar_min_max: boolean
-        if True, it only shows the ">" and "<" as labels of the lowest and highest ticks' the colorbar
-    axes_frame: boolean
-        if True, it shows the axes' frame
+        Number of ticks along the colorbar.
+    cbar_max_symbol: bool
+        If True, show the ">" next to the highest tick's label in the colorbar (useful when normalizing).
+    cbar_min_max: bool
+        If True, only show the ">" and "<" as labels of the lowest and highest ticks' the colorbar.
+    cbar_shrink:
+        Fraction by which to multiply the size of the colorbar. 
+    axes_frame: bool
+        If True, show the axes' frame.
     geometry_size: float
-        point size value, when plotting a Point GeoDataFrame
-    geometry_size_factor: float 
-        when provided, it rescales the column provided, if any, from 0 to 1 and it uses the geometry_size_factor to rescale the marker 
-        size accordingly 
-        (e.g. rescaled variable's value [0-1] * factor), when plotting a Point GeoDataFrame
+        Point size value when plotting a Point GeoDataFrame or Width value when plotting LineString GeoDataFrame.
+    geometry_size_factor: float
+        Rescaling factor for the column provided, if any. The column is rescaled from 0 to 1, and the
+        geometry_size_factor is used to rescale the marker size accordingly
+        (e.g., rescaled variable's value [0-1] * factor) when plotting a Point GeoDataFrame.
     """   
-       
     if (len(columns)+1 != ncols*nrows) & (len(columns) != ncols*nrows):
         raise ValueError("Please provide an appropriate combination of nrows and ncols")
     
@@ -355,15 +376,15 @@ def plot_grid_gdf_columns(gdf, columns = [], ncols = 1, nrows = 1, titles = [], 
             continue
         column = columns[n]      
             
-        parameters = {'ax' : ax, 'n' : n, 'multiPlot' : multiPlot, 'column' : column , 'gdf' : gdf, 'titles' : titles, 
-                      'scheme' : scheme, 'bins' : bins, 'classes' : classes, 'norm' : norm, 'cmap' : cmap, 
-                      'color' : color, 'alpha' : alpha, 'legend' : legend, 'axes_frame' : axes_frame,
-                      'geometry_size' : geometry_size, 'geometry_size_columns' : geometry_size_columns, 'geometry_size_factor' : geometry_size_factor}        
+        parameters = {'ax': ax, 'n': n, 'multiPlot': multiPlot, 'column': column , 'gdf': gdf, 'titles': titles, 
+                      'scheme': scheme, 'bins': bins, 'classes': classes, 'norm': norm, 'cmap': cmap, 
+                      'color': color, 'alpha': alpha, 'legend': legend, 'axes_frame': axes_frame,
+                      'geometry_size': geometry_size, 'geometry_size_columns': geometry_size_columns, 'geometry_size_factor': geometry_size_factor}        
         subplot(**parameters)    
             
     if (cbar) & (not legend):  
-        generate_colorbar(plot = multiPlot, cmap = cmap, norm = norm, ticks = cbar_ticks, symbol = cbar_max_symbol, min_max = cbar_min_max, 
-                    shrinkage = cbar_shrinkage)
+        generate_colorbar(plot = multiPlot, cmap = cmap, norm = norm, cbar_ticks = cbar_ticks, cbar_max_symbol = cbar_max_symbol, cbar_min_max = cbar_min_max, 
+                    cbar_shrink = cbar_shrink)
     return multiPlot.fig
 
 def plotOn_ax(ax, gdf, column = None, scheme = None, bins = None, classes = 7, norm = None, cmap = None, color = 'red', alpha = 1.0, 
@@ -376,41 +397,35 @@ def plotOn_ax(ax, gdf, column = None, scheme = None, bins = None, classes = 7, n
     Parameters
     ----------
     ax: matplotlib.axes object
-        the Axes on which plotting
+        The axes object on which to create the subplot.
     gdf: GeoDataFrame
-        GeoDataFrame to be plotted 
-    column: string
-        Column on which the plot is based
-    scheme: string
-        classification method, choose amongst: https://pysal.org/mapclassify/api.html
+        GeoDataFrame to be plotted.
+    column: str
+        Column on which the plot is based.
+    scheme: str
+        Classification method. Choose amongst the options listed at https://pysal.org/mapclassify/api.html.
     bins: list
-        bins defined by the user
+        Bins defined by the user.
     classes: int
-        classes for visualising when scheme is not "None"
+        Number of classes for categorizing the data when scheme is not "None".
     norm: array
-        a class that specifies a desired data normalisation into a [min, max] interval
-    cmap: string, matplotlib.colors.LinearSegmentedColormap
-        see matplotlib colormaps for a list of possible values or pass a colormap
-    color: string
-        categorical color applied to all geometries when not using a column to color them
+        A class that specifies a desired data normalization into a [min, max] interval.
+    cmap: str or matplotlib.colors.LinearSegmentedColormap
+        Color map for the plot. See matplotlib colormaps for a list of possible values or pass a colormap.
+    color: str
+        Categorical color applied to all geometries when not using a column to color them.
     alpha: float
-        alpha value of the plotted layer
-    legend: boolean
-        if True, show legend, otherwise don't
+        Alpha value of the plotted layer.
+    legend: bool
+        If True, show the legend; otherwise, don't.
     geometry_size: float
-        point size value, when plotting a Point GeoDataFrame
-    geometry_size_factor: float 
-        when provided, it rescales the column provided, if any, from 0 to 1 and it uses the geometry_size_factor to rescale the marker size 
-        accordingly 
-        (e.g. rescaled variable's value [0-1] * factor), when plotting a Point GeoDataFrame
-    geometry_size: float
-        line width, when plotting a LineString GeoDataFrame
+        Point size value when plotting a Point GeoDataFrame or Width value when plotting LineString GeoDataFrame.
     geometry_size_factor: float
-        when provided, it rescales the column provided, if any, from 0 to 1 and it uses the geometry_size_factor to rescale the line width 
-        accordingly 
-        (e.g. rescaled variable's value [0-1] * factor), when plotting a LineString GeoDataFrame
+        Rescaling factor for the column provided, if any. The column is rescaled from 0 to 1, and the
+        geometry_size_factor is used to rescale the marker size accordingly
+        (e.g., rescaled variable's value [0-1] * factor) when plotting a Point GeoDataFrame.
     zorder: int   
-        zorder of this layer; e.g. if 0, plots first, thus main GeoDataFrame on top; if 1, plots last, thus on top.
+        Zorder of this layer; e.g. if 0, plots first, thus main GeoDataFrame on top; if 1, plots last, thus on top.
     """  
     
     gdf = gdf.copy()
@@ -437,8 +452,8 @@ def plotOn_ax(ax, gdf, column = None, scheme = None, bins = None, classes = 7, n
     c_k = dict(k=classes) if bins is None else dict(bins=bins, k=len(bins))
     scheme = 'User_Defined' if bins is not None else scheme
     
-    parameters = {'ax' : ax, 'column' : column, 'classification_kwds' : c_k, 'scheme' : scheme, 'norm' : norm,
-                   'cmap' : cmap, 'categorical' : categorical, 'color' : color, 'alpha' : alpha, 'legend' : legend, 
+    parameters = {'ax': ax, 'column': column, 'classification_kwds': c_k, 'scheme': scheme, 'norm': norm,
+                   'cmap': cmap, 'categorical': categorical, 'color': color, 'alpha': alpha, 'legend': legend, 
                    'zorder': zorder}  
                    
     geometry_type = gdf.iloc[0].geometry.geom_type
@@ -462,7 +477,48 @@ def plotOn_ax(ax, gdf, column = None, scheme = None, bins = None, classes = 7, n
  
 def subplot(ax, n, multiPlot, gdf, column, scheme, bins, classes, axes_frame, norm, cmap, color, alpha, legend, geometry_size, geometry_size_columns,
                     geometry_size_factor, titles):
-    
+    """
+    Create a subplot with a map plot on the given axes.
+
+    Parameters
+    ----------
+    ax: matplotlib.axes object
+        The axes object on which to create the subplot.
+    n: int
+        The index of the subplot.
+    multiPlot: MultiPlot object
+        The MultiPlot object controlling the plot settings.
+    gdf: GeoDataFrame
+        The GeoDataFrame containing the data to plot.
+    column: str
+        The column name in the GeoDataFrame to be used for plotting.
+    scheme: str
+        The classification scheme to use for mapping the data.
+    bins: int or sequence or pandas.IntervalIndex
+        The number of bins to use for the classification or the bin intervals.
+    classes: int or sequence
+        The number of classes to use for the classification or the class intervals.
+    axes_frame: bool
+        Flag indicating whether to draw axes frame or not.
+    norm: Normalize or str
+        The normalization scheme to use for mapping values to colors.
+    cmap: str or Colormap
+        The colormap to use for mapping values to colors.
+    color: str
+        Categorical color applied to all geometries when not using a column to color them.
+    alpha: float
+        Alpha value of the plotted layer.
+    legend: bool
+        If True, show the legend; otherwise, don't.
+    geometry_size: float
+        Marker size value when plotting a Point GeoDataFrame or line width value when plotting LineString GeoDataFrame.
+    geometry_size_columns: str or sequence
+        The column name(s) in the GeoDataFrame to be used for scaling the geometry size.
+    geometry_size_factor: float
+        The factor by which to scale the geometry size.
+    titles: str or sequence
+        The title(s) of the subplot(s).
+    """  
     ax.set_aspect("equal")
     set_axes_frame(axes_frame, ax, multiPlot.black_background, multiPlot.text_color)
     
@@ -492,24 +548,24 @@ def subplot(ax, n, multiPlot, gdf, column, scheme, bins, classes, axes_frame, no
 
 def plot_baseMap(gdf = None, ax = None, color = None, geometry_size = None, alpha = 0.5, zorder = 0):
     """
-    It plots the geometries of a GeoDataFrame, coloring on the bases of the values contained in the provided columns, using a given scheme.
-    If only "column" is provided, a categorical map is depicted.
+    It plots the geometries of a GeoDataFrame, coloring on the basis of the values contained in the provided columns, using a given scheme.
+    If only column is provided, a categorical map is depicted.
     If no column is provided, a plain map is shown.
     
     Parameters
     ----------
-    gdf : GeoDataFrame
+    gdf: GeoDataFrame
         The GeoDataFrame containing the map data.
-    ax : str
-        The column on which the plot is based.
-    geometry_size : str
-        size of the elements (LineString or Point), default value is None
-    black_background : bool
-        Specifies whether to use a black or white background.
-    alpha : float
-        transparency of the map elements, default value is 0.5
-    zorder : str
-        the order of the map elements with respect to other elements in the axis, default value is 0
+    ax: matplotlib.axes object
+        The axes object on which to create the subplot.
+    color: str
+        The color to use for mapping
+    geometry_size: float
+        Point size value when plotting a Point GeoDataFrame or Width value when plotting LineString GeoDataFrame.
+    alpha: float
+        Alpha value of the plotted layer.
+    zorder: str
+        The order of the map elements with respect to other elements in the axis, default value is 0.
     
     """
     if gdf.iloc[0].geometry.geom_type == 'LineString':
@@ -526,13 +582,10 @@ def generate_legend_fig(ax, plot):
     Parameters
     ----------
     ax: matplotlib.axes object
-        the Axes on which plotting
-    nrows: int
-        number of rows in the figure
-    text_color: string
-        the text color
-    font_size: int
-        the legend's labels text size
+        The axes object on which to create the subplot.
+    plot: Plot, MultiPlot Object
+        The Plot object.
+    
     """ 
     leg = ax.get_legend()    
     fig_leg = plot.fig.legend(handles = leg.legendHandles, labels = [t.get_text() for t in leg.texts], loc=5, 
@@ -553,16 +606,14 @@ def generate_legend_fig(ax, plot):
            
 def generate_legend_ax(ax, plot):
     """ 
-    It generate the legend for a figure.
+    It generate the legend for an axes.
     
     Parameters
     ----------
     ax: matplotlib.axes object
-        the Axes on which plotting
-    text_color: string
-        the text color
-    font_size: int
-        the legend's labels text size
+        The axes object on which to create the subplot.
+    plot: Plot, MultiPlot Object
+        The Plot object.
     """
     leg = ax.get_legend()  
     plt.setp(leg.texts, family='Times New Roman', fontsize = plot.font_size_secondary, color = plot.text_color, va = 'center')
@@ -585,30 +636,27 @@ def generate_legend_ax(ax, plot):
             break
     leg.get_frame().set_facecolor('none')
     
-def generate_colorbar(plot = None, cmap = None, norm = None, ticks = 5, symbol = False, min_max = False, shrinkage = 0.95):
+def generate_colorbar(plot = None, cmap = None, norm = None, cbar_ticks = 5, cbar_max_symbol = False, cbar_min_max = False, cbar_shrink = 0.95):
     """ 
     It plots a colorbar, given some settings.
     
     Parameters
     ----------
-    fig: matplotlib.figure.Figure
-        The figure container for the current plot
-    pos: list of float
-        the axes positions
-    sm: matplotlib.cm.ScalarMappable
-        a mixin class to map scalar data to RGBA
+    plot: Plot, MultiPlot Object
+        The Plot object.
+    cmap: str or matplotlib.colors.LinearSegmentedColormap
+        Color map for the plot. See matplotlib colormaps for a list of possible values or pass a colormap.
     norm: array
-        a class that specifies a desired data normalisation into a [min, max] interval
-    text_color: string
-        the text color
-    font_size: int
-        the colorbar's labels text size
-    ticks: int
-        the number of ticks along the colorbar
-    symbol: boolean
-        if True, it shows the ">" next to the highest tick's label in the colorbar (useful when normalising)
-    cbar_min_max: boolean
-        if True, it only shows the ">" and "<" as labels of the lowest and highest ticks' the colorbar
+        A class that specifies a desired data normalisation into a [min, max] interval.
+    cbar_ticks: int
+        Number of ticks along the colorbar.
+    cbar_max_symbol: bool
+        If True, show the ">" next to the highest tick's label in the colorbar (useful when normalizing).
+    cbar_min_max: bool
+        If True, only show the ">" and "<" as labels of the lowest and highest ticks' the colorbar.
+    cbar_shrink:
+        Fraction by which to multiply the size of the colorbar. 
+        
     """
     
     if isinstance(plot, Plot):
@@ -616,8 +664,8 @@ def generate_colorbar(plot = None, cmap = None, norm = None, ticks = 5, symbol =
     else:
         ax = plot.grid
         
-    cb = plot.fig.colorbar(cm.ScalarMappable(norm=norm, cmap=cmap), ax = ax, shrink = shrinkage)
-    tick_locator = ticker.MaxNLocator(nbins=ticks)
+    cb = plot.fig.colorbar(cm.ScalarMappable(norm=norm, cmap=cmap), ax = ax, shrink = cbar_shrink)
+    tick_locator = ticker.MaxNLocator(nbins=cbar_ticks)
     cb.locator = tick_locator
     cb.update_ticks()
     cb.outline.set_visible(False)
@@ -627,12 +675,12 @@ def generate_colorbar(plot = None, cmap = None, norm = None, ticks = 5, symbol =
         if (t == ticks[-1]) & (t != norm.vmax) :
             ticks[-1] = norm.vmax
 
-    if min_max:
+    if cbar_min_max:
         ticks = [norm.vmin, norm.vmax]
     
     cb.set_ticks(ticks)
     cb.ax.set_yticklabels([round(t,1) for t in ticks])
-    if symbol:
+    if cbar_max_symbol:
         cb.ax.set_yticklabels([round(t,1) if t < norm.vmax else "> "+str(round(t,1)) for t in cb.ax.get_yticks()])
 
     plt.setp(plt.getp(cb.ax, "yticklabels"), color = plot.text_color, fontfamily = 'Times New Roman', fontsize= plot.font_size_secondary)
@@ -643,12 +691,14 @@ def set_axes_frame(axes_frame = False, ax = None, black_background = False, text
     
     Parameters
     ----------
-    ax: matplotlib.axes
-        the Axes on which plotting
+    axes_frame: bool
+        Flag indicating whether to draw axes frame or not.
+    ax: matplotlib.axes object
+        The axes object on which to create the subplot.
     black_background: boolean
-        it indicates if the background color is black
-    text_color: string
-        the text color
+        It indicates whether the background color is black.
+    text_color: str
+        The text color.
     """
     if not axes_frame:
         ax.set_axis_off()
