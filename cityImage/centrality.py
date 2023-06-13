@@ -84,7 +84,6 @@ def _euclidean_distance(xs, ys, xt, yt):
 
 def weight_nodes(nodes_gdf, services_gdf, G, field_name, radius = 400):
     """
-
     Given a nodes' and a services/points' GeoDataFrame, the function assigns an attribute to nodes in the graph G (prevously derived from 
     nodes_gdf) based on the amount of features in the services_gdf in a buffer around each node. 
     
@@ -107,7 +106,7 @@ def weight_nodes(nodes_gdf, services_gdf, G, field_name, radius = 400):
     
     Returns
     -------
-    G:
+    G: NetworkX Graph
     
     """
     
@@ -150,7 +149,6 @@ def reach_centrality(G, weight, radius, attribute):
     reach_centrality: dict
         a dictionary where each item consists of a node (key) and the centrality value (value)
     """
-    
     coord_nodes = set(n for n, d in G.nodes(data=True) if 'x' in d and 'y' in d)
     reach_centrality = {}
     
@@ -216,7 +214,6 @@ def append_edges_metrics(edges_gdf, G, dicts, column_names):
     edges_gdf: LineString GeoDataFrame
         the updated street segments GeoDataFrame
     """    
-    
     edgesID = {(i,e): G[i][e]['edgeID'] for i, e in G.edges()}
     missing_values = [item for item in list(edges_gdf.index) if item not in list(edgesID.values())]
 
