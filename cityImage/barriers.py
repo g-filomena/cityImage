@@ -10,31 +10,34 @@ pd.set_option("display.precision", 3)
 
 def road_barriers(place, download_method, distance = 500.0, epsg = None, include_primary = False, include_secondary = False):
     """
-    The function downloads major roads from OSM. These can be considered to be barrier to pedestrian movement or, at least, to structure people's cognitive Image of the City.
-    if 'include_primary' is true, the function considers also primary roads, beyond motorway and trunk roads.
+    The function downloads major roads from OSM. These can be considered to be barrier to pedestrian movement or, at least, to structure people's cognitive Image of 
+    the City. If 'include_primary' is true, the function considers also primary roads, beyond motorway and trunk roads.
     if 'include_secondary' is true, the function considers also secondary roads, beyond motorway and trunk roads.
     The user should assess based on the study area categorisation whether primary and secondary roads may indeed constitute barriers to pedestrian movement.
         
     Parameters
     ----------
-    place: string
-        name of cities or areas in OSM: when using "OSMpolygon" please provide the name of a "relation" in OSM as an argument of "place"; when using "distance_from_address"
-        provide an existing OSM address; when using "OSMplace" provide an OSM place name
-    download_method: string, {"polygon", "distance_from_address", "OSMplace"}
-        it indicates the method that should be used for downloading the data.
+    place: str, tuple
+        Name of cities or areas in OSM: 
+        - when using "distance_from_point" please provide a (lat, lon) tuple to create the bounding box around it; 
+        - when using "distance_from_address" provide an existing OSM address; 
+        - when using "OSMplace" provide an OSM place name.  
+        - when using "OSMpolygon" please provide the name of a relation in OSM as an argument of place;
+    download_method: string, {"distance_from_address", "distance_from_point", "OSMpolygon", "OSMplace"}
+        It indicates the method that should be used for downloading the data.
     distance: float
-        used when download_method == "distance from address"
+        Used when download_method == "distance from address" or == "distance from point".
     epsg: int
-        epsg of the area considered; if None OSMNx is used for the projection
+        Epsg of the area considered; if None OSMNx is used for the projection.
     include_primary: boolean
-        when true, it includes primary roads as barriers
+        When true, it includes primary roads as barriers.
     include_secondary: boolean
-        when true, it includes primary roads as barriers   
+        When true, it includes primary roads as barriers.   
     
     Returns
     -------
     road_barriers: LineString GeoDataFrame
-        the road barriers
+        The road barriers.
     """
     
     crs = 'EPSG:' + str(epsg)
@@ -65,22 +68,25 @@ def water_barriers(place, download_method, distance = 500.0, lakes_area = 1000, 
         
     Parameters
     ----------
-    place: string
-        name of cities or areas in OSM: when using "OSMpolygon" please provide the name of a "relation" in OSM as an argument of "place"; when using "distance_from_address"
-        provide an existing OSM address; when using "OSMplace" provide an OSM place name
-    download_method: string {"polygon", "distance_from_address", "OSMplace"}
-        it indicates the method that should be used for downloading the data.
+    place: str, tuple
+        Name of cities or areas in OSM: 
+        - when using "distance_from_point" please provide a (lat, lon) tuple to create the bounding box around it; 
+        - when using "distance_from_address" provide an existing OSM address; 
+        - when using "OSMplace" provide an OSM place name.  
+        - when using "OSMpolygon" please provide the name of a relation in OSM as an argument of place;
+    download_method: string, {"distance_from_address", "distance_from_point", "OSMpolygon", "OSMplace"}
+        It indicates the method that should be used for downloading the data.
     distance: float
-        used when download_method == "distance from address"
+        Used when download_method == "distance from address" or == "distance from point".
     lakes_area = float
-       minimum area for lakes to be considered    
+        Minimum area for lakes to be considered.    
     epsg: int
-        epsg of the area considered; if None OSMNx is used for the projection
+        Epsg of the area considered; if None OSMNx is used for the projection.
         
     Returns
     -------
     water_barriers: LineString GeoDataFrame
-        the water barriers GeoDataFrame
+        The water barriers GeoDataFrame.
     """
     
     crs = 'EPSG:' + str(epsg)
@@ -124,26 +130,30 @@ def water_barriers(place, download_method, distance = 500.0, lakes_area = 1000, 
     
 def railway_barriers(place, download_method, distance = 500.0, epsg = None, keep_light_rail = False):
     """
-    The function downloads overground railway structures from OSM. Such structures can be considered barriers which shape the Image of the City and obstruct sight and movement.
+    The function downloads overground railway structures from OSM. Such structures can be considered barriers which shape the Image of the City and obstruct sight and 
+    movement.
         
     Parameters
     ----------
-    place: string
-        name of cities or areas in OSM: when using "OSMpolygon" please provide the name of a "relation" in OSM as an argument of "place"; when using "distance_from_address"
-        provide an existing OSM address; when using "OSMplace" provide an OSM place name
-    download_method: string {"polygon", "distance_from_address", "OSMplace"}
-        it indicates the method that should be used for downloading the data.
+    place: str, tuple
+        Name of cities or areas in OSM: 
+        - when using "distance_from_point" please provide a (lat, lon) tuple to create the bounding box around it; 
+        - when using "distance_from_address" provide an existing OSM address; 
+        - when using "OSMplace" provide an OSM place name.  
+        - when using "OSMpolygon" please provide the name of a relation in OSM as an argument of place;
+    download_method: string, {"distance_from_address", "distance_from_point", "OSMpolygon", "OSMplace"}
+        It indicates the method that should be used for downloading the data.
     distance: float
-        used when download_method == "distance from address"
+        Used when download_method == "distance from address" or == "distance from point".
     epsg: int
-        epsg of the area considered; if None OSMNx is used for the projection
+        Epsg of the area considered; if None OSMNx is used for the projection.
     keep_light_rail: boolean
-        includes light rail, like tramway
+        Includes light rail, like tramway.
         
     Returns
     -------
     railway_barriers: LineString GeoDataFrame
-        the railway barriers GeoDataFrame
+        The railway barriers GeoDataFrame.
     """    
     
     crs = 'EPSG:' + str(epsg)
@@ -168,26 +178,30 @@ def railway_barriers(place, download_method, distance = 500.0, epsg = None, keep
     
 def park_barriers(place, download_method, distance = 500.0, epsg = None, min_area = 100000):
     """
-    The function downloads parks areas with a certain extent and converts them to LineString features. Parks may break continuity in the urban structure, besides being attractive areas for pedestrians.
+    The function downloads parks areas with a certain extent and converts them to LineString features. Parks may break continuity in the urban structure, 
+    besides being attractive areas for pedestrians.
         
     Parameters
     ----------
-    place: string
-        name of cities or areas in OSM: when using "OSMpolygon" please provide the name of a "relation" in OSM as an argument of "place"; when using "distance_from_address"
-        provide an existing OSM address; when using "OSMplace" provide an OSM place name
-    download_method: string {"polygon", "distance_from_address", "OSMplace"}
-        it indicates the method that should be used for downloading the data.
+    place: str, tuple
+        Name of cities or areas in OSM: 
+        - when using "distance_from_point" please provide a (lat, lon) tuple to create the bounding box around it; 
+        - when using "distance_from_address" provide an existing OSM address; 
+        - when using "OSMplace" provide an OSM place name.  
+        - when using "OSMpolygon" please provide the name of a relation in OSM as an argument of place;
+    download_method: string, {"distance_from_address", "distance_from_point", "OSMpolygon", "OSMplace"}
+        It indicates the method that should be used for downloading the data.
     distance: float
-        used when download_method == "distance from address"
+        Used when download_method == "distance from address" or == "distance from point".
     epsg: int
-        epsg of the area considered; if None OSMNx is used for the projection
+        Epsg of the area considered; if None OSMNx is used for the projection.
     min_area: double
-        parks with an extension smaller that this parameter are disregarded
+        Parks with an extension smaller that this parameter are disregarded.
       
     Returns
     -------
     park_barriers: LineString GeoDataFrame
-        the park barriers GeoDataFrame
+        The park barriers GeoDataFrame.
     """
 
     crs = 'EPSG:' + str(epsg)
@@ -216,57 +230,63 @@ def _download_geometries(place, download_method, tags, crs, distance = 500.0):
     
     Parameters
     ----------
-    place: string
-        name of cities or areas in OSM: when using "OSMpolygon" please provide the name of a "relation" in OSM as an argument of "place"; when using "distance_from_address"
-        provide an existing OSM address; when using "OSMplace" provide an OSM place name
-    download_method: string {"polygon", "distance_from_address", "OSMplace"}
-        it indicates the method that should be used for downloading the data.
+    place: str, tuple
+        Name of cities or areas in OSM: 
+        - when using "distance_from_point" please provide a (lat, lon) tuple to create the bounding box around it; 
+        - when using "distance_from_address" provide an existing OSM address; 
+        - when using "OSMplace" provide an OSM place name.  
+        - when using "OSMpolygon" please provide the name of a relation in OSM as an argument of place;
+    download_method: string, {"distance_from_address", "distance_from_point", "OSMpolygon", "OSMplace"}
+        It indicates the method that should be used for downloading the data.
     tag: dict 
-        the desired OSMN tags
+        The desired OSMN tags.
     crs: string
-        the coordinate system of the case study area
+        The coordinate system of the case study area.
     distance: float
-        used when download_method == "distance from address"
+        Used when download_method == "distance from address" or == "distance from point".
         
     Returns
     -------
     geometries_gdf: GeoDataFrame
-        the resulting GeoDataFrame
+        The resulting GeoDataFrame.
     """    
+    download_options = {"distance_from_address", "distance_from_point", "OSMpolygon", "OSMplace"}
+    if download_method not in download_options:
+        raise downloadError('Provide a download method amongst {}'.format(download_options))
     
     download_method_dict = {
         'distance_from_address': ox.geometries_from_address,
+        'distance_from_point': ox.geometries_from_point
         'OSMplace': ox.geometries_from_place,
-        'polygon': ox.geometries_from_polygon
+        'OSMpolygon': ox.geometries_from_polygon
     }
+    
     download_func = download_method_dict.get(download_method)
     if download_func:
-        if download_method == 'distance_from_address':
+        if download_method in ['distance_from_address', 'distance_from_point']
             geometries_gdf = download_func(place, tags = tags, dist = distance)
         else:
             geometries_gdf = download_func(place, tags = tags)
-    else:
-        raise ValueError(f"Invalid download method: {download_method}")
-    
+
     geometries_gdf = geometries_gdf.to_crs(crs)
     return geometries_gdf
       
 def along_water(edges_gdf, barriers_gdf):
     """
-    The function assigns to each street segment in a GeoDataFrame the list of barrierIDs corresponding to waterbodies which lay along the street segment. No obstructions between the street
-    segment and the barriers are admitted.
+    The function assigns to each street segment in a GeoDataFrame the list of barrierIDs corresponding to waterbodies which lay along the street segment. 
+    No obstructions between the street segment and the barriers are admitted.
         
     Parameters
     ----------
     edges_gdf: LineString GeoDataFrame
-        the street segmentes GeoDataFrame 
+        The street segmentes GeoDataFrame .
     barriers_gdf: LineString GeoDataFrame
-        the barriers GeoDataFrame
+        The barriers GeoDataFrame.
         
     Returns
     -------
     edges_gdf: LineString GeoDataFrame
-        the updated street segments GeoDataFrame
+        The updated street segments GeoDataFrame.
     """
     
     sindex = edges_gdf.sindex
@@ -289,19 +309,18 @@ def along_within_parks(edges_gdf, barriers_gdf):
     Parameters
     ----------
     edges_gdf: LineString GeoDataFrame
-        the street segmentes GeoDataFrame 
+        The street segmentes GeoDataFrame .
     barriers_gdf: LineString GeoDataFrame
-        the barriers GeoDataFrame
+        The barriers GeoDataFrame.
         
     Returns
     -------
     edges_gdf: LineString GeoDataFrame
-        the updated street segments GeoDataFrame
+        The updated street segments GeoDataFrame.
     """
     
     sindex = edges_gdf.sindex
     tmp = barriers_gdf[barriers_gdf['barrier_type']=='park']
-    # edges_gdf['a_parks'] = edges_gdf.apply(lambda row: barriers_along(row['edgeID'], edges_gdf, tmp, sindex, offset = 200), axis = 1)
     
     # polygonize parks
     park_polygons = barriers_gdf[barriers_gdf['barrier_type']=='park'].copy()
@@ -320,20 +339,20 @@ def barriers_along(ix_line, edges_gdf, barriers_gdf, edges_gdf_sindex, offset = 
     Parameters
     ----------
     ix_line: int
-        index street segment
+        Index street segment
     edges_gdf: LineString GeoDataFrame
-        the street segmentes GeoDataFrame 
+        The street segmentes GeoDataFrame.
     barriers_gdf: LineString GeoDataFrame
-        the barriers GeoDataFrame
-    edges_gdf_sindex: RTree Sindex
-        spatial index on edges_gdf
+        The barriers GeoDataFrame.
+    edges_gdf_sindex: Spatial Index
+        Spatial index on edges_gdf.
     offset: int
-        offset along the street segment considered
+        Offset along the street segment considered.
       
     Returns
     -------
     barriers_along: List
-        a list of barriers along a given street segment
+        A list of barriers along a given street segment.
     """
     
     buffer = edges_gdf.loc[ix_line].geometry.buffer(offset)
@@ -358,14 +377,14 @@ def _within_parks(line_geometry, park_polygons):
     Parameters
     ----------
     line_geometry: LineString 
-        street segment geometry
+        Street segment geometry.
     park_polygons: Polygon GeoDataFrame
-        Parks GeoDataFrame
+        Parks GeoDataFrame.
       
     Returns
     -------
     within: List
-        a list of street segments within a given park's polygon
+        A list of street segments within a given park's polygon.
     """  
         
     park_sindex = park_polygons.sindex
@@ -387,14 +406,14 @@ def assign_structuring_barriers(edges_gdf, barriers_gdf):
     Parameters
     ----------
     edges_gdf: LineString GeoDataFrame
-        the street segmentes GeoDataFrame 
+        The street segmentes GeoDataFrame.
     barriers_gdf: LineString GeoDataFrame
-        the barriers GeoDataFrame
+        The barriers GeoDataFrame.
         
     Returns
     -------
     edges_gdf: LineString GeoDataFrame
-        the updated street segments GeoDataFrame
+        The updated street segments GeoDataFrame.
     """
     
     barriers_gdf = barriers_gdf.copy()
@@ -415,14 +434,14 @@ def _crossing_barriers(line_geometry, barriers_gdf):
     Parameters
     ----------
     line_geometry: LineString 
-        street segment geometry
+        Street segment geometry.
     barriers_gdf: LineString GeoDataFrame
-        the barriers GeoDataFrame
+        The barriers GeoDataFrame.
         
     Returns
     -------
     adjacent_barriers: List
-        a list of adjacent barriers to a given street segment
+        A list of adjacent barriers to a given street segment.
     """
     
     adjacent_barriers = []
@@ -441,20 +460,23 @@ def get_barriers(place, download_method, distance = 500.0, epsg = None, parks_mi
     
     Parameters
     ----------
-    place: string
-        name of cities or areas in OSM: when using "OSMpolygon" please provide the name of a "relation" in OSM as an argument of "place"; when using "distance_from_address"
-        provide an existing OSM address; when using "OSMplace" provide an OSM place name
-    download_method: string, {"polygon", "distance_from_address", "OSMplace"}
-        it indicates the method that should be used for downloading the data.
+    place: str, tuple
+        Name of cities or areas in OSM: 
+        - when using "distance_from_point" please provide a (lat, lon) tuple to create the bounding box around it; 
+        - when using "distance_from_address" provide an existing OSM address; 
+        - when using "OSMplace" provide an OSM place name.  
+        - when using "OSMpolygon" please provide the name of a relation in OSM as an argument of place;
+    download_method: string, {"distance_from_address", "distance_from_point", "OSMpolygon", "OSMplace"}
+        It indicates the method that should be used for downloading the data.
     distance: float
-        it is used only if download_method == "distance from address"
+        Used when download_method == "distance from address" or == "distance from point".
     epsg: int
-        epsg of the area considered; if None OSMNx is used for the projection
+        Epsg of the area considered; if None OSMNx is used for the projection.
         
     Returns
     -------
     barriers_gdf: LineString GeoDataFrame
-        the barriers GeoDataFrame
+        The barriers GeoDataFrame.
     """
     
     rb = road_barriers(place, download_method, distance, epsg = epsg, include_primary = True)
@@ -480,7 +502,7 @@ def _simplify_barrier(geometries):
     Returns
     -------
     features: list of LineString
-        the list of actual geometries
+        The list of actual geometries.
     """
   
     if type(geometries) is Polygon: 
