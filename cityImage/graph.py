@@ -38,7 +38,6 @@ def graph_fromGDF(nodes_gdf, edges_gdf, nodeID = "nodeID"):
     G: NetworkX.Graph
         the undirected street network graph
     """
-
     nodes_gdf.set_index(nodeID, drop = False, inplace = True, append = False)
     nodes_gdf.index.name = None
     G = nx.Graph()   
@@ -83,7 +82,6 @@ def multiGraph_fromGDF(nodes_gdf, edges_gdf, nodeIDcolumn):
     G: NetworkX.MultiGraph
         the street network graph
     """
-    
     nodes_gdf.set_index(nodeIDcolumn, drop = False, inplace = True, append = False)
     nodes_gdf.index.name = None
     
@@ -105,8 +103,6 @@ def multiGraph_fromGDF(nodes_gdf, edges_gdf, nodeIDcolumn):
       
     return Mg
     
-## Building geo-dataframes for dual graph representation ###############
-
 def dual_gdf(nodes_gdf, edges_gdf, epsg, oneway = False, angle = None):
     """
     It creates two dataframes that are later exploited to generate the dual graph of a street network. The nodes_dual gdf contains edges 
@@ -132,8 +128,6 @@ def dual_gdf(nodes_gdf, edges_gdf, epsg, oneway = False, angle = None):
     nodes_dual, edges_dual: tuple of GeoDataFrames
         the dual nodes and edges GeoDataFrames
     """
-    
-
     nodes_gdf.set_index("nodeID", drop = False, inplace = True, append = False)
     nodes_gdf.index.name = None
     
@@ -154,8 +148,6 @@ def dual_gdf(nodes_gdf, edges_gdf, epsg, oneway = False, angle = None):
         centroids_gdf['intersecting'] = centroids_gdf.apply(lambda row: list(centroids_gdf.loc[(centroids_gdf['u'] == row['v']) | ((centroids_gdf['v'] == row['v']) & (centroids_gdf['oneway'] == 0))].index) 
                                                 if row['oneway'] == 1 else list(centroids_gdf.loc[(centroids_gdf['u'] == row['v']) | ((centroids_gdf['v'] == row['v']) & (centroids_gdf['oneway'] == 0)) | 
                                                 (centroids_gdf['u'] == row['u']) | ((centroids_gdf['v'] == row['u']) & (centroids_gdf['oneway'] == 0))].index), axis = 1)
-    
-    
     
     # creating vertexes representing street segments (centroids)
     centroids_data = centroids_gdf.drop(['geometry', 'centroid'], axis = 1)
@@ -197,7 +189,6 @@ def dual_gdf(nodes_gdf, edges_gdf, epsg, oneway = False, angle = None):
     else: 
         edges_dual['rad'] = edges_dual.apply(lambda row: angle_line_geometries(edges_gdf.loc[row['u']].geometry, edges_gdf.loc[row['v']].geometry, degree = False, 
                                             calculation_type = 'deflection'), axis = 1)
-        
     return nodes_dual, edges_dual
 
 def dual_graph_fromGDF(nodes_dual, edges_dual):
@@ -216,7 +207,6 @@ def dual_graph_fromGDF(nodes_dual, edges_dual):
     Dg: NetworkX.Graph
         the dual graph of the street network
     """
-   
     nodes_dual.set_index('edgeID', drop = False, inplace = True, append = False)
     nodes_dual.index.name = None
     edges_dual.u, edges_dual.v  = edges_dual.u.astype(int), edges_dual.v.astype(int)
@@ -232,8 +222,7 @@ def dual_graph_fromGDF(nodes_dual, edges_dual):
         attribute_values = {k:v for k, v in attributes[attribute_name].items() if pd.notnull(v)}
         nx.set_node_attributes(Dg, name=attribute_name, values=attribute_values)
 
-    # add the edges and attributes that are not u, v, key (as they're added
-    # separately) or null
+    # add the edges and attributes that are not u, v, key (as they're added separately) or null
     for _, row in edges_dual.iterrows():
         attrs = {label:value for label, value in row.items() if (label not in ['u', 'v']) and (isinstance(value, list) or pd.notnull(value))}
         Dg.add_edge(row['u'], row['v'], **attrs)
@@ -260,7 +249,6 @@ def dual_id_dict(dict_values, G, node_attribute):
     ed_dict: dictionary
         a dictionary where each item consists of a edgeID (key) and centrality values (for example) or other attributes (values)
     """
-    
     ed_list = [(G.nodes[node][node_attribute], value) for node, value in dict_values.items()]
     return dict(ed_list)
 
@@ -278,6 +266,5 @@ def nodes_degree(edges_gdf):
     dd: dictionary
         a dictionary where each item consists of a nodeID (key) and degree values (values)
     """
-
     dd = edges_gdf[['u','v']].stack().value_counts().to_dict()
     return dd 
