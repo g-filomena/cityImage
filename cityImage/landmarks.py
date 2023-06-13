@@ -91,13 +91,13 @@ def get_buildings_fromOSM(place, download_method: str, epsg = None, distance = 1
             
     Parameters
     ----------
-    place: str, tuple
+    place: str, tuple, Shapely Polygon
         Name of cities or areas in OSM: 
         - when using "distance_from_point" please provide a (lat, lon) tuple to create the bounding box around it; 
         - when using "distance_from_address" provide an existing OSM address; 
-        - when using "OSMplace" provide an OSM place name.  
-        - when using "OSMpolygon" please provide the name of a relation in OSM as an argument of place;
-    download_method: string, {"distance_from_address", "distance_from_point", "OSMpolygon", "OSMplace"}
+        - when using "OSMplace" provide an OSM place name. The query must be geocodable and OSM must have polygon boundaries for the geocode result.  
+        - when using "polygon" please provide a Shapely Polygon in unprojected latitude-longitude degrees (EPSG:4326) CRS;
+    download_method: str, {"distance_from_address", "distance_from_point", "OSMplace", "polygon"}
         It indicates the method that should be used for downloading the data.
     epsg: int
         Epsg of the area considered; if None OSMNx is used for the projection.
@@ -110,7 +110,7 @@ def get_buildings_fromOSM(place, download_method: str, epsg = None, distance = 1
         The buildings GeoDataFrame.
     """   
     columns_to_keep = ['amenity', 'building', 'geometry', 'historic', 'land_use_raw']
-    download_options = {"distance_from_address", "distance_from_point", "OSMpolygon", "OSMplace"}
+    download_options = {"distance_from_address", "distance_from_point", "OSMplace", "polygon"}
     if download_method not in download_options:
         raise downloadError('Provide a download method amongst {}'.format(download_options))
     
@@ -118,8 +118,9 @@ def get_buildings_fromOSM(place, download_method: str, epsg = None, distance = 1
         'distance_from_address': ox.geometries_from_address,
         'distance_from_point': ox.geometries_from_point
         'OSMplace': ox.geometries_from_place,
-        'OSMpolygon': ox.geometries_from_polygon
+        'polygon': ox.geometries_from_polygon
     }
+    
     tags = {"building": True}
     download_func = download_method_dict.get(download_method)
     if download_func:
@@ -484,13 +485,13 @@ def get_historical_buildings_fromOSM(place, download_method, epsg = None, distan
             
     Parameters
     ----------
-    place: str, tuple
+    place: str, tuple, Shapely Polygon
         Name of cities or areas in OSM: 
         - when using "distance_from_point" please provide a (lat, lon) tuple to create the bounding box around it; 
         - when using "distance_from_address" provide an existing OSM address; 
-        - when using "OSMplace" provide an OSM place name.  
-        - when using "OSMpolygon" please provide the name of a relation in OSM as an argument of place;
-    download_method: string, {"distance_from_address", "distance_from_point", "OSMpolygon", "OSMplace"}
+        - when using "OSMplace" provide an OSM place name. The query must be geocodable and OSM must have polygon boundaries for the geocode result.  
+        - when using "polygon" please provide a Shapely Polygon in unprojected latitude-longitude degrees (EPSG:4326) CRS;
+    download_method: str, {"distance_from_address", "distance_from_point", "OSMplace", "polygon"}
         It indicates the method that should be used for downloading the data.
     epsg: int
         Epsg of the area considered; if None OSMNx is used for the projection.
@@ -504,8 +505,7 @@ def get_historical_buildings_fromOSM(place, download_method, epsg = None, distan
     """   
     
     columns = ['geometry', 'historic']
-
-    download_options = {"distance_from_address", "distance_from_point", "OSMpolygon", "OSMplace"}
+    download_options = {"distance_from_address", "distance_from_point", "OSMplace", "polygon"}
     if download_method not in download_options:
         raise downloadError('Provide a download method amongst {}'.format(download_options))
     
@@ -513,7 +513,7 @@ def get_historical_buildings_fromOSM(place, download_method, epsg = None, distan
         'distance_from_address': ox.geometries_from_address,
         'distance_from_point': ox.geometries_from_point
         'OSMplace': ox.geometries_from_place,
-        'OSMpolygon': ox.geometries_from_polygon
+        'polygon': ox.geometries_from_polygon
     }
     tags = {"building": True}
     download_func = download_method_dict.get(download_method)
@@ -559,7 +559,7 @@ def cultural_score(buildings_gdf, historical_elements_gdf = pd.DataFrame({'a': [
         Buildings GeoDataFrame - case study area.
     historical_elements_gdf: Point or Polygon GeoDataFrame
         The GeoDataFrame containing information about listed historical buildings or elements.
-    historical_score: string
+    historical_score: str
         The name of the column in the historical_elements_gdf that provides information on the classification of the historical listings.
     from_OSM: boolean
         If using the historic field from OSM. This column should be already in the buildings_gdf columns.
