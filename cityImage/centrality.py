@@ -17,12 +17,13 @@ def nodes_dict(G: nx.Graph) -> dict:
     
     Parameters
     ----------
-    G: A NetworkX Graph object.
-        the graph
+    G: Networkx graph
+        The street network graph.
     
     Returns
     ----------
-        a dictionary where each key is a node ID and each value is a tuple of coordinates (x, y).
+    dict
+        A dictionary where each key is a node ID and each value is a tuple of coordinates (x, y).
     """
    
     return {item: (G.nodes[item]["x"], G.nodes[item]["y"]) for item in G.nodes()}
@@ -37,16 +38,16 @@ def straightness_centrality(G, weight, normalized = True):
 
     Parameters
     ----------
-    G: NetworkX Graph
-        the graph
-    weight: string 
-        edges weight
-    normalized: boolean
+    G: Networkx graph
+        The street network graph.
+    weight: str 
+        Edges weight
+    normalized: bool.
     
     Returns
     -------
     straightness_centrality: dict
-        a dictionary where each item consists of a node (key) and the centrality value (value)
+        A dictionary where each item consists of a node (key) and the centrality value (value).
     """
     path_length = functools.partial(nx.single_source_dijkstra_path_length, weight = weight)
     nodes = G.nodes()
@@ -96,17 +97,20 @@ def weight_nodes(nodes_gdf, services_gdf, G, field_name, radius = 400):
     Parameters
     ----------
     nodes_gdf: Point GeoDataFrame
-        nodes (junctions) GeoDataFrame
+        nodes (junctions) GeoDataFrame.
     services_gdf: Point GeoDataFrame
-    G: NetworkX Graph
+    
+    G: Networkx graph
+        The street network graph.
     field_name: string
-        the name of the nodes' attribute
+        The name of the nodes' attribute.
     radius: float
-        distance around the node within looking for point features (services)
+        Distance around the node within looking for point features (services).
     
     Returns
     -------
-    G: NetworkX Graph
+    G: Networkx graph
+        The updated street network graph.
     
     """
     
@@ -134,20 +138,20 @@ def reach_centrality(G, weight, radius, attribute):
 
     Parameters
     ----------
-    G: NetworkX.Graph
-        the street network graph
-    weight: string
-        the street segments' weight (e.g. distance)
+    G: Networkx graph
+        The street network graph.
+    weight: str
+        The street segments' weight (e.g. distance).
     radius: float
-        distance from node within looking for other reachable nodes
-    attribute: string
-        node attribute used to compute reach centralily. It indicates the importance of the node 
-        (e.g. number of services in 50mt buffer - name of a column in the nodes_gdf GeoDataFrame)
+        Distance from node within looking for other reachable nodes
+    attribute: str
+        Node attribute used to compute reach centralily. It indicates the importance of the node 
+        (e.g. number of services in 50mt buffer - name of a column in the nodes_gdf GeoDataFrame).
     
     Returns
     -------
     reach_centrality: dict
-        a dictionary where each item consists of a node (key) and the centrality value (value)
+        A dictionary where each item consists of a node (key) and the centrality value (value).
     """
     coord_nodes = set(n for n, d in G.nodes(data=True) if 'x' in d and 'y' in d)
     reach_centrality = {}
@@ -166,18 +170,19 @@ def centrality(G, nodes_gdf, measure, weight, normalized = False):
     Parameters
     ----------
     G: Networkx graph
+        The street network graph.
     nodes_gdf: Point GeoDataFrame
-        nodes (junctions) GeoDataFrame
-    measure: string {"betweenness_centrality", "straightness_centrality", "closeness_centrality","information_centrality"}
-        the type of centrality to be computed 
-    weight: string
-        the street segments' weight (e.g. distance)
+        The nodes (junctions) GeoDataFrame.
+    measure: str {"betweenness_centrality", "straightness_centrality", "closeness_centrality","information_centrality"}
+        The type of centrality to be computed.
+    weight: str
+        The street segments' weight (e.g. distance).
     normalized: boolean
     
     Returns
     -------
     centrality: dict
-        a dictionary where each item consists of a node (key) and the centrality value (value)
+        A dictionary where each item consists of a node (key) and the centrality value (value).
     """    
     measure_mapping = {
         "betweenness_centrality": (nx.betweenness_centrality, {"weight": weight, "normalized": normalized}),
@@ -201,18 +206,18 @@ def append_edges_metrics(edges_gdf, G, dicts, column_names):
     Parameters
     ----------
     edges_gdf: LineString GeoDataFrame
-        street segments GeoDataFrame
+        The street segments GeoDataFrame.
     G: Networkx graph
-        the street network graph
+        The street network graph.
     dicts: list
-        list of dictionaries resulting from centrality measures
+        The list of dictionaries resulting from centrality measures.
     column_names: list
-        list of strings with the desired column names for the attributes to be attached
+        The list of strings with the desired column names for the attributes to be attached.
     
     Returns
     -------
     edges_gdf: LineString GeoDataFrame
-        the updated street segments GeoDataFrame
+        The updated street segments GeoDataFrame.
     """    
     edgesID = {(i,e): G[i][e]['edgeID'] for i, e in G.edges()}
     missing_values = [item for item in list(edges_gdf.index) if item not in list(edgesID.values())]
