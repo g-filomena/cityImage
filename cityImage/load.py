@@ -24,36 +24,45 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
         
     Parameters
     ----------
-    place: string
-        name of cities or areas in OSM: when using "OSMpolygon" please provide the name of a "relation" in OSM as an argument of "place"; when using "distance_from_address"
-        provide an existing OSM address; when using "OSMplace" provide an OSM place name
-    download_method: string {"polygon", "distance_from_address", "OSMplace"}
-        it indicates the method that should be used for downloading the data. When 'polygon' the shape to get network data within coordinates should be in
+    place: str, tuple
+        Name of cities or areas in OSM: 
+        - when using "distance_from_point" please provide a (lat, lon) tuple to create the bounding box around it; 
+        - when using "distance_from_address" provide an existing OSM address; 
+        - when using "OSMplace" provide an OSM place name.  
+        - when using "OSMpolygon" please provide the name of a relation in OSM as an argument of place;
+    download_method: str, {"distance_from_address", "distance_from_point", "OSMpolygon", "OSMplace", "polygon"}
+        It indicates the method that should be used for downloading the data. When 'polygon' the shape to get network data within coordinates should be in
         unprojected latitude-longitude degrees (EPSG:4326).
-    network_type: string {"walk", "bike", "drive", "drive_service", "all", "all_private", "none"}
-        it indicates type of street or other network to extract - from OSMNx paramaters
+    network_type: str {"walk", "bike", "drive", "drive_service", "all", "all_private", "none"}
+        iItt indicates type of street or other network to extract - from OSMNx paramaters.
     epsg: int
-        epsg of the area considered; if None OSMNx is used for the projection
+        Epsg of the area considered; if None OSMNx is used for the projection.
     distance: float
-        it is used only if download_method == "distance from address"
+        It is used only if download_method == "distance_from_address" or "distance_from_point".
         
     Returns
     -------
     nodes_gdf, edges_gdf: Tuple of GeoDataFrames
-        the junction and street segments GeoDataFrames
+        the junction and street segments GeoDataFrames.
     """
     if epsg is not None:
         crs = 'EPSG:' + str(epsg)
-        
+    download_options = {"distance_from_address", "distance_from_point", "OSMpolygon", "OSMplace"}
+    if download_method not in download_options:
+        raise downloadError('Provide a download method amongst {}'.format(download_options))
+    
+    download_method_dict = {
+        'distance_from_address': ox.graph_from_address,
+        'distance_from_point': ox.graph_from_point
+        'OSMplace': ox.graph_from_place,
+        'polygon': ox.graph_from_polygon
+    }
     # using OSMNx to download data from OpenStreetMap     
-    if download_method == "polygon":
-        G = ox.graph_from_polygon(place, network_type = network_type, simplify = True)
-        
-    elif download_method == "distance_from_address":
-        G = ox.graph_from_address(place, network_type = network_type, dist = distance, simplify = True)
-    # (download_method == "OSMplace")
-    else:
-        G = ox.graph_from_place(place, network_type = network_type, simplify = True)
+    if download_func:
+        if download_method in ['distance_from_address', 'distance_from_point']
+            G = download_func(place, network_type = network_type, dist = distance, simplify = True)
+        else:
+            G = download_func(place, network_type = network_type, simplify = True)
     
     # fix list of osmid assigned to same edges
     for i, item in enumerate(G.edges()):
@@ -103,19 +112,20 @@ def get_network_fromFile(path, epsg, dict_columns = {}, other_columns = []):
    
     Parameters
     ----------
-    path: string
-        the local path where the file is stored, including its extention (".shp"
+    path: str
+        The local path where the file is stored, including its extention (".shp", ..).
     epsg: int
-        epsg of the area considered 
+        Epsg of the area considered.
     dict_columns: dict
-        it should be structured as: {"highway": "roadType_field",  "oneway": "direction_field", "lanes": "nr. lanes", "maxspeed": "speed_field", "name": "name_field"}
-        Replace the items with the field names in the input data (if the relative attributes are relevant and existing)
+        It should be structured as: {"highway": "roadType_field",  "oneway": "direction_field", "lanes": "nr. lanes", "maxspeed": "speed_field", "name": "name_field"}.
+        Replace the items with the field names in the input data (if the relative attributes are relevant and existing).
     other_columns: list
-        other columns to be preserved in the edges_gdf GeoDataFrame
+        Other columns to be preserved in the edges_gdf GeoDataFrame.
     
     Returns
     -------
-    tuple of GeoDataFrames
+    nodes_gdf, edges_gdf: tuple
+        The junction and street segment GeoDataFrames.
     """
     # try reading street network from directory
     crs = 'EPSG:' + str(epsg)
@@ -132,19 +142,20 @@ def get_network_fromGDF(edges_gdf, epsg, dict_columns = {}, other_columns = []):
      
     Parameters
     ----------
-    path: string
-        the local path where the .shp file is stored
+    path: str
+        the local path where the .shp file is stored.
     epsg: int
-        epsg of the area considered 
+        Epsg of the area considered .
     dict_columns: dict
-        it should be structured as: {"highway": "roadType_field",  "oneway": "direction_field", "lanes": "nr. lanes", "maxspeed": "speed_field", "name": "name_field"}
-        Replace the items with the field names in the input data (if the relative attributes are relevant and existing)
+        It should be structured as: {"highway": "roadType_field",  "oneway": "direction_field", "lanes": "nr. lanes", "maxspeed": "speed_field", "name": "name_field"}.
+        Replace the items with the field names in the input data (if the relative attributes are relevant and existing).
     other_columns: list
-        other columns to be preserved in the edges_gdf GeoDataFrame
+        Other columns to be preserved in the edges_gdf GeoDataFrame.
     
     Returns
     -------
-    tuple of GeoDataFrames
+    nodes_gdf, edges_gdf: tuple
+        The junction and street segment GeoDataFrames.
     """
     # try reading street network from directory
     crs = 'EPSG:' + str(epsg)
@@ -192,13 +203,13 @@ def obtain_nodes_gdf(edges_gdf, crs):
     Parameters
     ----------
     edges_gdf: LineString GeoDataFrame
-        street segments GeoDataFrame
-    crs: string
-        coordinate reference system of the area considered 
+        Street segments GeoDataFrame.
+    crs: str
+        Coordinate reference system of the area considered .
     Returns
     -------
     nodes_gdf: Point GeoDataFrame
-        the street junctions GeoDataFrame
+        The street junctions GeoDataFrame.
     """
     unique_nodes = pd.concat([edges_gdf.geometry.apply(lambda row: row.coords[0]), edges_gdf.geometry.apply(lambda row: row.coords[-1])]).unique()
     
@@ -222,13 +233,14 @@ def join_nodes_edges_by_coordinates(nodes_gdf, edges_gdf):
     Parameters
     ----------
     nodes_gdf: Point GeoDataFrame
-        nodes (junctions) GeoDataFrame
+        Nodes (junctions) GeoDataFrame.
     edges_gdf: LineString GeoDataFrame
-        street segments GeoDataFrame
+        Street segments GeoDataFrame.
    
     Returns
     -------
-    tuple of GeoDataFrames
+    nodes_gdf, edges_gdf: tuple
+        The junction and street segment GeoDataFrames.
     """
        
     if not "nodeID" in nodes_gdf.columns: 
@@ -246,13 +258,14 @@ def reset_index_graph_gdfs(nodes_gdf, edges_gdf, nodeID = "nodeID"):
     Parameters
     ----------
     nodes_gdf: Point GeoDataFrame
-        nodes (junctions) GeoDataFrame
+        Nodes (junctions) GeoDataFrame.
     edges_gdf: LineString GeoDataFrame
-        street segments GeoDataFrame
+        Street segments GeoDataFrame.
    
     Returns
     -------
-    tuple of GeoDataFrames
+    nodes_gdf, edges_gdf: tuple
+        The junction and street segment GeoDataFrames.
     """
 
     edges_gdf = edges_gdf.rename(columns = {"u":"old_u", "v":"old_v"})
