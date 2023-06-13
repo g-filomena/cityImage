@@ -96,7 +96,8 @@ def _land_use_from_polygons(building_geometry, other_gdf, other_gdf_sindex, land
     Returns
     -------
     Object
-    """   
+        The assigned land-use attribute or None if no match is found.
+    """
     # Find the possible matches
     possible_matches_index = list(other_gdf_sindex.intersection(building_geometry.bounds))
     possible_matches = other_gdf.iloc[possible_matches_index]
@@ -115,7 +116,6 @@ def _land_use_from_polygons(building_geometry, other_gdf, other_gdf_sindex, land
     
     return None
 
-
 def _land_use_from_points(building_geometry, other_gdf, other_source_gdf_sindex, land_use_field):
     """
     It assigns land-use attributes to a building, looking for possible matches in a "other_gdf", a Point GeoDataFrame.
@@ -132,6 +132,7 @@ def _land_use_from_points(building_geometry, other_gdf, other_source_gdf_sindex,
     Returns
     -------
     Object
+        The assigned land-use attribute or None if no match is found.
     """
 
     possible_matches_index = list(other_source_gdf_sindex.intersection(building_geometry.bounds))
