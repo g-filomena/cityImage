@@ -4,7 +4,6 @@ from math import sqrt
 from shapely.geometry import Point, LineString, MultiLineString
 
 """
-A series of math functions for angle computations.
 Readapted for LineStrings from Abhinav Ramakrishnan's post in https://stackoverflow.com/a/28261304/7375309.
 """  
 def _dot(vA, vB):
@@ -17,17 +16,17 @@ def get_coord_angle(origin, distance, angle):
         
     Parameters
     ----------
-    origin: tuple of float
-        tuple of coordinates
+    origin: tuple
+        Tuple of coordinates.
     distance: float
-        the distance from the origin coordinates
+        The distance from the origin coordinates.
     angle: float
-        the desired angle
+        The desired angle.
 
     Returns:
     ----------
     coords: tuple
-        the resulting coordinates
+        The resulting coordinates.
     """
     (disp_x, disp_y) = (distance * math.sin(math.radians(angle)), distance * math.cos(math.radians(angle)))
     coord = (origin[0] + disp_x, origin[1] + disp_y)
@@ -40,36 +39,58 @@ class Settings():
     """
     A class to store and compare the coordinates of two line geometries.
     
-    Attributes:
-        x_originA (float): The x-coordinate of the first point of the first line geometry.
-        y_originA (float): The y-coordinate of the first point of the first line geometry.
-        x_secondA (float): The x-coordinate of the second point of the first line geometry.
-        y_secondA (float): The y-coordinate of the second point of the first line geometry.
-        x_destinationA (float): The x-coordinate of the last point of the first line geometry.
-        y_destinationA (float): The y-coordinate of the last point of the first line geometry.
-        x_second_lastA (float): The x-coordinate of the second-last point of the first line geometry.
-        y_second_lastA (float): The y-coordinate of the second-last point of the first line geometry.
-        x_originB (float): The x-coordinate of the first point of the second line geometry.
-        y_originB (float): The y-coordinate of the first point of the second line geometry.
-        x_secondB (float): The x-coordinate of the second point of the second line geometry.
-        y_secondB (float): The y-coordinate of the second point of the second line geometry.
-        x_destinationB (float): The x-coordinate of the last point of the second line geometry.
-        y_destinationB (float): The y-coordinate of the last point of the second line geometry.
-        x_second_lastB (float): The x-coordinate of the second-last point of the second line geometry.
-        y_second_lastB (float): The y-coordinate of the second-last point of the second line geometry.
-        lineA (Tuple): The coordinates of the first line used to calculate the angle
-        lineB (Tuple): The coordinates of the second linne used to calculate the angle
-        """
+    Attributes
+    ----------
+    x_originA: float 
+        The x-coordinate of the first point of the first line geometry.
+    y_originA: float 
+        The y-coordinate of the first point of the first line geometry.
+    x_secondA: float 
+        The x-coordinate of the second point of the first line geometry.
+    y_secondA: float 
+        The y-coordinate of the second point of the first line geometry.
+    x_destinationA: float 
+        The x-coordinate of the last point of the first line geometry.
+    y_destinationA: float 
+        The y-coordinate of the last point of the first line geometry.
+    x_second_lastA: float 
+        The x-coordinate of the second-last point of the first line geometry.
+    y_second_lastA: float 
+        The y-coordinate of the second-last point of the first line geometry.
+    x_originB: float 
+        The x-coordinate of the first point of the second line geometry.
+    y_originB: float 
+        The y-coordinate of the first point of the second line geometry.
+    x_secondB: float 
+        The x-coordinate of the second point of the second line geometry.
+    y_secondB: float 
+        The y-coordinate of the second point of the second line geometry.
+    x_destinationB: float 
+        The x-coordinate of the last point of the second line geometry.
+    y_destinationB: float 
+        The y-coordinate of the last point of the second line geometry.
+    x_second_lastB: float 
+        The x-coordinate of the second-last point of the second line geometry.
+    y_second_lastB: float 
+        The y-coordinate of the second-last point of the second line geometry.
+    lineA (Tuple): 
+        The coordinates of the first line used to calculate the angle.
+    lineB (Tuple): 
+        The coordinates of the second linne used to calculate the angle.
+    """
     
     def set_coordinates(self, coords, prefix):
         """
         Set the coordinates for a line.
 
         Parameters:
-        coords (list): A list of coordinates in the form [(x1, y1), (x2, y2), ...]
-        prefix (str): A string prefix to be added to the variable names for the coordinates.
-                      For example, if "A" is passed as the prefix, the coordinates will be stored as
-                      self.x_originA, self.y_originA, etc.
+        ----------
+        coords: list 
+            A list of coordinates in the form [(x1, y1), (x2, y2), ...].
+        prefix: str 
+            A string prefix to be added to the variable names for the coordinates.
+            For example, if "A" is passed as the prefix, the coordinates will be stored as
+            self.x_originA, self.y_originA, etc.
         """
         setattr(self, 'x_origin'+ prefix, float("{0:.10f}".format(coords[0][0])))
         setattr(self, 'y_origin'+ prefix, float("{0:.10f}".format(coords[0][1])))
@@ -87,16 +108,17 @@ class Settings():
         Parameters
         ----------
         Setting: object
-            an object of the Setting class, which contains information about the lines
-        calculation_type: string
-            one of: 'vectors', 'angular_change', 'deflection'
-            'vectors': computes angle between vectors
-            'angular_change': computes angle of incidence between the two lines,
-            'deflection': computes angle of incidence between the two lines, on the basis of the vertex in common and the second following(intermediate, if existing) vertexes forming each of the line.
+            An object of the Setting class, which contains information about the lines.
+        calculation_type: str
+            One of: 'vectors', 'angular_change', 'deflection':
+            - 'vectors': computes angle between vectors.
+            - 'angular_change': computes angle of incidence between the two lines.
+            - 'deflection': computes angle of incidence between the two lines, on the basis of the vertex in common and the second following(intermediate, if existing) 
+            vertexes forming each of the line.
 
         Raises
         ------
-        AngleError: if the lines do not have a common vertex
+        AngleError: If the lines do not have a common vertex.
         """
         if calculation_type == "angular_change":
             if (self.x_destinationA, self.y_destinationA) == (self.x_destinationB, self.y_destinationB):
@@ -154,9 +176,12 @@ class Settings():
         """
         Initializes the class with the coordinates of two line geometries.
         
-        Args:
-            coordsA (list): A list of coordinates of the first line geometry.
-            coordsB (list): A list of coordinates of the second line geometry.
+        Args
+        ----------
+        coordsA: list 
+            A list of coordinates of the first line geometry.
+        coordsB: list 
+            A list of coordinates of the second line geometry.
         """
         self.set_coordinates(coordsA, 'A')
         self.set_coordinates(coordsB, 'B')
@@ -169,21 +194,22 @@ def angle_line_geometries(line_geometryA, line_geometryB, degree = False, calcul
     Parameters
     ----------
     line_geometryA: LineString
-        the first line
+        The first line.
     line_geometryB: LineString
-        the other line; it must share a vertex with line_geometryA
+        The other line; it must share a vertex with line_geometryA.
     degree: boolean
-        if True it returns value in degree, otherwise in radians
+        If True it returns value in degree, otherwise in radians.
     calculation_type: string
-        one of: 'vectors', 'angular_change', 'deflection'
-        'vectors': computes angle between vectors
-        'angular_change': computes angle of incidence between the two lines
-        'deflection': computes angle of incidence between the two lines, on the basis of the vertex in common and the second following(intermediate, if existing) vertexes forming each of the line.
+        One of: 'vectors', 'angular_change', 'deflection':
+        -'vectors': computes angle between vectors.
+        -'angular_change': computes angle of incidence between the two lines.
+        -'deflection': computes angle of incidence between the two lines, on the basis of the vertex in common and the second following(intermediate, if existing) 
+        vertexes forming each of the line.
     
     Returns:
     ----------
     angle: float
-        the resulting angle in radians or degrees
+        The resulting angle in radians or degrees.
     """
     valid_calculation_types = ['vectors', 'angular_change', 'deflection']
     if not isinstance(line_geometryA, LineString) or not isinstance(line_geometryB, LineString):
@@ -226,7 +252,6 @@ def angle_line_geometries(line_geometryA, line_geometryB, degree = False, calcul
         angle = angle_deg
     return angle
 
-         
 class Error(Exception):
     """Base class for other exceptions"""
     
