@@ -18,8 +18,6 @@ pd.options.mode.chained_assignment = None
 
 from .angles import angle_line_geometries
 
-## Obtaining graphs ###############
-
 def graph_fromGDF(nodes_gdf, edges_gdf, nodeID = "nodeID"):
     """
     From two GeoDataFrames (nodes and edges), it creates a NetworkX undirected Graph.
@@ -27,16 +25,16 @@ def graph_fromGDF(nodes_gdf, edges_gdf, nodeID = "nodeID"):
     Parameters
     ----------
     nodes_gdf: Point GeoDataFrame
-        nodes (junctions) GeoDataFrame
+        The nodes (junctions) GeoDataFrame.
     edges_gdf: LineString GeoDataFrame
-        street segments GeoDataFrame
+        The street segments GeoDataFrame.
     nodeID: str
-        column name that indicates the node identifier column (if different from "nodeID")
+        Column name that indicates the node identifier column (if different from "nodeID").
         
     Returns
     -------
     G: NetworkX.Graph
-        the undirected street network graph
+        The undirected street network graph.
     """
     nodes_gdf.set_index(nodeID, drop = False, inplace = True, append = False)
     nodes_gdf.index.name = None
@@ -71,16 +69,16 @@ def multiGraph_fromGDF(nodes_gdf, edges_gdf, nodeIDcolumn):
     Parameters
     ----------
     nodes_gdf: Point GeoDataFrame
-        nodes (junctions) GeoDataFrame
+        The nodes (junctions) GeoDataFrame.
     edges_gdf: LineString GeoDataFrame
-        street segments GeoDataFrame
+        The street segments GeoDataFrame.
     nodeIDcolumn: string
-        column name that indicates the node identifier column.
+        Column name that indicates the node identifier column.
     
     Returns
     -------
     G: NetworkX.MultiGraph
-        the street network graph
+        The street network graph.
     """
     nodes_gdf.set_index(nodeIDcolumn, drop = False, inplace = True, append = False)
     nodes_gdf.index.name = None
@@ -113,20 +111,21 @@ def dual_gdf(nodes_gdf, edges_gdf, epsg, oneway = False, angle = None):
     Parameters
     ----------
     nodes_gdf: Point GeoDataFrame
-        nodes (junctions) GeoDataFrame
+        The nodes (junctions) GeoDataFrame.
     edges_gdf: LineString GeoDataFrame
-        street segments GeoDataFrame
+        The street segments GeoDataFrame.
     epsg: int
-        epsg of the area considered 
+        Epsg of the area considered 
     oneway: boolean
-        if true, the function takes into account the direction and therefore it may ignore certain links whereby vehichular movement is not allowed in a certain direction
+        When true, the function takes into account the direction and therefore it may ignore certain links whereby vehichular movement is not allowed in 
+        a certain direction.
     angle: string {'degree', 'radians'}
-        it indicates how to express the angle of deflection
+        It indicates how to express the angle of deflection.
         
     Returns
     -------
     nodes_dual, edges_dual: tuple of GeoDataFrames
-        the dual nodes and edges GeoDataFrames
+        The dual nodes and edges GeoDataFrames.
     """
     nodes_gdf.set_index("nodeID", drop = False, inplace = True, append = False)
     nodes_gdf.index.name = None
@@ -198,14 +197,14 @@ def dual_graph_fromGDF(nodes_dual, edges_dual):
     Parameters
     ----------
     nodes_dual: Point GeoDataFrame
-        the GeoDataFrame of the dual nodes, namely the street segments' centroids
+        The GeoDataFrame of the dual nodes, namely the street segments' centroids.
     edges_dual: LineString GeoDataFrame
-        the GeoDataFrame of the dual edges, namely the links between street segments' centroids 
+        The GeoDataFrame of the dual edges, namely the links between street segments' centroids.
         
     Returns
     -------
     Dg: NetworkX.Graph
-        the dual graph of the street network
+        The dual graph of the street network.
     """
     nodes_dual.set_index('edgeID', drop = False, inplace = True, append = False)
     nodes_dual.index.name = None
@@ -238,16 +237,16 @@ def dual_id_dict(dict_values, G, node_attribute):
     Parameters
     ----------
     dict_values: dictionary 
-        it should be in the form {nodeID: value} where values is a measure that has been computed on the graph, for example
+        It should be in the form {nodeID: value} where values is a measure that has been computed on the graph, for example.
     G: networkx graph
-        the graph that was used to compute or to assign values to nodes or edges
+        The graph that was used to compute or to assign values to nodes or edges.
     node_attribute: string
-        the attribute of the node to link to the edges GeoDataFrame
+        The attribute of the node to link to the edges GeoDataFrame.
     
     Returns
     -------
     ed_dict: dictionary
-        a dictionary where each item consists of a edgeID (key) and centrality values (for example) or other attributes (values)
+        A dictionary where each item consists of a edgeID (key) and centrality values (for example) or other attributes (values).
     """
     ed_list = [(G.nodes[node][node_attribute], value) for node, value in dict_values.items()]
     return dict(ed_list)
@@ -259,12 +258,12 @@ def nodes_degree(edges_gdf):
     Parameters
     ----------
     edges_gdf: LineString GeoDataFrame
-        street segments GeoDataFrame
+        The street segments GeoDataFrame.
     
     Returns
     -------
     dd: dictionary
-        a dictionary where each item consists of a nodeID (key) and degree values (values)
+        A dictionary where each item consists of a nodeID (key) and degree values (values).
     """
     dd = edges_gdf[['u','v']].stack().value_counts().to_dict()
     return dd 
