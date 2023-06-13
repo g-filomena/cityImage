@@ -16,17 +16,20 @@ pd.set_option("display.precision", 3)
     
 def scaling_columnDF(series, inverse = False):
     """
-    It rescales the values in a dataframe's columns from 0 to 1
-    
+    Rescales the values in a dataframe's column from 0 to 1 or from 1 to 0.
+
     Parameters
     ----------
     series: pd.Series
-        the pd.Series to rescale
-    inverse: boolean
-        if true, rescales from 1 to 0 instead of 0 to 1
-    ----------
+        The pd.Series to rescale.
+    inverse: bool, optional
+        If True, rescales from 1 to 0 instead of 0 to 1. Default is False.
+
+    Returns
+    -------
+    pd.Series
+        The rescaled pd.Series.
     """
-    
     scaled = pd.Series((series-series.min())/(series.max()-series.min()))
     if inverse: 
         scaled = 1-scaled
@@ -41,20 +44,18 @@ def dict_to_df(list_dict, list_col):
     Parameters
     ----------
     list_dict: list of dict
-        the list of dictionaries
+        The list of dictionaries.
     list_col: list of string
-        the corresponding column names to assign to the series
+        The corresponding column names to assign to the series.
     
     Returns:
     ----------
-    df: pandas DataFrame
-        the resulting DataFrame
+    df: Pandas DataFrame
+        The resulting DataFrame.
     """
-    
     df = pd.DataFrame(list_dict).T
     df.columns = ["d{}".format(i) for i, col in enumerate(df, 1)]
     df.columns = list_col
-    
     return df
      
 def center_line(line_geometryA, line_geometryB): 
@@ -64,14 +65,14 @@ def center_line(line_geometryA, line_geometryB):
     Parameters
     ----------
     line_geometryA: LineString 
-        the first line
+        The first line.
     line_geometryB: LineString
-        the second line
+        The second line.
     
     Returns:
     ----------
     center_line: LineString
-        the resulting center line
+        The resulting center line.
     """
     line_coordsA = list(line_geometryA.coords)
     line_coordsB = list(line_geometryB.coords)
@@ -92,10 +93,8 @@ def center_line(line_geometryA, line_geometryB):
     # Assign the first and last point of the line A to the first and last point of the center line 
     center_line_coords[0] = line_coordsA[0]
     center_line_coords[-1] = line_coordsA[-1]
-    center_line = LineString([coor for coor in center_line_coords])
-
     # Create a LineString object from the center line coordinates
-
+    center_line = LineString([coor for coor in center_line_coords])
     return center_line
 
 def min_distance_geometry_gdf(geometry, gdf):
@@ -106,77 +105,88 @@ def min_distance_geometry_gdf(geometry, gdf):
     Parameters
     ----------
     geometry: Point, LineString or Polygon
+    
     gdf: GeoDataFrame
     
     Returns:
     ----------
     distance, index: tuple
-        the closest distance from the geometry, and the index of the closest geometry in the gdf
+        The closest distance from the geometry, and the index of the closest geometry in the gdf.
     """
-    
     sindex = gdf.sindex
     closest = sindex.nearest(geometry, return_distance = True)
     iloc = closest[0][1][0]
     distance = closest[1][0]
     index = gdf.iloc[iloc].name 
-   
     return distance, index
  
 def split_line_at_MultiPoint(line_geometry, intersections, z = 0.0):   
     """
-    The function checks whether the coordinates of Point(s) in a Point Collections coordinate are part of the sequence of coordinates of a LineString.
-    When this has been ascerted or fixed, the LineString line_geometry is split at each of the intersecting points in the collection.
-    
-    The input intersection, must be an actual intersection.
-               
+    The function checks whether the coordinates of one or more Points in a Point Collections are part of the sequence of coordinates of a LineString.
+    When this has been ascerted or fixed, the LineString line_geometry is split at each of the intersecting points in the collection and a list of lines, 
+    each representing one of the sections resulting from the intersections is returned.
+
     Parameters
-    ----------
+    -------
     line_geometry: LineString
-        the LineString which has to be split
+        The LineString which has to be split.
     intersections: MultiPoint
-        the intersecting points
+        The intersecting points.
+    z: float
+        The z-coordinate value to assign to each vertex of the resulting lines. Default is 0.0.
         
     Returns
     -------
     lines: List of MultiLineString
-        the resulting segments composing the original line_geometry
+        The resulting segments composing the original line_geometry.
     """
+    line_geometry_tmp = line_geometry
+    # iterate over each point in the intersections
     for point in intersections:
-        new_line_coords = list(line_geometry.coords)
-        for n, v in enumerate(new_line_coords):
-            if n == 0: 
+        # create a new list of coordinates from the line_geometry
+        new_line_coords = list(line_geometry_tmp.coords)
+        # iterate over the new line coordinates; skip the first coordinate
+        for n, coord in enumerate(new_line_coords):
+            if n == 0:
                 continue
-            line = LineString([Point(new_line_coords[n-1]), Point(v)])
-            if ((point.intersects(line)) | (line.distance(point) < 1e-8)):
+            # create a LineString between the previous and current coordinates
+            line_section = LineString([Point(new_line_coords[n-1]), Point(coord)])
+            # check if the point intersects this line section or if it is very close to it
+            if ((point.intersects(line_section)) | (line_section.distance(point) < 1e-8)):
+                # if so, insert the coordinates of the intersection point into the new_line_coords list
                 new_line_coords.insert(n, point.coords[0])
                 break
-        line_geometry = LineString([coor for coor in new_line_coords])
-    
+        # create a new LineString from the updated coordinates
+        line_geometry_tmp = LineString([coor for coor in new_line_coords])
+
+    # convert the intersections to a MultiPoint object
     intersections = MultiPoint(intersections)
-    lines = split(line_geometry, intersections)
+    # split the line_geometry_tmp at each of the intersecting points
+    lines = split(line_geometry_tmp, intersections)
+    # create a list of individual LineString geometries from the split result
     lines_list = [line for line in lines.geoms]
     
-    if z != None:
-        lineZ = [LineString([(coords[0], coords[1], 3) for coords in line.coords]) for line in lines_list]
-        
+    # create LineString objects with z-coordinate values for each vertex
+    if z is not None:
+        lineZ = [LineString([(coords[0], coords[1], z) for coords in line.coords]) for line in lines_list]
+    # return the list of resulting line segments
     return lines_list
 
- 
 def merge_line_geometries(line_geometries):
     """
-    Given a list of LineString geometries, this function reorders the geometries in the correct sequence based on their starting and ending point,
+    Given a list of LineString geometries, this function reorders the geometries in the correct sequence based on their starting and ending points,
     and returns a merged LineString feature.
     
     Parameters:
     ----------
     line_geometries: List of LineString
-        A list of LineString geometries to be merged
+        A list of LineString geometries to be merged.
         
     Returns:
     ----------
-        LineString: The merged LineString feature
+    LineString: 
+        The merged LineString feature.
     """
-    
     if not all(isinstance(line, LineString) for line in line_geometries):
         raise ValueError("Input must be a list of LineString geometries")
     if not all(isinstance(line, BaseGeometry) for line in line_geometries):
@@ -184,17 +194,26 @@ def merge_line_geometries(line_geometries):
     if len(line_geometries) < 2:
         raise ValueError("At least 2 LineStrings are required to merge")
     
-    # Create a dictionary to store the "from" and "to" vertexes of each LineString as keys
+    # create a dictionary to store the "from" and "to" vertexes of each LineString as keys
     lines = {(line.coords[0], line.coords[-1]): line for line in line_geometries}
-
+    # sort the line geometries based on their starting and ending coordinates
     line_geometries = sorted(line_geometries, key=lambda line: (line.coords[0], line.coords[-1]))
+    # initialize an empty list to store the merged line geometries
     merged = []
+    # rmove and store the first line geometry from the line_geometries list
     first_line = line_geometries.pop(0)
+    # add the first line geometry to the merged list
     merged.append(first_line)
+
+    # iterate over the remaining line geometries
     for line in line_geometries:
+        # check if the last coordinate of the previously merged line is the same as the first coordinate of the current line
         if merged[-1].coords[-1] == line.coords[0]:
+            # if so, add the current line to the merged list
             merged.append(line)
+        # check if the last coordinate of the previously merged line is the same as the last coordinate of the current line
         elif merged[-1].coords[-1] == line.coords[-1]:
+            # if so, add the reversed version of the current line to the merged list
             merged.append(LineString(list(reversed(line.coords))))
     
     return LineString(list(merged))
@@ -210,10 +229,9 @@ def envelope_wgs(gdf):
     Return
     ----------
     envelope_wgs: Polygon
-        the resulting envelope
+        The resulting envelope.
     """
     envelope = gdf.unary_union.envelope.buffer(100)
-
     project = partial(
         pyproj.transform,
         pyproj.Proj(gdf.crs), # source coordinate system
@@ -233,7 +251,7 @@ def convex_hull_wgs(gdf):
     Return
     ----------
     convex_hull_wgs: Polygon
-        the resulting hexagon
+        The resulting hexagon.
     """
     convex_hull = gdf.unary_union.convex_hull
     project = partial(
@@ -244,7 +262,6 @@ def convex_hull_wgs(gdf):
     convex_hull_wgs = transform(project, convex_hull)
     return convex_hull_wgs      
         
-    
 def rescale_ranges(n, range1, range2):
     """
     Given a value n and the range which it belongs to, the function rescale the value, between a different range.
@@ -252,16 +269,16 @@ def rescale_ranges(n, range1, range2):
     Parameters
     ----------
     n: int, float
-        a value
+        A value.
     range1: tuple
-        a certain range, e.g. (0, 1) or (10.5, 100). The value n should be within this range
+        A certain range, e.g. (0, 1) or (10.5, 100). The value n should be within this range.
     range2: tuple
-        a range, e.g. (0, 1) or (10.5, 100), that should used to rescale the value.
+        A range, e.g. (0, 1) or (10.5, 100), that should used to rescale the value.
         
     Return
     ----------
     value: float
-        the rescaled value
+        The rescaled value.
     """
     delta1 = range1[1] - range1[0]
     delta2 = range2[1] - range2[0]
@@ -270,17 +287,17 @@ def rescale_ranges(n, range1, range2):
                          
 def gdf_from_geometries(geometries, crs):
     """
-    The function creates a GeoDataFrame from a list of geometries
+    The function creates a GeoDataFrame from a list of geometries.
     
     Parameters
     ----------
     geometries: list of LineString, Polygon or Points
-        The geometries to be included in the GeoDataFrame
+        The geometries to be included in the GeoDataFrame.
         
     Returns
     -------
     gdf: GeoDataFrame
-        the resulting GeoDataFrame
+        The resulting GeoDataFrame.
     """
     
     df = pd.DataFrame({'geometry': geometries})
@@ -290,7 +307,7 @@ def gdf_from_geometries(geometries, crs):
     
 def line_at_centroid(line_geometry, offset):
     """
-    Given a LineString, it creates a LineString that intersects the given geometry at its centroid.
+    Given a LineString, it creates a perpendicular LineString that intersects the given geometry at its centroid.
     The offset determines the distance from the original line.
     This fictional line can be used to count precisely the number of trajectories/features intersecting a segment.
     This function should be executed per row by means of the df.apply(lambda row : ..) function. 
@@ -298,15 +315,15 @@ def line_at_centroid(line_geometry, offset):
     Parameters
     ----------
     line_geometry: LineString
-        A street segment geometry
+        A street segment geometry.
     offset: float
-        The offset from the geometry
+        The offset from the geometry.
     
     Returns
     -------
     LineString
+        The perpendicular line intersecting the given one.
     """
-    
     left = line_geometry.parallel_offset(offset, 'left')
     right =  line_geometry.parallel_offset(offset, 'right')
     
@@ -333,17 +350,16 @@ def sum_at_centroid(line_geometry, lines_gdf, column):
     Parameters
     ----------
     line_geometry: LineString
-        A street segment geometry
+        A street segment geometry.
     lines_gdf: LineString GeoDataFrame
-        The GeoDataFrame  
+        The GeoDataFrame.
     column: string
-        The name of the column
+        The name of the column.
     
     Returns
     -------
     int
     """
-    
     return lines_gdf[lines_gdf.geometry.intersects(line_geometry)][column].sum()
 
 def polygons_gdf_multiparts_to_singleparts(polygons_gdf):
@@ -353,14 +369,13 @@ def polygons_gdf_multiparts_to_singleparts(polygons_gdf):
     Parameters
     ----------
     polygons_gdf: GeoDataFrame
-        GeoDataFrame containing building footprint geometries
+        GeoDataFrame containing building footprint geometries.
     
     Returns
     -------
     single_parts_gdf: Polygon GeoDataFrame
-        the new GeoDataFrame with simplified single part building footprint geometries
+        The new GeoDataFrame with simplified single part building footprint geometries.
     """  
-    
     polygons_gdf = polygons_gdf.copy()
     single_parts = gpd.geoseries.GeoSeries([geom for geom in polygons_gdf.unary_union.geoms])
     single_parts_gdf = gpd.GeoDataFrame(geometry=single_parts, crs = polygons_gdf.crs)
@@ -368,21 +383,41 @@ def polygons_gdf_multiparts_to_singleparts(polygons_gdf):
     return single_parts_gdf
 
 def fix_multiparts_LineString_gdf(gdf):
-    
+    """
+    Fixes MultiLineString geometries in a GeoDataFrame by merging them into LineString geometries.
+    If there are still MultiLineString geometries present after merging, they are exploded into individual LineString geometries.
+
+    Parameters
+    ----------
+    gdf: GeoDataFrame
+        The input GeoDataFrame with potentially problematic MultiLineString geometries.
+
+    Returns
+    -------
+    gdf: GeoDataFrame
+        The fixed GeoDataFrame with MultiLineString geometries merged into LineString geometries.
+    """
     gdf = gdf.copy()
 
+    # check if the GeoDataFrame contains MultiLineString geometries
     if 'MultiLineString' in gdf.geometry.type.unique():
+        # select the rows where the geometry type is MultiLineString
         condition = (gdf.geometry.type == 'MultiLineString')
-        gdf.loc[condition, 'geometry'] = gpd.GeoSeries([linemerge(geo) for geo in gdf[condition].geometry], index = gdf[condition].index)
-        
-        if 'MultiLineString' in gdf.geometry.type.unique():
-            multi_gdf = gdf[gdf.geometry.type == 'MultiLineString'].copy()
-            gdf = gdf[gdf.geometry.type == 'LineString']
-            multi_gdf = multi_gdf.explode(ignore_index = True)
-            gdf = gdf.append(multi_gdf, ignore_index = True)
+        # merge MultiLineString geometries into LineString geometries
+        gdf.loc[condition, 'geometry'] = gpd.GeoSeries([linemerge(geo) for geo in gdf[condition].geometry], index=gdf[condition].index)
 
-            
-    return gdf 
+        # check again if MultiLineString geometries are still present after merging
+        if 'MultiLineString' in gdf.geometry.type.unique():
+            # create a separate GeoDataFrame with only the MultiLineString geometries
+            multi_gdf = gdf[gdf.geometry.type == 'MultiLineString'].copy()
+            # remove the MultiLineString geometries from the original GeoDataFrame
+            gdf = gdf[gdf.geometry.type == 'LineString']
+            # explode the MultiLineString geometries into individual LineString geometries
+            multi_gdf = multi_gdf.explode(ignore_index=True)
+            # append the exploded LineString geometries back to the original GeoDataFrame
+            gdf = gdf.append(multi_gdf, ignore_index=True)
+
+    return gdf
     
 def polygon_2d_to_3d(building_polygon, base, height):
     """
@@ -392,15 +427,16 @@ def polygon_2d_to_3d(building_polygon, base, height):
     Parameters
     ----------
     building_polygon (shapely.geometry.Polygon): 
-        2D polygon to be extruded
+        2D polygon to be extruded.
     base (float): 
-        base height of the 3D polygon
+        Base height of the 3D polygon.
     height (float): 
-        height of the 3D polygon
+        Height of the 3D polygon.
     
     Returns:
     ----------
-    pv.PolyData: A 3D polygon
+    pv.PolyData: 
+        A 3D polygon.
     """
     
     def reorient_coords(xy):
@@ -410,11 +446,15 @@ def polygon_2d_to_3d(building_polygon, base, height):
         This function reorients the coordinates of a polygon if the polygon
         has counterclockwise orientation.
         
-        Args:
-        xy (list): List of tuples, each representing a coordinate of the polygon
+        Args
+        ----------
+        xy: list
+            List of tuples, each representing a coordinate of the polygon
         
-        Returns:
-        list: Reoriented list of tuples representing the polygon's coordinates
+        Returns
+        ----------
+        list: 
+            Reoriented list of tuples representing the polygon's coordinates
         """
         value = 0
         for i in range(len(xy)):
