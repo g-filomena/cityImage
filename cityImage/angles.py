@@ -29,10 +29,12 @@ def get_coord_angle(origin, distance, angle):
     coords: tuple
         the resulting coordinates
     """
-
     (disp_x, disp_y) = (distance * math.sin(math.radians(angle)), distance * math.cos(math.radians(angle)))
     coord = (origin[0] + disp_x, origin[1] + disp_y)
     return coord
+
+class AngleError(Error):
+    """Raised when not-intersecting lines are provided for computing angles"""
 
 class Settings():
     """
@@ -175,7 +177,7 @@ def angle_line_geometries(line_geometryA, line_geometryB, degree = False, calcul
     calculation_type: string
         one of: 'vectors', 'angular_change', 'deflection'
         'vectors': computes angle between vectors
-        'angular_change': computes angle of incidence between the two lines,
+        'angular_change': computes angle of incidence between the two lines
         'deflection': computes angle of incidence between the two lines, on the basis of the vertex in common and the second following(intermediate, if existing) vertexes forming each of the line.
     
     Returns:
@@ -183,7 +185,6 @@ def angle_line_geometries(line_geometryA, line_geometryB, degree = False, calcul
     angle: float
         the resulting angle in radians or degrees
     """
-    
     valid_calculation_types = ['vectors', 'angular_change', 'deflection']
     if not isinstance(line_geometryA, LineString) or not isinstance(line_geometryB, LineString):
         raise TypeError("Both input must be of type shapely.geometry.LineString")
@@ -229,5 +230,3 @@ def angle_line_geometries(line_geometryA, line_geometryB, degree = False, calcul
 class Error(Exception):
     """Base class for other exceptions"""
     
-class AngleError(Error):
-    """Raised when not-intersecting lines are provided for computing angles"""
