@@ -155,7 +155,7 @@ def _assign_district_to_node(node_geometry, edges_gdf, sindex, column):
     edges_gdf: LineString GeoDataFrame
         the street segments GeoDataFrame
     sindex: 
-    
+        Spatial Index object of the edges_gdf
     column: string
         the name of the column containing the district identifier
         
@@ -170,12 +170,18 @@ def _assign_district_to_node(node_geometry, edges_gdf, sindex, column):
     pm = edges_gdf.iloc[possible_matches_index].copy()
     dist = min_distance_geometry_gdf(point, pm)
     district = edges_gdf.loc[dist[1]][column]
+    
     return district
     
 def districts_to_edges_from_nodes(nodes_gdf, edges_gdf, column):
     """
     It assigns districts' identifiers to the street segments (edges), when the districts are assigned to the junctions(nodes), i.e. communities are identified on the 
     primal graph. The attribution is based on Euclidean distance from each node to the closest street segment.
+    Three values are assigned to each edge:
+    - district_u: An integer representing the district identifier for the starting node of the edge.
+    - district_v: An integer representing the district identifier for the ending node of the edge.
+    - district_uv: An integer representing the district identifier for the edge, when district_u == district_v.
+    
     
     Parameters
     ----------
@@ -234,9 +240,7 @@ def _assign_district_to_edge(edgeID, nodes_gdf, edges_gdf, column):
     
 def district_to_nodes_from_polygons(nodes_gdf, partitions_gdf, column):
     """
-    Run the natural_roads function on an entire GeoDataFrame of street segments.
-    The geodataframes are supposed to be cleaned and can be obtained via the functions "get_fromOSM(place)" or "get_fromSHP(directory, 
-    epsg)". The parameter tolerance indicates the maximux deflection allowed to consider two roads possible natural continuation.
+    It assigns districts' identifiers to the street junctions (nodes), from polygons representing district areas.
     
     Parameters
     ----------
@@ -249,7 +253,8 @@ def district_to_nodes_from_polygons(nodes_gdf, partitions_gdf, column):
     
     Returns
     -------
-    GeoDataFrames
+    nodes_gdf: Point GeoDataFrame
+        the updated street junctions GeoDataFrame
     """
     
     nodes_gdf = nodes_gdf.copy()
@@ -264,12 +269,17 @@ def _assign_district_to_node_from_polygons(node_geometry, partitions_gdf, column
     
     Parameters
     ----------
-    dual_graph: GeoDataFrames
-    weight = string
+    node_geometry: Point
+        a node's geometry
+    partitions_gdf: Polygon GeoDataFrame
+        the nodes (junctions) GeoDataFrame        
+    column: string
+        the name of the column containing the district identifier
     
     Returns
     -------
-    GeoDataFrames
+    district: int
+        the district identifier
     """
     
     point = node_geometry  
@@ -277,30 +287,30 @@ def _assign_district_to_node_from_polygons(node_geometry, partitions_gdf, column
     district = partitions_gdf.loc[dist[1]][column]
     return district        
     
-
-  
 def amend_nodes_membership(nodes_gdf, edges_gdf, column, min_size_district = 10):
-    """
-
+"""
+    Amend the membership of nodes to districts based on connectivity and minimum district size.
     
     Parameters
     ----------
-    nodes_gdf: Point GeoDataFrame
-        the nodes (junctions) GeoDataFrame  
-    edges_gdf: LineString GeoDataFrame
-        the street segments GeoDataFrame
-    column: string
-        the name of the column containing the district membership 
-    min_size_district: int
-        
+    nodes_gdf : Point GeoDataFrame
+        The nodes (junctions) GeoDataFrame
+    edges_gdf : LineString GeoDataFrame
+        The street segments GeoDataFrame
+    column : str
+        The name of the column containing the district identifier
+    min_size_district : int
+        The minimum size (number of nodes) required for a district to be considered valid. Default is 10
     
     Returns
     -------
-    GeoDataFrames
+    nodes_gdf: GeoDataFrame
+        The updated nodes GeoDataFrame with amended district memberships
     """
     
     nodes_gdf = nodes_gdf.copy()
     nodes_gdf = _check_disconnected_districts(nodes_gdf, edges_gdf, column, min_size_district)
+    # if there are invalid districts, amend
     while (999999 in nodes_gdf[column].unique()):
         nodes_gdf[column] = nodes_gdf.apply(lambda row: _amend_node_membership(row['nodeID'], nodes_gdf, edges_gdf, column), axis = 1)
         nodes_gdf = _check_disconnected_districts(nodes_gdf, edges_gdf, column, min_size_district)
@@ -308,57 +318,77 @@ def amend_nodes_membership(nodes_gdf, edges_gdf, column, min_size_district = 10)
     return nodes_gdf
 
 def _amend_node_membership(nodeID, nodes_gdf, edges_gdf, column):
-    """
-    Run the natural_roads function on an entire GeoDataFrame of street segments.
-    The geodataframes are supposed to be cleaned and can be obtained via the functions "get_fromOSM(place)" or "get_fromSHP(directory, 
-    epsg)". The parameter tolerance indicates the maximux deflection allowed to consider two roads possible natural continuation.
-    
+   """
+    Amend the membership of a specific node to a district based on connectivity and neighboring nodes' districts.
+
     Parameters
     ----------
-    dual_graph: GeoDataFrames
-    weight = string
-    
+    nodeID : int
+        The ID of the node to amend the membership for
+    nodes_gdf : Point GeoDataFrame
+        The nodes (junctions) GeoDataFrame
+    edges_gdf : LineString GeoDataFrame
+        The street segments GeoDataFrame
+    column : str
+        The name of the column containing the district membership
+
     Returns
     -------
-    GeoDataFrames
-    """    
+    new_district: int
+        The amended district membership for the specified node
+    """  
+
+    # check if the current district membership of the node is not 999999, in which case return the existing membership without any changes
     if nodes_gdf.loc[nodeID][column] != 999999: 
         return nodes_gdf.loc[nodeID][column]
+    
+    # if the current membership is 999999 (no district), select the edges connected to the node and create a list of unique neighboring nodes
     tmp_edges = edges_gdf[(edges_gdf.u == nodeID) | (edges_gdf.v == nodeID)].copy()
     unique =  list(np.unique(tmp_edges[['u', 'v']].values))
     unique.remove(nodeID)
+    # select the subset of nodes from the nodes_gdf that belong to the neighboring nodes and have a non-999999 district membership
     tmp_nodes = nodes_gdf[(nodes_gdf.nodeID.isin(unique)) & (nodes_gdf[column] != 999999) ].copy()
+    
+    # if no such nodes are found, indicating a lack of connected nodes with valid district memberships, assign the node to the invalid district 999999 and return it
     if len(tmp_nodes) == 0: 
         return 999999
-    districts_sorted = tmp_nodes[column].value_counts(sort=True, ascending=False)
     
+    # If there are connected nodes with valid district memberships, calculate the counts of each district and sort them in descending order
+    districts_sorted = tmp_nodes[column].value_counts(sort=True, ascending=False)
     if len(districts_sorted) == 1:  
         return districts_sorted.idxmax()
+    # If there is only one district with the highest count, return the district with the highest count as the amended membership for the node
     if districts_sorted.iloc[0] > districts_sorted.iloc[1]: 
         return districts_sorted.idxmax()
     
+    # if there's more than a winnter select a subset of tmp_nodes based on their district membership. It filters the nodes by checking if their district membership is in the top two districts, as determined by districts_sorted. 
+    This filters the nodes to consider only those belonging to the two districts with the highest counts.
+    # keep the first two and the corresponding nodes and find the final best district on the basis of Euclidean distance
     tmp_nodes = tmp_nodes[tmp_nodes[column].isin(list(districts_sorted[0:2].index))]
-    tmp_edges = edges_gdf[((edges_gdf.u == nodeID) & (edges_gdf.v.isin(tmp_nodes.nodeID))) |
-                          ((edges_gdf.v == nodeID) & (edges_gdf.u.isin(tmp_nodes.nodeID)))]
-    
     closest_ix = min_distance_geometry_gdf(nodes_gdf.loc[nodeID].geometry, tmp_nodes)[1]
     new_district = tmp_nodes.loc[closest_ix][column]
+    
     return new_district
 
 def _check_disconnected_districts(nodes_gdf, edges_gdf, column, min_size = 10):
     """
-    Run the natural_roads function on an entire GeoDataFrame of street segments.
-    The geodataframes are supposed to be cleaned and can be obtained via the functions "get_fromOSM(place)" or "get_fromSHP(directory, 
-    epsg)". The parameter tolerance indicates the maximux deflection allowed to consider two roads possible natural continuation.
-    
+    Check for disconnected districts in the nodes GeoDataFrame and update their membership to '999999' if necessary.
+
     Parameters
     ----------
-    dual_graph: GeoDataFrames
-    weight = string
-    
+    nodes_gdf : Point GeoDataFrame
+        The nodes (junctions) GeoDataFrame
+    edges_gdf : LineString GeoDataFrame
+        The street segments GeoDataFrame
+    column : str
+        The name of the column containing the district identifier
+    min_size : int
+        The minimum size of a district for it to be considered valid. Defaults to 10
+
     Returns
     -------
-    GeoDataFrames
+    nodes_gdf: Point GeoDataFrame
+        The updated nodes GeoDataFrame with potentially disconnected districts updated to '999999'.
     """
     nodes_gdf = nodes_gdf.copy()
     districts = nodes_gdf[column].unique()
@@ -366,27 +396,31 @@ def _check_disconnected_districts(nodes_gdf, edges_gdf, column, min_size = 10):
     for district in districts:
         if district == 999999: 
             continue
+        
         tmp_nodes = nodes_gdf[nodes_gdf[column] == district].copy()
         tmp_edges = edges_gdf[edges_gdf.u.isin(tmp_nodes.nodeID) & edges_gdf.v.isin(tmp_nodes.nodeID)].copy()
-
+        
+        # if the district is too small, make it not valid
         if len(tmp_nodes) < min_size: 
             nodes_gdf.loc[nodes_gdf.nodeID.isin(tmp_nodes.nodeID), column] = 999999
             continue
-            
+        
+        # create a graph with only nodes and belonging to the district
         tmp_graph = graph_fromGDF(tmp_nodes, tmp_edges, 'nodeID')
+        
+        # if the graph composed of these elements is not connected
         if not nx.is_connected(tmp_graph): 
             largest_component = max(nx.connected_components(tmp_graph), key=len)
             G = tmp_graph.subgraph(largest_component)
+            # make not valid all the nodes not connected within the graph
             to_check = [item for item in list(tmp_nodes.nodeID) if item not in list(G.nodes())]
             nodes_gdf.loc[nodes_gdf.nodeID.isin(to_check), column] = 999999
     
     return nodes_gdf
 
-
-    
 def find_gateways(nodes_gdf, edges_gdf, column):
     """
-    This function identifies junctions lying on the boundary of a district, thus connected to other districts through "bridge" edges
+    This function identifies junctions lying on the boundary of a district, thus connected to other districts through "bridge" edges.
     
     Parameters
     ----------
