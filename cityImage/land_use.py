@@ -13,14 +13,14 @@ def classify_land_use(buildings_gdf, new_land_use_field, land_use_field, categor
     Parameters
     ----------
     buildings_gdf: Polygon GeoDataFrame
-		the buildings GeoDataFrame
+		The buildings GeoDataFrame.
     land_use: string
-		the land use field in the buildings_gdf
+		The land use field in the buildings_gdf.
    
     Returns
     -------
     buildings_gdf: Polygon GeoDataFrame
-        the updated buildings' GeoDataFrame
+        The updated buildings' GeoDataFrame.
     """
     
     buildings_gdf = buildings_gdf.copy()
@@ -48,18 +48,18 @@ def land_use_from_other_gdf(buildings_gdf, other_gdf, new_land_use_field, land_u
     Parameters
     ----------
     buildings_gdf: Polygon GeoDataFrame
-        buildings GeoDataFrame
+		The buildings GeoDataFrame.
 	other_gdf: Point or Polygon GeoDataFrame
-		the GeoDataFrame wherein looking for land_use attributes
-    new_land_use_field: string
-		name of the column in buildings_gdf to which assign the land_use descriptor
-    land_use_field: string, 
-        name of the column in other_gdf wherein the land_use attribute is stored
+		The GeoDataFrame wherein looking for land_use attributes.
+    new_land_use_field: str
+		Name of the column in buildings_gdf to which assign the land_use descriptor.
+    land_use_field: str 
+        Name of the column in other_gdf wherein the land_use attribute is stored.
    
     Returns
     -------
     buildings_gdf: Polygon GeoDataFrame
-        the updated buildings' GeoDataFrame
+        The updated buildings' GeoDataFrame.
     """
         
     buildings_gdf = buildings_gdf.copy()    
@@ -86,12 +86,13 @@ def _land_use_from_polygons(building_geometry, other_gdf, other_gdf_sindex, land
     Parameters
     ----------
     buildings_gdf: Polygon GeoDataFrame
-        buildings GeoDataFrame
+		The buildings GeoDataFrame.
 	other_gdf: Polygon GeoDataFrame
-		the GeoDataFrame wherein looking for land_use attributes
-    other_gdf_sindex: Rtree spatial index
-    land_use_field: string
-        name of the column in other_gdf wherein the land_use attribute is stored
+		The GeoDataFrame wherein looking for land_use attributes
+    other_gdf_sindex: Spatial Index
+        The Spatial Index on the other GeoDataFrame.
+    land_use_field: str
+        name of the column in other_gdf wherein the land_use attribute is stored.
    
     Returns
     -------
@@ -123,11 +124,13 @@ def _land_use_from_points(building_geometry, other_gdf, other_source_gdf_sindex,
     Parameters
     ----------
     building_geometry: Polygon
+        A building's geometry.
     other_gdf: Point GeoDataFrame
-        The GeoDataFrame wherein looking for land_use attributes
-    other_gdf_sindex: Rtree spatial index
-    land_use_field: string
-        name of the column in other_gdf, wherein the land_use attribute is stored
+        The GeoDataFrame wherein looking for land_use attributes.
+    other_gdf_sindex: Spatial Index
+        The Spatial Index on the other GeoDataFrame.
+    land_use_field: str
+        name of the column in other_gdf wherein the land_use attribute is stored.
    
     Returns
     -------
@@ -145,5 +148,3 @@ def _land_use_from_points(building_geometry, other_gdf, other_source_gdf_sindex,
     # counting nr of features and using the most represented one
     pm.groupby([land_use_field],as_index=False)["nr"].sum().sort_values(by="nr", ascending=False).reset_index()
     return pm[land_use_field].iloc[0]
-    
-    
