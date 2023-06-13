@@ -17,13 +17,13 @@ def road_barriers(place, download_method, distance = 500.0, epsg = None, include
         
     Parameters
     ----------
-    place: str, tuple
+    place: str, tuple, Shapely Polygon
         Name of cities or areas in OSM: 
         - when using "distance_from_point" please provide a (lat, lon) tuple to create the bounding box around it; 
         - when using "distance_from_address" provide an existing OSM address; 
-        - when using "OSMplace" provide an OSM place name.  
-        - when using "OSMpolygon" please provide the name of a relation in OSM as an argument of place;
-    download_method: string, {"distance_from_address", "distance_from_point", "OSMpolygon", "OSMplace"}
+        - when using "OSMplace" provide an OSM place name. The query must be geocodable and OSM must have polygon boundaries for the geocode result.  
+        - when using "polygon" please provide a Shapely Polygon in unprojected latitude-longitude degrees (EPSG:4326) CRS;
+    download_method: str, {"distance_from_address", "distance_from_point", "OSMplace", "polygon"}
         It indicates the method that should be used for downloading the data.
     distance: float
         Used when download_method == "distance from address" or == "distance from point".
@@ -68,13 +68,13 @@ def water_barriers(place, download_method, distance = 500.0, lakes_area = 1000, 
         
     Parameters
     ----------
-    place: str, tuple
+    place: str, tuple, Shapely Polygon
         Name of cities or areas in OSM: 
         - when using "distance_from_point" please provide a (lat, lon) tuple to create the bounding box around it; 
         - when using "distance_from_address" provide an existing OSM address; 
-        - when using "OSMplace" provide an OSM place name.  
-        - when using "OSMpolygon" please provide the name of a relation in OSM as an argument of place;
-    download_method: string, {"distance_from_address", "distance_from_point", "OSMpolygon", "OSMplace"}
+        - when using "OSMplace" provide an OSM place name. The query must be geocodable and OSM must have polygon boundaries for the geocode result.  
+        - when using "polygon" please provide a Shapely Polygon in unprojected latitude-longitude degrees (EPSG:4326) CRS;
+    download_method: str, {"distance_from_address", "distance_from_point", "OSMplace", "polygon"}
         It indicates the method that should be used for downloading the data.
     distance: float
         Used when download_method == "distance from address" or == "distance from point".
@@ -135,13 +135,13 @@ def railway_barriers(place, download_method, distance = 500.0, epsg = None, keep
         
     Parameters
     ----------
-    place: str, tuple
+    place: str, tuple, Shapely Polygon
         Name of cities or areas in OSM: 
         - when using "distance_from_point" please provide a (lat, lon) tuple to create the bounding box around it; 
         - when using "distance_from_address" provide an existing OSM address; 
-        - when using "OSMplace" provide an OSM place name.  
-        - when using "OSMpolygon" please provide the name of a relation in OSM as an argument of place;
-    download_method: string, {"distance_from_address", "distance_from_point", "OSMpolygon", "OSMplace"}
+        - when using "OSMplace" provide an OSM place name. The query must be geocodable and OSM must have polygon boundaries for the geocode result.  
+        - when using "polygon" please provide a Shapely Polygon in unprojected latitude-longitude degrees (EPSG:4326) CRS;
+    download_method: str, {"distance_from_address", "distance_from_point", "OSMplace", "polygon"}
         It indicates the method that should be used for downloading the data.
     distance: float
         Used when download_method == "distance from address" or == "distance from point".
@@ -183,13 +183,13 @@ def park_barriers(place, download_method, distance = 500.0, epsg = None, min_are
         
     Parameters
     ----------
-    place: str, tuple
+    place: str, tuple, Shapely Polygon
         Name of cities or areas in OSM: 
         - when using "distance_from_point" please provide a (lat, lon) tuple to create the bounding box around it; 
         - when using "distance_from_address" provide an existing OSM address; 
-        - when using "OSMplace" provide an OSM place name.  
-        - when using "OSMpolygon" please provide the name of a relation in OSM as an argument of place;
-    download_method: string, {"distance_from_address", "distance_from_point", "OSMpolygon", "OSMplace"}
+        - when using "OSMplace" provide an OSM place name. The query must be geocodable and OSM must have polygon boundaries for the geocode result.  
+        - when using "polygon" please provide a Shapely Polygon in unprojected latitude-longitude degrees (EPSG:4326) CRS;
+    download_method: str, {"distance_from_address", "distance_from_point", "OSMplace", "polygon"}
         It indicates the method that should be used for downloading the data.
     distance: float
         Used when download_method == "distance from address" or == "distance from point".
@@ -230,17 +230,17 @@ def _download_geometries(place, download_method, tags, crs, distance = 500.0):
     
     Parameters
     ----------
-    place: str, tuple
+    place: str, tuple, Shapely Polygon
         Name of cities or areas in OSM: 
         - when using "distance_from_point" please provide a (lat, lon) tuple to create the bounding box around it; 
         - when using "distance_from_address" provide an existing OSM address; 
-        - when using "OSMplace" provide an OSM place name.  
-        - when using "OSMpolygon" please provide the name of a relation in OSM as an argument of place;
-    download_method: string, {"distance_from_address", "distance_from_point", "OSMpolygon", "OSMplace"}
+        - when using "OSMplace" provide an OSM place name. The query must be geocodable and OSM must have polygon boundaries for the geocode result.  
+        - when using "polygon" please provide a Shapely Polygon in unprojected latitude-longitude degrees (EPSG:4326) CRS;
+    download_method: str, {"distance_from_address", "distance_from_point", "OSMplace", "polygon"}
         It indicates the method that should be used for downloading the data.
     tag: dict 
         The desired OSMN tags.
-    crs: string
+    crs: str
         The coordinate system of the case study area.
     distance: float
         Used when download_method == "distance from address" or == "distance from point".
@@ -258,7 +258,7 @@ def _download_geometries(place, download_method, tags, crs, distance = 500.0):
         'distance_from_address': ox.geometries_from_address,
         'distance_from_point': ox.geometries_from_point
         'OSMplace': ox.geometries_from_place,
-        'OSMpolygon': ox.geometries_from_polygon
+        'polygon': ox.geometries_from_polygon
     }
     
     download_func = download_method_dict.get(download_method)
@@ -464,9 +464,9 @@ def get_barriers(place, download_method, distance = 500.0, epsg = None, parks_mi
         Name of cities or areas in OSM: 
         - when using "distance_from_point" please provide a (lat, lon) tuple to create the bounding box around it; 
         - when using "distance_from_address" provide an existing OSM address; 
-        - when using "OSMplace" provide an OSM place name.  
-        - when using "OSMpolygon" please provide the name of a relation in OSM as an argument of place;
-    download_method: string, {"distance_from_address", "distance_from_point", "OSMpolygon", "OSMplace"}
+        - when using "OSMplace" provide an OSM place name. The query must be geocodable and OSM must have polygon boundaries for the geocode result.  
+        - when using "polygon" please provide the name of a relation in OSM as an argument of place;
+    download_method: str, {"distance_from_address", "distance_from_point", "OSMplace", "polygon"}
         It indicates the method that should be used for downloading the data.
     distance: float
         Used when download_method == "distance from address" or == "distance from point".
@@ -518,3 +518,8 @@ def _simplify_barrier(geometries):
     
     return features
         
+class Error(Exception):
+    """Base class for other exceptions"""
+
+class downloadError(Error):
+    """Raised when a wrong download method is provided"""
