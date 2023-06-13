@@ -11,15 +11,15 @@ def random_colors_list(nlabels, vmin = 0.8, vmax = 1.0, hsv = False):
     
     Parameters
     ----------
-    nlabels : int
+    nlabels: int
         The number of classes or labels for which colors are generated.
-    vmin : float
-        The minimum value in the HSV spectrum. Default is 0.8
-    vmax : float
-        The maximum value in the HSV spectrum. Default is 1.0
-    hsv : bool
+    vmin: float
+        The minimum value in the HSV spectrum. Default is 0.8.
+    vmax: float
+        The maximum value in the HSV spectrum. Default is 1.0.
+    hsv: bool
         Indicates whether to return colors in HSV format (True) or convert them to RGB format (False).
-        Default is False
+        Default is False.
     
     Returns
     -------
@@ -46,14 +46,14 @@ def rand_cmap(nlabels, type_color ='soft'):
     Parameters
     ----------
     nlabels: int
-        the number of categories to be coloured 
-    type_color: string {"soft", "bright"} 
-        it defines whether using bright or soft pastel colors, by limiting the RGB spectrum
+        The number of categories to be coloured.
+    type_color: str {"soft", "bright"} 
+        It defines whether using bright or soft pastel colors, by limiting the RGB spectrum.
        
     Returns
     -------
     cmap: matplotlib.colors.LinearSegmentedColormap
-        the color map
+        The color map.
     """   
     if type_color not in ('bright', 'soft'):
         type_color = 'bright'
@@ -91,7 +91,7 @@ def kindlmann():
     Returns
     -------
     cmap: matplotlib.colors.LinearSegmentedColormap
-        the color map
+        The color map.
     """   
 
     kindlmann_list = [(0.00, 0.00, 0.00,1), (0.248, 0.0271, 0.569, 1), (0.0311, 0.258, 0.646,1),
@@ -107,12 +107,12 @@ def normalize(n, range1, range2):
     
     Parameters
     ----------
-    n : float or int
-        The value to be normalized
-    range1 : tuple or list
-        The original range of values [min, max] from which `n` is taken
-    range2 : tuple or list
-        The target range of values [min, max] to which `n` will be normalized
+    n: float or int
+        The value to be normalized.
+    range1: tuple or list
+        The original range of values [min, max] from which `n` is taken.
+    range2: tuple or list
+        The target range of values [min, max] to which `n` will be normalized.
     
     Returns
     -------
@@ -129,15 +129,15 @@ def lighten_color(color, amount=0.5):
     
     Parameters
     ----------
-    color : str or tuple
-        The color to be lightened. It can be a matplotlib color string, hex string, or RGB tuple
-    amount : float, optional
-        The amount by which to lighten the color. Default value is 0.5
+    color: str or tuple
+        The color to be lightened. It can be a matplotlib color string, hex string, or RGB tuple.
+    amount: float, optional
+        The amount by which to lighten the color. Default value is 0.5.
     
     Returns
     -------
     tuple
-        The lightened color in RGB format
+        The lightened color in RGB format.
     """ 
     try:
         c = mc.cnames[color]
