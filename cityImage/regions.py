@@ -24,16 +24,16 @@ def identify_regions(dual_graph, edges_gdf, weight = None):
     Parameters
     ----------
     dual_graph: Networkx.Graph
-        the dual graph of an urban area
+        The dual graph of an urban area.
     edges_gdf: LineString GeoDataFrame
-        the (primal) street segments GeoDataFrame
+        The (primal) street segments GeoDataFrame.
     weight: string
-        the edges' attribute to use when extracting the communities. If None is passed, only the topological relations influence the resulting communities.
+        The edges' attribute to use when extracting the communities. If None is passed, only the topological relations influence the resulting communities.
     
     Returns
     -------
     regions: dict
-        a dictionary where to each primal edgeID (key) corresponds a region code (value)
+        A dictionary where to each primal edgeID (key) corresponds a region code (value).
     """
     edges_gdf = edges_gdf.copy()
     subdvisions = []
@@ -57,14 +57,14 @@ def identify_regions_primal(graph, nodes_gdf, weight = None):
     Parameters
     ----------
     graph: Networkx.Graph
-        the primal graph of an urban area
+        The primal graph of an urban area.
     nodes_gdf: Point GeoDataFrame
-        the nodes (junctions) GeoDataFrame
+        The nodes (junctions) GeoDataFrame.
 
     Returns
     -------
     regions: dict
-        a dictionary where to each nodeID (key) corresponds a region code (value)
+        A dictionary where to each nodeID (key) corresponds a region code (value).
     """
 
     subdvisions = []
@@ -84,18 +84,18 @@ def polygonise_partitions(edges_gdf, column, convex_hull = True, buffer = 30):
     Parameters
     ----------
     edges_gdf: LineString GeoDataFrame
-        the street segments GeoDataFrame
+        The street segments GeoDataFrame.
     column: string
-        the name of the column containing the district identifier
+        The name of the column containing the district identifier.
     convex_hull: boolean
-        if trues creates create convex hulls after having polygonised the cluster of segments
+        When True creates create convex hulls after having polygonised the cluster of segments.
     buffer: float
-        desired buffer around the polygonised segments, before possibly obtaining the convex hulls
+        Desired buffer around the polygonised segments, before possibly obtaining the convex hulls.
         
     Returns
     -------
     polygonised_partitions: Polygon GeoDataFrame
-        a GeoDataFrame containing the polygonised partitions
+        A GeoDataFrame containing the polygonised partitions.
     """
     
     polygons = []
@@ -124,16 +124,16 @@ def district_to_nodes_from_edges(nodes_gdf, edges_gdf, column):
     Parameters
     ----------
     nodes_gdf: Point GeoDataFrame
-        the nodes (junctions) GeoDataFrame   
+        The nodes (junctions) GeoDataFrame.
     edges_gdf: LineString GeoDataFrame
-        the street segments GeoDataFrame
+        The street segments GeoDataFrame.
     column: string
-        the name of the column containing the district identifier
+        The name of the column containing the district identifier.
         
     Returns
     -------
     nodes_gdf: Point GeoDataFrame
-        the updated street junctions GeoDataFrame
+        The updated street junctions GeoDataFrame.
     """
     
     nodes_gdf = nodes_gdf.copy()
@@ -151,18 +151,18 @@ def _assign_district_to_node(node_geometry, edges_gdf, sindex, column):
     Parameters
     ----------
     node_geometry: Point
-        a node's geometry
+        A node's geometry.
     edges_gdf: LineString GeoDataFrame
-        the street segments GeoDataFrame
-    sindex: 
-        Spatial Index object of the edges_gdf
+        The street segments GeoDataFrame.
+    sindex: Spatial Index
+        Spatial Index object of the edges_gdf.
     column: string
-        the name of the column containing the district identifier
+        The name of the column containing the district identifier.
         
     Returns
     -------
     district: int
-        the district identifier
+        The district identifier.
     """   
     point = node_geometry
     n = point.buffer(20)
@@ -186,16 +186,16 @@ def districts_to_edges_from_nodes(nodes_gdf, edges_gdf, column):
     Parameters
     ----------
     nodes_gdf: Point GeoDataFrame
-        the nodes (junctions) GeoDataFrame   
+        The nodes (junctions) GeoDataFrame.
     edges_gdf: LineString GeoDataFrame
-        the street segments GeoDataFrame
+        The street segments GeoDataFrame.
     column: string
-        the name of the column containing the district identifier
+        The name of the column containing the district identifier.
         
     Returns
     -------
     edges_gdf: LineString GeoDataFrame
-        the updated street segments GeoDataFrame
+        The updated street segments GeoDataFrame.
     """
     
     ix_u = edges_gdf.columns.get_loc('u')+1  
@@ -218,17 +218,17 @@ def _assign_district_to_edge(edgeID, nodes_gdf, edges_gdf, column):
     Parameters
     ----------
     edgeID: int
-        the edgeID
+        The edgeID.
     nodes_gdf: Point GeoDataFrame
-        the nodes (junctions) GeoDataFrame   
+        The nodes (junctions) GeoDataFrame   .
     edges_gdf: LineString GeoDataFrame
-        the street segments GeoDataFrame
+        The street segments GeoDataFrame.
     column: string
-        the name of the column containing the district identifier
+        The name of the column containing the district identifier.
     
     Returns
     -------
-    Tuple
+    tuple
     """
     series = edges_gdf.loc[edgeID]
     district_uv = 999999
@@ -245,16 +245,16 @@ def district_to_nodes_from_polygons(nodes_gdf, partitions_gdf, column):
     Parameters
     ----------
     nodes_gdf: Point GeoDataFrame
-        the nodes (junctions) GeoDataFrame   
+        The nodes (junctions) GeoDataFrame.   
     partitions_gdf: Polygon GeoDataFrame
-        the nodes (junctions) GeoDataFrame        
+        The nodes (junctions) GeoDataFrame.      
     column: string
-        the name of the column containing the district identifier
+        The name of the column containing the district identifier.
     
     Returns
     -------
     nodes_gdf: Point GeoDataFrame
-        the updated street junctions GeoDataFrame
+        The updated street junctions GeoDataFrame.
     """
     
     nodes_gdf = nodes_gdf.copy()
@@ -270,16 +270,16 @@ def _assign_district_to_node_from_polygons(node_geometry, partitions_gdf, column
     Parameters
     ----------
     node_geometry: Point
-        a node's geometry
+        A node's geometry.
     partitions_gdf: Polygon GeoDataFrame
-        the nodes (junctions) GeoDataFrame        
+        The nodes (junctions) GeoDataFrame.     
     column: string
-        the name of the column containing the district identifier
+        The name of the column containing the district identifier.
     
     Returns
     -------
     district: int
-        the district identifier
+        The district identifier.
     """
     
     point = node_geometry  
@@ -293,19 +293,19 @@ def amend_nodes_membership(nodes_gdf, edges_gdf, column, min_size_district = 10)
     
     Parameters
     ----------
-    nodes_gdf : Point GeoDataFrame
-        The nodes (junctions) GeoDataFrame
-    edges_gdf : LineString GeoDataFrame
-        The street segments GeoDataFrame
-    column : str
-        The name of the column containing the district identifier
-    min_size_district : int
-        The minimum size (number of nodes) required for a district to be considered valid. Default is 10
+    nodes_gdf: Point GeoDataFrame
+        The nodes (junctions) GeoDataFrame.
+    edges_gdf: LineString GeoDataFrame
+        The street segments GeoDataFrame.
+    column: str
+        The name of the column containing the district identifier.
+    min_size_district: int
+        The minimum size (number of nodes) required for a district to be considered valid. Default is 10.
     
     Returns
     -------
     nodes_gdf: GeoDataFrame
-        The updated nodes GeoDataFrame with amended district memberships
+        The updated nodes GeoDataFrame with amended district memberships.
     """
     
     nodes_gdf = nodes_gdf.copy()
@@ -323,19 +323,19 @@ def _amend_node_membership(nodeID, nodes_gdf, edges_gdf, column):
 
     Parameters
     ----------
-    nodeID : int
-        The ID of the node to amend the membership for
-    nodes_gdf : Point GeoDataFrame
-        The nodes (junctions) GeoDataFrame
-    edges_gdf : LineString GeoDataFrame
-        The street segments GeoDataFrame
-    column : str
-        The name of the column containing the district membership
+    nodeID: int
+        The ID of the node to amend the membership for.
+    nodes_gdf: Point GeoDataFrame
+        The nodes (junctions) GeoDataFrame.
+    edges_gdf: LineString GeoDataFrame
+        The street segments GeoDataFrame.
+    column: str
+        The name of the column containing the district membership.
 
     Returns
     -------
     new_district: int
-        The amended district membership for the specified node
+        The amended district membership for the specified node.
     """  
 
     # check if the current district membership of the node is not 999999, in which case return the existing membership without any changes
@@ -376,14 +376,14 @@ def _check_disconnected_districts(nodes_gdf, edges_gdf, column, min_size = 10):
 
     Parameters
     ----------
-    nodes_gdf : Point GeoDataFrame
-        The nodes (junctions) GeoDataFrame
-    edges_gdf : LineString GeoDataFrame
-        The street segments GeoDataFrame
-    column : str
-        The name of the column containing the district identifier
-    min_size : int
-        The minimum size of a district for it to be considered valid. Defaults to 10
+    nodes_gdf: Point GeoDataFrame
+        The nodes (junctions) GeoDataFrame.
+    edges_gdf: LineString GeoDataFrame
+        The street segments GeoDataFrame.
+    column: str
+        The name of the column containing the district identifier.
+    min_size: int
+        The minimum size of a district for it to be considered valid. Defaults to 10.
 
     Returns
     -------
@@ -425,15 +425,16 @@ def find_gateways(nodes_gdf, edges_gdf, column):
     Parameters
     ----------
     nodes_gdf: Point GeoDataFrame
-        the nodes (junctions) GeoDataFrame  
+        The nodes (junctions) GeoDataFrame.
     edges_gdf: LineString GeoDataFrame
-        the street segments GeoDataFrame
+        The street segments GeoDataFrame.
     column: string
-        the name of the column containing the district membership 
+        The name of the column containing the district membership. 
     
     Returns
     -------
-    GeoDataFrames
+    nodes_gdf: Point GeoDataFrame
+        The updated nodes GeoDataFrame with potentially disconnected districts updated to '999999'.
     """
     
     # assign gateways
@@ -448,17 +449,18 @@ def _gateway(nodeID, nodes_gdf, edges_gdf, column):
     Parameters
     ----------
     nodeID: int
-        nodeID of the node
+        nodeID of the node.
     nodes_gdf: Point GeoDataFrame
-        the nodes (junctions) GeoDataFrame  
+        The nodes (junctions) GeoDataFrame.
     edges_gdf: LineString GeoDataFrame
-        the street segments GeoDataFrame
-    column: string
-        the name of the column containing the district membership 
+        The street segments GeoDataFrame.
+    column: str
+        The name of the column containing the district membership. 
     
     Returns
     -------
     int
+        1 = gateway, 0 = not a gateway.
     """
     
     # edges connected to the given node
