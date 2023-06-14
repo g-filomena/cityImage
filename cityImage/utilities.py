@@ -3,6 +3,7 @@ import numpy as np
 import geopandas as gpd
 import math
 import pyproj
+import osmnx as ox
 
 from typing import List
 from math import sqrt
@@ -13,6 +14,81 @@ from shapely.geometry.base import BaseGeometry
 from functools import partial
 import pyvista as pv
 pd.set_option("display.precision", 3)
+
+class Error(Exception):
+    """Base class for other exceptions"""
+
+class downloadError(Error):
+    """Raised when a wrong download method is provided""" 
+    
+def downloader(place, download_method, tags, crs, distance = 500.0, downloading_graph = False, network_type = None):
+    """
+    The function downloads certain geometries from OSM, by means of OSMNX functions.
+    It returns a GeoDataFrame, that could be empty when no geometries are found, with the provided tags.
+    
+    Parameters
+    ----------
+    place: str, tuple, Shapely Polygon
+        Name of cities or areas in OSM: 
+        - when using "distance_from_point" please provide a (lat, lon) tuple to create the bounding box around it; 
+        - when using "distance_from_address" provide an existing OSM address; 
+        - when using "OSMplace" provide an OSM place name. The query must be geocodable and OSM must have polygon boundaries for the geocode result.  
+        - when using "polygon" please provide a Shapely Polygon in unprojected latitude-longitude degrees (EPSG:4326) CRS;
+    download_method: str, {"distance_from_address", "distance_from_point", "OSMplace", "polygon"}
+        It indicates the method that should be used for downloading the data.
+    tag: dict 
+        The desired OSMN tags.
+    crs: str
+        The coordinate system of the case study area.
+    distance: float
+        Used when download_method == "distance from address" or == "distance from point".
+    downloading_graph: bool
+        Download a graph, instead of, as by default, GeoDataFrame.
+    network_type: str {"walk", "bike", "drive", "drive_service", "all", "all_private", "none"}
+        It indicates type of street or other network to extract - from OSMNx paramaters.
+        
+    Returns
+    -------
+    G, geometries_gdf: NetworkX Graph, GeoDataFrame
+        The resulting Graph (when downloading_graph) or a GeoDataFrame.
+    """    
+    download_options = {"distance_from_address", "distance_from_point", "OSMpolygon", "OSMplace"}
+    if download_method not in download_options:
+        raise downloadError('Provide a download method amongst {}'.format(download_options))
+
+    download_method_dict = {
+        'distance_from_address': ox.geometries_from_address,
+        'distance_from_point': ox.geometries_from_point,
+        'OSMplace': ox.geometries_from_place,
+        'polygon': ox.geometries_from_polygon
+        }
+    if downloading_graph:
+        download_method_dict = {
+        'distance_from_address': ox.graph_from_address,
+        'distance_from_point': ox.graph_from_point,
+        'OSMplace': ox.graph_from_place,
+        'polygon': ox.graph_from_polygon
+        }
+    
+    download_func = download_method_dict.get(download_method)
+    # using OSMNx to download data from OpenStreetMap    
+    if download_func:
+        if download_method in ['distance_from_address', 'distance_from_point']:
+            if downloading_graph:
+                G = download_func(place, network_type = network_type, dist = distance, simplify = True)
+            else:
+                geometries_gdf = download_func(place, tags = tags, dist = distance)
+        else:
+            if downloading_graph:
+                G = download_func(place, network_type = network_type, simplify = True)
+            else:
+                geometries_gdf = download_func(place, tags = tags)
+    
+    geometries_gdf = geometries_gdf.to_crs(crs)
+   
+    if downloading_graph:
+        return G
+    return geometries_gdf
     
 def scaling_columnDF(series, inverse = False):
     """
