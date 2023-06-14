@@ -69,18 +69,24 @@ def downloader(place, download_method, tags = None, distance = 500.0, downloadin
         }
     
     download_func = download_method_dict.get(download_method)
-    # using OSMNx to download data from OpenStreetMap    
-    if download_func:
-        if download_method in ['distance_from_address', 'distance_from_point']:
-            if downloading_graph:
-                G = download_func(place, network_type = network_type, dist = distance, simplify = True)
+    # using OSMNx to download data from OpenStreetMap  
+    try:
+        if download_func:
+            if download_method in ['distance_from_address', 'distance_from_point']:
+                if downloading_graph:
+                    G = download_func(place, network_type = network_type, dist = distance, simplify = True)
+                else:
+                    geometries_gdf = download_func(place, tags = tags, dist = distance)
             else:
-                geometries_gdf = download_func(place, tags = tags, dist = distance)
-        else:
-            if downloading_graph:
-                G = download_func(place, network_type = network_type, simplify = True)
-            else:
-                geometries_gdf = download_func(place, tags = tags) 
+                if downloading_graph:
+                    G = download_func(place, network_type = network_type, simplify = True)
+                else:
+                    geometries_gdf = download_func(place, tags = tags) 
+    except ox._errors.EmptyOverpassResponse:
+        # Handle the EmptyOverpassResponse error by returning an empty GeoDataFrame
+        geometries_gdf = gpd.GeoDataFrame(columns=['id', 'geometry'], geometry='geometry').set_crs('EPSG:4326')
+        if downloading_graph:
+            G=nx.empty_graph()
     if downloading_graph:
         return G
     return geometries_gdf
