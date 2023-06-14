@@ -21,7 +21,7 @@ class Error(Exception):
 class downloadError(Error):
     """Raised when a wrong download method is provided""" 
     
-def downloader(place, download_method, tags, crs, distance = 500.0, downloading_graph = False, network_type = None):
+def downloader(place, download_method, tags = None, distance = 500.0, downloading_graph = False, network_type = None):
     """
     The function downloads certain geometries from OSM, by means of OSMNX functions.
     It returns a GeoDataFrame, that could be empty when no geometries are found, with the provided tags.
@@ -38,8 +38,6 @@ def downloader(place, download_method, tags, crs, distance = 500.0, downloading_
         It indicates the method that should be used for downloading the data.
     tag: dict 
         The desired OSMN tags.
-    crs: str
-        The coordinate system of the case study area.
     distance: float
         Used when download_method == "distance from address" or == "distance from point".
     downloading_graph: bool
@@ -52,7 +50,7 @@ def downloader(place, download_method, tags, crs, distance = 500.0, downloading_
     G, geometries_gdf: NetworkX Graph, GeoDataFrame
         The resulting Graph (when downloading_graph) or a GeoDataFrame.
     """    
-    download_options = {"distance_from_address", "distance_from_point", "OSMpolygon", "OSMplace"}
+    download_options = {"distance_from_address", "distance_from_point", "OSMplace", "polygon"}
     if download_method not in download_options:
         raise downloadError('Provide a download method amongst {}'.format(download_options))
 
@@ -82,10 +80,7 @@ def downloader(place, download_method, tags, crs, distance = 500.0, downloading_
             if downloading_graph:
                 G = download_func(place, network_type = network_type, simplify = True)
             else:
-                geometries_gdf = download_func(place, tags = tags)
-    
-    geometries_gdf = geometries_gdf.to_crs(crs)
-   
+                geometries_gdf = download_func(place, tags = tags) 
     if downloading_graph:
         return G
     return geometries_gdf
