@@ -116,7 +116,7 @@ def get_buildings_fromOSM(place, download_method: str, epsg = None, distance = 1
     
     download_method_dict = {
         'distance_from_address': ox.geometries_from_address,
-        'distance_from_point': ox.geometries_from_point
+        'distance_from_point': ox.geometries_from_point,
         'OSMplace': ox.geometries_from_place,
         'polygon': ox.geometries_from_polygon
     }
@@ -511,7 +511,7 @@ def get_historical_buildings_fromOSM(place, download_method, epsg = None, distan
     
     download_method_dict = {
         'distance_from_address': ox.geometries_from_address,
-        'distance_from_point': ox.geometries_from_point
+        'distance_from_point': ox.geometries_from_point,
         'OSMplace': ox.geometries_from_place,
         'polygon': ox.geometries_from_polygon
     }
