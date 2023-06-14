@@ -39,15 +39,14 @@ def test_loadOSM():
     _, _ = ci.get_network_fromOSM(address, 'distance_from_address', network_type = "all", 
                                                           epsg = epsg_susa, distance = distance)
     
-def test_loadSHP_clean():  
+def test_loadFile_clean():  
     global nodes_gdf_y
     global edges_gdf_y
     global epsg_york
     input_path = 'tests/input/York_street_network.shp'
     dict_columns = {"highway": "type", "oneway": "oneway", "lanes" :None, 
                 "maxspeed": "maxspeed", "name": "name"}    
-    nodes_gdf_y, edges_gdf_y = ci.get_network_fromSHP(input_path, epsg_york, dict_columns = dict_columns, other_columns = [])
-    # fix topology
+    nodes_gdf_y, edges_gdf_y = ci.get_network_fromFile(input_path, epsg_york, dict_columns = dict_columns, other_columns = [])
     nodes_gdf_y, edges_gdf_y = ci.clean_network(nodes_gdf_y, edges_gdf_y, dead_ends = True, remove_islands = True, 
                                                 same_vertexes_edges = True, self_loops = True, fix_topology = True)
     
@@ -145,7 +144,7 @@ def test_landmarks():
     global buildings_gdf
     
     _ = ci.get_buildings_fromOSM(address, download_method = 'distance_from_address', epsg = epsg_susa, distance = 1000)
-    _ = ci.get_buildings_fromOSM(location, download_method = 'from_point', epsg = epsg_susa, distance = 1000)
+    _ = ci.get_buildings_fromOSM(location, download_method = 'distance_from_point', epsg = epsg_susa, distance = 1000)
     
     # weights
     global_indexes_weights = {'3dvis': 0.50, 'fac': 0.30, 'height': 0.20, 'area': 0.30, '2dvis':0.30, 'neigh': 0.20, 'road': 0.20}
@@ -182,8 +181,6 @@ def test_plot():
     
     tmp_nodes = nodes_gdf.copy()
     base_map_dict = {'base_map_gdf': edges_gdf, 'base_map_alpha' : 0.4, 'base_map_geometry_size' : 1.1, 'base_map_zorder' : 0}
-   
-
     tmp_nodes['Bc_sc'] = ci.scaling_columnDF(tmp_nodes['Bc'])
 
     # Lynch's bins - only for variables from 0 to 1 
@@ -196,10 +193,9 @@ def test_plot():
     # Appending the attributes to the geodataframe
     columns = ['Bc', 'Sc', 'Cc', 'Ic']
     # 2x2 color bar
-    cbar_dict = {'cbar' : True, 'cbar_ticks' : 2, 'cbar_max_symbol' : True, 'cbar_min_max' : True, 'cbar_shrinkage' : 0.75}
+    cbar_dict = {'cbar' : True, 'cbar_ticks' : 2, 'cbar_max_symbol' : True, 'cbar_min_max' : True, 'cbar_shrink' : 0.75}
     plot = ci.plot_grid_gdf_columns(gdf = tmp_nodes, columns = columns, black_background = True, cmap = cmap, legend = False, ncols = 2, 
                          nrows = 2, figsize = (15,5), geometry_size_factor = 30, axes_frame = True, **cbar_dict, titles = columns)
-    
     
     #2x2 legend
     scheme_dict = {'bins' : [0.125, 0.25, 0.5, 0.75, 1.00], 'scheme' : 'User_Defined'}
@@ -209,8 +205,7 @@ def test_plot():
     # 4x2 white
     plot = ci.plot_grid_gdf_columns(gdf = tmp_nodes, columns = columns+columns, black_background = False,
                          cmap = cmap, nrows= 4, ncols = 2, classes = 6, scheme = 'quantiles', legend = True, figsize = (20, 10), 
-                         axes_frame = True, fontsize = 15, titles = columns+columns)
-                            
+                         axes_frame = True, fontsize = 15, titles = columns+columns)        
     #3 x 1
     columns = ['Bc', 'Sc', 'Cc']
     plot = ci.plot_grid_gdf_columns(gdf = tmp_nodes, columns = columns, black_background = True, cmap = cmap, ncols = 1, nrows = 3,
@@ -246,7 +241,7 @@ def test_landuse():
 
     epsg = 25832
     input_path = 'tests/input/Muenster_buildings.shp'
-    buildings_shp, _ = ci.get_buildings_fromSHP(input_path, epsg = epsg, height_field = 'height', base_field = 'base', land_use_field = 'land_use')
+    buildings_shp, _ = ci.get_buildings_fromFile(input_path, epsg = epsg, height_field = 'height', base_field = 'base', land_use_field = 'land_use')
     attributes_gdf = gpd.read_file('tests/input/Muenster_buildings_attributes.shp').to_crs('EPSG:'+str(epsg))  
     
     adult_entertainment = ['brothel','casino', 'swingerclub', 'stripclub', 'nightclub', 'gambling'] 
