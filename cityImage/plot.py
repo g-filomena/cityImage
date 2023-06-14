@@ -95,7 +95,7 @@ class MultiPlot():
             Specifies whether the plot has a black background (True) or white background (False).
         fontsize: int
             The font size to be used in the plot.
-        title: str or None, optional
+        title: str or None
             The title of the figure. If None, no title is displayed.
         """
         self.ncols = ncols
@@ -112,16 +112,19 @@ class MultiPlot():
                          ha = 'center', va = 'center') 
               
 def plot_gdf(gdf, column = None, title = None, black_background = True, figsize = (15,15), scheme = None, bins = None, 
-            classes = None, norm = None, cmap = None, color = None, alpha = None, legend = False, geometry_size = 1.0, 
-            geometry_size_column = None, fontsize = 15, geometry_size_factor = None, cbar = False, cbar_ticks = 5, 
+            classes = None, norm = None, cmap = None, color = None, alpha = None, geometry_size = 1.0, 
+            geometry_size_column = None, geometry_size_factor = None, legend = False, fontsize = 15, cbar = False, cbar_ticks = 5, 
             cbar_max_symbol = False, cbar_min_max = False, cbar_shrink = 0.75, axes_frame = False, 
             base_map_gdf = pd.DataFrame({"a": []}), base_map_color = None, base_map_alpha = 0.4, base_map_geometry_size = 1.1,  
             base_map_zorder = 0):
 
     """
-    It plots the geometries of a GeoDataFrame, coloring on the bases of the values contained in column, using a given scheme.
-    If only "column" is provided, a categorical map is depicted.
-    If no column is provided, a plain map is shown.
+    It plots the geometries of a single GeoDataFrame, coloring on the bases of the values contained in column, using a given scheme.
+    When only column is provided (no scheme), a categorical map is depicted.
+    When no column is provided, a plain map is shown.
+    
+    The other parameters regulate colorbar, legend, base map. 
+    Use this function for plotting in relation to maximum one column, one GeoDataFrame.
     
     Parameters
     ----------
@@ -149,8 +152,18 @@ def plot_gdf(gdf, column = None, title = None, black_background = True, figsize 
         Categorical color applied to all geometries when not using a column to color them.
     alpha: float
         Alpha value of the plotted layer.
+    geometry_size: float
+        Point size value when plotting a Point GeoDataFrame or Width value when plotting LineString GeoDataFrame.
+    geometry_size_columns: List of str
+        The column name in the GeoDataFrame to be used for scaling the geometry size.
+    geometry_size_factor: float
+        Rescaling factor for the column provided, if any. The column is rescaled from 0 to 1, and the
+        geometry_size_factor is used to rescale the marker size accordingly
+        (e.g., rescaled variable's value [0-1] * factor) when plotting a Point GeoDataFrame.
     legend: bool
-        If True, show the legend; otherwise, don't.
+        When True, show the legend.
+    fontsize: int
+        Font size.
     cbar: bool
         If True, show the colorbar; otherwise, don't. When True, the legend is not shown.
     cbar_ticks: int
@@ -163,12 +176,6 @@ def plot_gdf(gdf, column = None, title = None, black_background = True, figsize 
         Fraction by which to multiply the size of the colorbar.    
     axes_frame: bool
         If True, show the axes' frame.
-    geometry_size: float
-        Point size value when plotting a Point GeoDataFrame or Width value when plotting LineString GeoDataFrame.
-    geometry_size_factor: float
-        Rescaling factor for the column provided, if any. The column is rescaled from 0 to 1, and the
-        geometry_size_factor is used to rescale the marker size accordingly
-        (e.g., rescaled variable's value [0-1] * factor) when plotting a Point GeoDataFrame.
     base_map_gdf: GeoDataFrame
         Additional layer to use as a base map.
     base_map_color: str
@@ -222,22 +229,28 @@ def plot_gdf(gdf, column = None, title = None, black_background = True, figsize 
     return plot.fig      
  
 def plot_grid_gdfs_column(gdfs = [], column = None, ncols = 1, nrows = 1, titles = [], black_background = True, figsize = (15,15), scheme = None, bins = None, 
-                    classes = None, norm = None, cmap = None, color = None, alpha = None, legend = False, cbar = False, 
-                    cbar_ticks = 5, cbar_max_symbol = False, cbar_min_max = False, cbar_shrink = 0.75, axes_frame = False, 
-                    fontsize = 15, geometry_size = None, geometry_size_columns = [], geometry_size_factor = None):
+                classes = None, norm = None, cmap = None, color = None, alpha = None, geometry_size = None, geometry_size_columns = [], geometry_size_factor = None,
+                legend = False, fontsize = 15, cbar = False, cbar_ticks = 5, cbar_max_symbol = False, cbar_min_max = False, cbar_shrink = 0.75, axes_frame = False):
     """
-    It plots the geometries of a GeoDataFrame, coloring on the bases of the values contained in the provided columns, using a given scheme.
-    If only "column" is provided, a categorical map is depicted.
-    If no column is provided, a plain map is shown.
+    It plots the geometries of different GeoDataFrames, coloring on the bases of the values contained in the provided column, using a given scheme.
+    When only column is provided (no scheme), a categorical map is depicted.
+    When no column is provided, a plain map is shown.
     
+    The other parameters regulate colorbar, legend, etc (no basemap here). 
+    Use this function for plotting in relation to maximum one column, for multiple GeoDataFrames.
+  
     Parameters
     ----------
-    gdf: GeoDataFrame
-        GeoDataFrame to be plotted.
+    gdfs: list of GeoDataFrame
+        The list of GeoDataFrames to be plotted.
     column: str
         Column on which the plot is based.
-    title: str
-        Title of the plot.
+    ncols: int
+        The number of desired columns for organising the subplots.
+    nrows: int
+        The number of desired rows for organising the subplots.
+    titles: list of str
+        The list of titles, one per axes (and column, when provided).
     black_background: boolean 
         Black background or white.
     fig_size: float
@@ -256,8 +269,18 @@ def plot_grid_gdfs_column(gdfs = [], column = None, ncols = 1, nrows = 1, titles
         Categorical color applied to all geometries when not using a column to color them.
     alpha: float
         Alpha value of the plotted layer.
+    geometry_size: float
+        Point size value when plotting a Point GeoDataFrame or Width value when plotting LineString GeoDataFrame.
+    geometry_size_columns: List of str
+        The column name(s) in the GeoDataFrames to be used for scaling the geometry size.
+    geometry_size_factor: float
+        Rescaling factor for the column provided, if any. The column is rescaled from 0 to 1, and the
+        geometry_size_factor is used to rescale the marker size accordingly
+        (e.g., rescaled variable's value [0-1] * factor) when plotting a Point GeoDataFrame.
     legend: bool
-        If True, show the legend; otherwise, don't.
+        When True, show the legend.
+    fontsize: int
+        Font size.
     cbar: bool
         If True, show the colorbar; otherwise, don't. When True, the legend is not shown.
     cbar_ticks: int
@@ -270,13 +293,12 @@ def plot_grid_gdfs_column(gdfs = [], column = None, ncols = 1, nrows = 1, titles
         Fraction by which to multiply the size of the colorbar. 
     axes_frame: bool
         If True, show the axes' frame.
-    geometry_size: float
-        Point size value when plotting a Point GeoDataFrame or Width value when plotting LineString GeoDataFrame.
-    geometry_size_factor: float
-        Rescaling factor for the column provided, if any. The column is rescaled from 0 to 1, and the
-        geometry_size_factor is used to rescale the marker size accordingly
-        (e.g., rescaled variable's value [0-1] * factor) when plotting a Point GeoDataFrame.
-    """   
+        
+    Returns
+    -------
+    fig: matplotlib.figure.Figure object
+        the resulting figure
+    """      
    
     if (len(gdfs)+1 != ncols*nrows) & (len(gdfs) != ncols*nrows):
         raise ValueError("Please provide an appropriate combination of nrows and ncols")
@@ -306,21 +328,27 @@ def plot_grid_gdfs_column(gdfs = [], column = None, ncols = 1, nrows = 1, titles
     return multiPlot.fig                      
 
 def plot_grid_gdf_columns(gdf, columns = [], ncols = 1, nrows = 1, titles = [], black_background = True, figsize = (15,15), scheme = None, bins = None, 
-                          classes = None, norm = None, cmap = None, color = None, alpha = None, legend = False, cbar = False, 
-                          cbar_ticks = 5, cbar_max_symbol = False, cbar_min_max = False, cbar_shrink = 0.75, axes_frame = False, 
-                          fontsize = 15, geometry_size = None, geometry_size_columns = [], geometry_size_factor = None):
+                          classes = None, norm = None, cmap = None, color = None, alpha = None, 
+                          geometry_size = None, geometry_size_columns = [], geometry_size_factor = None, legend = False, fontsize = 15,
+                          cbar = False, cbar_ticks = 5, cbar_max_symbol = False, cbar_min_max = False, cbar_shrink = 0.75, axes_frame = False):
     """
-    It plots the geometries of a GeoDataFrame, coloring on the bases of the values contained in the provided columns, using a given scheme.
-    If only "column" is provided, a categorical map is depicted.
-    If no column is provided, a plain map is shown.
+    It plots the geometries of a GeoDataFrame, coloring on the bases of the values contained in two or more provided columns, using a given scheme.
+    When no columns are provided, the function raises an error.
+    
+    The other parameters regulate colorbar, legend, etc (no basemap here). 
+    Use this function for plotting in relation to more than one column, for a single GeoDataFrame.
     
     Parameters
     ----------
     gdf: GeoDataFrame
         GeoDataFrame to be plotted.
-    column: str
-        Column on which the plot is based.
-    title: str
+    columns: list of str
+        The list of column on which the plot is based.
+    ncols: int
+        The number of desired columns for organising the subplots.
+    nrows: int
+        The number of desired rows for organising the subplots.
+    titles: list of str
         Title of the plot.
     black_background: boolean 
         Black background or white.
@@ -340,8 +368,18 @@ def plot_grid_gdf_columns(gdf, columns = [], ncols = 1, nrows = 1, titles = [], 
         Categorical color applied to all geometries when not using a column to color them.
     alpha: float
         Alpha value of the plotted layer.
+    geometry_size: float
+        Point size value when plotting a Point GeoDataFrame or Width value when plotting LineString GeoDataFrame.
+    geometry_size_columns: List of str
+        The column name(s) in the GeoDataFrame to be used for scaling the geometry size.
+    geometry_size_factor: float
+        Rescaling factor for the column provided, if any. The column is rescaled from 0 to 1, and the
+        geometry_size_factor is used to rescale the marker size accordingly
+        (e.g., rescaled variable's value [0-1] * factor) when plotting a Point GeoDataFrame.
     legend: bool
-        If True, show the legend; otherwise, don't.
+        When True, show the legend.
+    fontsize: int
+        Font size.
     cbar: bool
         If True, show the colorbar; otherwise, don't. When True, the legend is not shown.
     cbar_ticks: int
@@ -354,13 +392,15 @@ def plot_grid_gdf_columns(gdf, columns = [], ncols = 1, nrows = 1, titles = [], 
         Fraction by which to multiply the size of the colorbar. 
     axes_frame: bool
         If True, show the axes' frame.
-    geometry_size: float
-        Point size value when plotting a Point GeoDataFrame or Width value when plotting LineString GeoDataFrame.
-    geometry_size_factor: float
-        Rescaling factor for the column provided, if any. The column is rescaled from 0 to 1, and the
-        geometry_size_factor is used to rescale the marker size accordingly
-        (e.g., rescaled variable's value [0-1] * factor) when plotting a Point GeoDataFrame.
+    
+    Returns
+    -------
+    fig: matplotlib.figure.Figure object
+        the resulting figure
     """   
+    if len(columns) == 0:
+        raise ValueError("Provide a list of columns to plot the geometries on. For a plain plot, use plot_gdf")
+    
     if (len(columns)+1 != ncols*nrows) & (len(columns) != ncols*nrows):
         raise ValueError("Please provide an appropriate combination of nrows and ncols")
     
@@ -388,11 +428,9 @@ def plot_grid_gdf_columns(gdf, columns = [], ncols = 1, nrows = 1, titles = [], 
     return multiPlot.fig
 
 def plotOn_ax(ax, gdf, column = None, scheme = None, bins = None, classes = 7, norm = None, cmap = None, color = 'red', alpha = 1.0, 
-                legend = False, geometry_size = 1.0, geometry_size_column = None, geometry_size_factor = None, zorder = 0):
+                geometry_size = 1.0, geometry_size_column = None, geometry_size_factor = None, legend = False, zorder = 0):
     """
-    It plots the geometries of a GeoDataFrame, coloring on the bases of the values contained in column, using a given scheme, on the provided Axes.
-    If only "column" is provided, a categorical map is depicted.
-    If no column is provided, a plain map is shown.
+
     
     Parameters
     ----------
@@ -416,14 +454,16 @@ def plotOn_ax(ax, gdf, column = None, scheme = None, bins = None, classes = 7, n
         Categorical color applied to all geometries when not using a column to color them.
     alpha: float
         Alpha value of the plotted layer.
-    legend: bool
-        If True, show the legend; otherwise, don't.
     geometry_size: float
         Point size value when plotting a Point GeoDataFrame or Width value when plotting LineString GeoDataFrame.
+    geometry_size_columns: str
+        The column name in the GeoDataFrame to be used for scaling the geometry size.
     geometry_size_factor: float
         Rescaling factor for the column provided, if any. The column is rescaled from 0 to 1, and the
         geometry_size_factor is used to rescale the marker size accordingly
         (e.g., rescaled variable's value [0-1] * factor) when plotting a Point GeoDataFrame.
+    legend: bool
+        When True, show the legend.
     zorder: int   
         Zorder of this layer; e.g. if 0, plots first, thus main GeoDataFrame on top; if 1, plots last, thus on top.
     """  
@@ -462,7 +502,6 @@ def plotOn_ax(ax, gdf, column = None, scheme = None, bins = None, classes = 7, n
             gdf[column+'_sc'] = scaling_columnDF(gdf[column])
             geometry_size = np.where(gdf[column+'_sc'] >= 0.20, gdf[column+'_sc']*geometry_size_factor, 0.40) # marker size
         parameters['markersize'] = geometry_size
-    
     elif geometry_type == 'LineString':
         if geometry_size_factor is not None:
             geometry_size = [(abs(value)*geometry_size_factor) if (abs(value)*geometry_size_factor) > 1.1 else 1.1 for value in
@@ -475,8 +514,8 @@ def plotOn_ax(ax, gdf, column = None, scheme = None, bins = None, classes = 7, n
     gdf.plot(**parameters) 
  
  
-def subplot(ax, n, multiPlot, gdf, column, scheme, bins, classes, axes_frame, norm, cmap, color, alpha, legend, geometry_size, geometry_size_columns,
-                    geometry_size_factor, titles):
+def subplot(ax, n, multiPlot, gdf, column, titles, scheme, bins, classes, norm, cmap, color, alpha, geometry_size, geometry_size_columns,
+                    geometry_size_factor, legend, axes_frame):
     """
     Create a subplot with a map plot on the given axes.
 
@@ -492,14 +531,20 @@ def subplot(ax, n, multiPlot, gdf, column, scheme, bins, classes, axes_frame, no
         The GeoDataFrame containing the data to plot.
     column: str
         The column name in the GeoDataFrame to be used for plotting.
+    titles: str or sequence
+        The title(s) of the subplot(s).
     scheme: str
         The classification scheme to use for mapping the data.
     bins: int or sequence or pandas.IntervalIndex
         The number of bins to use for the classification or the bin intervals.
     classes: int or sequence
         The number of classes to use for the classification or the class intervals.
-    axes_frame: bool
-        Flag indicating whether to draw axes frame or not.
+    geometry_size: float
+        Marker size value when plotting a Point GeoDataFrame or line width value when plotting LineString GeoDataFrame.
+    geometry_size_columns: List of str
+        The column name(s) in the GeoDataFrame to be used for scaling the geometry size.
+    geometry_size_factor: float
+        The factor by which to scale the geometry size.
     norm: Normalize or str
         The normalization scheme to use for mapping values to colors.
     cmap: str or Colormap
@@ -510,14 +555,8 @@ def subplot(ax, n, multiPlot, gdf, column, scheme, bins, classes, axes_frame, no
         Alpha value of the plotted layer.
     legend: bool
         If True, show the legend; otherwise, don't.
-    geometry_size: float
-        Marker size value when plotting a Point GeoDataFrame or line width value when plotting LineString GeoDataFrame.
-    geometry_size_columns: str or sequence
-        The column name(s) in the GeoDataFrame to be used for scaling the geometry size.
-    geometry_size_factor: float
-        The factor by which to scale the geometry size.
-    titles: str or sequence
-        The title(s) of the subplot(s).
+    axes_frame: bool
+        Flag indicating whether to draw axes frame or not.
     """  
     ax.set_aspect("equal")
     set_axes_frame(axes_frame, ax, multiPlot.black_background, multiPlot.text_color)
@@ -656,7 +695,6 @@ def generate_colorbar(plot = None, cmap = None, norm = None, cbar_ticks = 5, cba
         If True, only show the ">" and "<" as labels of the lowest and highest ticks' the colorbar.
     cbar_shrink:
         Fraction by which to multiply the size of the colorbar. 
-        
     """
     
     if isinstance(plot, Plot):
