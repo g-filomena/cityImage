@@ -13,7 +13,7 @@ import functools
 from shapely.geometry import Point, LineString, Polygon, MultiPoint
 from shapely.ops import split, linemerge
 
-from .utilities import fix_multiparts_LineString_gdf
+from .utilities import fix_multiparts_LineString_gdf, downloader
 pd.set_option("display.precision", 3)
 pd.options.mode.chained_assignment = None
    
@@ -34,7 +34,7 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
         It indicates the method that should be used for downloading the data. When 'polygon' the shape to get network data within coordinates should be in
         unprojected latitude-longitude degrees (EPSG:4326).
     network_type: str {"walk", "bike", "drive", "drive_service", "all", "all_private", "none"}
-        iItt indicates type of street or other network to extract - from OSMNx paramaters.
+        It indicates type of street or other network to extract - from OSMNx paramaters.
     epsg: int
         Epsg of the area considered; if None OSMNx is used for the projection.
     distance: float
@@ -47,22 +47,8 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
     """
     if epsg is not None:
         crs = 'EPSG:' + str(epsg)
-    download_options = {"distance_from_address", "distance_from_point", "OSMpolygon", "OSMplace"}
-    if download_method not in download_options:
-        raise downloadError('Provide a download method amongst {}'.format(download_options))
     
-    download_method_dict = {
-        'distance_from_address': ox.graph_from_address,
-        'distance_from_point': ox.graph_from_point,
-        'OSMplace': ox.graph_from_place,
-        'polygon': ox.graph_from_polygon
-    }
-    # using OSMNx to download data from OpenStreetMap     
-    if download_func:
-        if download_method in ['distance_from_address', 'distance_from_point']
-            G = download_func(place, network_type = network_type, dist = distance, simplify = True)
-        else:
-            G = download_func(place, network_type = network_type, simplify = True)
+    G = downloader(place = place, download_method = download_method, distance = distance, downloading_graph = True, network_type = network_type)
     
     # fix list of osmid assigned to same edges
     for i, item in enumerate(G.edges()):
@@ -285,8 +271,3 @@ def reset_index_graph_gdfs(nodes_gdf, edges_gdf, nodeID = "nodeID"):
         
     return nodes_gdf, edges_gdf
     
-class Error(Exception):
-    """Base class for other exceptions"""
-
-class downloadError(Error):
-    """Raised when a wrong download method is provided"""
