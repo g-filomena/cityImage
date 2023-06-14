@@ -627,7 +627,7 @@ def generate_legend_fig(ax, plot):
     
     """ 
     leg = ax.get_legend()    
-    fig_leg = plot.fig.legend(handles = leg.legendHandles, labels = [t.get_text() for t in leg.texts], loc=5, 
+    fig_leg = plot.fig.legend(handles = leg.legend_handles, labels = [t.get_text() for t in leg.texts], loc=5, 
                               borderaxespad= 0)
     ax.get_legend().remove()
     plt.setp(fig_leg.texts, family='Times New Roman', fontsize = plot.font_size_secondary, color = plot.text_color, 
@@ -637,7 +637,7 @@ def generate_legend_fig(ax, plot):
     fig_leg.set_zorder(102)
     fig_leg.get_frame().set_facecolor('none')
 
-    for handle in fig_leg.legendHandles:
+    for handle in fig_leg.legend_handles:
         if not isinstance(handle, Line2D):
             handle._legmarker.set_markersize(15)
         else: 
@@ -668,7 +668,7 @@ def generate_legend_ax(ax, plot):
     leg.get_frame().set_linewidth(0.0) # remove legend border
     leg.set_zorder(102)
     
-    for handle in leg.legendHandles:
+    for handle in leg.legend_handles:
         if not isinstance(handle, Line2D):
             handle._legmarker.set_markersize(12)
         else:
