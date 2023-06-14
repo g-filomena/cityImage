@@ -36,8 +36,7 @@ def test_loadOSM():
     nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg_susa)
     polygon = ci.convex_hull_wgs(edges_gdf)
     _, _ = ci.get_network_fromOSM(polygon, 'polygon', network_type = "all", epsg = epsg_susa)
-    _, _ = ci.get_network_fromOSM(address, 'distance_from_address', network_type = "all", 
-                                                          epsg = epsg_susa, distance = distance)
+    _, _ = ci.get_network_fromOSM(address, 'distance_from_address', network_type = "all", epsg = epsg_susa, distance = distance)
     
 def test_loadFile_clean():  
     global nodes_gdf_y
@@ -171,7 +170,6 @@ def test_landmarks():
     
     buildings_gdf = ci.compute_global_scores(buildings_gdf, global_indexes_weights, global_components_weights)
     buildings_gdf = ci.compute_local_scores(buildings_gdf, local_indexes_weights, local_components_weights, rescaling_radius = 1500)
- 
  
 def test_plot():
     global nodes_gdf
