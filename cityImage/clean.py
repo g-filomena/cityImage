@@ -120,7 +120,7 @@ def is_nodes_simplified(nodes_gdf, edges_gdf, nodes_to_keep_regardless = []):
             
     return False
 
-def is_edges_simplified(edges_gdf):
+def is_edges_simplified(edges_gdf, preserve_direction):
     """
     The function checks the presence of possible duplicate geometries in the edges_gdf GeoDataFrame.
      
@@ -134,7 +134,10 @@ def is_edges_simplified(edges_gdf):
     simplified: bool
         Whether the edges of the network are simplified or not.
     """
-
+    if not preserve_direction:
+        edges_gdf["code"] = np.where(edges_gdf['v'] >= edges_gdf['u'], edges_gdf.u.astype(str)+"-"+edges_gdf.v.astype(str), edges_gdf.v.astype(str)+"-"+edges_gdf.u.astype(str))
+    else:
+        edges_gdf["code"] = edges_gdf.u.astype(str)+"-"+edges_gdf.v.astype(str)
     if edges_gdf.duplicated('code').any():
         max_lengths = edges_gdf.groupby("code").agg({'length': 'max'}).to_dict()['length']
         for code, group in edges_gdf.groupby("code"):
@@ -276,7 +279,6 @@ def prepare_dataframes(nodes_gdf, edges_gdf):
     nodes_gdf.index.name, edges_gdf.index.name = None, None
     nodes_gdf['x'], nodes_gdf['y'] = list(zip(*[(r.coords[0][0], r.coords[0][1]) for r in nodes_gdf.geometry]))
     edges_gdf.sort_index(inplace = True)  
-    edges_gdf["code"] = np.where(edges_gdf['v'] >= edges_gdf['u'], edges_gdf.u.astype(str)+"-"+edges_gdf.v.astype(str), edges_gdf.v.astype(str)+"-"+edges_gdf.u.astype(str))
     
     if 'highway' in edges_gdf.columns:
         to_remove = ['elevator']
@@ -284,7 +286,7 @@ def prepare_dataframes(nodes_gdf, edges_gdf):
     
     return nodes_gdf, edges_gdf    
     
-def simplify_same_vertexes_edges(edges_gdf):
+def simplify_same_vertexes_edges(edges_gdf, preserve_direction):
     """
     This function is used to simplify edges that have the same start and end point (i.e. 'u' and 'v' values) 
     in the edges_gdf GeoDataFrame. It removes duplicate edges that have similar geometry, keeping only the one 
@@ -303,15 +305,20 @@ def simplify_same_vertexes_edges(edges_gdf):
     to_drop = set()
     if not edges_gdf.duplicated('code').any():
         return edges_gdf
-        
+    
+    if not preserve_direction:
+        edges_gdf["code"] = np.where(edges_gdf['v'] >= edges_gdf['u'], edges_gdf.u.astype(str)+"-"+edges_gdf.v.astype(str), edges_gdf.v.astype(str)+"-"+edges_gdf.u.astype(str))
+    else:
+        edges_gdf["code"] = edges_gdf.u.astype(str)+"-"+edges_gdf.v.astype(str)
     groups = edges_gdf.groupby("code").filter(lambda x: len(x) > 1)[['code','length', 'edgeID']].sort_values(by=['code','length'])
     max_lengths = edges_gdf.groupby("code").agg({'length': 'max'}).to_dict()['length']
     
     for code, g in edges_gdf.groupby("code"):
         if g[g.length < max_lengths[code] * 0.9].shape[0]>0:
             to_drop.update(list(g[g.length < max_lengths[code] * 0.9]['edgeID']))
-
-    groups_filtered = groups.drop(list(to_drop), axis = 0).groupby('code').filter(lambda x: len(x) > 1)[['code','length','edgeID']].sort_values(by=['code','length'])
+    
+    groups = groups.drop(list(to_drop), axis = 0)
+    groups_filtered = groups.groupby('code').filter(lambda x: len(x) > 1)[['code','length','edgeID']].sort_values(by=['code','length'])
     first_indexes = list(groups_filtered.groupby("code")[['edgeID']].first().edgeID)
     others = set(groups_filtered.edgeID.to_list())- set(first_indexes)
     to_drop.update(others)
@@ -326,7 +333,6 @@ def simplify_same_vertexes_edges(edges_gdf):
         sub_group = edges_gdf.query("code == @code").copy()
              
     edges_gdf = edges_gdf.drop(list(to_drop), axis = 0)
-    
     return edges_gdf
 
 def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_islands = True, same_vertexes_edges = True, self_loops = False, fix_topology = False, 
@@ -382,7 +388,7 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_islands = True
         nodes_gdf, edges_gdf = fix_network_topology(nodes_gdf, edges_gdf)
     
     cycle = 0
-    while ((not is_edges_simplified(edges_gdf) and same_vertexes_edges) | (not is_nodes_simplified(nodes_gdf, edges_gdf, nodes_to_keep_regardless)) | (cycle == 0)):
+    while ((not is_edges_simplified(edges_gdf, preserve_direction) and same_vertexes_edges) | (not is_nodes_simplified(nodes_gdf, edges_gdf, nodes_to_keep_regardless)) | (cycle == 0)):
 
         edges_gdf['length'] = edges_gdf['geometry'].length # recomputing length, to account for small changes
         cycle += 1
@@ -413,7 +419,7 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_islands = True
             
         # edges with different geometries but same u-v nodes pairs
         if same_vertexes_edges:
-            edges_gdf = simplify_same_vertexes_edges(edges_gdf)
+            edges_gdf = simplify_same_vertexes_edges(edges_gdf, preserve_direction)
   
         # only keep nodes which are actually used by the edges in the GeoDataFrame
         to_keep = list(set(list(edges_gdf['u'].unique()) + list(edges_gdf['v'].unique())))
@@ -479,6 +485,8 @@ def add_fixed_edges(edges_gdf, to_fix_gdf):
     # concatenate the dataframes and assign to edges_gdf
     edges_gdf = pd.concat([edges_gdf, rows], ignore_index=True)
     edges_gdf.drop(['u', 'v', 'to_fix', 'fixing', 'coords'], inplace=True, axis=1)
+    edges_gdf['length'] = edges_gdf.geometry.length
+    edges_gdf['edgeID'] = edges_gdf.index
     nodes_gdf = obtain_nodes_gdf(edges_gdf, edges_gdf.crs)
     nodes_gdf, edges_gdf = join_nodes_edges_by_coordinates(nodes_gdf, edges_gdf)
     
