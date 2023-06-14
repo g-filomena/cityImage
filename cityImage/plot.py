@@ -221,7 +221,7 @@ def plot_gdf(gdf, column = None, title = None, black_background = True, figsize 
                 zorder = zorder, legend = legend)
 
     if cbar:
-        generate_colorbar(plot = multiPlot, cmap = cmap, norm = norm, cbar_ticks = cbar_ticks, cbar_max_symbol = cbar_max_symbol, cbar_min_max = cbar_min_max, 
+        generate_colorbar(plot = plot, cmap = cmap, norm = norm, cbar_ticks = cbar_ticks, cbar_max_symbol = cbar_max_symbol, cbar_min_max = cbar_min_max, 
                     cbar_shrink = cbar_shrink)
     elif legend: 
         generate_legend_ax(ax, plot) 
