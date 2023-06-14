@@ -32,6 +32,8 @@ def get_coord_angle(origin, distance, angle):
     coord = (origin[0] + disp_x, origin[1] + disp_y)
     return coord
 
+class Error(Exception):
+    """Base class for other exceptions"""
 class AngleError(Error):
     """Raised when not-intersecting lines are provided for computing angles"""
 
@@ -252,6 +254,5 @@ def angle_line_geometries(line_geometryA, line_geometryB, degree = False, calcul
         angle = angle_deg
     return angle
 
-class Error(Exception):
-    """Base class for other exceptions"""
+
     
