@@ -53,7 +53,7 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
     
     download_method_dict = {
         'distance_from_address': ox.graph_from_address,
-        'distance_from_point': ox.graph_from_point
+        'distance_from_point': ox.graph_from_point,
         'OSMplace': ox.graph_from_place,
         'polygon': ox.graph_from_polygon
     }
