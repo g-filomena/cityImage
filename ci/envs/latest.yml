@@ -10,7 +10,6 @@ dependencies:
   - matplotlib
   - python-louvain
   - mapclassify
-  - tqdm
   # testing
   - pytest
   - pytest-cov
