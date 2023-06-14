@@ -5,7 +5,7 @@ import geopandas as gpd
 
 from shapely.geometry import Point, LineString, Polygon, MultiPolygon, MultiLineString
 from shapely.ops import cascaded_union, linemerge, polygonize, polygonize_full, unary_union, nearest_points
-from .utilities import gdf_from_geometries
+from .utilities import gdf_from_geometries, downloader
 pd.set_option("display.precision", 3)
 
 def road_barriers(place, download_method, distance = 500.0, epsg = None, include_primary = False, include_secondary = False):
@@ -48,7 +48,7 @@ def road_barriers(place, download_method, distance = 500.0, epsg = None, include
             to_keep.append('secondary')
 
     tags = {'highway': True}
-    roads = _download_geometries(place, download_method, tags, crs, distance)
+    roads = downloader(place = place, download_method = download_method, tags = tags, distance = distance).to_crs(crs)
     roads = roads[roads.highway.isin(to_keep)]
     # exclude tunnels
     if "tunnel" in roads.columns:
@@ -90,11 +90,11 @@ def water_barriers(place, download_method, distance = 500.0, lakes_area = 1000, 
     """
     
     crs = 'EPSG:' + str(epsg)
-    tags =  {"waterway": True, "natural": "water", "natural":"coastline"}
+    tags = {"waterway": True, "natural": "water", "natural":"coastline"}
     
     # rivers
     tags = {"waterway":True}  
-    rivers = _download_geometries(place, download_method, tags, crs, distance)
+    rivers = downloader(place = place, download_method = download_method, tags = tags, distance = distance).to_crs(crs)
     rivers = rivers[(rivers.waterway == 'river') | (rivers.waterway == 'canal')]
     rivers = rivers.unary_union
     rivers = _simplify_barrier(rivers)
@@ -102,7 +102,7 @@ def water_barriers(place, download_method, distance = 500.0, lakes_area = 1000, 
     
     # lakes   
     tags = {"natural":"water"}
-    lakes = _download_geometries(place, download_method, tags, crs, distance)  
+    lakes = downloader(place = place, download_method = download_method, tags = tags, distance = distance).to_crs(crs)
     to_remove = ['river', 'stream', 'canal', 'riverbank', 'reflecting_pool', 'reservoir', 'bay']
     lakes = lakes[~lakes.water.isin(to_remove)]
     lakes['area'] = lakes.geometry.area
@@ -114,7 +114,7 @@ def water_barriers(place, download_method, distance = 500.0, lakes_area = 1000, 
     
     # sea   
     tags = {"natural":"coastline"}
-    sea = _download_geometries(place, download_method, tags, crs, distance)
+    sea = downloader(place = place, download_method = download_method, tags = tags, distance = distance).to_crs(crs)
     sea = sea.unary_union      
     sea = _simplify_barrier(sea)
     sea = gdf_from_geometries(sea, crs)
@@ -158,7 +158,7 @@ def railway_barriers(place, download_method, distance = 500.0, epsg = None, keep
     
     crs = 'EPSG:' + str(epsg)
     tags = {"railway":"rail"}
-    railways = _download_geometries(place, download_method, tags, crs, distance)
+    railways = downloader(place = place, download_method = download_method, tags = tags, distance = distance).to_crs(crs)
     # removing light_rail, in case
     if not keep_light_rail:
         railways = railways[railways.railway != 'light_rail']
@@ -206,8 +206,7 @@ def park_barriers(place, download_method, distance = 500.0, epsg = None, min_are
 
     crs = 'EPSG:' + str(epsg)
     tags = {"leisure": True}
-    parks_poly = _download_geometries(place, download_method, tags, crs, distance)
-    
+    parks_poly = downloader(place = place, download_method = download_method, tags = tags, distance = distance).to_crs(crs)
     parks_poly = parks_poly[parks_poly.leisure == 'park']
     parks_poly = parks_poly[~parks_poly['geometry'].is_empty] 
     parks_poly['area'] = parks_poly.geometry.area
@@ -222,55 +221,7 @@ def park_barriers(place, download_method, distance = 500.0, epsg = None, min_are
     park_barriers = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
     
     return park_barriers     
-
-def _download_geometries(place, download_method, tags, crs, distance = 500.0):
-    """
-    The function downloads certain geometries from OSM, by means of OSMNX functions.
-    It returns a GeoDataFrame, that could be empty when no geometries are found, with the provided tags.
-    
-    Parameters
-    ----------
-    place: str, tuple, Shapely Polygon
-        Name of cities or areas in OSM: 
-        - when using "distance_from_point" please provide a (lat, lon) tuple to create the bounding box around it; 
-        - when using "distance_from_address" provide an existing OSM address; 
-        - when using "OSMplace" provide an OSM place name. The query must be geocodable and OSM must have polygon boundaries for the geocode result.  
-        - when using "polygon" please provide a Shapely Polygon in unprojected latitude-longitude degrees (EPSG:4326) CRS;
-    download_method: str, {"distance_from_address", "distance_from_point", "OSMplace", "polygon"}
-        It indicates the method that should be used for downloading the data.
-    tag: dict 
-        The desired OSMN tags.
-    crs: str
-        The coordinate system of the case study area.
-    distance: float
-        Used when download_method == "distance from address" or == "distance from point".
-        
-    Returns
-    -------
-    geometries_gdf: GeoDataFrame
-        The resulting GeoDataFrame.
-    """    
-    download_options = {"distance_from_address", "distance_from_point", "OSMpolygon", "OSMplace"}
-    if download_method not in download_options:
-        raise downloadError('Provide a download method amongst {}'.format(download_options))
-    
-    download_method_dict = {
-        'distance_from_address': ox.geometries_from_address,
-        'distance_from_point': ox.geometries_from_point,
-        'OSMplace': ox.geometries_from_place,
-        'polygon': ox.geometries_from_polygon
-    }
-    
-    download_func = download_method_dict.get(download_method)
-    if download_func:
-        if download_method in ['distance_from_address', 'distance_from_point']
-            geometries_gdf = download_func(place, tags = tags, dist = distance)
-        else:
-            geometries_gdf = download_func(place, tags = tags)
-
-    geometries_gdf = geometries_gdf.to_crs(crs)
-    return geometries_gdf
-      
+     
 def along_water(edges_gdf, barriers_gdf):
     """
     The function assigns to each street segment in a GeoDataFrame the list of barrierIDs corresponding to waterbodies which lay along the street segment. 
@@ -386,7 +337,6 @@ def _within_parks(line_geometry, park_polygons):
     within: List
         A list of street segments within a given park's polygon.
     """  
-        
     park_sindex = park_polygons.sindex
     possible_matches_index = list(park_sindex.intersection(line_geometry.bounds))
     possible_matches = park_polygons.iloc[possible_matches_index]
@@ -486,9 +436,7 @@ def get_barriers(place, download_method, distance = 500.0, epsg = None, parks_mi
     barriers_gdf = pd.concat([rb, wb, ryb, pb])
     barriers_gdf.reset_index(inplace = True, drop = True)
     barriers_gdf['barrierID'] = barriers_gdf.index.astype(int)
-
     return barriers_gdf
-   
    
 def _simplify_barrier(geometries):
     """
@@ -515,11 +463,5 @@ def _simplify_barrier(geometries):
         features = list(geometries.boundary.geoms)
     else:
         return []
-    
     return features
-        
-class Error(Exception):
-    """Base class for other exceptions"""
-
-class downloadError(Error):
-    """Raised when a wrong download method is provided"""
+ 
