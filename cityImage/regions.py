@@ -288,7 +288,7 @@ def _assign_district_to_node_from_polygons(node_geometry, partitions_gdf, column
     return district        
     
 def amend_nodes_membership(nodes_gdf, edges_gdf, column, min_size_district = 10):
-"""
+    """
     Amend the membership of nodes to districts based on connectivity and minimum district size.
     
     Parameters
@@ -318,7 +318,7 @@ def amend_nodes_membership(nodes_gdf, edges_gdf, column, min_size_district = 10)
     return nodes_gdf
 
 def _amend_node_membership(nodeID, nodes_gdf, edges_gdf, column):
-   """
+    """
     Amend the membership of a specific node to a district based on connectivity and neighboring nodes' districts.
 
     Parameters
@@ -337,7 +337,6 @@ def _amend_node_membership(nodeID, nodes_gdf, edges_gdf, column):
     new_district: int
         The amended district membership for the specified node.
     """  
-
     # check if the current district membership of the node is not 999999, in which case return the existing membership without any changes
     if nodes_gdf.loc[nodeID][column] != 999999: 
         return nodes_gdf.loc[nodeID][column]
@@ -361,8 +360,8 @@ def _amend_node_membership(nodeID, nodes_gdf, edges_gdf, column):
     if districts_sorted.iloc[0] > districts_sorted.iloc[1]: 
         return districts_sorted.idxmax()
     
-    # if there's more than a winnter select a subset of tmp_nodes based on their district membership. It filters the nodes by checking if their district membership is in the top two districts, as determined by districts_sorted. 
-    This filters the nodes to consider only those belonging to the two districts with the highest counts.
+    # if there's more than a winnter select a subset of tmp_nodes based on their district membership. 
+    # this filters the nodes to consider only to those belonging to the two districts with the highest counts.
     # keep the first two and the corresponding nodes and find the final best district on the basis of Euclidean distance
     tmp_nodes = tmp_nodes[tmp_nodes[column].isin(list(districts_sorted[0:2].index))]
     closest_ix = min_distance_geometry_gdf(nodes_gdf.loc[nodeID].geometry, tmp_nodes)[1]
