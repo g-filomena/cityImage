@@ -10,13 +10,9 @@ from scipy.sparse import linalg
 pd.set_option("display.precision", 3)
 
 import concurrent.futures
-
-from .utilities import scaling_columnDF, polygon_2d_to_3d
+from .utilities import scaling_columnDF, polygon_2d_to_3d, downloader
 from .angles import get_coord_angle
 
-def downloadError(Exception):
-    pass
- 
 def get_buildings_fromFile(path, epsg, case_study_area = None, distance_from_center = 1000, height_field = None, base_field = None, 
     land_use_field = None):
     """    
@@ -110,25 +106,9 @@ def get_buildings_fromOSM(place, download_method: str, epsg = None, distance = 1
         The buildings GeoDataFrame.
     """   
     columns_to_keep = ['amenity', 'building', 'geometry', 'historic', 'land_use_raw']
-    download_options = {"distance_from_address", "distance_from_point", "OSMplace", "polygon"}
-    if download_method not in download_options:
-        raise downloadError('Provide a download method amongst {}'.format(download_options))
-    
-    download_method_dict = {
-        'distance_from_address': ox.geometries_from_address,
-        'distance_from_point': ox.geometries_from_point,
-        'OSMplace': ox.geometries_from_place,
-        'polygon': ox.geometries_from_polygon
-    }
-    
     tags = {"building": True}
-    download_func = download_method_dict.get(download_method)
-    if download_func:
-        if download_method in ['distance_from_address', 'distance_from_point']
-            buildings_gdf = download_func(place, tags = tags, dist = distance)
-        else:
-            buildings_gdf = download_func(place, tags = tags)
-   
+    buildings_gdf = downloader(place = place, download_method = download_method, tags = tags, distance = distance)
+    
     if epsg is None:
         buildings_gdf = ox.projection.project_gdf(buildings_gdf)
     else:
@@ -505,23 +485,8 @@ def get_historical_buildings_fromOSM(place, download_method, epsg = None, distan
     """   
     
     columns = ['geometry', 'historic']
-    download_options = {"distance_from_address", "distance_from_point", "OSMplace", "polygon"}
-    if download_method not in download_options:
-        raise downloadError('Provide a download method amongst {}'.format(download_options))
-    
-    download_method_dict = {
-        'distance_from_address': ox.geometries_from_address,
-        'distance_from_point': ox.geometries_from_point,
-        'OSMplace': ox.geometries_from_place,
-        'polygon': ox.geometries_from_polygon
-    }
     tags = {"building": True}
-    download_func = download_method_dict.get(download_method)
-    if download_func:
-        if download_method in ['distance_from_address', 'distance_from_point']
-            historic_buildings = download_func(place, tags = tags, dist = distance)
-        else:
-            historic_buildings = download_func(place, tags = tags)
+    historic_buildings = downloader(place = place, download_method = download_method, tags = tags, distance = distance)
     
     if 'heritage' in historic_buildings:
         columns.append('heritage')
@@ -878,9 +843,3 @@ def compute_local_scores(buildings_gdf, local_indexes_weights, local_components_
     buildings_gdf["lScore_sc"] = scaling_columnDF(buildings_gdf["lScore"])
     
     return buildings_gdf
-    
-class Error(Exception):
-    """Base class for other exceptions"""
-
-class downloadError(Error):
-    """Raised when a wrong download method is provided"""
