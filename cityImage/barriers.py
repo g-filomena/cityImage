@@ -256,7 +256,7 @@ def _download_geometries(place, download_method, tags, crs, distance = 500.0):
     
     download_method_dict = {
         'distance_from_address': ox.geometries_from_address,
-        'distance_from_point': ox.geometries_from_point
+        'distance_from_point': ox.geometries_from_point,
         'OSMplace': ox.geometries_from_place,
         'polygon': ox.geometries_from_polygon
     }
