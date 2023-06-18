@@ -11,9 +11,9 @@ setup(
     long_description = readme,
     long_description_content_type="text/markdown",
     packages=find_packages(),
-    version="0.14",
+    version="1.0",
     author="Gabriele Filomena",
-    author_email="gabriele.filomena@uni-muenster.de",
+    author_email="gabriele.filomena@liverpool.ac.uk",
     install_requires=requirements,
-    keywords=["pip","urban Form Analysis","Computational Image of the City", "Kevin Lynch", "cognitive map"],
+    keywords=["urban Form Analysis","Computational Image of the City", "Kevin Lynch", "cognitive maps"],
     )
