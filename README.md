@@ -6,7 +6,7 @@
 # cityImage
 
 **A tool for analysing urban legibility and extracting The Computational Image of the City**
-For full documentation see [the user manual](https://cityimage-docs.readthedocs.io/en/latest/).
+For full documentation and examples see [the user manual](https://cityimage-docs.readthedocs.io/en/latest/).
 
 This repository provides a set of functions to extract salient urban features in line with the definitions laid down by Kevin Lynch in [The Image of The City](https://mitpress.mit.edu/books/image-city) using open and freely available geospatial datasets.
 The methods are fully documented in *A Computational approach to The Image of the City* by Filomena, Verstegen, and Manley, published in [Cities](https://doi.org/10.1016/j.cities.2019.01.006).
