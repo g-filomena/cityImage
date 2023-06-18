@@ -23,3 +23,4 @@ The methods are fully documented in *A Computational approach to The Image of th
 .. code-block:: shell
 
     pip install cityImage
+.. code-block:: shell
