@@ -81,7 +81,7 @@ def get_buildings_fromFile(path, epsg, case_study_area = None, distance_from_cen
     
 def get_buildings_fromOSM(place, download_method: str, epsg = None, distance = 1000):
     """    
-    The function downloads and cleans buildings footprint geometries and create a buildings GeoDataFrames for the area of interest.
+    The function downloads and cleans building footprint geometries and create a buildings GeoDataFrames for the area of interest.
     The function exploits OSMNx functions for downloading the data as well as for projecting it.
     The land use classification for each building is extracted. Only relevant columns are kept.   
             
@@ -459,9 +459,8 @@ def facade_area(building_geometry, building_height):
  
 def get_historical_buildings_fromOSM(place, download_method, epsg = None, distance = 1000):
     """    
-    The function downloads and cleans buildings footprint geometries and create a buildings GeoDataFrames for the area of interest.
-    The function exploits OSMNx functions for downloading the data as well as for projecting it.
-    The land use classification for each building is extracted. Only relevant columns are kept.   
+    The function downloads and cleans building footprint geometries and create a buildings GeoDataFrames for the area of interest.
+    However, it only keeps the buildings that are considered historical buildings or heritage buildings in OSM. 
             
     Parameters
     ----------
