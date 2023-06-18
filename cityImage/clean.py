@@ -364,7 +364,7 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_islands = True
     self_loops: bool
         When true, removes genuine self-loops.
     fix_topology: bool
-        When true, it breaks lines at intersections with other lines in the streets GeoDataFrame, apart from segments categorised as bridges or tunnels in OSM.
+        When true, it breaks lines at intersections with other lines in the streets GeoDataFrame.
     preserve_direction: bool
         When true, it does not consider segments with same coordinates list, but different directions, as identical. When false, it does and therefore
         considers them as duplicated geometries.
