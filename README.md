@@ -20,7 +20,5 @@ It is built [GeoPandas](https://github.com/geopandas/geopandas), [NetworkX](http
 The methods are fully documented in *A Computational approach to The Image of the City* by Filomena, Verstegen, and Manley, published in [Cities](https://doi.org/10.1016/j.cities.2019.01.006).
 
 ## How to install *cityImage*
-.. code-block:: shell
 
     pip install cityImage
-.. code-block:: shell
