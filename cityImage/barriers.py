@@ -44,7 +44,7 @@ def road_barriers(place, download_method, distance = 500.0, epsg = None, include
     to_keep = ['trunk', 'motorway']
     if include_primary:
         to_keep.append('primary')
-        if include_primary:
+        if include_secondary:
             to_keep.append('secondary')
 
     tags = {'highway': True}
