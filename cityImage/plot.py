@@ -155,7 +155,7 @@ def plot_gdf(gdf, column = None, title = None, black_background = True, figsize 
     geometry_size: float
         Point size value when plotting a Point GeoDataFrame or Width value when plotting LineString GeoDataFrame.
     geometry_size_columns: List of str
-        The column name in the GeoDataFrame to be used for scaling the geometry size.
+        The column name in the GeoDataFrame to be used for scaling for manipulating the geometry size.
     geometry_size_factor: float
         Rescaling factor for the column provided, if any. The column is rescaled from 0 to 1, and the
         geometry_size_factor is used to rescale the marker size accordingly
