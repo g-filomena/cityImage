@@ -625,7 +625,7 @@ def fix_self_loops(nodes_gdf, edges_gdf):
     to_fix = edges_gdf[edges_gdf['fixing'] == True].copy()
     edges_gdf = edges_gdf[edges_gdf['fixing'] == False]
     if len(to_fix) == 0:
-        return edges_gdf
+        return nodes_gdf, edges_gdf
     return add_fixed_edges(edges_gdf, to_fix)    
     
 def remove_disconnected_islands(nodes_gdf, edges_gdf, nodeID):
