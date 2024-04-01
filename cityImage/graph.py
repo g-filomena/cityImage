@@ -1,5 +1,7 @@
 import warnings
 warnings.simplefilter(action="ignore", category=FutureWarning)
+
+
 import osmnx as ox
 import pandas as pd
 import numpy as np
@@ -153,7 +155,7 @@ def dual_gdf(nodes_gdf, edges_gdf, epsg, oneway = False, angle = None):
     if epsg is None: 
         crs = nodes_gdf.crs
     else: 
-        crs = {'init': 'epsg:' + str(epsg)}
+        crs = 'EPSG:' + str(epsg)
     nodes_dual = gpd.GeoDataFrame(centroids_data, crs=crs, geometry=centroids_gdf['centroid'])
     nodes_dual['x'], nodes_dual['y'] = [x.coords.xy[0][0] for x in centroids_gdf['centroid']],[y.coords.xy[1][0] for y in centroids_gdf['centroid']]
     nodes_dual.index = nodes_dual.edgeID
