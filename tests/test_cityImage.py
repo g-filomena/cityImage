@@ -18,7 +18,7 @@ download_method = 'OSMplace'
 epsg_york = 2019
 epsg_susa = 3003
 OSMPolygon = 'Susa (44287)'
-address = 'Susa, via Roma 1'
+address = 'Susa, Corso Francia'
 distance = 1500
 location = (45.1383, 7.0509)
 
