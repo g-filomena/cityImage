@@ -55,10 +55,10 @@ def downloader(place, download_method, tags = None, distance = 500.0, downloadin
         raise downloadError('Provide a download method amongst {}'.format(download_options))
 
     download_method_dict = {
-        'distance_from_address': ox.geometries_from_address,
-        'distance_from_point': ox.geometries_from_point,
-        'OSMplace': ox.geometries_from_place,
-        'polygon': ox.geometries_from_polygon
+        'distance_from_address': ox.features_from_address,
+        'distance_from_point': ox.features_from_point,
+        'OSMplace': ox.features_from_place,
+        'polygon': ox.features_from_polygon
         }
     if downloading_graph:
         download_method_dict = {
@@ -82,8 +82,8 @@ def downloader(place, download_method, tags = None, distance = 500.0, downloadin
                     G = download_func(place, network_type = network_type, simplify = True)
                 else:
                     geometries_gdf = download_func(place, tags = tags) 
-    except ox._errors.EmptyOverpassResponse:
-        # Handle the EmptyOverpassResponse error by returning an empty GeoDataFrame
+    except ox._errors.InsufficientResponseError:
+        # Handle the InsufficientResponseError error by returning an empty GeoDataFrame
         geometries_gdf = gpd.GeoDataFrame(columns=['id', 'geometry'], geometry='geometry').set_crs('EPSG:4326')
         if downloading_graph:
             G=nx.empty_graph()
@@ -312,7 +312,7 @@ def envelope_wgs(gdf):
     project = partial(
         pyproj.transform,
         pyproj.Proj(gdf.crs), # source coordinate system
-        pyproj.Proj(init='epsg:4326')) # destination coordinate system
+        pyproj.Proj('epsg:4326')) # destination coordinate system
 
     envelope_wgs = transform(project, envelope)
     return envelope_wgs 
@@ -334,7 +334,7 @@ def convex_hull_wgs(gdf):
     project = partial(
         pyproj.transform,
         pyproj.Proj(gdf.crs), # source coordinate system
-        pyproj.Proj(init='epsg:4326')) # destination coordinate system
+        pyproj.Proj('epsg:4326')) # destination coordinate system
 
     convex_hull_wgs = transform(project, convex_hull)
     return convex_hull_wgs      
