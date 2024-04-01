@@ -52,7 +52,7 @@ def road_barriers(place, download_method, distance = 500.0, epsg = None, include
     roads = roads[roads.highway.isin(to_keep)]
     # exclude tunnels
     if "tunnel" in roads.columns:
-        roads['tunnel'].fillna(0, inplace=True)
+        roads['tunnel'] = roads['tunnel'].fillna(0)
         roads = roads[roads.tunnel == 0]
         
     roads = roads.unary_union
@@ -163,7 +163,7 @@ def railway_barriers(place, download_method, distance = 500.0, epsg = None, keep
     if not keep_light_rail:
         railways = railways[railways.railway != 'light_rail']
     if "tunnel" in railways.columns:
-        railways['tunnel'].fillna(0, inplace=True)
+        railways['tunnel'] = railways['tunnel'].fillna(0)
         railways = railways[railways.tunnel == 0]
         
     r = railways.unary_union
