@@ -59,6 +59,8 @@ class Plot():
         rect.set_facecolor("black" if black_background else "white")      
         if title is not None:
             self.fig.suptitle(title, color = self.text_color, fontsize = self.font_size_primary, fontfamily = 'Times New Roman')
+            
+        self.fig.tight_layout();
                
 class MultiPlot():
     """
@@ -110,6 +112,7 @@ class MultiPlot():
         if title is not None:
             self.fig.suptitle(title, color = self.text_color, fontsize = self.font_size_primary, fontfamily = 'Times New Roman', 
                          ha = 'center', va = 'center') 
+        self.fig.tight_layout();
               
 def plot_gdf(gdf, column = None, title = None, black_background = True, figsize = (15,15), scheme = None, bins = None, 
             classes = None, norm = None, cmap = None, color = None, alpha = None, geometry_size = 1.0, 
