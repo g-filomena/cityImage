@@ -432,9 +432,10 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_islands = True
         nodes_gdf, edges_gdf = remove_disconnected_islands(nodes_gdf, edges_gdf, 'nodeID')
     
     nodes_gdf['x'], nodes_gdf['y'] = list(zip(*[(r.coords[0][0], r.coords[0][1]) for r in nodes_gdf.geometry]))
-    edges_gdf.drop(['coords', 'tmp', 'code'], axis = 1, inplace = True, errors = 'ignore') # remove temporary columns
+    
     nodes_gdf['nodeID'] = nodes_gdf.nodeID.astype(int)
     edges_gdf = correct_edges(nodes_gdf, edges_gdf) # correct edges coordinates
+    edges_gdf.drop(['coords', 'tmp', 'code', 'wkt', 'fixing', 'to_fix'], axis = 1, inplace = True, errors = 'ignore') # remove temporary columns
     edges_gdf['length'] = edges_gdf['geometry'].length
     edges_gdf.set_index('edgeID', drop = False, inplace = True, append = False)
     nodes_gdf, edges_gdf = reset_index_graph_gdfs(nodes_gdf, edges_gdf, nodeID = "nodeID")
