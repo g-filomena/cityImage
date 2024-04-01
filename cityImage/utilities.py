@@ -4,6 +4,7 @@ import geopandas as gpd
 import math
 import pyproj
 import osmnx as ox
+import networkx as nx
 
 from typing import List
 from math import sqrt
@@ -11,7 +12,6 @@ from shapely.geometry import LineString, Point, Polygon, MultiPoint, mapping
 from shapely.ops import unary_union, transform, nearest_points, split, linemerge
 from shapely.affinity import scale
 from shapely.geometry.base import BaseGeometry
-from functools import partial
 import pyvista as pv
 pd.set_option("display.precision", 3)
 
@@ -82,6 +82,7 @@ def downloader(place, download_method, tags = None, distance = 500.0, downloadin
                     G = download_func(place, network_type = network_type, simplify = True)
                 else:
                     geometries_gdf = download_func(place, tags = tags) 
+                    
     except ox._errors.InsufficientResponseError:
         # Handle the InsufficientResponseError error by returning an empty GeoDataFrame
         geometries_gdf = gpd.GeoDataFrame(columns=['id', 'geometry'], geometry='geometry').set_crs('EPSG:4326')
@@ -309,12 +310,10 @@ def envelope_wgs(gdf):
         The resulting envelope.
     """
     envelope = gdf.unary_union.envelope.buffer(100)
-    project = partial(
-        pyproj.transform,
-        pyproj.Proj(gdf.crs), # source coordinate system
-        pyproj.Proj('epsg:4326')) # destination coordinate system
-
-    envelope_wgs = transform(project, envelope)
+    
+    # Define a transformer for projecting from the GeoDataFrame's CRS to WGS84
+    transformer = pyproj.Transformer.from_crs(gdf.crs, 'epsg:4326', always_xy=True)
+    envelope_wgs = transform(transformer.transform, envelope)
     return envelope_wgs 
     
 def convex_hull_wgs(gdf):
@@ -330,13 +329,14 @@ def convex_hull_wgs(gdf):
     convex_hull_wgs: Polygon
         The resulting hexagon.
     """
+    # Compute the convex hull without buffering
     convex_hull = gdf.unary_union.convex_hull
-    project = partial(
-        pyproj.transform,
-        pyproj.Proj(gdf.crs), # source coordinate system
-        pyproj.Proj('epsg:4326')) # destination coordinate system
 
-    convex_hull_wgs = transform(project, convex_hull)
+    # Define a transformer for projecting from the GeoDataFrame's CRS to WGS84
+    transformer = pyproj.Transformer.from_crs(gdf.crs, 'epsg:4326', always_xy=True)
+    
+    # Apply the transformation
+    convex_hull_wgs = transform(transformer.transform, convex_hull)
     return convex_hull_wgs      
         
 def rescale_ranges(n, range1, range2):
@@ -495,7 +495,27 @@ def fix_multiparts_LineString_gdf(gdf):
             gdf = gdf.append(multi_gdf, ignore_index=True)
 
     return gdf
-    
+ 
+def remove_lists_columns(df):
+    """
+    For each cell in the DataFrame, if the cell contains a list, update it to keep only the first element of the list.
+
+    Parameters
+    ----------
+    df: DataFrame
+        The input DataFrame.
+
+    Returns
+    -------
+    df: DataFrame
+        A DataFrame with the transformation applied to the relevant cells.
+    """
+    df = df.copy()
+    for column in df.columns:
+        df[column] = df[column].apply(lambda x: x[0] if isinstance(x, list) and len(x) > 0 else x)
+        
+    return df
+  
 def polygon_2d_to_3d(building_polygon, base, height):
     """
     Convert a 2D polygon to a 3D polygon. This function takes a 2D polygon (building_polygon) and extrudes it into 3D space, creating a pv.PolyData,
