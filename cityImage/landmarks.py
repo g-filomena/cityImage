@@ -514,7 +514,7 @@ def get_historical_buildings_fromOSM(place, download_method, epsg = None, distan
        
     return historic_buildings
  
-def cultural_score(buildings_gdf, historical_elements_gdf = pd.DataFrame({'a': []}), historical_score = None, from_OSM = False, ):
+def cultural_score(buildings_gdf, historical_elements_gdf = pd.DataFrame({'a': []}), historical_score = None, from_OSM = False):
     """
     The function computes the "Cultural Landmark Component" based on the number of features listed in historical/cultural landmarks datasets. It can be
     obtained either on the basis of a score given by the data-provider or on the number of features intersecting the buildings object 
@@ -543,8 +543,10 @@ def cultural_score(buildings_gdf, historical_elements_gdf = pd.DataFrame({'a': [
     buildings_gdf["cult"] = 0
     # using OSM binary value
     if (from_OSM) & ("historic" in buildings_gdf.columns):
-        buildings_gdf["historic"][buildings_gdf["historic"].isnull()] = 0
-        buildings_gdf["historic"][buildings_gdf["historic"] != 0] = 1
+        # Set 'historic' column to 0 where it is currently null
+        buildings_gdf.loc[buildings_gdf["historic"].isnull(), "historic"] = 0
+        # Set 'historic' column to 1 where it is not 0
+        buildings_gdf.loc[buildings_gdf["historic"] != 0, "historic"] = 1
         buildings_gdf["cult"] = buildings_gdf["historic"]
         return buildings_gdf
     
