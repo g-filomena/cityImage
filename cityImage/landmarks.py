@@ -122,13 +122,19 @@ def get_buildings_fromOSM(place, download_method: str, epsg = None, distance = 1
     # remove the empty geometries
     buildings_gdf = buildings_gdf[~buildings_gdf['geometry'].is_empty]
     # replace 'yes' with NaN in 'building' column
-    buildings_gdf['building'].replace('yes', np.nan, inplace=True)
+    buildings_gdf['building'] = buildings_gdf['building'].replace('yes', np.nan)
     # fill missing values in 'building' column with 'amenity' values
-    buildings_gdf['building'].fillna(value=buildings_gdf['amenity'], inplace=True)
+    buildings_gdf['building'] = buildings_gdf['building'].fillna(value=buildings_gdf['amenity'])
+
     # fill missing values in 'land_use_raw' column with 'building' values
-    buildings_gdf['land_use_raw'].fillna(value=buildings_gdf['building'], inplace=True)
+    # Create a mask for rows where the 'building' column is NA
+    mask = buildings_gdf['building'].isna()
+    # Use the mask to assign values from 'amenity' to 'building' only where 'building' is NA
+    buildings_gdf.loc[mask, 'building'] = buildings_gdf.loc[mask, 'amenity']
+
+    buildings_gdf['land_use_raw'] = buildings_gdf['land_use_raw'].fillna(value=buildings_gdf['building'])
     # fill remaining missing values in 'land_use_raw' column with 'residential'
-    buildings_gdf['land_use_raw'].fillna(value='residential', inplace=True)
+    buildings_gdf['land_use_raw'] = buildings_gdf['land_use_raw'].fillna(value='residential')
 
     buildings_gdf = buildings_gdf[['geometry', 'historic', 'land_use_raw']]
     buildings_gdf['area'] = buildings_gdf.geometry.area
