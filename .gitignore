@@ -3,6 +3,8 @@
 /.ipynb_checkpoints
 /__pycache__
 /tests/cache
+/docs/notebooks/cache
+/docs/notebooks/.ipynb_checkpoints
 /cache
 
 .temp
