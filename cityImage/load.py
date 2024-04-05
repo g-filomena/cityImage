@@ -65,14 +65,22 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
                
     # columns to keep (u and v represent "from" and "to" node)
     nodes_gdf = nodes_gdf[["nodeID","x","y","geometry"]]
-    edges_gdf = edges_gdf[["edgeID", "u", "v", "key", "geometry", "length", "highway", "oneway", "lanes", "name", "bridge", "tunnel"]]
     
-    edges_gdf["oneway"] *= 1
+    to_keep = ["edgeID", "u", "v", "key", "geometry", "length"]
+    for column in ["lanes", "bridge", "tunnel", "highway", "oneway"]:
+        if column in edges_gdf.columns:
+            to_keep.append(column)
+            if column == "oneway":
+                edges_gdf["oneway"] *= 1
+    
+    edges_gdf = edges_gdf[to_keep]
     
     # resolving lists 
     for column in ['highway', 'name']:
         edges_gdf[column] = [x[0] if isinstance(x, list) else x for x in edges_gdf[column]]
     for column in ['lanes', 'bridge', 'tunnel']:
+        if column not in edges_gdf.columns:
+            continue
         edges_gdf[column] = [max(x) if isinstance(x, list) else x for x in edges_gdf[column]]
        
     # finalising geodataframes
