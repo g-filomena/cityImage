@@ -82,6 +82,9 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
         if column not in edges_gdf.columns:
             continue
         edges_gdf[column] = [max(x) if isinstance(x, list) else x for x in edges_gdf[column]]
+        if column in ["bridge", "tunnel"]:
+            edges_gdf[column]  = edges_gdf[column].apply(lambda x: 0 if pd.isna(x) or x is False else 1)
+
        
     # finalising geodataframes
     if epsg is None: 
@@ -95,7 +98,7 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
         nodes_gdf['z'] = [geometry.coords[0][2] for geometry in nodes_gdf.geometry]
     else: 
         nodes_gdf['z'] = 2.0
-        
+    
     return nodes_gdf, edges_gdf
 
 def get_network_fromFile(path, epsg, dict_columns = {}, other_columns = []):
