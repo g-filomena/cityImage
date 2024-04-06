@@ -76,7 +76,7 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
     edges_gdf = edges_gdf[to_keep]
     
     # resolving lists 
-    for column in ["highway", "name", "oneway"]]:
+    for column in ["highway", "name", "oneway"]:
         edges_gdf[column] = [x[0] if isinstance(x, list) else x for x in edges_gdf[column]]
     for column in ["lanes", "bridge", "tunnel"]:
         if column not in edges_gdf.columns:
