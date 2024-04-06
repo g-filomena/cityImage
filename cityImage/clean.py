@@ -1,6 +1,4 @@
-import warnings
-warnings.simplefilter(action='ignore', category=FutureWarning)
-warnings.simplefilter(action='ignore', category=RuntimeWarning)
+
 
 import networkx as nx
 import pandas as pd
@@ -286,7 +284,7 @@ def prepare_dataframes(nodes_gdf, edges_gdf):
     
     return nodes_gdf, edges_gdf    
     
-def simplify_same_vertexes_edges(edges_gdf, preserve_direction):
+def simplify_same_vertexes_edges(nodes_gdf, edges_gdf, preserve_direction):
     """
     This function is used to simplify edges that have the same start and end point (i.e. 'u' and 'v' values) 
     in the edges_gdf GeoDataFrame. It removes duplicate edges that have similar geometry, keeping only the one 
@@ -333,7 +331,43 @@ def simplify_same_vertexes_edges(edges_gdf, preserve_direction):
         sub_group = edges_gdf.query("code == @code").copy()
              
     edges_gdf = edges_gdf.drop(list(to_drop), axis = 0)
-    return edges_gdf
+    
+    # only keep nodes which are actually used by the edges in the GeoDataFrame
+    to_keep = list(set(list(edges_gdf['u'].unique()) + list(edges_gdf['v'].unique())))
+    nodes_gdf = nodes_gdf[nodes_gdf['nodeID'].isin(to_keep)]
+        
+    return nodes_gdf, edges_gdf
+
+def clean_edges(nodes_gdf, edges_gdf, preserve_direction = False):
+
+    if not preserve_direction:
+        edges_gdf["code"] = np.where(edges_gdf['v'] >= edges_gdf['u'], edges_gdf.u.astype(str)+"-"+edges_gdf.v.astype(str), edges_gdf.v.astype(str)+"-"+edges_gdf.u.astype(str))
+    else:
+        edges_gdf["code"] = edges_gdf.u.astype(str)+"-"+edges_gdf.v.astype(str)
+
+    #eliminate node-lines
+    edges_gdf = edges_gdf[edges_gdf['u'] != edges_gdf['v']] 
+                        
+    # dropping duplicate-geometries edges
+    geometries = edges_gdf['geometry'].apply(lambda geom: geom.wkb)
+    edges_gdf = edges_gdf.loc[geometries.drop_duplicates().index]
+    
+    # dropping edges with same geometry but with coords in different orders (depending on their directions)  
+    # Reordering coordinates to allow for comparison between edges        
+    edges_gdf['coords'] = [list(c.coords) for c in edges_gdf.geometry]
+    if not preserve_direction:
+        condition = ((edges_gdf.u.astype(str)+"-"+edges_gdf.v.astype(str)) != edges_gdf.code)
+        edges_gdf.loc[condition, 'coords'] = pd.Series([x[::-1] for x in edges_gdf.loc[condition]['coords']], index = edges_gdf.loc[condition].index)                                                                               
+    
+    edges_gdf['tmp'] = edges_gdf['coords'].apply(tuple)  
+    edges_gdf.drop_duplicates(['tmp'], keep = 'first', inplace = True)
+    
+    # only keep nodes which are actually used by the edges in the GeoDataFrame
+    to_keep = list(set(list(edges_gdf['u'].unique()) + list(edges_gdf['v'].unique())))
+    nodes_gdf = nodes_gdf[nodes_gdf['nodeID'].isin(to_keep)]
+    
+    return nodes_gdf, edges_gdf
+
 
 def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_islands = True, same_vertexes_edges = True, self_loops = False, fix_topology = False, 
                   preserve_direction = False, nodes_to_keep_regardless = []):
@@ -388,7 +422,9 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_islands = True
         nodes_gdf, edges_gdf = fix_network_topology(nodes_gdf, edges_gdf)
     
     cycle = 0
-    while ((not is_edges_simplified(edges_gdf, preserve_direction) and same_vertexes_edges) | (not is_nodes_simplified(nodes_gdf, edges_gdf, nodes_to_keep_regardless)) | (cycle == 0)):
+    while ((not is_edges_simplified(edges_gdf, preserve_direction) and same_vertexes_edges) |
+            (not is_nodes_simplified(nodes_gdf, edges_gdf, nodes_to_keep_regardless)) |
+            (cycle == 0)):
 
         edges_gdf['length'] = edges_gdf['geometry'].length # recomputing length, to account for small changes
         cycle += 1
@@ -400,33 +436,20 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_islands = True
         if dead_ends: 
             nodes_gdf, edges_gdf = fix_dead_ends(nodes_gdf, edges_gdf)
         
-        #eliminate node-lines
-        edges_gdf = edges_gdf[edges_gdf['u'] != edges_gdf['v']] 
-                            
-        # dropping duplicate-geometries edges
-        geometries = edges_gdf['geometry'].apply(lambda geom: geom.wkb)
-        edges_gdf = edges_gdf.loc[geometries.drop_duplicates().index]
+        nodes_gdf, edges_gdf = clean_edges(nodes_gdf, edges_gdf, preserve_direction) 
         
-        # dropping edges with same geometry but with coords in different orders (depending on their directions)  
-        # Reordering coordinates to allow for comparison between edges        
-        edges_gdf['coords'] = [list(c.coords) for c in edges_gdf.geometry]
-        if not preserve_direction:
-            condition = ((edges_gdf.u.astype(str)+"-"+edges_gdf.v.astype(str)) != edges_gdf.code)
-            edges_gdf.loc[condition, 'coords'] = pd.Series([x[::-1] for x in edges_gdf.loc[condition]['coords']], index = edges_gdf.loc[condition].index)                                                                               
-        
-        edges_gdf['tmp'] = edges_gdf['coords'].apply(tuple, 1)  
-        edges_gdf.drop_duplicates(['tmp'], keep = 'first', inplace = True)
-            
         # edges with different geometries but same u-v nodes pairs
         if same_vertexes_edges:
-            edges_gdf = simplify_same_vertexes_edges(edges_gdf, preserve_direction)
+            nodes_gdf, edges_gdf = simplify_same_vertexes_edges(nodes_gdf, edges_gdf, preserve_direction)
   
-        # only keep nodes which are actually used by the edges in the GeoDataFrame
-        to_keep = list(set(list(edges_gdf['u'].unique()) + list(edges_gdf['v'].unique())))
-        nodes_gdf = nodes_gdf[nodes_gdf['nodeID'].isin(to_keep)]
-        
         # simplify the graph                           
         nodes_gdf, edges_gdf = simplify_graph(nodes_gdf, edges_gdf, nodes_to_keep_regardless) 
+        
+        #eliminate loops
+        if self_loops: 
+            edges_gdf = edges_gdf[edges_gdf['u'] != edges_gdf['v']] 
+        if dead_ends: 
+            nodes_gdf, edges_gdf = fix_dead_ends(nodes_gdf, edges_gdf)
     
     if remove_islands:
         nodes_gdf, edges_gdf = remove_disconnected_islands(nodes_gdf, edges_gdf, 'nodeID')
@@ -658,7 +681,7 @@ def remove_disconnected_islands(nodes_gdf, edges_gdf, nodeID):
         
     return nodes_gdf, edges_gdf
 
-def assign_group_membership_to_islands(graph, edges_gdf):
+def _assign_group_membership_to_islands(graph, edges_gdf):
     """
     Assign group membership to islands in the network by updating the 'group' attribute in the edges GeoDataFrame.
 
