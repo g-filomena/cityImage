@@ -83,7 +83,7 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
             continue
         edges_gdf[column] = [max(x) if isinstance(x, list) else x for x in edges_gdf[column]]
         if column in ["bridge", "tunnel"]:
-            edges_gdf[column]  = edges_gdf[column].apply(lambda x: 0 if pd.isna(x) or x is False else 1)
+            edges_gdf[column] = edges_gdf[column].apply(lambda x: 0 if pd.isna(x) or x is False else 1)
 
        
     # finalising geodataframes
