@@ -17,5 +17,6 @@ from .land_use import*
 from .plot import *
 from .regions import *
 from .utilities import *
+from .visibility import *
 
 __version__ = '0.14'
