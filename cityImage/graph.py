@@ -172,7 +172,7 @@ def dual_gdf(nodes_gdf, edges_gdf, epsg, oneway = False, angle = None):
         for intersecting in getattr(row, 'intersecting'):
             if ((row.Index == intersecting) | ((row.Index, intersecting) in processed) | ((intersecting, row.Index) in processed)): 
                     continue
-            length_intersecting =  getattr(nodes_dual.loc[intersecting], 'length')
+            length_intersecting = getattr(nodes_dual.loc[intersecting], 'length')
             distance = (getattr(row, 'length') + length_intersecting) / 2
             # from the first centroid to the centroid intersecting segment 
             ls = LineString([getattr(row, 'geometry'), getattr(nodes_dual.loc[intersecting], 'geometry')])
@@ -210,7 +210,7 @@ def dual_graph_fromGDF(nodes_dual, edges_dual):
     """
     nodes_dual.set_index('edgeID', drop = False, inplace = True, append = False)
     nodes_dual.index.name = None
-    edges_dual.u, edges_dual.v  = edges_dual.u.astype(int), edges_dual.v.astype(int)
+    edges_dual.u, edges_dual.v = edges_dual.u.astype(int), edges_dual.v.astype(int)
     
     Dg = nx.Graph()   
     Dg.add_nodes_from(nodes_dual.index)
