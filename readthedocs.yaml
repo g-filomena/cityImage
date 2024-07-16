@@ -4,8 +4,9 @@ sphinx:
   configuration: docs/conf.py
 
 formats:
-  - html
-  - pdf
+  - "htmlzip"
+  - "pdf"
+  - "epub"
 
 python:
   version: 3.8
