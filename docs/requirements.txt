@@ -1,3 +1,5 @@
 sphinx
+pydata-sphinx-theme
+nbsphinx
 sphinx-rtd-theme
-myst-parser
+recommonmark
