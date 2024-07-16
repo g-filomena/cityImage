@@ -56,11 +56,11 @@ class Plot():
         self.text_color = "white" if black_background else "black"
         
         rect = self.fig.patch 
-        rect.set_facecolor("black" if black_background else "white")      
+        rect.set_facecolor("black" if black_background else "white")   
+        self.fig.tight_layout(pad=3.0)        
         if title is not None:
             self.fig.suptitle(title, color = self.text_color, fontsize = self.font_size_primary, fontfamily = 'Times New Roman')
             
-        self.fig.tight_layout();
                
 class MultiPlot():
     """
@@ -108,11 +108,10 @@ class MultiPlot():
         rect.set_facecolor("black" if black_background else "white")   
         self.font_size_primary = fontsize
         self.font_size_secondary = fontsize*0.90
-        
+        self.fig.tight_layout(pad=3.0)
         if title is not None:
             self.fig.suptitle(title, color = self.text_color, fontsize = self.font_size_primary, fontfamily = 'Times New Roman', 
                          ha = 'center', va = 'center') 
-        self.fig.tight_layout();
               
 def plot_gdf(gdf, column = None, title = None, black_background = True, figsize = (15,15), scheme = None, bins = None, 
             classes = None, norm = None, cmap = None, color = None, alpha = None, geometry_size = 1.0, 
@@ -327,6 +326,12 @@ def plot_grid_gdfs_column(gdfs = [], column = None, ncols = 1, nrows = 1, titles
     if (cbar) & (not legend):  
         generate_colorbar(plot = multiPlot, cmap = cmap, norm = norm, cbar_ticks = cbar_ticks, cbar_max_symbol = cbar_max_symbol, cbar_min_max = cbar_min_max, 
                     cbar_shrink = cbar_shrink)
+    
+    if (legend) & (scheme == None):
+        # Step 1: Collect unique categories
+        unique_categories = set()
+        for gdf in gdfs:
+            unique_categories = unique_categories.union(set(gdf['land_use'].unique()))
 
     return multiPlot.fig                      
 
@@ -575,9 +580,14 @@ def subplot(ax, n, multiPlot, gdf, column, titles, scheme, bins, classes, norm, 
     legend_ax = False
     legend_fig = False
     
-    if legend:
+    if (legend and scheme != None):
         legend_ax = (n == 1 and scheme == 'User_Defined') or (scheme != 'User_Defined')
         legend_fig = (n == 1 and scheme == 'User_Defined')
+        
+    # categorical legend
+    elif legend:
+        legend_ax = (n == 1)
+        legend_fig = (n == 1)
 
     plotOn_ax(ax, gdf, column = column, scheme = scheme, bins = bins, classes = classes, norm = norm, cmap = cmap, color = color, 
                 alpha = alpha, legend = legend_ax, geometry_size = geometry_size, geometry_size_column = geometry_size_column, 
@@ -587,6 +597,8 @@ def subplot(ax, n, multiPlot, gdf, column, titles, scheme, bins, classes, norm, 
         generate_legend_fig(ax, multiPlot)
     elif legend_ax:
         generate_legend_ax(ax, multiPlot)
+        
+    multiPlot.fig.tight_layout(pad=3.0)  # Adjust layout after adding elements    
 
 def plot_baseMap(gdf = None, ax = None, color = None, geometry_size = None, alpha = 0.5, zorder = 0):
     """
@@ -753,6 +765,3 @@ def set_axes_frame(axes_frame = False, ax = None, black_background = False, text
         ax.spines[spine].set_color(text_color)
     if black_background: 
         ax.set_facecolor('black')
-
-
-        
