@@ -13,9 +13,34 @@ pd.set_option("display.precision", 3)
 from .utilities import dict_to_df
 
 def nodes_dict(ig_graph):
+    """Create a dictionary of node indices and their coordinates from igraph graph.
+
+    Parameters
+    ----------
+    ig_graph : igraph.Graph
+        The igraph Graph object.
+
+    Returns
+    -------
+    dict
+        Dictionary with node indices as keys and tuples of (x, y) coordinates as values.
+    """
     return {v.index: (v['x'], v['y']) for v in ig_graph.vs}
     
 def _assign_attributes_from_nx_to_igraph(nx_graph, ig_graph):
+    """
+    Assign attributes from a NetworkX graph to an iGraph graph.
+
+    This function transfers all node attributes from a NetworkX graph to the corresponding nodes in an iGraph graph. 
+    It assumes that both graphs have the same set of nodes in the same order.
+
+    Parameters
+    ----------
+    nx_graph : networkx.Graph
+        The input NetworkX graph from which to copy attributes.
+    ig_graph : igraph.Graph
+        The target iGraph graph to which attributes will be copied.
+    """
     original_ids = list(nx_graph.nodes)
     for idx, node in enumerate(ig_graph.vs):
         nx_node_attrs = nx_graph.nodes[original_ids[idx]]
@@ -82,6 +107,28 @@ def calculate_centrality(nx_graph, measure='betweenness', weight='weight', radiu
     return centrality_dict
 
 def reach_centrality(ig_graph, weight, radius, attribute):
+    """
+    Calculates the reach centrality of each node in the graph G based on the attribute of the reachable nodes
+    within a given radius.
+
+    Parameters
+    ----------
+    ig_graph: igraph Graph
+        The street network graph.
+    weight: str
+        The street segments' weight (e.g. distance).
+    radius: float
+        Distance from node within looking for other reachable nodes
+    attribute: str
+        Node attribute used to compute reach centralily. It indicates the importance of the node 
+        (e.g. number of services in 50mt buffer - name of a column in the nodes_gdf GeoDataFrame).
+    
+    Returns
+    -------
+    reach_centrality: dict
+        A dictionary where each item consists of a node (key) and the centrality value (value).
+    """
+    
     n_nodes = ig_graph.vcount()
     reach_centrality = {}
 
@@ -162,7 +209,7 @@ def weight_nodes(nodes_gdf, services_gdf, nx_graph, field_name, radius = 400):
     nodes_gdf: Point GeoDataFrame
         nodes (junctions) GeoDataFrame.
     services_gdf: Point GeoDataFrame
-    
+        
     nx_graph: Networkx graph
         The street network graph.
     field_name: string
@@ -172,7 +219,7 @@ def weight_nodes(nodes_gdf, services_gdf, nx_graph, field_name, radius = 400):
     
     Returns
     -------
-    G: Networkx graph
+    nx_graph: Networkx graph
         The updated street network graph.
     
     """
