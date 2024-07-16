@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import geopandas as gpd
 
-from shapely.geometry import Point, LineString, Polygon, MultiPolygon, MultiLineString
+from shapely.geometry import Point, LineString, Polygon, MultiPolygon, MultiLineString, GeometryCollection
 from shapely.ops import cascaded_union, linemerge, polygonize, polygonize_full, unary_union, nearest_points
 from .utilities import gdf_from_geometries, downloader
 pd.set_option("display.precision", 3)
@@ -90,7 +90,6 @@ def water_barriers(place, download_method, distance = 500.0, lakes_area = 1000, 
     """
     
     crs = 'EPSG:' + str(epsg)
-    tags = {"waterway": True, "natural": "water", "natural":"coastline"}
     
     # rivers
     tags = {"waterway":True}  
@@ -461,6 +460,11 @@ def _simplify_barrier(geometries):
         features = list(geometries.geoms)
     elif type(geometries) is MultiPolygon:
         features = list(geometries.boundary.geoms)
+    elif type(geometries) is GeometryCollection:
+        features = list(geometries.geoms)
+        for n, feature in enumerate(features):
+            if type(feature) is Polygon:
+                features[n] = feature.boundary
     else:
         return []
     return features
