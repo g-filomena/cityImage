@@ -622,11 +622,11 @@ def plot_baseMap(gdf = None, ax = None, color = None, geometry_size = None, alph
         The order of the map elements with respect to other elements in the axis, default value is 0.
     
     """
-    if gdf.iloc[0].geometry.geom_type == 'LineString':
+    if (gdf.iloc[0].geometry.geom_type == 'LineString') or (gdf.iloc[0].geometry.geom_type == 'MultiLineString'):
         gdf.plot(ax = ax, color = color, linewidth = geometry_size, alpha = alpha,zorder = zorder)
     if gdf.iloc[0].geometry.geom_type == 'Point':
         gdf.plot(ax = ax, color = color, markersize = geometry_size, alpha = alpha, zorder = zorder)
-    if gdf.iloc[0].geometry.geom_type == 'Polygon':
+    if (gdf.iloc[0].geometry.geom_type == 'Polygon') or (gdf.iloc[0].geometry.geom_type == 'MultiPolygon'):
         gdf.plot(ax = ax, color = color, alpha = alpha, zorder = zorder)
     
 def generate_legend_fig(ax, plot):
