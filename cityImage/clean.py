@@ -301,13 +301,14 @@ def simplify_same_vertexes_edges(nodes_gdf, edges_gdf, preserve_direction):
         The clean street segments GeoDataFrames.
     """
     to_drop = set()
-    if not edges_gdf.duplicated('code').any():
-        return edges_gdf
-    
+   
     if not preserve_direction:
         edges_gdf["code"] = np.where(edges_gdf['v'] >= edges_gdf['u'], edges_gdf.u.astype(str)+"-"+edges_gdf.v.astype(str), edges_gdf.v.astype(str)+"-"+edges_gdf.u.astype(str))
     else:
         edges_gdf["code"] = edges_gdf.u.astype(str)+"-"+edges_gdf.v.astype(str)
+    if not edges_gdf.duplicated('code').any():
+        return nodes_gdf, edges_gdf    
+        
     groups = edges_gdf.groupby("code").filter(lambda x: len(x) > 1)[['code','length', 'edgeID']].sort_values(by=['code','length'])
     max_lengths = edges_gdf.groupby("code").agg({'length': 'max'}).to_dict()['length']
     
@@ -458,10 +459,13 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_islands = True
     
     nodes_gdf['nodeID'] = nodes_gdf.nodeID.astype(int)
     edges_gdf = correct_edges(nodes_gdf, edges_gdf) # correct edges coordinates
+    
+    nodes_gdf.drop(['wkt'], axis = 1, inplace = True, errors = 'ignore') # remove temporary columns
     edges_gdf.drop(['coords', 'tmp', 'code', 'wkt', 'fixing', 'to_fix'], axis = 1, inplace = True, errors = 'ignore') # remove temporary columns
     edges_gdf['length'] = edges_gdf['geometry'].length
     edges_gdf.set_index('edgeID', drop = False, inplace = True, append = False)
-    nodes_gdf, edges_gdf = reset_index_graph_gdfs(nodes_gdf, edges_gdf, nodeID = "nodeID")
+    
+    nodes_gdf.index.name = None
     edges_gdf.index.name = None
     
     return nodes_gdf, edges_gdf
