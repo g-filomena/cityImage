@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 with open("README.md", "r", encoding='utf-8') as readme_file:
     readme = readme_file.read()
 
-requirements = ["osmnx>=1.9.1", "python-louvain>=0.16", "pyvista>=0.37", "mapclassify>=2.5.0"]
+requirements = ["osmnx>=1.9.1", "python-louvain>=0.16", "pyvista>=0.37", "mapclassify>=2.5.0", "igraph>=0.11.6",]
     
 setup(
     name="cityImage",
