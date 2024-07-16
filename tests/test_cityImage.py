@@ -86,10 +86,11 @@ def test_centrality():
     Rc = ci.calculate_centrality(graph, measure='reach', weight = weight, radius=400, attribute = 'services')
     Bc = ci.calculate_centrality(graph, measure='betweenness', weight = weight)
     Sc = ci.calculate_centrality(graph, measure='straightness', weight = weight)
-
+    Cc = ci.calculate_centrality(graph, measure='straightness', weight = weight)
+    
     # Appending the attributes to the geodataframe
     dicts = [Bc, Sc, Rc]
-    columns = ['Bc', 'Sc', 'Rc']
+    columns = ['Bc', 'Sc', 'Rc', 'Cc']
     for n, c in enumerate(dicts): 
         nodes_gdf[columns[n]] = nodes_gdf.nodeID.map(c)
         
@@ -187,7 +188,7 @@ def test_plot():
     
    
     # Appending the attributes to the geodataframe
-    columns = ['Bc', 'Sc', 'Cc', 'Ic']
+    columns = ['Bc', 'Sc', 'Cc', 'Rc']
     # 2x2 color bar
     cbar_dict = {'cbar' : True, 'cbar_ticks' : 2, 'cbar_max_symbol' : True, 'cbar_min_max' : True, 'cbar_shrink' : 0.75}
     plot = ci.plot_grid_gdf_columns(gdf = tmp_nodes, columns = columns, black_background = True, cmap = cmap, legend = False, ncols = 2, 
