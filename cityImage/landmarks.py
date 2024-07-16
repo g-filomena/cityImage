@@ -71,12 +71,13 @@ def get_buildings_fromFile(path, epsg, case_study_area = None, distance_from_cen
     if (case_study_area is None) and (distance_from_center is None):
         buildings_gdf = obstructions_gdf.copy()
         return buildings_gdf, obstructions_gdf
-
+    
+    # clipping buildings in the case-study area
     if case_study_area is None:
         case_study_area = obstructions_gdf.geometry.unary_union.centroid.buffer(distance_from_center)
-
-    buildings_gdf = obstructions_gdf[obstructions_gdf.geometry.within(case_study_area)]
-    # clipping buildings in the case-study area
+        buildings_gdf = obstructions_gdf[obstructions_gdf.geometry.within(case_study_area)]
+    else:
+        buildings_gdf = obstructions_gdf[obstructions_gdf.geometry.within(case_study_area.centroid.buffer(distance_from_center))]
 
     return buildings_gdf, obstructions_gdf
     
