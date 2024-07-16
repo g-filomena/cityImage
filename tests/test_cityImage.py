@@ -82,14 +82,11 @@ def test_centrality():
     services = ox.geometries_from_address(address, tags = {'amenity':True}, dist = distance).to_crs(epsg=epsg_susa)
     services = services[services['geometry'].geom_type == 'Point']
     graph = ci.weight_nodes(nodes_gdf, services, graph, field_name = 'services', radius = 50)
-
-    Rc = ci.reach_centrality(graph, weight = weight, radius = 400, attribute = 'services')
     
-    Rc = ci.calculate_centrality(nx_graph, measure='reach',weight = weight, radius=400, attribute = 'services')
-    Bc = ci.calculate_centrality(nx_graph, measure='betweenness',weight = weight)
-    Sc = ci.calculate_centrality(nx_graph, measure='straightness',weight = weight)
+    Rc = ci.calculate_centrality(graph, measure='reach', weight = weight, radius=400, attribute = 'services')
+    Bc = ci.calculate_centrality(graph, measure='betweenness', weight = weight)
+    Sc = ci.calculate_centrality(graph, measure='straightness', weight = weight)
 
-    
     # Appending the attributes to the geodataframe
     dicts = [Bc, Sc, Rc]
     columns = ['Bc', 'Sc', 'Rc']
