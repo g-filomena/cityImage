@@ -84,14 +84,15 @@ def test_centrality():
     graph = ci.weight_nodes(nodes_gdf, services, graph, field_name = 'services', radius = 50)
 
     Rc = ci.reach_centrality(graph, weight = weight, radius = 400, attribute = 'services')
-    Bc = ci.centrality(graph, nodes_gdf, measure = 'betweenness_centrality', weight = weight, normalized = False)
-    Sc = ci.centrality(graph, nodes_gdf, measure = 'straightness_centrality', weight = weight, normalized = False)
-    Cc = ci.centrality(graph, nodes_gdf, measure = 'closeness_centrality', weight = weight, normalized = False)
-    Ic = ci.centrality(graph, nodes_gdf, measure = 'information_centrality', weight = weight, normalized = False)
+    
+    Rc = ci.calculate_centrality(nx_graph, measure='reach',weight = weight, radius=400, attribute = 'services')
+    Bc = ci.calculate_centrality(nx_graph, measure='betweenness',weight = weight)
+    Sc = ci.calculate_centrality(nx_graph, measure='straightness',weight = weight)
+
     
     # Appending the attributes to the geodataframe
-    dicts = [Bc, Sc, Cc, Ic]
-    columns = ['Bc', 'Sc', 'Cc', 'Ic']
+    dicts = [Bc, Sc, Rc]
+    columns = ['Bc', 'Sc', 'Rc']
     for n, c in enumerate(dicts): 
         nodes_gdf[columns[n]] = nodes_gdf.nodeID.map(c)
         
