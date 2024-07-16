@@ -1,0 +1,738 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Barriers &#8212; cityImage 0.2 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="../_static/styles/bootstrap.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+
+  
+  <link href="../_static/vendor/fontawesome/6.5.1/css/all.min.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.1/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.1/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.1/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
+  <script src="../_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
+
+    <script src="../_static/documentation_options.js?v=10f1778b"></script>
+    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'otherExamples/Barriers_Muenster_Germany';</script>
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <a id="pst-skip-link" class="skip-link" href="#main-content">Skip to main content</a>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>
+    Back to top
+  </button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__primary"
+          id="__primary"/>
+  <label class="overlay overlay-primary" for="__primary"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__secondary"
+          id="__secondary"/>
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar">
+<div class="bd-header__inner bd-page-width">
+  <label class="sidebar-toggle primary-toggle" for="__primary">
+    <span class="fa-solid fa-bars"></span>
+  </label>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">cityImage 0.2 documentation</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav class="navbar-nav">
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../index.html">
+                        Home
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../notebooks/userGuide.html">
+                        User Guide
+                      </a>
+                    </li>
+                
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script>
+    </div>
+  
+
+  
+    <label class="sidebar-toggle secondary-toggle" for="__secondary" tabindex="0">
+      <span class="fa-solid fa-outdent"></span>
+    </label>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <div class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          <div class="navbar-item">
+<nav class="navbar-nav">
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../index.html">
+                        Home
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../notebooks/userGuide.html">
+                        User Guide
+                      </a>
+                    </li>
+                
+  </ul>
+</nav></div>
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+
+
+<nav aria-label="Breadcrumb">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page">Barriers</li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="Barriers">
+<h1>Barriers<a class="headerlink" href="#Barriers" title="Link to this heading">#</a></h1>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">cityImage</span> <span class="k">as</span> <span class="nn">ci</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">geopandas</span> <span class="k">as</span> <span class="nn">gpd</span>
+<span class="kn">from</span> <span class="nn">matplotlib.colors</span> <span class="kn">import</span> <span class="n">LinearSegmentedColormap</span>
+
+<span class="o">%</span><span class="k">matplotlib</span> inline
+
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="n">action</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># initialise path, names, etc.</span>
+<span class="n">city_name</span> <span class="o">=</span> <span class="s1">&#39;Muenster&#39;</span>
+<span class="n">epsg</span> <span class="o">=</span> <span class="mi">25832</span>
+<span class="n">crs</span> <span class="o">=</span> <span class="s1">&#39;EPSG:&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">epsg</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<section id="Barriers-identification">
+<h2>Barriers identification<a class="headerlink" href="#Barriers-identification" title="Link to this heading">#</a></h2>
+<p>Choose between the following methods:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">OSMplace</span></code>, providing an OSM place name (e.g. City).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">polygon</span></code>, providing a Polygon (coordinates must be in units of latitude-longitude degrees).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">distance_from_address</span></code>, providing a precise address and setting the <code class="docutils literal notranslate"><span class="pre">distance</span></code> parameter.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">distance_from_point</span></code>, providing point coordinates (in units of latitude-longitude degrees) and setting the <code class="docutils literal notranslate"><span class="pre">distance</span></code> parameter to build the bounding box around the point.</p></li>
+</ul>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">place</span> <span class="o">=</span> <span class="s1">&#39;Domplatz, Muenster, Germany&#39;</span>
+<span class="n">download_method</span> <span class="o">=</span> <span class="s1">&#39;distance_from_address&#39;</span>
+<span class="n">distance</span> <span class="o">=</span> <span class="mi">2500</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">road_barriers</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">road_barriers</span><span class="p">(</span><span class="n">place</span> <span class="o">=</span> <span class="n">place</span><span class="p">,</span> <span class="n">download_method</span> <span class="o">=</span> <span class="n">download_method</span><span class="p">,</span> <span class="n">epsg</span> <span class="o">=</span> <span class="n">epsg</span><span class="p">,</span> <span class="n">distance</span> <span class="o">=</span> <span class="n">distance</span><span class="p">,</span>
+                                 <span class="n">include_primary</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">include_secondary</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
+<span class="n">water_barriers</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">water_barriers</span><span class="p">(</span><span class="n">place</span> <span class="o">=</span> <span class="n">place</span><span class="p">,</span> <span class="n">download_method</span> <span class="o">=</span> <span class="n">download_method</span><span class="p">,</span> <span class="n">distance</span> <span class="o">=</span> <span class="n">distance</span><span class="p">,</span>  <span class="n">epsg</span> <span class="o">=</span> <span class="n">epsg</span><span class="p">)</span>
+<span class="n">railway_barriers</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">railway_barriers</span><span class="p">(</span><span class="n">place</span> <span class="o">=</span> <span class="n">place</span><span class="p">,</span> <span class="n">download_method</span> <span class="o">=</span> <span class="n">download_method</span><span class="p">,</span> <span class="n">distance</span> <span class="o">=</span> <span class="n">distance</span><span class="p">,</span> <span class="n">epsg</span> <span class="o">=</span> <span class="n">epsg</span><span class="p">,</span> <span class="n">keep_light_rail</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
+<span class="n">park_barriers</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">park_barriers</span><span class="p">(</span><span class="n">place</span><span class="p">,</span> <span class="n">download_method</span><span class="p">,</span> <span class="n">distance</span><span class="p">,</span> <span class="n">epsg</span><span class="p">,</span> <span class="n">min_area</span> <span class="o">=</span> <span class="mi">5000</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+C:\Users\gfilo\AppData\Local\miniconda3\envs\cityImage\Lib\site-packages\cityImage\barriers.py:117: FutureWarning: `unary_union` returned None due to all-None GeoSeries. In future, `unary_union` will return &#39;GEOMETRYCOLLECTION EMPTY&#39; instead.
+  sea = sea.unary_union
+</pre></div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">barriers</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">road_barriers</span><span class="p">,</span> <span class="n">water_barriers</span><span class="p">,</span> <span class="n">railway_barriers</span><span class="p">,</span> <span class="n">park_barriers</span><span class="p">],</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">barriers</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">inplace</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">drop</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<span class="n">barriers</span><span class="p">[</span><span class="s1">&#39;barrierID&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">barriers</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p><strong>Visualisation</strong></p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">barriers</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">by</span> <span class="o">=</span> <span class="s1">&#39;barrier_type&#39;</span><span class="p">,</span> <span class="n">ascending</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">inplace</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<span class="n">colors</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;green&#39;</span><span class="p">,</span> <span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="s1">&#39;gray&#39;</span><span class="p">,</span> <span class="s1">&#39;blue&#39;</span><span class="p">]</span>
+
+<span class="n">cmap</span> <span class="o">=</span> <span class="n">LinearSegmentedColormap</span><span class="o">.</span><span class="n">from_list</span><span class="p">(</span><span class="s1">&#39;cmap&#39;</span><span class="p">,</span> <span class="n">colors</span><span class="p">,</span> <span class="n">N</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">colors</span><span class="p">))</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">plot_gdf</span><span class="p">(</span><span class="n">gdf</span> <span class="o">=</span> <span class="n">barriers</span><span class="p">,</span> <span class="n">column</span> <span class="o">=</span> <span class="s1">&#39;barrier_type&#39;</span><span class="p">,</span> <span class="n">black_background</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">title</span> <span class="o">=</span> <span class="n">city_name</span><span class="o">+</span><span class="s1">&#39;: Barriers&#39;</span><span class="p">,</span>
+                  <span class="n">legend</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">cmap</span> <span class="o">=</span> <span class="n">cmap</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/otherExamples_Barriers_Muenster_Germany_9_0.png" src="../_images/otherExamples_Barriers_Muenster_Germany_9_0.png" />
+</div>
+</div>
+</section>
+<section id="Incorporating-Barriers-into-the-Street-Network">
+<h2>Incorporating Barriers into the Street Network<a class="headerlink" href="#Incorporating-Barriers-into-the-Street-Network" title="Link to this heading">#</a></h2>
+<p>This is an optional step that allows modelling the effect of barriers on pedestrian movement, for exmaple, in agent-based modelling, or in route-choice modelling.</p>
+<section id="Download-the-street-network">
+<h3>Download the street network<a class="headerlink" href="#Download-the-street-network" title="Link to this heading">#</a></h3>
+<p>Choose between the following methods:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">OSMplace</span></code>, providing an OSM place name (e.g. City).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">polygon</span></code>, providing a Polygon (coordinates must be in units of latitude-longitude degrees).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">distance_from_address</span></code>, providing a precise address and setting the <code class="docutils literal notranslate"><span class="pre">distance</span></code> parameter.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">distance_from_point</span></code>, providing point coordinates (in units of latitude-longitude degrees) and setting the <code class="docutils literal notranslate"><span class="pre">distance</span></code> parameter to build the bounding box around the point.</p></li>
+</ul>
+<p>Downloading the graph and cleaning it (see the notebook <em>01-Nodes_Paths_fromOSM</em> for details on the cleaning process)</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># download graph and clean (see network notebook for details on the cleaning process)</span>
+
+<span class="n">place</span> <span class="o">=</span> <span class="s1">&#39;Domplatz, Muenster, Germany&#39;</span>
+<span class="n">download_method</span> <span class="o">=</span> <span class="s1">&#39;distance_from_address&#39;</span>
+<span class="n">distance</span> <span class="o">=</span> <span class="mi">2500</span>
+<span class="n">nodes_graph</span><span class="p">,</span> <span class="n">edges_graph</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">get_network_fromOSM</span><span class="p">(</span><span class="n">place</span><span class="p">,</span> <span class="n">download_method</span><span class="p">,</span> <span class="s1">&#39;walk&#39;</span><span class="p">,</span> <span class="n">epsg</span><span class="p">,</span> <span class="n">distance</span> <span class="o">=</span> <span class="n">distance</span><span class="p">)</span>
+<span class="n">nodes_graph</span><span class="p">,</span> <span class="n">edges_graph</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">clean_network</span><span class="p">(</span><span class="n">nodes_graph</span><span class="p">,</span> <span class="n">edges_graph</span><span class="p">,</span> <span class="n">dead_ends</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">remove_islands</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                            <span class="n">self_loops</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">same_vertexes_edges</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="(or)-Load-it-from-local-path">
+<h3>(or) Load it from local path<a class="headerlink" href="#(or)-Load-it-from-local-path" title="Link to this heading">#</a></h3>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">input_path</span> <span class="o">=</span> <span class="s1">&#39;../data/&#39;</span><span class="o">+</span><span class="n">city_name</span>
+<span class="n">nodes_graph</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">input_path</span><span class="o">+</span><span class="s1">&#39;_nodes.gpkg&#39;</span><span class="p">)</span>
+<span class="n">edges_graph</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">input_path</span><span class="o">+</span><span class="s1">&#39;_edges.gpkg&#39;</span><span class="p">)</span>
+
+<span class="n">nodes_graph</span><span class="o">.</span><span class="n">index</span><span class="p">,</span> <span class="n">edges_graph</span><span class="o">.</span><span class="n">index</span>  <span class="o">=</span> <span class="n">nodes_graph</span><span class="o">.</span><span class="n">nodeID</span><span class="p">,</span> <span class="n">edges_graph</span><span class="o">.</span><span class="n">edgeID</span>
+<span class="n">nodes_graph</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">edges_graph</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span>  <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+</pre></div>
+</div>
+</div>
+<p><strong>Visualisation</strong></p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">plot_gdf</span><span class="p">(</span><span class="n">edges_graph</span><span class="p">,</span> <span class="n">black_background</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">geometry_size</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+                 <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="n">title</span> <span class="o">=</span> <span class="n">city_name</span><span class="o">+</span><span class="s1">&#39;: Street Network&#39;</span><span class="p">,</span> <span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/otherExamples_Barriers_Muenster_Germany_16_0.png" src="../_images/otherExamples_Barriers_Muenster_Germany_16_0.png" />
+</div>
+</div>
+</section>
+</section>
+<section id="Assigning-barriers-to-street-segments">
+<h2>Assigning barriers to street segments<a class="headerlink" href="#Assigning-barriers-to-street-segments" title="Link to this heading">#</a></h2>
+<p><strong>Type of barriers</strong></p>
+<p>Choose between the following methods: * <em>Positive barriers</em> - pedestrian perspective: Waterbodies, Parks. * <em>Negative barriers</em> - pedestrian perspective: Major Roads, Railway Structures. * <em>Structuring barriers</em> - barriers which structure and shape the image of the city: Waterbodies, Major roads, Railways.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># clipping barriers to case study area</span>
+<span class="n">envelope</span> <span class="o">=</span> <span class="n">edges_graph</span><span class="o">.</span><span class="n">unary_union</span><span class="o">.</span><span class="n">envelope</span>
+<span class="n">barriers_within</span> <span class="o">=</span> <span class="n">barriers</span><span class="p">[</span><span class="n">barriers</span><span class="o">.</span><span class="n">intersects</span><span class="p">(</span><span class="n">edges_graph</span><span class="o">.</span><span class="n">unary_union</span><span class="o">.</span><span class="n">envelope</span><span class="p">)]</span>
+</pre></div>
+</div>
+</div>
+<section id="Street-Segments-Along-and-Within-Positive-Barriers">
+<h3>Street Segments <em>Along</em> and <em>Within</em> Positive Barriers<a class="headerlink" href="#Street-Segments-Along-and-Within-Positive-Barriers" title="Link to this heading">#</a></h3>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sindex</span> <span class="o">=</span> <span class="n">edges_graph</span><span class="o">.</span><span class="n">sindex</span>
+<span class="c1"># rivers</span>
+<span class="n">edges_graph</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">along_water</span><span class="p">(</span><span class="n">edges_graph</span><span class="p">,</span> <span class="n">barriers_within</span><span class="p">)</span>
+<span class="c1"># parks</span>
+<span class="n">edges_graph</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">along_within_parks</span><span class="p">(</span><span class="n">edges_graph</span><span class="p">,</span> <span class="n">barriers_within</span><span class="p">)</span>
+<span class="c1"># altogheter</span>
+<span class="n">edges_graph</span><span class="p">[</span><span class="s1">&#39;p_barr&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">edges_graph</span><span class="p">[</span><span class="s1">&#39;a_rivers&#39;</span><span class="p">]</span><span class="o">+</span><span class="n">edges_graph</span><span class="p">[</span><span class="s1">&#39;w_parks&#39;</span><span class="p">]</span>
+<span class="n">edges_graph</span><span class="p">[</span><span class="s1">&#39;p_barr&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">edges_graph</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;p_barr&#39;</span><span class="p">])),</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Street-Segments-Along-Negative-Barriers">
+<h3>Street Segments <em>Along</em> Negative Barriers<a class="headerlink" href="#Street-Segments-Along-Negative-Barriers" title="Link to this heading">#</a></h3>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">tmp</span> <span class="o">=</span> <span class="n">barriers_within</span><span class="p">[</span><span class="n">barriers_within</span><span class="p">[</span><span class="s1">&#39;barrier_type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">([</span><span class="s1">&#39;railway&#39;</span><span class="p">,</span> <span class="s1">&#39;road&#39;</span><span class="p">])]</span>
+<span class="n">edges_graph</span><span class="p">[</span><span class="s1">&#39;n_barr&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">edges_graph</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="n">ci</span><span class="o">.</span><span class="n">barriers_along</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;edgeID&#39;</span><span class="p">],</span> <span class="n">edges_graph</span><span class="p">,</span> <span class="n">tmp</span><span class="p">,</span> <span class="n">sindex</span><span class="p">,</span>
+                                            <span class="n">offset</span> <span class="o">=</span> <span class="mi">25</span><span class="p">),</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Street-Segments-Crossing-any-kind-of-barrier-but-parks:-Structuring-Barriers">
+<h3>Street Segments <em>Crossing</em> any kind of barrier but parks: Structuring Barriers<a class="headerlink" href="#Street-Segments-Crossing-any-kind-of-barrier-but-parks:-Structuring-Barriers" title="Link to this heading">#</a></h3>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">edges_graph</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">assign_structuring_barriers</span><span class="p">(</span><span class="n">edges_graph</span><span class="p">,</span> <span class="n">barriers_within</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p><strong>Visualisation</strong></p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># positive barriers</span>
+<span class="n">edges_graph</span><span class="p">[</span><span class="s1">&#39;p_bool&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">edges_graph</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="kc">True</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;p_barr&#39;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="kc">False</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">tmp</span> <span class="o">=</span> <span class="n">edges_graph</span><span class="p">[</span><span class="n">edges_graph</span><span class="o">.</span><span class="n">p_bool</span> <span class="o">==</span> <span class="kc">True</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+<span class="c1"># base map</span>
+<span class="n">base_map_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;base_map_gdf&#39;</span><span class="p">:</span> <span class="n">edges_graph</span><span class="p">,</span> <span class="s1">&#39;base_map_alpha&#39;</span> <span class="p">:</span> <span class="mf">0.3</span><span class="p">,</span> <span class="s1">&#39;base_map_color&#39;</span> <span class="p">:</span> <span class="s1">&#39;black&#39;</span><span class="p">}</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">plot_gdf</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="n">black_background</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="n">title</span> <span class="o">=</span> <span class="n">city_name</span><span class="o">+</span><span class="s1">&#39;: Streets along parks and rivers&#39;</span><span class="p">,</span>
+              <span class="n">legend</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">base_map_dict</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/otherExamples_Barriers_Muenster_Germany_26_0.png" src="../_images/otherExamples_Barriers_Muenster_Germany_26_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># negative barriers</span>
+<span class="n">edges_graph</span><span class="p">[</span><span class="s1">&#39;n_bool&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">edges_graph</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="kc">True</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;n_barr&#39;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="kc">False</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">tmp</span> <span class="o">=</span> <span class="n">edges_graph</span><span class="p">[</span><span class="n">edges_graph</span><span class="o">.</span><span class="n">n_bool</span> <span class="o">==</span> <span class="kc">True</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+<span class="c1"># base map</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">plot_gdf</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="n">black_background</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="n">title</span> <span class="o">=</span> <span class="n">city_name</span><span class="o">+</span><span class="s1">&#39;: Streets along negative barriers&#39;</span><span class="p">,</span>
+              <span class="n">legend</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">base_map_dict</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/otherExamples_Barriers_Muenster_Germany_27_0.png" src="../_images/otherExamples_Barriers_Muenster_Germany_27_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># separating barriers</span>
+<span class="n">tmp</span> <span class="o">=</span> <span class="n">edges_graph</span><span class="p">[</span><span class="n">edges_graph</span><span class="o">.</span><span class="n">sep_barr</span> <span class="o">==</span> <span class="kc">True</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">ci</span><span class="o">.</span><span class="n">plot_gdf</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="n">black_background</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span>  <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;red&#39;</span><span class="p">,</span>
+            <span class="n">title</span> <span class="o">=</span> <span class="n">city_name</span><span class="o">+</span><span class="s1">&#39;: Streets crossing structuring barriers: water, highways, railways&#39;</span><span class="p">,</span>
+             <span class="o">**</span><span class="n">base_map_dict</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/otherExamples_Barriers_Muenster_Germany_28_0.png" src="../_images/otherExamples_Barriers_Muenster_Germany_28_0.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/otherExamples_Barriers_Muenster_Germany_28_1.png" src="../_images/otherExamples_Barriers_Muenster_Germany_28_1.png" />
+</div>
+</div>
+<p><strong>Exporting</strong></p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># saving barriers_gdf</span>
+<span class="n">output_path</span> <span class="o">=</span> <span class="s1">&#39;../output/&#39;</span><span class="o">+</span><span class="n">city_name</span>
+<span class="n">barriers</span><span class="o">.</span><span class="n">to_file</span><span class="p">(</span><span class="n">output_path</span><span class="o">+</span><span class="s2">&quot;_barriers.gpkg&quot;</span><span class="p">,</span> <span class="n">driver</span><span class="o">=</span><span class="s1">&#39;GPKG&#39;</span><span class="p">)</span>
+
+<span class="c1"># converting list fields to string</span>
+<span class="n">to_convert</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;a_rivers&#39;</span><span class="p">,</span> <span class="s1">&#39;w_parks&#39;</span><span class="p">,</span><span class="s1">&#39;n_barr&#39;</span><span class="p">,</span> <span class="s1">&#39;p_barr&#39;</span><span class="p">]</span>
+<span class="n">edges_graph_string</span> <span class="o">=</span> <span class="n">edges_graph</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">to_convert</span><span class="p">:</span>
+    <span class="n">edges_graph_string</span><span class="p">[</span><span class="n">column</span><span class="p">]</span> <span class="o">=</span> <span class="n">edges_graph_string</span><span class="p">[</span><span class="n">column</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">str</span><span class="p">)</span>
+
+<span class="n">edges_graph_string</span><span class="o">.</span><span class="n">to_file</span><span class="p">(</span><span class="n">output_path</span><span class="o">+</span><span class="s2">&quot;_edges_ped.gpkg&quot;</span><span class="p">,</span> <span class="n">driver</span><span class="o">=</span><span class="s1">&#39;GPKG&#39;</span><span class="p">)</span>
+<span class="n">nodes_graph</span><span class="o">.</span><span class="n">to_file</span><span class="p">(</span><span class="n">output_path</span><span class="o">+</span><span class="s1">&#39;_nodes_ped.gpkg&#39;</span><span class="p">,</span> <span class="n">driver</span><span class="o">=</span><span class="s1">&#39;GPKG&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<script type="application/vnd.jupyter.widget-state+json">
+{"state": {}, "version_major": 2, "version_minor": 0}
+</script></section>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Barriers-identification">Barriers identification</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Incorporating-Barriers-into-the-Street-Network">Incorporating Barriers into the Street Network</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Download-the-street-network">Download the street network</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#(or)-Load-it-from-local-path">(or) Load it from local path</a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Assigning-barriers-to-street-segments">Assigning barriers to street segments</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Street-Segments-Along-and-Within-Positive-Barriers">Street Segments <em>Along</em> and <em>Within</em> Positive Barriers</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Street-Segments-Along-Negative-Barriers">Street Segments <em>Along</em> Negative Barriers</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Street-Segments-Crossing-any-kind-of-barrier-but-parks:-Structuring-Barriers">Street Segments <em>Crossing</em> any kind of barrier but parks: Structuring Barriers</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="../_sources/otherExamples/Barriers_Muenster_Germany.ipynb.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae"></script>
+<script src="../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2024, Gabriele Filomena.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.15.2.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

@@ -1,0 +1,878 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Street Network Analysis: Nodes and Paths (Local Files) &#8212; cityImage 0.2 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="../_static/styles/bootstrap.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+
+  
+  <link href="../_static/vendor/fontawesome/6.5.1/css/all.min.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.1/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.1/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.1/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
+    <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
+  <script src="../_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
+
+    <script src="../_static/documentation_options.js?v=10f1778b"></script>
+    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'notebooks/Nodes_Paths_Local_Files';</script>
+    <link rel="author" title="About these documents" href="../about.html" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Cleaning the graph" href="NetworkCleaning.html" />
+    <link rel="prev" title="Street Network Analysis: Nodes and Paths (OSM data)" href="Nodes_Paths_fromOSM.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <a id="pst-skip-link" class="skip-link" href="#main-content">Skip to main content</a>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>
+    Back to top
+  </button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__primary"
+          id="__primary"/>
+  <label class="overlay overlay-primary" for="__primary"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__secondary"
+          id="__secondary"/>
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar">
+<div class="bd-header__inner bd-page-width">
+  <label class="sidebar-toggle primary-toggle" for="__primary">
+    <span class="fa-solid fa-bars"></span>
+  </label>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">cityImage 0.2 documentation</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav class="navbar-nav">
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../index.html">
+                        Home
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item current active">
+                      <a class="nav-link nav-internal" href="userGuide.html">
+                        User Guide
+                      </a>
+                    </li>
+                
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script>
+    </div>
+  
+
+  
+    <label class="sidebar-toggle secondary-toggle" for="__secondary" tabindex="0">
+      <span class="fa-solid fa-outdent"></span>
+    </label>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          <div class="navbar-item">
+<nav class="navbar-nav">
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../index.html">
+                        Home
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item current active">
+                      <a class="nav-link nav-internal" href="userGuide.html">
+                        User Guide
+                      </a>
+                    </li>
+                
+  </ul>
+</nav></div>
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="Nodes_Paths_fromOSM.html">Nodes and Paths from OpenStreetMap Data</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Nodes and Paths from Local Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="NetworkCleaning.html">Street Network Cleaning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Districts.html">Districts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Landmarks_Local_Files.html">Landmarks from Local Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Barriers.html">Barriers</a></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+
+
+<nav aria-label="Breadcrumb">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="userGuide.html" class="nav-link">User Guide</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page">Street...</li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="Street-Network-Analysis:-Nodes-and-Paths-(Local-Files)">
+<h1>Street Network Analysis: Nodes and Paths (Local Files)<a class="headerlink" href="#Street-Network-Analysis:-Nodes-and-Paths-(Local-Files)" title="Link to this heading">#</a></h1>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">osmnx</span> <span class="k">as</span> <span class="nn">ox</span><span class="o">,</span> <span class="nn">networkx</span> <span class="k">as</span> <span class="nn">nx</span><span class="o">,</span> <span class="nn">matplotlib.cm</span> <span class="k">as</span> <span class="nn">cm</span><span class="o">,</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span><span class="o">,</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">geopandas</span> <span class="k">as</span> <span class="nn">gpd</span>
+<span class="o">%</span><span class="k">matplotlib</span> inline
+
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="n">action</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">display</span><span class="o">.</span><span class="n">float_format</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{:20.2f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">mode</span><span class="o">.</span><span class="n">chained_assignment</span> <span class="o">=</span> <span class="kc">None</span>
+
+<span class="kn">import</span> <span class="nn">cityImage</span> <span class="k">as</span> <span class="nn">ci</span>
+</pre></div>
+</div>
+</div>
+<p><strong>Ininitialising path, names, etc.</strong></p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">city_name</span> <span class="o">=</span> <span class="s1">&#39;Boston&#39;</span>
+<span class="n">output_path</span> <span class="o">=</span><span class="s1">&#39;output/&#39;</span><span class="o">+</span><span class="n">city_name</span><span class="o">+</span><span class="s1">&#39;/&#39;</span>
+<span class="n">epsg</span> <span class="o">=</span> <span class="mi">26986</span>
+<span class="n">crs</span> <span class="o">=</span> <span class="s1">&#39;EPSG:&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">epsg</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<section id="Loading-the-Files">
+<h2>Loading the Files<a class="headerlink" href="#Loading-the-Files" title="Link to this heading">#</a></h2>
+<p>Provide files’ directories and loading the data The polygon is not strictly necessary. It is needed when clipping the Street Network</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1">#specify your loading paths here</span>
+<span class="n">input_path_polygon</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+<span class="n">input_path</span> <span class="o">=</span>  <span class="s1">&#39;../data/boston_4000.shp&#39;</span>
+</pre></div>
+</div>
+</div>
+<p><strong>A note</strong>:</p>
+<p>To avoid the edge effect when computing betweennes centrality values, consider using an area larger than your actual case-study area.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Leave &quot;None&quot; for attributes not contained in the dataframe or for attributes of no interest.</span>
+<span class="n">dict_columns</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;roadType_field&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>  <span class="s2">&quot;direction_field&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;speed_field&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;name_field&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">}</span>
+<span class="c1"># if all items are None, don&#39;t pass the dictionary in the function</span>
+
+<span class="n">nodes_graph</span><span class="p">,</span> <span class="n">edges_graph</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">get_network_fromFile</span><span class="p">(</span><span class="n">input_path</span><span class="p">,</span> <span class="n">epsg</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Cleaning-and-simplyfing-the-Street-Network">
+<h2>Cleaning and simplyfing the Street Network<a class="headerlink" href="#Cleaning-and-simplyfing-the-Street-Network" title="Link to this heading">#</a></h2>
+<p>At the end of the previous section two files are obtained: nodes and edges (vertexes and links). Below, before creating the actual graph, the two datasets are cleaned, simplified and corrected.</p>
+<p>Cleaning functions handle (through boolean parameters): * Duplicate geometries (nodes, edges). * Pseudo-nodes. * <code class="docutils literal notranslate"><span class="pre">remove_islands</span></code>: Disconnected islands. * <code class="docutils literal notranslate"><span class="pre">dead_ends</span></code> Dead-end street segments. * <code class="docutils literal notranslate"><span class="pre">self_loops</span></code> Self-Loops. * <code class="docutils literal notranslate"><span class="pre">same_vertexes_edges</span></code> Edges with same from-to nodes, but different geometries. * <code class="docutils literal notranslate"><span class="pre">fix_topology</span></code> This creates nodes and breaks street segments at intersections. It is primarily useful for poorly formed datasets (usually OSM deerived networks are topologically
+correct). It accounts for segments classified as bridges or tunnels in OSM.</p>
+<p><code class="docutils literal notranslate"><span class="pre">same_vertexes_edges</span></code> handles edges with same pair of u-v nodes but different geometries. When <code class="docutils literal notranslate"><span class="pre">True</span></code>, it derives a center line between the two segments, unless one of the two segments is longer than the other (&gt;10%). In this case, the shorter segment is deleted.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">nodes_graph</span><span class="p">,</span> <span class="n">edges_graph</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">clean_network</span><span class="p">(</span><span class="n">nodes_graph</span><span class="p">,</span> <span class="n">edges_graph</span><span class="p">,</span> <span class="n">dead_ends</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">remove_islands</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                            <span class="n">same_vertexes_edges</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">self_loops</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">fix_topology</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">plot_gdf</span><span class="p">(</span><span class="n">edges_graph</span><span class="p">,</span> <span class="n">black_background</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">),</span> <span class="n">title</span> <span class="o">=</span> <span class="n">city_name</span><span class="o">+</span><span class="s1">&#39;: Street Network&#39;</span><span class="p">,</span>
+                   <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;black&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Nodes_Paths_Local_Files_11_0.png" src="../_images/notebooks_Nodes_Paths_Local_Files_11_0.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Obtaining the graph from the case-study area and computing the centrality measures</span>
+<span class="n">graph</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">graph_fromGDF</span><span class="p">(</span><span class="n">nodes_graph</span><span class="p">,</span> <span class="n">edges_graph</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Node-centrality">
+<h2>Node centrality<a class="headerlink" href="#Node-centrality" title="Link to this heading">#</a></h2>
+<p>On the primal graph representation of the street network, the following centrality measures are computed on nodes, on the basis of road distance:</p>
+<ul class="simple">
+<li><p>Road Distance Shortest Path Betweenness centrality (<code class="docutils literal notranslate"><span class="pre">Bc_Rd</span></code>).</p></li>
+<li><p>Straightness centrality (<code class="docutils literal notranslate"><span class="pre">Sc</span></code>) (see <a class="reference external" href="https://journals.aps.org/pre/abstract/10.1103/PhysRevE.73.036125">Crucitti et al. 2006</a>).</p></li>
+<li><p>Reach centrality (e.g. <code class="docutils literal notranslate"><span class="pre">Rc_400</span></code>, <code class="docutils literal notranslate"><span class="pre">Rc_600</span></code>) (readataped from <a class="reference external" href="https://www.sutd.edu.sg/cmsresource/idc/papers/2012_Urban_Network_Analysis_A%20New%20Toolbox_for_ArcGIS.pdf">Sevtsuk &amp; Mekonnen 2012</a>) - it measures the importance of a node based on the number of services (e.g. commercial activities) reachable by that node (for instance within a buffer).</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">measure</span></code> accepts <code class="docutils literal notranslate"><span class="pre">betweenness</span></code>, <code class="docutils literal notranslate"><span class="pre">reach</span></code>, <code class="docutils literal notranslate"><span class="pre">straightness</span></code>, <code class="docutils literal notranslate"><span class="pre">closeness</span></code>. The function returns dictionaries, which are going to be merged in the GDF below.</p>
+<p>The first measure (<code class="docutils literal notranslate"><span class="pre">Bc_Rd</span></code>) is here used to identify “Lynchian” nodes.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># betweenness centrality</span>
+<span class="n">Bc_Rd</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">calculate_centrality</span><span class="p">(</span><span class="n">nx_graph</span> <span class="o">=</span> <span class="n">graph</span><span class="p">,</span> <span class="n">measure</span><span class="o">=</span><span class="s1">&#39;betweenness&#39;</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="s1">&#39;length&#39;</span><span class="p">)</span>
+<span class="c1"># straightness centrality</span>
+<span class="n">Sc</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">calculate_centrality</span><span class="p">(</span><span class="n">nx_graph</span> <span class="o">=</span> <span class="n">graph</span><span class="p">,</span> <span class="n">measure</span><span class="o">=</span><span class="s1">&#39;straightness&#39;</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="s1">&#39;length&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>If using POI from OSM: Choose which of the following amenities you consider relevant as “services” for computing reach centrlality. Check <a class="reference external" href="https://wiki.openstreetmap.org/wiki/Key:amenity">OSM amenities</a> for details.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">amenities</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;arts_centre&#39;</span><span class="p">,</span> <span class="s1">&#39;atm&#39;</span><span class="p">,</span> <span class="s1">&#39;bank&#39;</span><span class="p">,</span> <span class="s1">&#39;bar&#39;</span><span class="p">,</span> <span class="s1">&#39;bbq&#39;</span><span class="p">,</span> <span class="s1">&#39;bicycle_rental&#39;</span><span class="p">,</span> <span class="s1">&#39;bicycle_repair_station&#39;</span><span class="p">,</span> <span class="s1">&#39;biergarten&#39;</span><span class="p">,</span>
+             <span class="s1">&#39;boat_rental&#39;</span><span class="p">,</span> <span class="s1">&#39;boat_sharing&#39;</span><span class="p">,</span> <span class="s1">&#39;brothel&#39;</span><span class="p">,</span> <span class="s1">&#39;bureau_de_change&#39;</span><span class="p">,</span> <span class="s1">&#39;cafe&#39;</span><span class="p">,</span> <span class="s1">&#39;car_rental&#39;</span><span class="p">,</span> <span class="s1">&#39;car_sharing&#39;</span><span class="p">,</span> <span class="s1">&#39;car_wash&#39;</span><span class="p">,</span> <span class="s1">&#39;casino&#39;</span><span class="p">,</span> <span class="s1">&#39;childcare&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;cinema&#39;</span><span class="p">,</span> <span class="s1">&#39;clinic&#39;</span><span class="p">,</span> <span class="s1">&#39;college&#39;</span><span class="p">,</span> <span class="s1">&#39;community_centre&#39;</span><span class="p">,</span> <span class="s1">&#39;courthouse&#39;</span><span class="p">,</span> <span class="s1">&#39;crematorium&#39;</span><span class="p">,</span> <span class="s1">&#39;dentist&#39;</span><span class="p">,</span> <span class="s1">&#39;dive_centre&#39;</span><span class="p">,</span> <span class="s1">&#39;doctors&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;driving_school&#39;</span><span class="p">,</span> <span class="s1">&#39;embassy&#39;</span><span class="p">,</span> <span class="s1">&#39;fast_food&#39;</span><span class="p">,</span> <span class="s1">&#39;ferry_terminal&#39;</span><span class="p">,</span> <span class="s1">&#39;fire_station&#39;</span><span class="p">,</span> <span class="s1">&#39;food_court&#39;</span><span class="p">,</span> <span class="s1">&#39;fuel&#39;</span><span class="p">,</span> <span class="s1">&#39;gambling&#39;</span><span class="p">,</span> <span class="s1">&#39;gym&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;hospital&#39;</span><span class="p">,</span> <span class="s1">&#39;ice_cream&#39;</span><span class="p">,</span> <span class="s1">&#39;internet_cafe&#39;</span><span class="p">,</span> <span class="s1">&#39;kindergarten&#39;</span><span class="p">,</span> <span class="s1">&#39;kitchen&#39;</span><span class="p">,</span> <span class="s1">&#39;language_school&#39;</span><span class="p">,</span> <span class="s1">&#39;library&#39;</span><span class="p">,</span> <span class="s1">&#39;marketplace&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;monastery&#39;</span><span class="p">,</span> <span class="s1">&#39;motorcycle_parking&#39;</span><span class="p">,</span> <span class="s1">&#39;music_school&#39;</span><span class="p">,</span> <span class="s1">&#39;nightclub&#39;</span><span class="p">,</span> <span class="s1">&#39;nursing_home&#39;</span><span class="p">,</span> <span class="s1">&#39;pharmacy&#39;</span><span class="p">,</span> <span class="s1">&#39;place_of_worship&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;planetarium&#39;</span><span class="p">,</span> <span class="s1">&#39;police&#39;</span><span class="p">,</span> <span class="s1">&#39;post_office&#39;</span><span class="p">,</span> <span class="s1">&#39;prison&#39;</span><span class="p">,</span> <span class="s1">&#39;pub&#39;</span><span class="p">,</span> <span class="s1">&#39;public_building&#39;</span><span class="p">,</span> <span class="s1">&#39;ranger_station&#39;</span><span class="p">,</span> <span class="s1">&#39;restaurant&#39;</span><span class="p">,</span> <span class="s1">&#39;sauna&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;school&#39;</span><span class="p">,</span> <span class="s1">&#39;shelter&#39;</span><span class="p">,</span> <span class="s1">&#39;shower&#39;</span><span class="p">,</span> <span class="s1">&#39;social_centre&#39;</span><span class="p">,</span> <span class="s1">&#39;social_facility&#39;</span><span class="p">,</span> <span class="s1">&#39;stripclub&#39;</span><span class="p">,</span> <span class="s1">&#39;studio&#39;</span><span class="p">,</span> <span class="s1">&#39;swingerclub&#39;</span><span class="p">,</span> <span class="s1">&#39;theatre&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;toilets&#39;</span><span class="p">,</span> <span class="s1">&#39;townhall&#39;</span><span class="p">,</span> <span class="s1">&#39;university&#39;</span><span class="p">,</span> <span class="s1">&#39;veterinary&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># reach centrality pre-computation, in relation to Point of Interests or any other point-geodataframes</span>
+<span class="n">convex_hull_wgs</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">convex_hull_wgs</span><span class="p">(</span><span class="n">edges_graph</span><span class="p">)</span>
+<span class="n">services</span> <span class="o">=</span> <span class="n">ox</span><span class="o">.</span><span class="n">geometries</span><span class="o">.</span><span class="n">geometries_from_polygon</span><span class="p">(</span><span class="n">convex_hull_wgs</span><span class="p">,</span> <span class="n">tags</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;amenity&#39;</span><span class="p">:</span><span class="kc">True</span><span class="p">})</span><span class="o">.</span><span class="n">to_crs</span><span class="p">(</span><span class="n">epsg</span><span class="o">=</span><span class="n">epsg</span><span class="p">)</span>
+<span class="n">services</span> <span class="o">=</span> <span class="n">services</span><span class="p">[</span><span class="n">services</span><span class="o">.</span><span class="n">amenity</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">amenities</span><span class="p">)]</span>
+<span class="n">services</span> <span class="o">=</span> <span class="n">services</span><span class="p">[</span><span class="n">services</span><span class="p">[</span><span class="s1">&#39;geometry&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">geom_type</span> <span class="o">==</span> <span class="s1">&#39;Point&#39;</span><span class="p">]</span>
+<span class="c1"># using a 50 mt buffer</span>
+<span class="n">graph</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">weight_nodes</span><span class="p">(</span><span class="n">nodes_graph</span><span class="p">,</span> <span class="n">services</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="n">field_name</span> <span class="o">=</span> <span class="s1">&#39;services&#39;</span><span class="p">,</span>  <span class="n">radius</span> <span class="o">=</span> <span class="mi">50</span><span class="p">)</span>
+
+<span class="c1"># Reach Centrality</span>
+<span class="n">Rc400</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">calculate_centrality</span><span class="p">(</span><span class="n">nx_graph</span> <span class="o">=</span> <span class="n">graph</span><span class="p">,</span> <span class="n">measure</span><span class="o">=</span><span class="s1">&#39;reach&#39;</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="s1">&#39;length&#39;</span><span class="p">,</span> <span class="n">radius</span> <span class="o">=</span> <span class="mi">400</span><span class="p">,</span> <span class="n">attribute</span> <span class="o">=</span> <span class="s1">&#39;services&#39;</span><span class="p">)</span>
+<span class="n">Rc600</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">calculate_centrality</span><span class="p">(</span><span class="n">nx_graph</span> <span class="o">=</span> <span class="n">graph</span><span class="p">,</span> <span class="n">measure</span><span class="o">=</span><span class="s1">&#39;reach&#39;</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="s1">&#39;length&#39;</span><span class="p">,</span> <span class="n">radius</span> <span class="o">=</span> <span class="mi">600</span><span class="p">,</span> <span class="n">attribute</span> <span class="o">=</span> <span class="s1">&#39;services&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1">## Appending the attributes to the geodataframe</span>
+<span class="n">dicts</span> <span class="o">=</span> <span class="p">[</span><span class="n">Bc_Rd</span><span class="p">,</span> <span class="n">Sc</span><span class="p">,</span> <span class="n">Rc400</span><span class="p">,</span> <span class="n">Rc600</span><span class="p">]</span>
+<span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Bc_Rd&#39;</span><span class="p">,</span> <span class="s1">&#39;Sc&#39;</span><span class="p">,</span> <span class="s1">&#39;Rc400&#39;</span><span class="p">,</span> <span class="s1">&#39;Rc600&#39;</span><span class="p">]</span>
+<span class="k">for</span> <span class="n">n</span><span class="p">,</span><span class="n">c</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">dicts</span><span class="p">):</span>
+    <span class="n">nodes_graph</span><span class="p">[</span><span class="n">columns</span><span class="p">[</span><span class="n">n</span><span class="p">]]</span> <span class="o">=</span> <span class="n">nodes_graph</span><span class="o">.</span><span class="n">nodeID</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<section id="Visualisation">
+<h3>Visualisation<a class="headerlink" href="#Visualisation" title="Link to this heading">#</a></h3>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">col</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Bc_Rd&#39;</span><span class="p">,</span> <span class="s1">&#39;Bc_Rw&#39;</span><span class="p">,</span> <span class="s1">&#39;Sc&#39;</span><span class="p">,</span> <span class="s1">&#39;Rc400&#39;</span><span class="p">,</span> <span class="s1">&#39;Rc600&#39;</span><span class="p">]</span>
+<span class="n">titles</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Betweennes Centrality - Shortest Path&#39;</span><span class="p">,</span> <span class="s1">&#39;Straightness Centrality&#39;</span><span class="p">,</span> <span class="s1">&#39;Reach Centrality 400 mt radius&#39;</span><span class="p">,</span>
+          <span class="s1">&#39;Reach Centrality 600 mt radius&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<section id="Parameters">
+<h4>Parameters<a class="headerlink" href="#Parameters" title="Link to this heading">#</a></h4>
+<p><strong>Plot properties (optional)</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">black_background</span></code> black background or white</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">figsize</span></code>: size of the figure’s side extent (15,10)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">legend</span></code>: if True, show the legend</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">axes_frame</span></code>: if True, it shows an axis frame</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fontsize</span></code>: the fontsize for texts</p></li>
+</ul>
+<p><strong>What to plot (some may be required, depending on the function)</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">gdf</span></code>: the gdf to plot (only for the functions <code class="docutils literal notranslate"><span class="pre">plot_gdf</span></code> and <code class="docutils literal notranslate"><span class="pre">plot_grid_gdf_columns</span></code>)</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">gdfs</span></code>: list of GeoDataFrames to plot (only for the function <code class="docutils literal notranslate"><span class="pre">plot_grid_gdfs_column</span></code>)</p></li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">column</span></code>: the column of the gdf on which building the visualisation (only for the functions <code class="docutils literal notranslate"><span class="pre">plot_gdf</span></code> and <code class="docutils literal notranslate"><span class="pre">plot_grid_gdf_columns</span></code>)</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">columns</span></code>: list of the columns on which building the visualisation (only for the function <code class="docutils literal notranslate"><span class="pre">plot_grid_gdf_columns</span></code>)</p></li>
+</ul>
+</li>
+</ul>
+<p><strong>How to plot (optional)</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">scheme</span></code>: the classification method, choose amongst: <a class="reference external" href="https://pysal.org/mapclassify/api.html">https://pysal.org/mapclassify/api.html</a></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">bins</span></code>: bins defined by the user</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">classes</span></code>: nr classes for visualising when scheme is not None</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">norm</span></code>: a desired data normalisation into a [min, max] interval</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cmap</span></code>: see matplotlib colormaps for a list of possible values or pass a colormap</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">color</span></code>: categorical color applied to all geometries when not using a column to color them</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">alpha</span></code>: alpha value of the plotted layer</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">geometry_size</span></code> point size or line with value values, based on the geometry</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">geometry_size_factor</span></code>: when provided, it rescales the column provided, if any, from 0 to 1 and it uses the geoemtry_size_factor to rescale the markersize or the linewidth accordingly (e.g. rescaled variable’s value [0-1] * factor), when plotting a Point GeoDataFrame</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cbar</span></code>: if True, show colorbar, otherwise don’t; when True it doesn’t show legend. Related paramters are:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">cbar_shrink</span></code>: fraction by which to multiply the size of the colorbar.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cbar_ticks</span></code>: number of ticks along the colorbar</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cbar_max_symbol</span></code>: if True, it shows the “&gt;” next to the highest tick’s label in the colorbar (useful when normalising)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cbar_min_max</span></code>: if True, it only shows the “&gt;” and “&lt;” as labels of the lowest and highest ticks’ the colorbar</p></li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">gdf_base_map</span></code>, provide a GeoDataFrame that should be used as base-map. Related paramters are:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">base_map_gdf</span></code>: a desired additional layer to use as a base map</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">base_map_color</span></code>color applied to all geometries of the base map</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">base_map_alpha</span></code>: base map’s alpha value</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">base_map_geometry_size</span></code>: base map’s markersize or linewidth when the base map is a Point GeoDataFrame or a LineString GeoDataFrame</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">base_map_zorder</span></code>: zorder of the layer; e.g. if 0, plots first, thus main GeoDataFrame on top; if 1, plots last, thus on</p></li>
+</ul>
+</li>
+</ul>
+<p><strong>Only for grid-like plot (multi gdfs or multi columns)</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">nrows</span></code>: number of rows of the subplot</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ncols</span></code>: number of columns of the subplot</p></li>
+</ul>
+<p><code class="docutils literal notranslate"><span class="pre">nrows</span></code> x <code class="docutils literal notranslate"><span class="pre">ncols</span></code> must be equal (or +1) to the lenght of the gdfs or columns passed.</p>
+</section>
+<section id="Single-figure-visualisation">
+<h4>Single figure visualisation<a class="headerlink" href="#Single-figure-visualisation" title="Link to this heading">#</a></h4>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">column</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">columns</span><span class="p">):</span>
+
+    <span class="n">ci</span><span class="o">.</span><span class="n">plot_gdf</span><span class="p">(</span><span class="n">nodes_graph</span><span class="p">,</span> <span class="n">column</span> <span class="o">=</span> <span class="n">column</span><span class="p">,</span> <span class="n">title</span> <span class="o">=</span> <span class="n">titles</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="n">cmap</span> <span class="o">=</span> <span class="s1">&#39;magma&#39;</span><span class="p">,</span> <span class="n">classes</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">scheme</span> <span class="o">=</span> <span class="s1">&#39;natural_breaks&#39;</span><span class="p">,</span>
+                <span class="n">geometry_size_factor</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="mi">7</span><span class="p">),</span> <span class="n">base_map_gdf</span> <span class="o">=</span> <span class="n">edges_graph</span><span class="p">,</span> <span class="n">base_map_zorder</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="n">legend</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Nodes_Paths_Local_Files_23_0.png" src="../_images/notebooks_Nodes_Paths_Local_Files_23_0.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Nodes_Paths_Local_Files_23_1.png" src="../_images/notebooks_Nodes_Paths_Local_Files_23_1.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Nodes_Paths_Local_Files_23_2.png" src="../_images/notebooks_Nodes_Paths_Local_Files_23_2.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Nodes_Paths_Local_Files_23_3.png" src="../_images/notebooks_Nodes_Paths_Local_Files_23_3.png" />
+</div>
+</div>
+</section>
+<section id="Grid-visualisation-with-Lynch-like-Breaks">
+<h4>Grid visualisation with Lynch-like Breaks<a class="headerlink" href="#Grid-visualisation-with-Lynch-like-Breaks" title="Link to this heading">#</a></h4>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Lynch&#39;s bins - only for variables from 0 to 1</span>
+<span class="n">scheme_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;bins&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="mf">0.125</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">,</span> <span class="mf">1.00</span><span class="p">],</span> <span class="s1">&#39;scheme&#39;</span> <span class="p">:</span> <span class="s1">&#39;User_Defined&#39;</span><span class="p">}</span>
+<span class="n">cbar_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;cbar&#39;</span> <span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;cbar_min_max&#39;</span> <span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;cbar_shrink&#39;</span> <span class="p">:</span> <span class="mf">0.30</span><span class="p">}</span>
+
+<span class="c1">#rescaling values for 0-1 visualisation</span>
+<span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">column</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">columns</span><span class="p">):</span>
+    <span class="n">nodes_graph</span><span class="p">[</span><span class="n">column</span><span class="o">+</span><span class="s1">&#39;_sc&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">scaling_columnDF</span><span class="p">(</span><span class="n">nodes_graph</span><span class="p">[</span><span class="n">column</span><span class="p">])</span>
+
+<span class="n">columns_rescaled</span> <span class="o">=</span> <span class="p">[</span><span class="n">column</span><span class="o">+</span><span class="s1">&#39;_sc&#39;</span> <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">columns</span><span class="p">]</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">plot_grid_gdf_columns</span><span class="p">(</span><span class="n">nodes_graph</span><span class="p">,</span> <span class="n">titles</span> <span class="o">=</span> <span class="n">titles</span><span class="p">,</span> <span class="n">columns</span> <span class="o">=</span> <span class="n">columns_rescaled</span><span class="p">,</span> <span class="n">cmap</span> <span class="o">=</span> <span class="s1">&#39;magma&#39;</span><span class="p">,</span> <span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">20</span><span class="p">),</span>
+                    <span class="n">nrows</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">ncols</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>  <span class="n">geometry_size_factor</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="o">**</span><span class="n">cbar_dict</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Nodes_Paths_Local_Files_25_0.png" src="../_images/notebooks_Nodes_Paths_Local_Files_25_0.png" />
+</div>
+</div>
+</section>
+</section>
+</section>
+<section id="Paths">
+<h2>Paths<a class="headerlink" href="#Paths" title="Link to this heading">#</a></h2>
+<p>On the primal graph representation of the street network, the following centrality measures are computed on edges: * Road Distance Betweenness centrality. * Angular Betweenness centrality (On the dual graph representation of the street network)</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Road Distance betweenness centrality</span>
+<span class="n">Eb</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">edge_betweenness_centrality</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">weight</span> <span class="o">=</span> <span class="s1">&#39;length&#39;</span><span class="p">,</span> <span class="n">normalized</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># appending to the geodataframe</span>
+<span class="k">if</span> <span class="s1">&#39;Eb&#39;</span> <span class="ow">in</span> <span class="n">edges_graph</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+    <span class="n">edges_graph</span><span class="o">.</span><span class="n">drop</span><span class="p">([</span><span class="s1">&#39;Eb&#39;</span><span class="p">],</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">inplace</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<span class="n">edges_graph</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">append_edges_metrics</span><span class="p">(</span><span class="n">edges_graph</span><span class="p">,</span> <span class="n">graph</span><span class="p">,</span> <span class="p">[</span><span class="n">Eb</span><span class="p">],</span> <span class="p">[</span><span class="s1">&#39;Eb&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<section id="Dual-graph-analysis:-Angular-Betweenness">
+<h3>Dual graph analysis: Angular Betweenness<a class="headerlink" href="#Dual-graph-analysis:-Angular-Betweenness" title="Link to this heading">#</a></h3>
+<p>Here street-segments are transformed into nodes (geograpically represented by their centroids). Fictional links represent instead intersections. Thus if two segments are connected in the actual street network, a link in the dual graph representation will be created by connecting the corresponding nodes. This process allows taking advantage of angular relationships in centrality measures computation and other network operations.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Creating the dual geodataframes and the dual graph.</span>
+<span class="n">nodesDual_graph</span><span class="p">,</span> <span class="n">edgesDual_graph</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">dual_gdf</span><span class="p">(</span><span class="n">nodes_graph</span><span class="p">,</span> <span class="n">edges_graph</span><span class="p">,</span> <span class="n">epsg</span><span class="p">)</span>
+<span class="n">dual_graph</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">dual_graph_fromGDF</span><span class="p">(</span><span class="n">nodesDual_graph</span><span class="p">,</span> <span class="n">edgesDual_graph</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+C:\Users\gfilo\AppData\Local\miniconda3\envs\cityImage\Lib\site-packages\cityImage\graph.py:180: FutureWarning: The behavior of DataFrame concatenation with empty or all-NA entries is deprecated. In a future version, this will no longer exclude empty or all-NA columns when determining the result dtypes. To retain the old behavior, exclude the relevant entries before the concat operation.
+  edges_dual = pd.concat([edges_dual, new_row], ignore_index=True)
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">plot</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">plot_gdf</span><span class="p">(</span><span class="n">edgesDual_graph</span><span class="p">,</span> <span class="n">black_background</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">),</span> <span class="n">title</span> <span class="o">=</span> <span class="n">city_name</span><span class="o">+</span><span class="s1">&#39;: Dual Graph representation&#39;</span><span class="p">,</span>
+             <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;black&#39;</span><span class="p">,</span> <span class="n">geometry_size</span> <span class="o">=</span> <span class="mf">0.7</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Nodes_Paths_Local_Files_31_0.png" src="../_images/notebooks_Nodes_Paths_Local_Files_31_0.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Angular-change betweenness centrality</span>
+<span class="n">Ab</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">betweenness_centrality</span><span class="p">(</span><span class="n">dual_graph</span><span class="p">,</span> <span class="n">weight</span> <span class="o">=</span> <span class="s1">&#39;rad&#39;</span><span class="p">,</span> <span class="n">normalized</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span>
+<span class="n">edges_graph</span><span class="p">[</span><span class="s1">&#39;Ab&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">edges_graph</span><span class="o">.</span><span class="n">edgeID</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">Ab</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p><strong>Visualisation</strong></p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Eb&#39;</span><span class="p">,</span> <span class="s1">&#39;Ab&#39;</span><span class="p">]</span>
+<span class="n">titles</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Betweenness - Distance SP&#39;</span><span class="p">,</span> <span class="s1">&#39;Betweenness - Cum. Angular Change SP&#39;</span><span class="p">]</span>
+<span class="n">cbar_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;cbar&#39;</span> <span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;cbar_min_max&#39;</span> <span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;cbar_shrink&#39;</span> <span class="p">:</span> <span class="mf">0.50</span><span class="p">}</span>
+
+<span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">column</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">columns</span><span class="p">):</span>
+    <span class="n">edges_graph</span><span class="p">[</span><span class="n">column</span><span class="o">+</span><span class="s1">&#39;_sc&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">scaling_columnDF</span><span class="p">(</span><span class="n">edges_graph</span><span class="p">[</span><span class="n">column</span><span class="p">])</span>
+
+<span class="n">columns_rescaled</span> <span class="o">=</span> <span class="p">[</span><span class="n">column</span><span class="o">+</span><span class="s1">&#39;_sc&#39;</span> <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">columns</span><span class="p">]</span>
+<span class="n">plot</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">plot_grid_gdf_columns</span><span class="p">(</span><span class="n">edges_graph</span><span class="p">,</span> <span class="n">classes</span> <span class="o">=</span> <span class="mi">8</span><span class="p">,</span> <span class="n">columns</span> <span class="o">=</span> <span class="n">columns_rescaled</span><span class="p">,</span> <span class="n">titles</span> <span class="o">=</span> <span class="n">titles</span><span class="p">,</span> <span class="n">geometry_size</span> <span class="o">=</span> <span class="mf">1.9</span><span class="p">,</span>
+                                <span class="n">nrows</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">ncols</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">scheme</span> <span class="o">=</span> <span class="s1">&#39;Natural_Breaks&#39;</span><span class="p">,</span> <span class="n">cmap</span> <span class="o">=</span> <span class="s1">&#39;magma&#39;</span><span class="p">,</span> <span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">15</span> <span class="p">,</span><span class="mi">10</span><span class="p">),</span>
+                                <span class="o">**</span><span class="n">cbar_dict</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Nodes_Paths_Local_Files_34_0.png" src="../_images/notebooks_Nodes_Paths_Local_Files_34_0.png" />
+</div>
+</div>
+<p><strong>Exporting</strong></p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># provide path</span>
+<span class="n">output_path</span> <span class="o">=</span> <span class="s1">&#39;../output/&#39;</span><span class="o">+</span><span class="n">city_name</span>
+
+<span class="c1"># primal graph</span>
+<span class="n">nodes_graph</span><span class="o">.</span><span class="n">to_file</span><span class="p">(</span><span class="n">output_path</span><span class="o">+</span><span class="s1">&#39;_nodes.gpkg&#39;</span><span class="p">,</span> <span class="n">driver</span> <span class="o">=</span><span class="s1">&#39;GPKG&#39;</span><span class="p">)</span>
+<span class="n">edges_graph</span><span class="o">.</span><span class="n">to_file</span><span class="p">(</span><span class="n">output_path</span><span class="o">+</span><span class="s1">&#39;_edges.gpkg&#39;</span><span class="p">,</span> <span class="n">driver</span> <span class="o">=</span><span class="s1">&#39;GPKG&#39;</span><span class="p">)</span>
+
+<span class="c1"># dual graph</span>
+<span class="n">nodesDual_graph</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="s1">&#39;intersecting&#39;</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">to_file</span><span class="p">(</span><span class="n">output_path</span><span class="o">+</span><span class="s1">&#39;_nodesDual.gpkg&#39;</span><span class="p">,</span> <span class="n">driver</span> <span class="o">=</span> <span class="s1">&#39;GPKG&#39;</span><span class="p">)</span>
+<span class="n">edgesDual_graph</span><span class="o">.</span><span class="n">to_file</span><span class="p">(</span><span class="n">output_path</span><span class="o">+</span><span class="s1">&#39;_edgesDual.gpkg&#39;</span><span class="p">,</span> <span class="n">driver</span> <span class="o">=</span> <span class="s1">&#39;GPKG&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<script type="application/vnd.jupyter.widget-state+json">
+{"state": {}, "version_major": 2, "version_minor": 0}
+</script></section>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Loading-the-Files">Loading the Files</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Cleaning-and-simplyfing-the-Street-Network">Cleaning and simplyfing the Street Network</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Node-centrality">Node centrality</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Visualisation">Visualisation</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#Parameters">Parameters</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#Single-figure-visualisation">Single figure visualisation</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#Grid-visualisation-with-Lynch-like-Breaks">Grid visualisation with Lynch-like Breaks</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Paths">Paths</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Dual-graph-analysis:-Angular-Betweenness">Dual graph analysis: Angular Betweenness</a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="../_sources/notebooks/Nodes_Paths_Local_Files.ipynb.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae"></script>
+<script src="../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2024, Gabriele Filomena.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.15.2.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
