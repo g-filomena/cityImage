@@ -2,6 +2,7 @@
 [![Actions Status](https://github.com/g-filomena/cityimage/workflows/tests/badge.svg)](https://github.com//g-filomena/cityimage/actions?query=workflow%3Atests)
 [![codecov](https://codecov.io/gh/g-filomena/cityImage/branch/master/graph/badge.svg)](https://codecov.io/gh/g-filomena/cityImage)
 [![PyPI version](https://badge.fury.io/py/cityImage.svg)](https://badge.fury.io/py/cityImage)
+[![Documentation Status](https://readthedocs.org/projects/cityimage/badge/?version=latest)](https://cityimage.readthedocs.io/en/latest/?badge=latest)
 
 # cityImage
 
