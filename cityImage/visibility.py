@@ -103,47 +103,51 @@ def compute_3d_sight_lines(nodes_gdf, buildings_gdf, distance_along = 200, dista
 
     def add_height_to_line(exterior, base, height):
         coords = exterior.coords
-        new_coords = [(x, y, height - base) for x, y in coords]
+        new_coords = ((x, y, height - base) for x, y in coords)
         return LineString(new_coords)
 
     def process_geometry_to_linestring(geometry, base, height):
         if isinstance(geometry, Polygon):
             return add_height_to_line(geometry.exterior, base, height)
         elif isinstance(geometry, MultiPolygon):
-            lines = [add_height_to_line(poly.exterior, base, height) for poly in geometry.geoms]
-            return LineString([pt for line in lines for pt in line.coords])
+            return LineString((pt for poly in geometry.geoms for pt in add_height_to_line(poly.exterior, base, height).coords))
         
     building_exteriors_roof = buildings_gdf.apply(lambda row: process_geometry_to_linestring(row.geometry, row.base, row.height), axis=1)
     num_intervals = [max(1, int(exterior.length / distance_along)) for exterior in building_exteriors_roof]
     
     def interpolate_targets(exterior, num_intervals):
-        return [exterior.interpolate(min(exterior.length / 2, distance_along) * i) for i in range(num_intervals)]
+        return (exterior.interpolate(min(exterior.length / 2, distance_along) * i) for i in range(num_intervals))
     
-    buildings_gdf['target'] = [interpolate_targets(exterior, intervals) for exterior, intervals in zip(building_exteriors_roof, num_intervals)]
+    buildings_gdf['target'] = [list(interpolate_targets(exterior, intervals)) for exterior, intervals in zip(building_exteriors_roof, num_intervals)]
     
     nodes_gdf['observer'] = nodes_gdf.apply(lambda row: Point(row.geometry.x, row.geometry.y, row.z), axis=1)
-    tmp_buildings = buildings_gdf.explode('target')
+    tmp_buildings = buildings_gdf.explode('target').reset_index(drop=True)
     tmp_nodes = nodes_gdf[['nodeID', 'observer']].copy()
-    tmp_buildings = tmp_buildings[['buildingID', 'target']].copy()
+    tmp_buildings = tmp_buildings[['buildingID', 'target']]
 
-    sight_lines = pd.merge(tmp_nodes.assign(key=1), tmp_buildings.assign(key=1), on='key').drop('key', axis=1)
-    sight_lines['distance'] = np.array([p1.distance(p2) for p1, p2 in zip(sight_lines.observer, sight_lines.target)])
-    sight_lines = sight_lines[sight_lines['distance'] >= distance_min_observer_target]
-    sight_lines['geometry'] = [LineString([p1, p2]) for p1, p2 in zip(sight_lines.observer, sight_lines.target)]
-    sight_lines.reset_index(drop=True, inplace=True)
-
-    buildings_gdf['building_3d'] = [polygon_2d_to_3d(geo, base, height) for geo, base, height in zip(buildings_gdf['geometry'], buildings_gdf['base'], buildings_gdf['height'])]
-    sight_lines['start'] = [[observer.x, observer.y, observer.z] for observer in sight_lines.observer]
-    sight_lines['stop'] = [[target.x, target.y, target.z] for target in sight_lines.target]
+    sight_lines_chunks = []
+    tmp_buildings_chunks = np.array_split(tmp_buildings, max(1, len(tmp_buildings) // chunk_size))
     buildings_sindex = buildings_gdf.sindex
 
-    sight_lines['visible'] = sight_lines.apply(lambda row: intervisibility(row.geometry, row.buildingID, row.start, row.stop, buildings_gdf, buildings_sindex), axis=1)
-    sight_lines = sight_lines[sight_lines['visible'] == True]
-    sight_lines.drop(['start', 'stop', 'observer', 'target', 'visible'], axis=1, inplace=True)
+    for chunk in tqdm(tmp_buildings_chunks, desc="Processing sight lines"):
+        sight_lines_chunk = pd.merge(tmp_nodes.assign(key=1), chunk.assign(key=1), on='key').drop('key', axis=1)
+        sight_lines_chunk['distance'] = [p1.distance(p2) for p1, p2 in zip(sight_lines_chunk.observer, sight_lines_chunk.target)]
+        sight_lines_chunk = sight_lines_chunk[sight_lines_chunk['distance'] >= distance_min_observer_target]
+        sight_lines_chunk['geometry'] = [LineString([p1, p2]) for p1, p2 in zip(sight_lines_chunk.observer, sight_lines_chunk.target)]
+
+        # Calculate intervisibility right away
+        sight_lines_chunk['start'] = [[observer.x, observer.y, observer.z] for observer in sight_lines_chunk.observer]
+        sight_lines_chunk['stop'] = [[target.x, target.y, target.z] for target in sight_lines_chunk.target]
+        sight_lines_chunk['visible'] = sight_lines_chunk.apply(lambda row: intervisibility(row.geometry, row.buildingID, row.start, row.stop, buildings_gdf, buildings_sindex), axis=1)
+        sight_lines_chunk = sight_lines_chunk[sight_lines_chunk['visible'] == True]
+        sight_lines_chunk.drop(['start', 'stop', 'observer', 'target', 'visible'], axis=1, inplace=True)
+        sight_lines_chunks.append(sight_lines_chunk)
+
+    sight_lines = pd.concat(sight_lines_chunks, ignore_index=True)
+    sight_lines.reset_index(drop=True, inplace=True)
     sight_lines = sight_lines.set_geometry('geometry').set_crs(buildings_gdf.crs)
     
     return sight_lines
-
    
 def intervisibility(line2d, buildingID, start, stop, obstructions_gdf, obstructions_sindex):
     """
@@ -183,102 +187,3 @@ def intervisibility(line2d, buildingID, start, stop, obstructions_gdf, obstructi
             return False
             
     return visible 
-
-def get_coord_angle(origin, distance, angle):
-    angle_rad = np.deg2rad(angle)
-    x = origin[0] + distance * np.cos(angle_rad)
-    y = origin[1] + distance * np.sin(angle_rad)
-    return [x, y]
-
-def create_visibility_polygon(node, edge_angle, obstructions_gdf, obstructions_sindex, max_expansion_distance=600):
-    distance_along = 10
-    angles = np.arange(-45, 46, distance_along)
-    coords = np.array([get_coord_angle([node.x, node.y], distance=max_expansion_distance, angle=edge_angle + i) for i in angles])
-    lines = [LineString([node, Point(x)]) for x in coords]
-    
-    buffer = node.buffer(max_expansion_distance)
-    possible_matches_index = list(obstructions_sindex.intersection(buffer.bounds))
-    possible_matches = obstructions_gdf.iloc[possible_matches_index]
-    obstacles = possible_matches[possible_matches.intersects(buffer)]
-    obstacles = obstacles[~obstacles.geometry.touches(node)]
-    
-    if len(obstacles) > 0:
-        ob = unary_union(obstacles.geometry)
-        intersections = [line.intersection(ob) for line in lines]
-        clipped_lines = [
-            LineString([node, Point(intersection.geoms[0].coords[0])]) if isinstance(intersection, MultiLineString) and not intersection.is_empty else
-            LineString([node, Point(intersection.coords[0])]) if isinstance(intersection, LineString) and not intersection.is_empty else
-            LineString([node, Point(intersection.coords[0])]) if isinstance(intersection, Point) and not intersection.is_empty else
-            line for intersection, line in zip(intersections, lines)
-        ]
-    else: 
-        clipped_lines = lines
-    
-    poly = Polygon([[p.x, p.y] for p in [node] + [Point(line.coords[1]) for line in clipped_lines] + [node]])
-    return poly.difference(unary_union(obstructions_gdf.geometry))
-
-def visibility_polygons_for_edge(edge, obstructions_gdf, obstructions_sindex, max_expansion_distance=600):
-    """
-    Calculates two visibility polygons for an edge, one per direction.
-    
-    Parameters
-    ----------
-    edge: LineString
-        The edge geometry.
-    obstructions_gdf: GeoDataFrame
-        Obstructions GeoDataFrame.
-    max_expansion_distance: float
-        The maximum distance from the node to expand the visibility cone.
-    
-    Returns
-    -------
-    tuple
-        Two visibility polygons.
-    """
-    line = edge.geometry
-    start, end = list(line.coords)[0], list(line.coords)[1]
-    edge_angle = np.degrees(np.arctan2(end[1] - start[1], end[0] - start[0]))
-    node_start = Point(start)
-    node_end = Point(end)
-    poly1 = create_visibility_polygon(node_start, edge_angle, obstructions_gdf, obstructions_sindex, max_expansion_distance)
-    poly2 = create_visibility_polygon(node_end, edge_angle + 180, obstructions_gdf, obstructions_sindex, max_expansion_distance)
-    return poly1, poly2
-
-def fill_visibility_matrix(edges_gdf, obstructions_gdf, max_expansion_distance=600):
-    """
-    Iterates through all edges and fills a matrix where each row is formed with nodeID_to + "_" + nodeID_from,
-    and columns are ID and visibility polygons.
-    
-    Parameters
-    ----------
-    edges_gdf: GeoDataFrame
-        The edges GeoDataFrame containing LineString geometries.
-    obstructions_gdf: GeoDataFrame
-        Obstructions GeoDataFrame.
-    max_expansion_distance: float
-        The maximum distance from the node to expand the visibility cone.
-    
-    Returns
-    -------
-    DataFrame
-        A DataFrame containing edge ID and visibility polygons.
-    """
-
-    obstructions_sindex = obstructions_gdf.sindex
-
-    def process_edge(row):
-        u, v = row['u'], row['v']
-        poly1, poly2 = visibility_polygons_for_edge(row, obstructions_gdf, obstructions_sindex, max_expansion_distance)
-        
-        return pd.DataFrame({
-            "ID": [f"{u}_{v}", f"{v}_{u}"],
-            "Vispolygon": [poly1, poly2]
-        })
-
-    visibility_matrix = edges_gdf.apply(process_edge, axis=1).reset_index(drop=True)
-    visibility_matrix = pd.concat(visibility_matrix.tolist(), ignore_index=True)
-    
-    # Convert to GeoDataFrame
-    visibility_gdf = gpd.GeoDataFrame(visibility_matrix, geometry='geometry', crs=edges_gdf.crs)
-    
-    return visibility_gdf
