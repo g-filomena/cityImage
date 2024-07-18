@@ -51,7 +51,7 @@ def _euclidean_distance(xs, ys, xt, yt):
     """ xs stands for x source and xt for x target """
     return sqrt((xs - xt)**2 + (ys - yt)**2)           
             
-def calculate_centrality(nx_graph, measure='betweenness', weight='weight', radius=None, attribute=None):
+def calculate_centrality(nx_graph, measure='betweenness', weight='weight', radius=None, attribute=None, normalized = False):
     """
     Convert a NetworkX graph to an igraph graph and calculate centrality measures.
 
@@ -67,7 +67,9 @@ def calculate_centrality(nx_graph, measure='betweenness', weight='weight', radiu
         The radius for reach centrality.
     attribute: str, optional
         The node attribute for reach centrality.
-
+    normalized: boolean, optional
+        Normalize to the number of nodes-1 in the graph (straightness)
+        
     Returns
     -------
     centrality_dict: dict
@@ -93,7 +95,7 @@ def calculate_centrality(nx_graph, measure='betweenness', weight='weight', radiu
     elif measure == 'closeness':
         centrality_values = ig_graph.closeness(weights='weight')
     elif measure == 'straightness':
-        centrality_values = straightness_centrality(ig_graph, weight='weight')
+        centrality_values = straightness_centrality(ig_graph, weight='weight', normalized = normalized)
     elif measure == 'reach':
         if radius is None or attribute is None:
             raise ValueError("For reach centrality, both radius and attribute parameters must be provided")
@@ -150,12 +152,12 @@ def straightness_centrality(ig_graph, weight, normalized=True):
 
     Parameters
     ----------
-    ig_graph : igraph.Graph
+    ig_graph: igraph.Graph
         The igraph Graph object.
-    weight : str
+    weight: str
         The edge attribute to be used as weight.
-    normalized : bool, optional
-        Whether to normalize the straightness centrality values (default is True).
+    normalized: boolean, optional
+        Normalize to the number of nodes-1 in the graph (straightness)
 
     Returns
     -------
@@ -175,6 +177,7 @@ def straightness_centrality(ig_graph, weight, normalized=True):
 
         if len(sp) > 0 and n_nodes > 1:
             # Compute the sum of euclidean distances
+            straightness = 0
             for target, network_dist in enumerate(sp):
                 if node != target and network_dist < float('inf'):
                     euclidean_dist = _euclidean_distance(*coord_nodes[node], *coord_nodes[target])
