@@ -108,7 +108,7 @@ class MultiPlot():
         rect.set_facecolor("black" if black_background else "white")   
         self.font_size_primary = fontsize
         self.font_size_secondary = fontsize*0.90
-        self.fig.tight_layout(pad=3.0)
+        self.fig.tight_layout()
         if title is not None:
             self.fig.suptitle(title, color = self.text_color, fontsize = self.font_size_primary, fontfamily = 'Times New Roman', 
                          ha = 'center', va = 'center') 
@@ -230,7 +230,7 @@ def plot_gdf(gdf, column = None, title = None, black_background = True, figsize 
 
     return plot.fig      
  
-def plot_grid_gdfs_column(gdfs = [], column = None, ncols = 1, nrows = 1, titles = [], black_background = True, figsize = (15,15), scheme = None, bins = None, 
+def plot_grid_gdfs_column(gdfs = [], column = None, ncols = 1, nrows = 1, main_title = None, titles = [], black_background = True, figsize = (15,15), scheme = None, bins = None, 
                 classes = None, norm = None, cmap = None, color = None, alpha = None, geometry_size = None, geometry_size_columns = [], geometry_size_factor = None,
                 legend = False, fontsize = 15, cbar = False, cbar_ticks = 5, cbar_max_symbol = False, cbar_min_max = False, cbar_shrink = 0.75, axes_frame = False):
     """
@@ -251,6 +251,8 @@ def plot_grid_gdfs_column(gdfs = [], column = None, ncols = 1, nrows = 1, titles
         The number of desired columns for organising the subplots.
     nrows: int
         The number of desired rows for organising the subplots.
+    main_title: str
+        The main plot title.  
     titles: list of str
         The list of titles, one per axes (and column, when provided).
     black_background: boolean 
@@ -305,11 +307,18 @@ def plot_grid_gdfs_column(gdfs = [], column = None, ncols = 1, nrows = 1, titles
     if (len(gdfs)+1 != ncols*nrows) & (len(gdfs) != ncols*nrows):
         raise ValueError("Please provide an appropriate combination of nrows and ncols")
     
-    multiPlot = MultiPlot(figsize = figsize, nrows = nrows, ncols = ncols, black_background = black_background, fontsize = fontsize)
+    multiPlot = MultiPlot(figsize = figsize, nrows = nrows, ncols = ncols, black_background = black_background, fontsize = fontsize, title = main_title)
     if (cbar) & (norm is None):
         min_value = min([gdf[column].min() for gdf in gdfs])
         max_value = max([gdf[column].max() for gdf in gdfs])
         norm = plt.Normalize(vmin = min_value, vmax = max_value)
+    
+    unique_categories = []
+    if (legend) & (scheme == None):
+        # Step 1: Collect unique categories
+        unique_categories = set()
+        for gdf in gdfs:
+            unique_categories = unique_categories.union(set(gdf['land_use'].unique()))
     
     for n, ax in enumerate(multiPlot.grid.flat):
         if n > len(gdfs)-1: 
@@ -319,23 +328,18 @@ def plot_grid_gdfs_column(gdfs = [], column = None, ncols = 1, nrows = 1, titles
           
         parameters = {'ax': ax, 'n': n, 'multiPlot': multiPlot, 'column': column , 'gdf': gdf, 'titles': titles, 
                       'scheme': scheme, 'bins': bins, 'classes': classes, 'norm': norm, 'cmap': cmap, 
-                      'color': color, 'alpha': alpha, 'legend': legend, 'axes_frame': axes_frame,
-                      'geometry_size': geometry_size, 'geometry_size_columns': geometry_size_columns, 'geometry_size_factor': geometry_size_factor}        
+                      'color': color, 'alpha': alpha, 'one_legend' : True, 'legend': legend, 'axes_frame': axes_frame,
+                      'geometry_size': geometry_size, 'geometry_size_columns': geometry_size_columns, 'geometry_size_factor': geometry_size_factor,
+                      'unique_categories' : unique_categories}        
         subplot(**parameters)    
             
     if (cbar) & (not legend):  
         generate_colorbar(plot = multiPlot, cmap = cmap, norm = norm, cbar_ticks = cbar_ticks, cbar_max_symbol = cbar_max_symbol, cbar_min_max = cbar_min_max, 
                     cbar_shrink = cbar_shrink)
-    
-    if (legend) & (scheme == None):
-        # Step 1: Collect unique categories
-        unique_categories = set()
-        for gdf in gdfs:
-            unique_categories = unique_categories.union(set(gdf['land_use'].unique()))
-
+   
     return multiPlot.fig                      
 
-def plot_grid_gdf_columns(gdf, columns = [], ncols = 1, nrows = 1, titles = [], black_background = True, figsize = (15,15), scheme = None, bins = None, 
+def plot_grid_gdf_columns(gdf, columns = [], ncols = 1, nrows = 1, main_title = None, titles = [], black_background = True, figsize = (15,15), scheme = None, bins = None, 
                           classes = None, norm = None, cmap = None, color = None, alpha = None, 
                           geometry_size = None, geometry_size_columns = [], geometry_size_factor = None, legend = False, fontsize = 15,
                           cbar = False, cbar_ticks = 5, cbar_max_symbol = False, cbar_min_max = False, cbar_shrink = 0.75, axes_frame = False):
@@ -356,6 +360,8 @@ def plot_grid_gdf_columns(gdf, columns = [], ncols = 1, nrows = 1, titles = [], 
         The number of desired columns for organising the subplots.
     nrows: int
         The number of desired rows for organising the subplots.
+    main_title: str
+        The main plot title.     
     titles: list of str
         Title of the plot.
     black_background: boolean 
@@ -412,11 +418,17 @@ def plot_grid_gdf_columns(gdf, columns = [], ncols = 1, nrows = 1, titles = [], 
     if (len(columns)+1 != ncols*nrows) & (len(columns) != ncols*nrows):
         raise ValueError("Please provide an appropriate combination of nrows and ncols")
     
-    multiPlot = MultiPlot(figsize = figsize, nrows = nrows, ncols = ncols, black_background = black_background, fontsize = fontsize)
+    multiPlot = MultiPlot(figsize = figsize, nrows = nrows, ncols = ncols, black_background = black_background, fontsize = fontsize, title = main_title)
     if (cbar) & (norm is None):
         min_value = min([gdf[column].min() for column in columns])
         max_value = max([gdf[column].max() for column in columns])
         norm = plt.Normalize(vmin = min_value, vmax = max_value)
+    
+    if scheme == 'User_Defined':
+        one_legend = True
+    else:
+        one_legend = False
+    
     
     for n, ax in enumerate(multiPlot.grid.flat):
         if n > len(columns)-1: 
@@ -426,8 +438,9 @@ def plot_grid_gdf_columns(gdf, columns = [], ncols = 1, nrows = 1, titles = [], 
             
         parameters = {'ax': ax, 'n': n, 'multiPlot': multiPlot, 'column': column , 'gdf': gdf, 'titles': titles, 
                       'scheme': scheme, 'bins': bins, 'classes': classes, 'norm': norm, 'cmap': cmap, 
-                      'color': color, 'alpha': alpha, 'legend': legend, 'axes_frame': axes_frame,
-                      'geometry_size': geometry_size, 'geometry_size_columns': geometry_size_columns, 'geometry_size_factor': geometry_size_factor}        
+                      'color': color, 'alpha': alpha, 'one_legend' : one_legend, 'legend': legend, 'axes_frame': axes_frame,
+                      'geometry_size': geometry_size, 'geometry_size_columns': geometry_size_columns, 'geometry_size_factor': geometry_size_factor
+                      }        
         subplot(**parameters)    
             
     if (cbar) & (not legend):  
@@ -507,13 +520,24 @@ def plotOn_ax(ax, gdf, column = None, scheme = None, bins = None, classes = 7, n
     geometry_type = gdf.iloc[0].geometry.geom_type
     if geometry_type == 'Point':    
         if (geometry_size_factor is not None): 
-            gdf[column+'_sc'] = scaling_columnDF(gdf[column])
-            geometry_size = np.where(gdf[column+'_sc'] >= 0.20, gdf[column+'_sc']*geometry_size_factor, 0.40) # marker size
+            if not '_sc' in column:
+                gdf[column+'_sc'] = scaling_columnDF(gdf[column])
+                geometry_factor_column = column+'_sc'
+            else:
+                geometry_factor_column = column
+            # Define base marker size
+            base_marker_size = 0.40
+
+            # Apply exponential scaling to marker sizes
+            geometry_size = np.where(
+                gdf[geometry_factor_column] >= 0.20,
+                base_marker_size * np.exp(gdf[geometry_factor_column] * geometry_size_factor),
+                base_marker_size
+            )
         parameters['markersize'] = geometry_size
     elif geometry_type == 'LineString':
         if geometry_size_factor is not None:
-            geometry_size = [(abs(value)*geometry_size_factor) if (abs(value)*geometry_size_factor) > 1.1 else 1.1 for value in
-                             gdf[column]]
+            geometry_size = [(abs(value)*geometry_size_factor) if (abs(value)*geometry_size_factor) > 1.1 else 1.1 for value in gdf[column]]
         sub_parameters = {'linewidth': geometry_size, 'capstyle': 'round', 'joinstyle':'round'}
         parameters.update(sub_parameters)
     else:
@@ -521,9 +545,8 @@ def plotOn_ax(ax, gdf, column = None, scheme = None, bins = None, classes = 7, n
     
     gdf.plot(**parameters) 
  
- 
 def subplot(ax, n, multiPlot, gdf, column, titles, scheme, bins, classes, norm, cmap, color, alpha, geometry_size, geometry_size_columns,
-                    geometry_size_factor, legend, axes_frame):
+                    geometry_size_factor, one_legend, legend, axes_frame, unique_categories = []):
     """
     Create a subplot with a map plot on the given axes.
 
@@ -566,6 +589,7 @@ def subplot(ax, n, multiPlot, gdf, column, titles, scheme, bins, classes, norm, 
     axes_frame: bool
         Flag indicating whether to draw axes frame or not.
     """  
+    
     ax.set_aspect("equal")
     set_axes_frame(axes_frame, ax, multiPlot.black_background, multiPlot.text_color)
     
@@ -583,9 +607,7 @@ def subplot(ax, n, multiPlot, gdf, column, titles, scheme, bins, classes, norm, 
     if (legend and scheme != None):
         legend_ax = (n == 1 and scheme == 'User_Defined') or (scheme != 'User_Defined')
         legend_fig = (n == 1 and scheme == 'User_Defined')
-        
-    # categorical legend
-    elif legend:
+    elif legend: # categorical legend
         legend_ax = (n == 1)
         legend_fig = (n == 1)
 
@@ -593,12 +615,12 @@ def subplot(ax, n, multiPlot, gdf, column, titles, scheme, bins, classes, norm, 
                 alpha = alpha, legend = legend_ax, geometry_size = geometry_size, geometry_size_column = geometry_size_column, 
                 geometry_size_factor = geometry_size_factor)
                 
-    if legend_fig:
-        generate_legend_fig(ax, multiPlot)
+    if legend_fig and one_legend:
+        generate_legend_fig(ax, multiPlot, gdf, unique_categories, cmap)
     elif legend_ax:
         generate_legend_ax(ax, multiPlot)
         
-    multiPlot.fig.tight_layout(pad=3.0)  # Adjust layout after adding elements    
+    multiPlot.fig.tight_layout()  # Adjust layout after adding elements    
 
 def plot_baseMap(gdf = None, ax = None, color = None, geometry_size = None, alpha = 0.5, zorder = 0):
     """
@@ -629,7 +651,7 @@ def plot_baseMap(gdf = None, ax = None, color = None, geometry_size = None, alph
     if (gdf.iloc[0].geometry.geom_type == 'Polygon') or (gdf.iloc[0].geometry.geom_type == 'MultiPolygon'):
         gdf.plot(ax = ax, color = color, alpha = alpha, zorder = zorder)
     
-def generate_legend_fig(ax, plot):
+def generate_legend_fig(ax, plot, gdf, unique_categories = [], cmap = None):
     """ 
     It generates the legend for an entire figure.
     
@@ -639,24 +661,52 @@ def generate_legend_fig(ax, plot):
         The axes object on which to create the subplot.
     plot: Plot, MultiPlot Object
         The Plot object.
+    gdf: GeoDataFrame
+        GeoDataFrame containing the geometries.
+    column: str
+        Column on which the legend is based.
+    unique_categories: list, optional
+        List of unique categories for categorical data.
+    cmap: str or Colormap, optional
+        Colormap to use for categorical data.
     
-    """ 
+    """
+    
     leg = ax.get_legend()    
-    fig_leg = plot.fig.legend(handles = leg.legend_handles, labels = [t.get_text() for t in leg.texts], loc=5, 
-                              borderaxespad= 0)
+    
+    if len(unique_categories) == 0:
+        handles = leg.legend_handles
+        labels = [t.get_text() for t in leg.texts]
+    else:
+        handles = []
+        labels = []
+        geometry_type = gdf.iloc[0].geometry.geom_type
+        for i, cat in enumerate(unique_categories):
+            color = cm.get_cmap(cmap)(i / len(unique_categories))
+            if geometry_type in ['Polygon', 'MultiPolygon']:
+                patch = mpatches.Patch(color=color, label=str(cat))
+            elif geometry_type in ['LineString', 'MultiLineString']:
+                patch = Line2D([0], [0], color=color, lw=4, label=str(cat))
+            elif geometry_type == 'Point':
+                patch = Line2D([0], [0], marker='o', color=color, markerfacecolor=color, markersize=10, label=str(cat))
+            handles.append(patch)
+            labels.append(str(cat))
+        
+    fig_leg = plot.fig.legend(handles = handles, labels = labels, loc=5, borderaxespad= 0)
     ax.get_legend().remove()
-    plt.setp(fig_leg.texts, family='Times New Roman', fontsize = plot.font_size_secondary, color = plot.text_color, 
-             va = 'center')
+    plt.setp(fig_leg.texts, family='Times New Roman', fontsize = plot.font_size_secondary, color = plot.text_color, va = 'center')
 
     fig_leg.get_frame().set_linewidth(0.0) # remove legend border
     fig_leg.set_zorder(102)
     fig_leg.get_frame().set_facecolor('none')
 
     for handle in fig_leg.legend_handles:
-        if not isinstance(handle, Line2D):
+        if isinstance(handle, mpatches.Patch):
+            handle.set_linewidth(0)  # or other properties specific to patches
+        elif not isinstance(handle, Line2D):
             handle._legmarker.set_markersize(15)
         else: 
-            break
+            break           
            
 def generate_legend_ax(ax, plot):
     """ 
