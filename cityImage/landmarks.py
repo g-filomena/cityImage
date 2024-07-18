@@ -68,16 +68,12 @@ def get_buildings_fromFile(path, epsg, case_study_area = None, distance_from_cen
     obstructions_gdf["buildingID"] = obstructions_gdf.index.values.astype(int)
     
     # if case-study area and distance not defined
-    if (case_study_area is None) and (distance_from_center is None):
+    if (case_study_area is None) and (distance_from_center is None or distance_from_center == 0):
         buildings_gdf = obstructions_gdf.copy()
         return buildings_gdf, obstructions_gdf
-    
-    # clipping buildings in the case-study area
-    if case_study_area is None:
+    if (case_study_area is None):     # define a case study area
         case_study_area = obstructions_gdf.geometry.unary_union.centroid.buffer(distance_from_center)
-        buildings_gdf = obstructions_gdf[obstructions_gdf.geometry.within(case_study_area)]
-    else:
-        buildings_gdf = obstructions_gdf[obstructions_gdf.geometry.within(case_study_area.centroid.buffer(distance_from_center))]
+    buildings_gdf = obstructions_gdf[obstructions_gdf.geometry.within(case_study_area)]
 
     return buildings_gdf, obstructions_gdf
     
@@ -475,7 +471,7 @@ def pragmatic_score(buildings_gdf, research_radius = 200):
     buildings_gdf.drop('nr', axis = 1, inplace = True)
     return buildings_gdf
     
-def compute_global_scores(buildings_gdf, global_indexes_weights, global_components_weights):
+def compute_global_scores(buildings_gdf, global_components_weights, global_indexes_weights):
     """
     Computes the component and global scores for a buildings GeoDataFrame, rescaling values when necessary and assigning weights to the different properties measured.
 
@@ -496,12 +492,9 @@ def compute_global_scores(buildings_gdf, global_indexes_weights, global_componen
     Examples
     --------
     # Example 1: Computing global scores for a buildings GeoDataFrame
-    >>> import geopandas as gpd
     >>> buildings_gdf = gpd.GeoDataFrame(...)
     >>> global_indexes_weights = {"3dvis": 0.50, "fac": 0.30, "height": 0.20, "area": 0.30, "2dvis": 0.30, "neigh": 0.20, "road": 0.20}
     >>> global_components_weights = {"vScore": 0.50, "sScore": 0.30, "cScore": 0.20, "pScore": 0.10}
-    >>> buildings_gdf_scores = compute_global_scores(buildings_gdf, global_indexes_weights, global_components_weights)
-    >>> print(buildings_gdf_scores)
     """  
     # scaling
     col = ["3dvis", "fac", "height", "area","2dvis", "cult", "prag"]
