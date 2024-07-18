@@ -12,7 +12,7 @@ pd.set_option("display.precision", 3)
 
 from .utilities import dict_to_df
 
-def nodes_dict(ig_graph):
+def _nodes_dict(ig_graph):
     """Create a dictionary of node indices and their coordinates from igraph graph.
 
     Parameters
@@ -165,7 +165,7 @@ def straightness_centrality(ig_graph, weight, normalized=True):
         Dictionary of node indices and their straightness centrality values.
     """
     n_nodes = ig_graph.vcount()
-    coord_nodes = nodes_dict(ig_graph)
+    coord_nodes = _nodes_dict(ig_graph)
     straightness_centrality = {}
 
     # Compute shortest paths for all pairs
@@ -174,10 +174,11 @@ def straightness_centrality(ig_graph, weight, normalized=True):
     for node in range(n_nodes):
         straightness = 0
         sp = shortest_paths[node]
-
+        straightness = 0
+        
         if len(sp) > 0 and n_nodes > 1:
             # Compute the sum of euclidean distances
-            straightness = 0
+
             for target, network_dist in enumerate(sp):
                 if node != target and network_dist < float('inf'):
                     euclidean_dist = _euclidean_distance(*coord_nodes[node], *coord_nodes[target])
