@@ -1,7 +1,8 @@
 mapclassify>=2.5.0
 osmnx>=1.9.1
 python-louvain>=0.16
-pyvista>=0.37
+pyvista>=0.43
 igraph>=0.11.6
+tqdm>=4.65.0
 
 
