@@ -253,7 +253,7 @@ def merge_pseudo_edges(first_edge, second_edge, nodeID, nodes_gdf, edges_gdf):
     nodes_gdf = nodes_gdf.drop(nodeID, axis = 0)
     return nodes_gdf, edges_gdf
 
-def prepare_dataframes(nodes_gdf, edges_gdf):
+def _prepare_dataframes(nodes_gdf, edges_gdf):
     """
     Prepare nodes and edges dataframes for further analysis by extracting the x,y coordinates of the nodes
     and adding new columns to the edges dataframe.
@@ -369,7 +369,6 @@ def clean_edges(nodes_gdf, edges_gdf, preserve_direction = False):
     
     return nodes_gdf, edges_gdf
 
-
 def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_islands = True, same_vertexes_edges = True, self_loops = False, fix_topology = False, 
                   preserve_direction = False, nodes_to_keep_regardless = []):
     """
@@ -411,7 +410,7 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_islands = True
     nodes_gdf, edges_gdf: tuple of GeoDataFrames
         The cleaned junctions and street segments GeoDataFrames.
     """
-    nodes_gdf, edges_gdf = prepare_dataframes(nodes_gdf, edges_gdf)  
+    nodes_gdf, edges_gdf = _prepare_dataframes(nodes_gdf, edges_gdf)  
     # removes fake self-loops wrongly coded by the data source
     nodes_gdf, edges_gdf = fix_self_loops(nodes_gdf, edges_gdf)  
     
@@ -470,7 +469,7 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_islands = True
     
     return nodes_gdf, edges_gdf
 
-def add_fixed_edges(edges_gdf, to_fix_gdf):
+def _add_fixed_edges(edges_gdf, to_fix_gdf):
     """
     Add fixed edges to the edges GeoDataFrame.
 
@@ -607,7 +606,7 @@ def fix_network_topology(nodes_gdf, edges_gdf):
     edges_gdf = edges_gdf[edges_gdf['fixing'] == False]   
     if len(to_fix) == 0:
         return edges_gdf    
-    return add_fixed_edges(edges_gdf, to_fix)
+    return _add_fixed_edges(edges_gdf, to_fix)
     
 def fix_self_loops(nodes_gdf, edges_gdf):
     """
@@ -654,7 +653,7 @@ def fix_self_loops(nodes_gdf, edges_gdf):
     edges_gdf = edges_gdf[edges_gdf['fixing'] == False]
     if len(to_fix) == 0:
         return nodes_gdf, edges_gdf
-    return add_fixed_edges(edges_gdf, to_fix)    
+    return _add_fixed_edges(edges_gdf, to_fix)    
     
 def remove_disconnected_islands(nodes_gdf, edges_gdf, nodeID):
     """
@@ -684,29 +683,6 @@ def remove_disconnected_islands(nodes_gdf, edges_gdf, nodeID):
         edges_gdf = edges_gdf[(edges_gdf.u.isin(nodes_gdf[nodeID])) & (edges_gdf.v.isin(nodes_gdf[nodeID]))]
         
     return nodes_gdf, edges_gdf
-
-def _assign_group_membership_to_islands(graph, edges_gdf):
-    """
-    Assign group membership to islands in the network by updating the 'group' attribute in the edges GeoDataFrame.
-
-    Parameters
-    ----------
-    graph: NetworkX Graph
-        The graph representing the network.
-    edges_gdf: LineString GeoDataFrame
-        The street segments GeoDataFrame.
-
-    Returns
-    -------
-    edges_gdf: LineString GeoDataFrame
-        The updated street segments GeoDataFrame.
-    """  
-    components = nx.connected_components(graph)
-    for n, c in enumerate(islands):
-        nodes_group = list(c)
-        edges_gdf.loc[(edges_gdf.u.isin(nodes_group) & (edges_gdf.v.isin(nodes_group))),'group'] = n
-        
-    return edges_gdf
 
 def correct_edges(nodes_gdf, edges_gdf):
     """
