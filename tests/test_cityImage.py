@@ -79,7 +79,7 @@ def test_centrality():
     global epsg_susa
    
     weight = 'length'
-    services = ox.geometries_from_address(address, tags = {'amenity':True}, dist = distance).to_crs(epsg=epsg_susa)
+    services = ox.features_from_address(address, tags = {'amenity':True}, dist = distance).to_crs(epsg=epsg_susa)
     services = services[services['geometry'].geom_type == 'Point']
     graph = ci.weight_nodes(nodes_gdf, services, graph, field_name = 'services', radius = 50)
     
