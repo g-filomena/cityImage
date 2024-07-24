@@ -471,7 +471,7 @@ def pragmatic_score(buildings_gdf, research_radius = 200):
     buildings_gdf.drop('nr', axis = 1, inplace = True)
     return buildings_gdf
     
-def compute_global_scores(buildings_gdf, global_components_weights, global_indexes_weights):
+def compute_global_scores(buildings_gdf, global_indexes_weights, global_components_weights):
     """
     Computes the component and global scores for a buildings GeoDataFrame, rescaling values when necessary and assigning weights to the different properties measured.
 
