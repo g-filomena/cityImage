@@ -1,0 +1,1287 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>cityImage.plot &#8212; cityImage 1.2 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="../../_static/styles/bootstrap.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+
+  
+  <link href="../../_static/vendor/fontawesome/6.5.1/css/all.min.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.1/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.1/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.1/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=a746c00c" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
+  <script src="../../_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
+
+    <script src="../../_static/documentation_options.js?v=61243dd2"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/cityImage/plot';</script>
+    <link rel="author" title="About these documents" href="../../about.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <a id="pst-skip-link" class="skip-link" href="#main-content">Skip to main content</a>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>
+    Back to top
+  </button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__primary"
+          id="__primary"/>
+  <label class="overlay overlay-primary" for="__primary"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__secondary"
+          id="__secondary"/>
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar">
+<div class="bd-header__inner bd-page-width">
+  <label class="sidebar-toggle primary-toggle" for="__primary">
+    <span class="fa-solid fa-bars"></span>
+  </label>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">cityImage 1.2 documentation</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav class="navbar-nav">
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../index.html">
+                        Home
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../notebooks/userGuide.html">
+                        userGuide
+                      </a>
+                    </li>
+                
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/cityImage" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/gfilo" title="Twitter" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <div class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          <div class="navbar-item">
+<nav class="navbar-nav">
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../index.html">
+                        Home
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../notebooks/userGuide.html">
+                        userGuide
+                      </a>
+                    </li>
+                
+  </ul>
+</nav></div>
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/cityImage" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/gfilo" title="Twitter" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+
+
+<nav aria-label="Breadcrumb">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page">cityImage.plot</li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for cityImage.plot</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span><span class="o">,</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+<span class="kn">import</span> <span class="nn">matplotlib.cm</span> <span class="k">as</span> <span class="nn">cm</span>
+<span class="kn">import</span> <span class="nn">matplotlib.patches</span> <span class="k">as</span> <span class="nn">mpatches</span>
+<span class="kn">import</span> <span class="nn">matplotlib.ticker</span> <span class="k">as</span> <span class="nn">ticker</span>
+
+<span class="kn">from</span> <span class="nn">matplotlib.lines</span> <span class="kn">import</span> <span class="n">Line2D</span>  
+<span class="kn">from</span> <span class="nn">mpl_toolkits.axes_grid1</span> <span class="kn">import</span> <span class="n">make_axes_locatable</span><span class="p">,</span> <span class="n">ImageGrid</span>
+<span class="kn">from</span> <span class="nn">mpl_toolkits.mplot3d.art3d</span> <span class="kn">import</span> <span class="n">Line3DCollection</span>
+<span class="kn">from</span> <span class="nn">matplotlib.colors</span> <span class="kn">import</span> <span class="n">LinearSegmentedColormap</span>
+
+<span class="kn">import</span> <span class="nn">mapclassify</span><span class="o">,</span> <span class="nn">pylab</span><span class="o">,</span> <span class="nn">colorsys</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">set_option</span><span class="p">(</span><span class="s2">&quot;display.precision&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">.utilities</span> <span class="kn">import</span> <span class="n">scaling_columnDF</span>
+<span class="kn">from</span> <span class="nn">.colors</span> <span class="kn">import</span> <span class="n">rand_cmap</span><span class="p">,</span> <span class="n">random_colors_list</span><span class="p">,</span> <span class="n">kindlmann</span><span class="p">,</span> <span class="n">lighten_color</span>
+
+<span class="k">class</span> <span class="nc">Plot</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Class for creating a basic matplotlib plot with a title and customizable settings.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    figsize: tuple</span>
+<span class="sd">        Tuple of width and height for the figure.</span>
+<span class="sd">    black_background: bool</span>
+<span class="sd">        Whether to set the background color as black.</span>
+<span class="sd">    title: str</span>
+<span class="sd">        Title for the plot.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    fig: matplotlib.figure.Figure</span>
+<span class="sd">        Figure object for the plot.</span>
+<span class="sd">    ax: matplotlib.axes object</span>
+<span class="sd">        Axes object for the plot.</span>
+<span class="sd">    title: str</span>
+<span class="sd">        Title for the plot.</span>
+<span class="sd">    text_color: str</span>
+<span class="sd">        Color for text elements, white if black_background is True and black otherwise.</span>
+<span class="sd">    font_size_primary: int</span>
+<span class="sd">        Font size for the title.</span>
+<span class="sd">    font_size_secondary: int</span>
+<span class="sd">        Font size for secondary elements.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">figsize</span><span class="p">,</span> <span class="n">black_background</span><span class="p">,</span> <span class="n">fontsize</span><span class="p">,</span> <span class="n">title</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">font_size_primary</span> <span class="o">=</span> <span class="n">fontsize</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">font_size_secondary</span> <span class="o">=</span> <span class="n">fontsize</span><span class="o">*</span><span class="mf">0.90</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="n">figsize</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="n">title</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s2">&quot;equal&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">black_background</span> <span class="o">=</span> <span class="n">black_background</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">text_color</span> <span class="o">=</span> <span class="s2">&quot;white&quot;</span> <span class="k">if</span> <span class="n">black_background</span> <span class="k">else</span> <span class="s2">&quot;black&quot;</span>
+        
+        <span class="n">rect</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">patch</span> 
+        <span class="n">rect</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">(</span><span class="s2">&quot;black&quot;</span> <span class="k">if</span> <span class="n">black_background</span> <span class="k">else</span> <span class="s2">&quot;white&quot;</span><span class="p">)</span>   
+        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">(</span><span class="n">pad</span><span class="o">=</span><span class="mf">3.0</span><span class="p">)</span>        
+        <span class="k">if</span> <span class="n">title</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">text_color</span><span class="p">,</span> <span class="n">fontsize</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">font_size_primary</span><span class="p">,</span> <span class="n">fontfamily</span> <span class="o">=</span> <span class="s1">&#39;Times New Roman&#39;</span><span class="p">)</span>
+            
+               
+<span class="k">class</span> <span class="nc">MultiPlot</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A class for creating multi-plot figures.</span>
+<span class="sd">    </span>
+<span class="sd">    Attributes:</span>
+<span class="sd">    ----------</span>
+<span class="sd">    figsize: tuple</span>
+<span class="sd">        The size of the figure (width, height) in inches.</span>
+<span class="sd">    nrows: int</span>
+<span class="sd">        The number of rows in the grid layout.</span>
+<span class="sd">    ncols: int</span>
+<span class="sd">        The number of columns in the grid layout.</span>
+<span class="sd">    black_background : bool</span>
+<span class="sd">        Specifies whether the plot has a black background (True) or white background (False).</span>
+<span class="sd">    fontsize: int</span>
+<span class="sd">        The font size to be used in the plot.</span>
+<span class="sd">    title: str or None, optional</span>
+<span class="sd">        The title of the figure. If None, no title is displayed.    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">figsize</span><span class="p">,</span> <span class="n">nrows</span><span class="p">,</span> <span class="n">ncols</span><span class="p">,</span> <span class="n">black_background</span><span class="p">,</span> <span class="n">fontsize</span><span class="p">,</span> <span class="n">title</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes the MultiPlot class.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        figsize: tuple</span>
+<span class="sd">            The size of the figure (width, height) in inches.</span>
+<span class="sd">        nrows: int</span>
+<span class="sd">            The number of rows in the grid layout.</span>
+<span class="sd">        ncols: int</span>
+<span class="sd">            The number of columns in the grid layout.</span>
+<span class="sd">        black_background : bool</span>
+<span class="sd">            Specifies whether the plot has a black background (True) or white background (False).</span>
+<span class="sd">        fontsize: int</span>
+<span class="sd">            The font size to be used in the plot.</span>
+<span class="sd">        title: str or None</span>
+<span class="sd">            The title of the figure. If None, no title is displayed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ncols</span> <span class="o">=</span> <span class="n">ncols</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">nrows</span> <span class="o">=</span> <span class="n">nrows</span><span class="p">,</span> <span class="n">ncols</span> <span class="o">=</span> <span class="n">ncols</span><span class="p">,</span> <span class="n">figsize</span> <span class="o">=</span> <span class="n">figsize</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">black_background</span> <span class="o">=</span> <span class="n">black_background</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">text_color</span> <span class="o">=</span> <span class="s2">&quot;white&quot;</span> <span class="k">if</span> <span class="n">black_background</span> <span class="k">else</span> <span class="s2">&quot;black&quot;</span>
+        <span class="n">rect</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">patch</span> 
+        <span class="n">rect</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">(</span><span class="s2">&quot;black&quot;</span> <span class="k">if</span> <span class="n">black_background</span> <span class="k">else</span> <span class="s2">&quot;white&quot;</span><span class="p">)</span>   
+        <span class="bp">self</span><span class="o">.</span><span class="n">font_size_primary</span> <span class="o">=</span> <span class="n">fontsize</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">font_size_secondary</span> <span class="o">=</span> <span class="n">fontsize</span><span class="o">*</span><span class="mf">0.90</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">title</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">suptitle</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">text_color</span><span class="p">,</span> <span class="n">fontsize</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">font_size_primary</span><span class="p">,</span> <span class="n">fontfamily</span> <span class="o">=</span> <span class="s1">&#39;Times New Roman&#39;</span><span class="p">,</span> 
+                         <span class="n">ha</span> <span class="o">=</span> <span class="s1">&#39;center&#39;</span><span class="p">,</span> <span class="n">va</span> <span class="o">=</span> <span class="s1">&#39;center&#39;</span><span class="p">)</span> 
+              
+<div class="viewcode-block" id="plot_gdf">
+<a class="viewcode-back" href="../../generated/cityImage.plot_gdf.html#cityImage.plot_gdf">[docs]</a>
+<span class="k">def</span> <span class="nf">plot_gdf</span><span class="p">(</span><span class="n">gdf</span><span class="p">,</span> <span class="n">column</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">title</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">black_background</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">15</span><span class="p">),</span> <span class="n">scheme</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">bins</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+            <span class="n">classes</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">norm</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cmap</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">geometry_size</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> 
+            <span class="n">geometry_size_column</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">geometry_size_factor</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">legend</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">fontsize</span> <span class="o">=</span> <span class="mi">15</span><span class="p">,</span> <span class="n">cbar</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">cbar_ticks</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> 
+            <span class="n">cbar_max_symbol</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">cbar_min_max</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">cbar_shrink</span> <span class="o">=</span> <span class="mf">0.75</span><span class="p">,</span> <span class="n">axes_frame</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> 
+            <span class="n">base_map_gdf</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="p">[]}),</span> <span class="n">base_map_color</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">base_map_alpha</span> <span class="o">=</span> <span class="mf">0.4</span><span class="p">,</span> <span class="n">base_map_geometry_size</span> <span class="o">=</span> <span class="mf">1.1</span><span class="p">,</span>  
+            <span class="n">base_map_zorder</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    It plots the geometries of a single GeoDataFrame, coloring on the bases of the values contained in column, using a given scheme.</span>
+<span class="sd">    When only column is provided (no scheme), a categorical map is depicted.</span>
+<span class="sd">    When no column is provided, a plain map is shown.</span>
+<span class="sd">    </span>
+<span class="sd">    The other parameters regulate colorbar, legend, base map. </span>
+<span class="sd">    Use this function for plotting in relation to maximum one column, one GeoDataFrame.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    gdf: GeoDataFrame</span>
+<span class="sd">        GeoDataFrame to be plotted.</span>
+<span class="sd">    column: str</span>
+<span class="sd">        Column on which the plot is based.</span>
+<span class="sd">    title: str</span>
+<span class="sd">        Title of the plot.</span>
+<span class="sd">    black_background: bool</span>
+<span class="sd">        Specifies whether the plot has a black background (True) or white background (False).</span>
+<span class="sd">    fig_size: float</span>
+<span class="sd">        Size of the figure&#39;s side extent.</span>
+<span class="sd">    scheme: str</span>
+<span class="sd">        Classification method. Choose amongst the options listed at https://pysal.org/mapclassify/api.html.</span>
+<span class="sd">    bins: list</span>
+<span class="sd">        Bins defined by the user.</span>
+<span class="sd">    classes: int</span>
+<span class="sd">        Number of classes for categorizing the data when scheme is not &quot;None&quot;.</span>
+<span class="sd">    norm: array</span>
+<span class="sd">        A class that specifies a desired data normalization into a [min, max] interval.</span>
+<span class="sd">    cmap: str or matplotlib.colors.LinearSegmentedColormap</span>
+<span class="sd">        Color map for the plot. See matplotlib colormaps for a list of possible values or pass a colormap.</span>
+<span class="sd">    color: str</span>
+<span class="sd">        Categorical color applied to all geometries when not using a column to color them.</span>
+<span class="sd">    alpha: float</span>
+<span class="sd">        Alpha value of the plotted layer.</span>
+<span class="sd">    geometry_size: float</span>
+<span class="sd">        Point size value when plotting a Point GeoDataFrame or Width value when plotting LineString GeoDataFrame.</span>
+<span class="sd">    geometry_size_columns: List of str</span>
+<span class="sd">        The column name in the GeoDataFrame to be used for scaling for manipulating the geometry size.</span>
+<span class="sd">    geometry_size_factor: float</span>
+<span class="sd">        Rescaling factor for the column provided, if any. The column is rescaled from 0 to 1, and the</span>
+<span class="sd">        geometry_size_factor is used to rescale the marker size accordingly</span>
+<span class="sd">        (e.g., rescaled variable&#39;s value [0-1] * factor) when plotting a Point GeoDataFrame.</span>
+<span class="sd">    legend: bool</span>
+<span class="sd">        When True, show the legend.</span>
+<span class="sd">    fontsize: int</span>
+<span class="sd">        Font size.</span>
+<span class="sd">    cbar: bool</span>
+<span class="sd">        If True, show the colorbar; otherwise, don&#39;t. When True, the legend is not shown.</span>
+<span class="sd">    cbar_ticks: int</span>
+<span class="sd">        Number of ticks along the colorbar.</span>
+<span class="sd">    cbar_max_symbol: bool</span>
+<span class="sd">        If True, show the &quot;&gt;&quot; next to the highest tick&#39;s label in the colorbar (useful when normalizing).</span>
+<span class="sd">    cbar_min_max: bool</span>
+<span class="sd">        If True, only show the &quot;&gt;&quot; and &quot;&lt;&quot; as labels of the lowest and highest ticks&#39; the colorbar.</span>
+<span class="sd">    cbar_shrink:</span>
+<span class="sd">        Fraction by which to multiply the size of the colorbar.    </span>
+<span class="sd">    axes_frame: bool</span>
+<span class="sd">        If True, show the axes&#39; frame.</span>
+<span class="sd">    base_map_gdf: GeoDataFrame</span>
+<span class="sd">        Additional layer to use as a base map.</span>
+<span class="sd">    base_map_color: str</span>
+<span class="sd">        Color applied to all geometries of the base map.</span>
+<span class="sd">    base_map_alpha: float</span>
+<span class="sd">        Base map&#39;s alpha value.</span>
+<span class="sd">    base_map_geometry_size: float</span>
+<span class="sd">        Base map&#39;s marker size when the base map is a Point GeoDataFrame.</span>
+<span class="sd">    base_map_zorder: int</span>
+<span class="sd">        Z-order of the layer. If 0, plots first, thus main GeoDataFrame on top; if 1, plots last, thus on top.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    fig: matplotlib.figure.Figure object</span>
+<span class="sd">        the resulting figure</span>
+<span class="sd">    &quot;&quot;&quot;</span>   
+    
+    <span class="n">plot</span> <span class="o">=</span> <span class="n">Plot</span><span class="p">(</span><span class="n">figsize</span> <span class="o">=</span> <span class="n">figsize</span><span class="p">,</span> <span class="n">black_background</span> <span class="o">=</span> <span class="n">black_background</span><span class="p">,</span> <span class="n">title</span> <span class="o">=</span> <span class="n">title</span><span class="p">,</span> <span class="n">fontsize</span> <span class="o">=</span> <span class="n">fontsize</span><span class="p">)</span>
+    <span class="n">fig</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plot</span><span class="o">.</span><span class="n">fig</span><span class="p">,</span> <span class="n">plot</span><span class="o">.</span><span class="n">ax</span>
+    
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s2">&quot;equal&quot;</span><span class="p">)</span>
+    <span class="n">set_axes_frame</span><span class="p">(</span><span class="n">axes_frame</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">black_background</span><span class="p">,</span> <span class="n">plot</span><span class="o">.</span><span class="n">text_color</span><span class="p">)</span>
+ 
+    <span class="n">zorder</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">if</span> <span class="n">cbar</span><span class="p">:</span>
+        <span class="n">legend</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">if</span> <span class="n">cbar</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">norm</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="n">min_value</span> <span class="o">=</span> <span class="n">gdf</span><span class="p">[</span><span class="n">column</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
+        <span class="n">max_value</span> <span class="o">=</span> <span class="n">gdf</span><span class="p">[</span><span class="n">column</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span>
+        <span class="n">norm</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">Normalize</span><span class="p">(</span><span class="n">vmin</span> <span class="o">=</span> <span class="n">min_value</span><span class="p">,</span> <span class="n">vmax</span> <span class="o">=</span> <span class="n">max_value</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="n">base_map_gdf</span><span class="o">.</span><span class="n">empty</span><span class="p">):</span>
+        <span class="n">plot_baseMap</span><span class="p">(</span><span class="n">gdf</span> <span class="o">=</span> <span class="n">base_map_gdf</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="n">base_map_color</span><span class="p">,</span> <span class="n">geometry_size</span> <span class="o">=</span> <span class="n">base_map_geometry_size</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="n">base_map_alpha</span><span class="p">,</span> 
+            <span class="n">zorder</span> <span class="o">=</span> <span class="n">base_map_zorder</span> <span class="p">)</span>
+        <span class="k">if</span> <span class="n">base_map_zorder</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">zorder</span> <span class="o">=</span> <span class="mi">1</span>
+   
+    <span class="k">if</span> <span class="n">geometry_size_column</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">geometry_size_column</span> <span class="o">=</span> <span class="n">column</span>
+    
+    <span class="n">plotOn_ax</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">gdf</span><span class="p">,</span> <span class="n">column</span> <span class="o">=</span> <span class="n">column</span><span class="p">,</span> <span class="n">scheme</span> <span class="o">=</span> <span class="n">scheme</span><span class="p">,</span> <span class="n">bins</span> <span class="o">=</span> <span class="n">bins</span><span class="p">,</span> <span class="n">classes</span> <span class="o">=</span> <span class="n">classes</span><span class="p">,</span> <span class="n">norm</span> <span class="o">=</span> <span class="n">norm</span><span class="p">,</span> <span class="n">cmap</span> <span class="o">=</span> <span class="n">cmap</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="n">color</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha</span><span class="p">,</span> 
+                <span class="n">geometry_size</span> <span class="o">=</span> <span class="n">geometry_size</span><span class="p">,</span> <span class="n">geometry_size_column</span> <span class="o">=</span> <span class="n">geometry_size_column</span><span class="p">,</span> <span class="n">geometry_size_factor</span> <span class="o">=</span> <span class="n">geometry_size_factor</span><span class="p">,</span> 
+                <span class="n">zorder</span> <span class="o">=</span> <span class="n">zorder</span><span class="p">,</span> <span class="n">legend</span> <span class="o">=</span> <span class="n">legend</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">cbar</span><span class="p">:</span>
+        <span class="n">generate_colorbar</span><span class="p">(</span><span class="n">plot</span> <span class="o">=</span> <span class="n">plot</span><span class="p">,</span> <span class="n">cmap</span> <span class="o">=</span> <span class="n">cmap</span><span class="p">,</span> <span class="n">norm</span> <span class="o">=</span> <span class="n">norm</span><span class="p">,</span> <span class="n">cbar_ticks</span> <span class="o">=</span> <span class="n">cbar_ticks</span><span class="p">,</span> <span class="n">cbar_max_symbol</span> <span class="o">=</span> <span class="n">cbar_max_symbol</span><span class="p">,</span> <span class="n">cbar_min_max</span> <span class="o">=</span> <span class="n">cbar_min_max</span><span class="p">,</span> 
+                    <span class="n">cbar_shrink</span> <span class="o">=</span> <span class="n">cbar_shrink</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">legend</span><span class="p">:</span> 
+        <span class="n">generate_legend_ax</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">plot</span><span class="p">)</span> 
+
+    <span class="k">return</span> <span class="n">plot</span><span class="o">.</span><span class="n">fig</span>      </div>
+
+ 
+<div class="viewcode-block" id="plot_grid_gdfs_column">
+<a class="viewcode-back" href="../../generated/cityImage.plot_grid_gdfs_column.html#cityImage.plot_grid_gdfs_column">[docs]</a>
+<span class="k">def</span> <span class="nf">plot_grid_gdfs_column</span><span class="p">(</span><span class="n">gdfs</span> <span class="o">=</span> <span class="p">[],</span> <span class="n">column</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">ncols</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">nrows</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">main_title</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">titles</span> <span class="o">=</span> <span class="p">[],</span> <span class="n">black_background</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">15</span><span class="p">),</span> <span class="n">scheme</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">bins</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+                <span class="n">classes</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">norm</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cmap</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">geometry_size</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">geometry_size_columns</span> <span class="o">=</span> <span class="p">[],</span> <span class="n">geometry_size_factor</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">legend</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">fontsize</span> <span class="o">=</span> <span class="mi">15</span><span class="p">,</span> <span class="n">cbar</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">cbar_ticks</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">cbar_max_symbol</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">cbar_min_max</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">cbar_shrink</span> <span class="o">=</span> <span class="mf">0.75</span><span class="p">,</span> <span class="n">axes_frame</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    It plots the geometries of different GeoDataFrames, coloring on the bases of the values contained in the provided column, using a given scheme.</span>
+<span class="sd">    When only column is provided (no scheme), a categorical map is depicted.</span>
+<span class="sd">    When no column is provided, a plain map is shown.</span>
+<span class="sd">    </span>
+<span class="sd">    The other parameters regulate colorbar, legend, etc (no basemap here). </span>
+<span class="sd">    Use this function for plotting in relation to maximum one column, for multiple GeoDataFrames.</span>
+<span class="sd">  </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    gdfs: list of GeoDataFrame</span>
+<span class="sd">        The list of GeoDataFrames to be plotted.</span>
+<span class="sd">    column: str</span>
+<span class="sd">        Column on which the plot is based.</span>
+<span class="sd">    ncols: int</span>
+<span class="sd">        The number of desired columns for organising the subplots.</span>
+<span class="sd">    nrows: int</span>
+<span class="sd">        The number of desired rows for organising the subplots.</span>
+<span class="sd">    main_title: str</span>
+<span class="sd">        The main plot title.  </span>
+<span class="sd">    titles: list of str</span>
+<span class="sd">        The list of titles, one per axes (and column, when provided).</span>
+<span class="sd">    black_background: boolean </span>
+<span class="sd">        Black background or white.</span>
+<span class="sd">    fig_size: float</span>
+<span class="sd">        Size figure extent.</span>
+<span class="sd">    scheme: str</span>
+<span class="sd">        Classification method. Choose amongst the options listed at https://pysal.org/mapclassify/api.html.</span>
+<span class="sd">    bins: list</span>
+<span class="sd">        Bins defined by the user.</span>
+<span class="sd">    classes: int</span>
+<span class="sd">        Number of classes for categorizing the data when scheme is not &quot;None&quot;.</span>
+<span class="sd">    norm: array</span>
+<span class="sd">        A class that specifies a desired data normalization into a [min, max] interval.</span>
+<span class="sd">    cmap: str or matplotlib.colors.LinearSegmentedColormap</span>
+<span class="sd">        Color map for the plot. See matplotlib colormaps for a list of possible values or pass a colormap.</span>
+<span class="sd">    color: str</span>
+<span class="sd">        Categorical color applied to all geometries when not using a column to color them.</span>
+<span class="sd">    alpha: float</span>
+<span class="sd">        Alpha value of the plotted layer.</span>
+<span class="sd">    geometry_size: float</span>
+<span class="sd">        Point size value when plotting a Point GeoDataFrame or Width value when plotting LineString GeoDataFrame.</span>
+<span class="sd">    geometry_size_columns: List of str</span>
+<span class="sd">        The column name(s) in the GeoDataFrames to be used for scaling the geometry size.</span>
+<span class="sd">    geometry_size_factor: float</span>
+<span class="sd">        Rescaling factor for the column provided, if any. The column is rescaled from 0 to 1, and the</span>
+<span class="sd">        geometry_size_factor is used to rescale the marker size accordingly</span>
+<span class="sd">        (e.g., rescaled variable&#39;s value [0-1] * factor) when plotting a Point GeoDataFrame.</span>
+<span class="sd">    legend: bool</span>
+<span class="sd">        When True, show the legend.</span>
+<span class="sd">    fontsize: int</span>
+<span class="sd">        Font size.</span>
+<span class="sd">    cbar: bool</span>
+<span class="sd">        If True, show the colorbar; otherwise, don&#39;t. When True, the legend is not shown.</span>
+<span class="sd">    cbar_ticks: int</span>
+<span class="sd">        Number of ticks along the colorbar.</span>
+<span class="sd">    cbar_max_symbol: bool</span>
+<span class="sd">        If True, show the &quot;&gt;&quot; next to the highest tick&#39;s label in the colorbar (useful when normalizing).</span>
+<span class="sd">    cbar_min_max: bool</span>
+<span class="sd">        If True, only show the &quot;&gt;&quot; and &quot;&lt;&quot; as labels of the lowest and highest ticks&#39; the colorbar.</span>
+<span class="sd">    cbar_shrink:</span>
+<span class="sd">        Fraction by which to multiply the size of the colorbar. </span>
+<span class="sd">    axes_frame: bool</span>
+<span class="sd">        If True, show the axes&#39; frame.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    fig: matplotlib.figure.Figure object</span>
+<span class="sd">        the resulting figure</span>
+<span class="sd">    &quot;&quot;&quot;</span>      
+   
+    <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gdfs</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span> <span class="o">!=</span> <span class="n">ncols</span><span class="o">*</span><span class="n">nrows</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gdfs</span><span class="p">)</span> <span class="o">!=</span> <span class="n">ncols</span><span class="o">*</span><span class="n">nrows</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Please provide an appropriate combination of nrows and ncols&quot;</span><span class="p">)</span>
+    
+    <span class="n">multiPlot</span> <span class="o">=</span> <span class="n">MultiPlot</span><span class="p">(</span><span class="n">figsize</span> <span class="o">=</span> <span class="n">figsize</span><span class="p">,</span> <span class="n">nrows</span> <span class="o">=</span> <span class="n">nrows</span><span class="p">,</span> <span class="n">ncols</span> <span class="o">=</span> <span class="n">ncols</span><span class="p">,</span> <span class="n">black_background</span> <span class="o">=</span> <span class="n">black_background</span><span class="p">,</span> <span class="n">fontsize</span> <span class="o">=</span> <span class="n">fontsize</span><span class="p">,</span> <span class="n">title</span> <span class="o">=</span> <span class="n">main_title</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">cbar</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">norm</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="n">min_value</span> <span class="o">=</span> <span class="nb">min</span><span class="p">([</span><span class="n">gdf</span><span class="p">[</span><span class="n">column</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="k">for</span> <span class="n">gdf</span> <span class="ow">in</span> <span class="n">gdfs</span><span class="p">])</span>
+        <span class="n">max_value</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="n">gdf</span><span class="p">[</span><span class="n">column</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="k">for</span> <span class="n">gdf</span> <span class="ow">in</span> <span class="n">gdfs</span><span class="p">])</span>
+        <span class="n">norm</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">Normalize</span><span class="p">(</span><span class="n">vmin</span> <span class="o">=</span> <span class="n">min_value</span><span class="p">,</span> <span class="n">vmax</span> <span class="o">=</span> <span class="n">max_value</span><span class="p">)</span>
+    
+    <span class="n">unique_categories</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">legend</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">scheme</span> <span class="o">==</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="c1"># Step 1: Collect unique categories</span>
+        <span class="n">unique_categories</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">gdf</span> <span class="ow">in</span> <span class="n">gdfs</span><span class="p">:</span>
+            <span class="n">unique_categories</span> <span class="o">=</span> <span class="n">unique_categories</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">gdf</span><span class="p">[</span><span class="s1">&#39;land_use&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()))</span>
+    
+    <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">ax</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">multiPlot</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">flat</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">gdfs</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span> 
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>    
+            <span class="k">continue</span>    
+        <span class="n">gdf</span> <span class="o">=</span> <span class="n">gdfs</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+          
+        <span class="n">parameters</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;ax&#39;</span><span class="p">:</span> <span class="n">ax</span><span class="p">,</span> <span class="s1">&#39;n&#39;</span><span class="p">:</span> <span class="n">n</span><span class="p">,</span> <span class="s1">&#39;multiPlot&#39;</span><span class="p">:</span> <span class="n">multiPlot</span><span class="p">,</span> <span class="s1">&#39;column&#39;</span><span class="p">:</span> <span class="n">column</span> <span class="p">,</span> <span class="s1">&#39;gdf&#39;</span><span class="p">:</span> <span class="n">gdf</span><span class="p">,</span> <span class="s1">&#39;titles&#39;</span><span class="p">:</span> <span class="n">titles</span><span class="p">,</span> 
+                      <span class="s1">&#39;scheme&#39;</span><span class="p">:</span> <span class="n">scheme</span><span class="p">,</span> <span class="s1">&#39;bins&#39;</span><span class="p">:</span> <span class="n">bins</span><span class="p">,</span> <span class="s1">&#39;classes&#39;</span><span class="p">:</span> <span class="n">classes</span><span class="p">,</span> <span class="s1">&#39;norm&#39;</span><span class="p">:</span> <span class="n">norm</span><span class="p">,</span> <span class="s1">&#39;cmap&#39;</span><span class="p">:</span> <span class="n">cmap</span><span class="p">,</span> 
+                      <span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="n">color</span><span class="p">,</span> <span class="s1">&#39;alpha&#39;</span><span class="p">:</span> <span class="n">alpha</span><span class="p">,</span> <span class="s1">&#39;one_legend&#39;</span> <span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;legend&#39;</span><span class="p">:</span> <span class="n">legend</span><span class="p">,</span> <span class="s1">&#39;axes_frame&#39;</span><span class="p">:</span> <span class="n">axes_frame</span><span class="p">,</span>
+                      <span class="s1">&#39;geometry_size&#39;</span><span class="p">:</span> <span class="n">geometry_size</span><span class="p">,</span> <span class="s1">&#39;geometry_size_columns&#39;</span><span class="p">:</span> <span class="n">geometry_size_columns</span><span class="p">,</span> <span class="s1">&#39;geometry_size_factor&#39;</span><span class="p">:</span> <span class="n">geometry_size_factor</span><span class="p">,</span>
+                      <span class="s1">&#39;unique_categories&#39;</span> <span class="p">:</span> <span class="n">unique_categories</span><span class="p">}</span>        
+        <span class="n">subplot</span><span class="p">(</span><span class="o">**</span><span class="n">parameters</span><span class="p">)</span>    
+            
+    <span class="k">if</span> <span class="p">(</span><span class="n">cbar</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="ow">not</span> <span class="n">legend</span><span class="p">):</span>  
+        <span class="n">generate_colorbar</span><span class="p">(</span><span class="n">plot</span> <span class="o">=</span> <span class="n">multiPlot</span><span class="p">,</span> <span class="n">cmap</span> <span class="o">=</span> <span class="n">cmap</span><span class="p">,</span> <span class="n">norm</span> <span class="o">=</span> <span class="n">norm</span><span class="p">,</span> <span class="n">cbar_ticks</span> <span class="o">=</span> <span class="n">cbar_ticks</span><span class="p">,</span> <span class="n">cbar_max_symbol</span> <span class="o">=</span> <span class="n">cbar_max_symbol</span><span class="p">,</span> <span class="n">cbar_min_max</span> <span class="o">=</span> <span class="n">cbar_min_max</span><span class="p">,</span> 
+                    <span class="n">cbar_shrink</span> <span class="o">=</span> <span class="n">cbar_shrink</span><span class="p">)</span>
+   
+    <span class="k">return</span> <span class="n">multiPlot</span><span class="o">.</span><span class="n">fig</span>                      </div>
+
+
+<div class="viewcode-block" id="plot_grid_gdf_columns">
+<a class="viewcode-back" href="../../generated/cityImage.plot_grid_gdf_columns.html#cityImage.plot_grid_gdf_columns">[docs]</a>
+<span class="k">def</span> <span class="nf">plot_grid_gdf_columns</span><span class="p">(</span><span class="n">gdf</span><span class="p">,</span> <span class="n">columns</span> <span class="o">=</span> <span class="p">[],</span> <span class="n">ncols</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">nrows</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">main_title</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">titles</span> <span class="o">=</span> <span class="p">[],</span> <span class="n">black_background</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">15</span><span class="p">),</span> <span class="n">scheme</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">bins</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+                          <span class="n">classes</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">norm</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cmap</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+                          <span class="n">geometry_size</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">geometry_size_columns</span> <span class="o">=</span> <span class="p">[],</span> <span class="n">geometry_size_factor</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">legend</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">fontsize</span> <span class="o">=</span> <span class="mi">15</span><span class="p">,</span>
+                          <span class="n">cbar</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">cbar_ticks</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">cbar_max_symbol</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">cbar_min_max</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">cbar_shrink</span> <span class="o">=</span> <span class="mf">0.75</span><span class="p">,</span> <span class="n">axes_frame</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    It plots the geometries of a GeoDataFrame, coloring on the bases of the values contained in two or more provided columns, using a given scheme.</span>
+<span class="sd">    When no columns are provided, the function raises an error.</span>
+<span class="sd">    </span>
+<span class="sd">    The other parameters regulate colorbar, legend, etc (no basemap here). </span>
+<span class="sd">    Use this function for plotting in relation to more than one column, for a single GeoDataFrame.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    gdf: GeoDataFrame</span>
+<span class="sd">        GeoDataFrame to be plotted.</span>
+<span class="sd">    columns: list of str</span>
+<span class="sd">        The list of column on which the plot is based.</span>
+<span class="sd">    ncols: int</span>
+<span class="sd">        The number of desired columns for organising the subplots.</span>
+<span class="sd">    nrows: int</span>
+<span class="sd">        The number of desired rows for organising the subplots.</span>
+<span class="sd">    main_title: str</span>
+<span class="sd">        The main plot title.     </span>
+<span class="sd">    titles: list of str</span>
+<span class="sd">        Title of the plot.</span>
+<span class="sd">    black_background: boolean </span>
+<span class="sd">        Black background or white.</span>
+<span class="sd">    fig_size: float</span>
+<span class="sd">        Size figure extent.</span>
+<span class="sd">    scheme: str</span>
+<span class="sd">        Classification method. Choose amongst the options listed at https://pysal.org/mapclassify/api.html.</span>
+<span class="sd">    bins: list</span>
+<span class="sd">        Bins defined by the user.</span>
+<span class="sd">    classes: int</span>
+<span class="sd">        Number of classes for categorizing the data when scheme is not &quot;None&quot;.</span>
+<span class="sd">    norm: array</span>
+<span class="sd">        A class that specifies a desired data normalization into a [min, max] interval.</span>
+<span class="sd">    cmap: str or matplotlib.colors.LinearSegmentedColormap</span>
+<span class="sd">        Color map for the plot. See matplotlib colormaps for a list of possible values or pass a colormap.</span>
+<span class="sd">    color: str</span>
+<span class="sd">        Categorical color applied to all geometries when not using a column to color them.</span>
+<span class="sd">    alpha: float</span>
+<span class="sd">        Alpha value of the plotted layer.</span>
+<span class="sd">    geometry_size: float</span>
+<span class="sd">        Point size value when plotting a Point GeoDataFrame or Width value when plotting LineString GeoDataFrame.</span>
+<span class="sd">    geometry_size_columns: List of str</span>
+<span class="sd">        The column name(s) in the GeoDataFrame to be used for scaling the geometry size.</span>
+<span class="sd">    geometry_size_factor: float</span>
+<span class="sd">        Rescaling factor for the column provided, if any. The column is rescaled from 0 to 1, and the</span>
+<span class="sd">        geometry_size_factor is used to rescale the marker size accordingly</span>
+<span class="sd">        (e.g., rescaled variable&#39;s value [0-1] * factor) when plotting a Point GeoDataFrame.</span>
+<span class="sd">    legend: bool</span>
+<span class="sd">        When True, show the legend.</span>
+<span class="sd">    fontsize: int</span>
+<span class="sd">        Font size.</span>
+<span class="sd">    cbar: bool</span>
+<span class="sd">        If True, show the colorbar; otherwise, don&#39;t. When True, the legend is not shown.</span>
+<span class="sd">    cbar_ticks: int</span>
+<span class="sd">        Number of ticks along the colorbar.</span>
+<span class="sd">    cbar_max_symbol: bool</span>
+<span class="sd">        If True, show the &quot;&gt;&quot; next to the highest tick&#39;s label in the colorbar (useful when normalizing).</span>
+<span class="sd">    cbar_min_max: bool</span>
+<span class="sd">        If True, only show the &quot;&gt;&quot; and &quot;&lt;&quot; as labels of the lowest and highest ticks&#39; the colorbar.</span>
+<span class="sd">    cbar_shrink:</span>
+<span class="sd">        Fraction by which to multiply the size of the colorbar. </span>
+<span class="sd">    axes_frame: bool</span>
+<span class="sd">        If True, show the axes&#39; frame.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    fig: matplotlib.figure.Figure object</span>
+<span class="sd">        the resulting figure</span>
+<span class="sd">    &quot;&quot;&quot;</span>   
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Provide a list of columns to plot the geometries on. For a plain plot, use plot_gdf&quot;</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span> <span class="o">!=</span> <span class="n">ncols</span><span class="o">*</span><span class="n">nrows</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span> <span class="o">!=</span> <span class="n">ncols</span><span class="o">*</span><span class="n">nrows</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Please provide an appropriate combination of nrows and ncols&quot;</span><span class="p">)</span>
+    
+    <span class="n">multiPlot</span> <span class="o">=</span> <span class="n">MultiPlot</span><span class="p">(</span><span class="n">figsize</span> <span class="o">=</span> <span class="n">figsize</span><span class="p">,</span> <span class="n">nrows</span> <span class="o">=</span> <span class="n">nrows</span><span class="p">,</span> <span class="n">ncols</span> <span class="o">=</span> <span class="n">ncols</span><span class="p">,</span> <span class="n">black_background</span> <span class="o">=</span> <span class="n">black_background</span><span class="p">,</span> <span class="n">fontsize</span> <span class="o">=</span> <span class="n">fontsize</span><span class="p">,</span> <span class="n">title</span> <span class="o">=</span> <span class="n">main_title</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">cbar</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">norm</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="n">min_value</span> <span class="o">=</span> <span class="nb">min</span><span class="p">([</span><span class="n">gdf</span><span class="p">[</span><span class="n">column</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()</span> <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">columns</span><span class="p">])</span>
+        <span class="n">max_value</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="n">gdf</span><span class="p">[</span><span class="n">column</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">columns</span><span class="p">])</span>
+        <span class="n">norm</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">Normalize</span><span class="p">(</span><span class="n">vmin</span> <span class="o">=</span> <span class="n">min_value</span><span class="p">,</span> <span class="n">vmax</span> <span class="o">=</span> <span class="n">max_value</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">scheme</span> <span class="o">==</span> <span class="s1">&#39;User_Defined&#39;</span><span class="p">:</span>
+        <span class="n">one_legend</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">one_legend</span> <span class="o">=</span> <span class="kc">False</span>
+    
+    
+    <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">ax</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">multiPlot</span><span class="o">.</span><span class="n">grid</span><span class="o">.</span><span class="n">flat</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">columns</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">:</span> 
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>    
+            <span class="k">continue</span>
+        <span class="n">column</span> <span class="o">=</span> <span class="n">columns</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>      
+            
+        <span class="n">parameters</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;ax&#39;</span><span class="p">:</span> <span class="n">ax</span><span class="p">,</span> <span class="s1">&#39;n&#39;</span><span class="p">:</span> <span class="n">n</span><span class="p">,</span> <span class="s1">&#39;multiPlot&#39;</span><span class="p">:</span> <span class="n">multiPlot</span><span class="p">,</span> <span class="s1">&#39;column&#39;</span><span class="p">:</span> <span class="n">column</span> <span class="p">,</span> <span class="s1">&#39;gdf&#39;</span><span class="p">:</span> <span class="n">gdf</span><span class="p">,</span> <span class="s1">&#39;titles&#39;</span><span class="p">:</span> <span class="n">titles</span><span class="p">,</span> 
+                      <span class="s1">&#39;scheme&#39;</span><span class="p">:</span> <span class="n">scheme</span><span class="p">,</span> <span class="s1">&#39;bins&#39;</span><span class="p">:</span> <span class="n">bins</span><span class="p">,</span> <span class="s1">&#39;classes&#39;</span><span class="p">:</span> <span class="n">classes</span><span class="p">,</span> <span class="s1">&#39;norm&#39;</span><span class="p">:</span> <span class="n">norm</span><span class="p">,</span> <span class="s1">&#39;cmap&#39;</span><span class="p">:</span> <span class="n">cmap</span><span class="p">,</span> 
+                      <span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="n">color</span><span class="p">,</span> <span class="s1">&#39;alpha&#39;</span><span class="p">:</span> <span class="n">alpha</span><span class="p">,</span> <span class="s1">&#39;one_legend&#39;</span> <span class="p">:</span> <span class="n">one_legend</span><span class="p">,</span> <span class="s1">&#39;legend&#39;</span><span class="p">:</span> <span class="n">legend</span><span class="p">,</span> <span class="s1">&#39;axes_frame&#39;</span><span class="p">:</span> <span class="n">axes_frame</span><span class="p">,</span>
+                      <span class="s1">&#39;geometry_size&#39;</span><span class="p">:</span> <span class="n">geometry_size</span><span class="p">,</span> <span class="s1">&#39;geometry_size_columns&#39;</span><span class="p">:</span> <span class="n">geometry_size_columns</span><span class="p">,</span> <span class="s1">&#39;geometry_size_factor&#39;</span><span class="p">:</span> <span class="n">geometry_size_factor</span>
+                      <span class="p">}</span>        
+        <span class="n">subplot</span><span class="p">(</span><span class="o">**</span><span class="n">parameters</span><span class="p">)</span>    
+            
+    <span class="k">if</span> <span class="p">(</span><span class="n">cbar</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="ow">not</span> <span class="n">legend</span><span class="p">):</span>  
+        <span class="n">generate_colorbar</span><span class="p">(</span><span class="n">plot</span> <span class="o">=</span> <span class="n">multiPlot</span><span class="p">,</span> <span class="n">cmap</span> <span class="o">=</span> <span class="n">cmap</span><span class="p">,</span> <span class="n">norm</span> <span class="o">=</span> <span class="n">norm</span><span class="p">,</span> <span class="n">cbar_ticks</span> <span class="o">=</span> <span class="n">cbar_ticks</span><span class="p">,</span> <span class="n">cbar_max_symbol</span> <span class="o">=</span> <span class="n">cbar_max_symbol</span><span class="p">,</span> <span class="n">cbar_min_max</span> <span class="o">=</span> <span class="n">cbar_min_max</span><span class="p">,</span> 
+                    <span class="n">cbar_shrink</span> <span class="o">=</span> <span class="n">cbar_shrink</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">multiPlot</span><span class="o">.</span><span class="n">fig</span></div>
+
+
+<div class="viewcode-block" id="plotOn_ax">
+<a class="viewcode-back" href="../../generated/cityImage.plotOn_ax.html#cityImage.plotOn_ax">[docs]</a>
+<span class="k">def</span> <span class="nf">plotOn_ax</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">gdf</span><span class="p">,</span> <span class="n">column</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">scheme</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">bins</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">classes</span> <span class="o">=</span> <span class="mi">7</span><span class="p">,</span> <span class="n">norm</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cmap</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> 
+                <span class="n">geometry_size</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">geometry_size_column</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">geometry_size_factor</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">legend</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">zorder</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ax: matplotlib.axes object</span>
+<span class="sd">        The axes object on which to create the subplot.</span>
+<span class="sd">    gdf: GeoDataFrame</span>
+<span class="sd">        GeoDataFrame to be plotted.</span>
+<span class="sd">    column: str</span>
+<span class="sd">        Column on which the plot is based.</span>
+<span class="sd">    scheme: str</span>
+<span class="sd">        Classification method. Choose amongst the options listed at https://pysal.org/mapclassify/api.html.</span>
+<span class="sd">    bins: list</span>
+<span class="sd">        Bins defined by the user.</span>
+<span class="sd">    classes: int</span>
+<span class="sd">        Number of classes for categorizing the data when scheme is not &quot;None&quot;.</span>
+<span class="sd">    norm: array</span>
+<span class="sd">        A class that specifies a desired data normalization into a [min, max] interval.</span>
+<span class="sd">    cmap: str or matplotlib.colors.LinearSegmentedColormap</span>
+<span class="sd">        Color map for the plot. See matplotlib colormaps for a list of possible values or pass a colormap.</span>
+<span class="sd">    color: str</span>
+<span class="sd">        Categorical color applied to all geometries when not using a column to color them.</span>
+<span class="sd">    alpha: float</span>
+<span class="sd">        Alpha value of the plotted layer.</span>
+<span class="sd">    geometry_size: float</span>
+<span class="sd">        Point size value when plotting a Point GeoDataFrame or Width value when plotting LineString GeoDataFrame.</span>
+<span class="sd">    geometry_size_columns: str</span>
+<span class="sd">        The column name in the GeoDataFrame to be used for scaling the geometry size.</span>
+<span class="sd">    geometry_size_factor: float</span>
+<span class="sd">        Rescaling factor for the column provided, if any. The column is rescaled from 0 to 1, and the</span>
+<span class="sd">        geometry_size_factor is used to rescale the marker size accordingly</span>
+<span class="sd">        (e.g., rescaled variable&#39;s value [0-1] * factor) when plotting a Point GeoDataFrame.</span>
+<span class="sd">    legend: bool</span>
+<span class="sd">        When True, show the legend.</span>
+<span class="sd">    zorder: int   </span>
+<span class="sd">        Zorder of this layer; e.g. if 0, plots first, thus main GeoDataFrame on top; if 1, plots last, thus on top.</span>
+<span class="sd">    &quot;&quot;&quot;</span>  
+    
+    <span class="n">gdf</span> <span class="o">=</span> <span class="n">gdf</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="n">categorical</span> <span class="o">=</span> <span class="ow">not</span> <span class="p">(</span><span class="n">norm</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">scheme</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">categorical</span><span class="p">:</span>
+        <span class="n">color</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">cmap</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">cmap</span> <span class="o">=</span> <span class="n">kindlmann</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">norm</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">scheme</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">gdf</span><span class="p">[</span><span class="n">column</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span> <span class="o">!=</span> <span class="s1">&#39;O&#39;</span> <span class="p">):</span>
+            <span class="n">gdf</span> <span class="o">=</span> <span class="n">gdf</span><span class="o">.</span><span class="n">reindex</span><span class="p">(</span><span class="n">gdf</span><span class="p">[</span><span class="n">column</span><span class="p">]</span><span class="o">.</span><span class="n">abs</span><span class="p">()</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="n">ascending</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">gdf</span><span class="p">[</span><span class="n">column</span><span class="p">]</span> <span class="o">=</span> <span class="n">gdf</span><span class="p">[</span><span class="n">column</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+            
+    <span class="k">elif</span> <span class="p">(</span><span class="n">column</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">cmap</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="n">cmap</span> <span class="o">=</span> <span class="n">rand_cmap</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gdf</span><span class="p">[</span><span class="n">column</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">()))</span> 
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">gdf</span><span class="p">[</span><span class="n">column</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">())</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">legend</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">cmap</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;red&#39;</span>
+        
+    <span class="n">c_k</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">k</span><span class="o">=</span><span class="n">classes</span><span class="p">)</span> <span class="k">if</span> <span class="n">bins</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">dict</span><span class="p">(</span><span class="n">bins</span><span class="o">=</span><span class="n">bins</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">bins</span><span class="p">))</span>
+    <span class="n">scheme</span> <span class="o">=</span> <span class="s1">&#39;User_Defined&#39;</span> <span class="k">if</span> <span class="n">bins</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">scheme</span>
+    
+    <span class="n">parameters</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;ax&#39;</span><span class="p">:</span> <span class="n">ax</span><span class="p">,</span> <span class="s1">&#39;column&#39;</span><span class="p">:</span> <span class="n">column</span><span class="p">,</span> <span class="s1">&#39;classification_kwds&#39;</span><span class="p">:</span> <span class="n">c_k</span><span class="p">,</span> <span class="s1">&#39;scheme&#39;</span><span class="p">:</span> <span class="n">scheme</span><span class="p">,</span> <span class="s1">&#39;norm&#39;</span><span class="p">:</span> <span class="n">norm</span><span class="p">,</span>
+                   <span class="s1">&#39;cmap&#39;</span><span class="p">:</span> <span class="n">cmap</span><span class="p">,</span> <span class="s1">&#39;categorical&#39;</span><span class="p">:</span> <span class="n">categorical</span><span class="p">,</span> <span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="n">color</span><span class="p">,</span> <span class="s1">&#39;alpha&#39;</span><span class="p">:</span> <span class="n">alpha</span><span class="p">,</span> <span class="s1">&#39;legend&#39;</span><span class="p">:</span> <span class="n">legend</span><span class="p">,</span> 
+                   <span class="s1">&#39;zorder&#39;</span><span class="p">:</span> <span class="n">zorder</span><span class="p">}</span>  
+                   
+    <span class="n">geometry_type</span> <span class="o">=</span> <span class="n">gdf</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">geom_type</span>
+    <span class="k">if</span> <span class="n">geometry_type</span> <span class="o">==</span> <span class="s1">&#39;Point&#39;</span><span class="p">:</span>    
+        <span class="k">if</span> <span class="p">(</span><span class="n">geometry_size_factor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span> 
+            <span class="k">if</span> <span class="ow">not</span> <span class="s1">&#39;_sc&#39;</span> <span class="ow">in</span> <span class="n">column</span><span class="p">:</span>
+                <span class="n">gdf</span><span class="p">[</span><span class="n">column</span><span class="o">+</span><span class="s1">&#39;_sc&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">scaling_columnDF</span><span class="p">(</span><span class="n">gdf</span><span class="p">[</span><span class="n">column</span><span class="p">])</span>
+                <span class="n">geometry_factor_column</span> <span class="o">=</span> <span class="n">column</span><span class="o">+</span><span class="s1">&#39;_sc&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">geometry_factor_column</span> <span class="o">=</span> <span class="n">column</span>
+            <span class="c1"># Define base marker size</span>
+            <span class="n">base_marker_size</span> <span class="o">=</span> <span class="mf">0.40</span>
+
+            <span class="c1"># Apply exponential scaling to marker sizes</span>
+            <span class="n">geometry_size</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
+                <span class="n">gdf</span><span class="p">[</span><span class="n">geometry_factor_column</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mf">0.20</span><span class="p">,</span>
+                <span class="n">base_marker_size</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">gdf</span><span class="p">[</span><span class="n">geometry_factor_column</span><span class="p">]</span> <span class="o">*</span> <span class="n">geometry_size_factor</span><span class="p">),</span>
+                <span class="n">base_marker_size</span>
+            <span class="p">)</span>
+        <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;markersize&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">geometry_size</span>
+    <span class="k">elif</span> <span class="n">geometry_type</span> <span class="o">==</span> <span class="s1">&#39;LineString&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">geometry_size_factor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">geometry_size</span> <span class="o">=</span> <span class="p">[(</span><span class="nb">abs</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="o">*</span><span class="n">geometry_size_factor</span><span class="p">)</span> <span class="k">if</span> <span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="o">*</span><span class="n">geometry_size_factor</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">1.1</span> <span class="k">else</span> <span class="mf">1.1</span> <span class="k">for</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">gdf</span><span class="p">[</span><span class="n">column</span><span class="p">]]</span>
+        <span class="n">sub_parameters</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;linewidth&#39;</span><span class="p">:</span> <span class="n">geometry_size</span><span class="p">,</span> <span class="s1">&#39;capstyle&#39;</span><span class="p">:</span> <span class="s1">&#39;round&#39;</span><span class="p">,</span> <span class="s1">&#39;joinstyle&#39;</span><span class="p">:</span><span class="s1">&#39;round&#39;</span><span class="p">}</span>
+        <span class="n">parameters</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">sub_parameters</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;edgecolor&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;none&#39;</span> 
+    
+    <span class="n">gdf</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="o">**</span><span class="n">parameters</span><span class="p">)</span> </div>
+
+ 
+<div class="viewcode-block" id="subplot">
+<a class="viewcode-back" href="../../generated/cityImage.subplot.html#cityImage.subplot">[docs]</a>
+<span class="k">def</span> <span class="nf">subplot</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="n">multiPlot</span><span class="p">,</span> <span class="n">gdf</span><span class="p">,</span> <span class="n">column</span><span class="p">,</span> <span class="n">titles</span><span class="p">,</span> <span class="n">scheme</span><span class="p">,</span> <span class="n">bins</span><span class="p">,</span> <span class="n">classes</span><span class="p">,</span> <span class="n">norm</span><span class="p">,</span> <span class="n">cmap</span><span class="p">,</span> <span class="n">color</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">geometry_size</span><span class="p">,</span> <span class="n">geometry_size_columns</span><span class="p">,</span>
+                    <span class="n">geometry_size_factor</span><span class="p">,</span> <span class="n">one_legend</span><span class="p">,</span> <span class="n">legend</span><span class="p">,</span> <span class="n">axes_frame</span><span class="p">,</span> <span class="n">unique_categories</span> <span class="o">=</span> <span class="p">[]):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Create a subplot with a map plot on the given axes.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ax: matplotlib.axes object</span>
+<span class="sd">        The axes object on which to create the subplot.</span>
+<span class="sd">    n: int</span>
+<span class="sd">        The index of the subplot.</span>
+<span class="sd">    multiPlot: MultiPlot object</span>
+<span class="sd">        The MultiPlot object controlling the plot settings.</span>
+<span class="sd">    gdf: GeoDataFrame</span>
+<span class="sd">        The GeoDataFrame containing the data to plot.</span>
+<span class="sd">    column: str</span>
+<span class="sd">        The column name in the GeoDataFrame to be used for plotting.</span>
+<span class="sd">    titles: str or sequence</span>
+<span class="sd">        The title(s) of the subplot(s).</span>
+<span class="sd">    scheme: str</span>
+<span class="sd">        The classification scheme to use for mapping the data.</span>
+<span class="sd">    bins: int or sequence or pandas.IntervalIndex</span>
+<span class="sd">        The number of bins to use for the classification or the bin intervals.</span>
+<span class="sd">    classes: int or sequence</span>
+<span class="sd">        The number of classes to use for the classification or the class intervals.</span>
+<span class="sd">    geometry_size: float</span>
+<span class="sd">        Marker size value when plotting a Point GeoDataFrame or line width value when plotting LineString GeoDataFrame.</span>
+<span class="sd">    geometry_size_columns: List of str</span>
+<span class="sd">        The column name(s) in the GeoDataFrame to be used for scaling the geometry size.</span>
+<span class="sd">    geometry_size_factor: float</span>
+<span class="sd">        The factor by which to scale the geometry size.</span>
+<span class="sd">    norm: Normalize or str</span>
+<span class="sd">        The normalization scheme to use for mapping values to colors.</span>
+<span class="sd">    cmap: str or Colormap</span>
+<span class="sd">        The colormap to use for mapping values to colors.</span>
+<span class="sd">    color: str</span>
+<span class="sd">        Categorical color applied to all geometries when not using a column to color them.</span>
+<span class="sd">    alpha: float</span>
+<span class="sd">        Alpha value of the plotted layer.</span>
+<span class="sd">    legend: bool</span>
+<span class="sd">        If True, show the legend; otherwise, don&#39;t.</span>
+<span class="sd">    axes_frame: bool</span>
+<span class="sd">        Flag indicating whether to draw axes frame or not.</span>
+<span class="sd">    &quot;&quot;&quot;</span>  
+    
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_aspect</span><span class="p">(</span><span class="s2">&quot;equal&quot;</span><span class="p">)</span>
+    <span class="n">set_axes_frame</span><span class="p">(</span><span class="n">axes_frame</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">multiPlot</span><span class="o">.</span><span class="n">black_background</span><span class="p">,</span> <span class="n">multiPlot</span><span class="o">.</span><span class="n">text_color</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">titles</span><span class="p">:</span>          
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">titles</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="n">loc</span><span class="o">=</span><span class="s1">&#39;center&#39;</span><span class="p">,</span> <span class="n">fontfamily</span> <span class="o">=</span> <span class="s1">&#39;Times New Roman&#39;</span><span class="p">,</span> <span class="n">fontsize</span> <span class="o">=</span> <span class="n">multiPlot</span><span class="o">.</span><span class="n">font_size_primary</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="n">multiPlot</span><span class="o">.</span><span class="n">text_color</span><span class="p">,</span> 
+                     <span class="n">pad</span> <span class="o">=</span> <span class="mi">15</span><span class="p">)</span>    
+    
+    <span class="n">geometry_size_column</span> <span class="o">=</span> <span class="n">column</span>
+    <span class="k">if</span> <span class="n">geometry_size_columns</span><span class="p">:</span>
+        <span class="n">geometry_size_column</span> <span class="o">=</span> <span class="n">geometry_size_columns</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+   
+    <span class="n">legend_ax</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">legend_fig</span> <span class="o">=</span> <span class="kc">False</span>
+    
+    <span class="k">if</span> <span class="p">(</span><span class="n">legend</span> <span class="ow">and</span> <span class="n">scheme</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="n">legend_ax</span> <span class="o">=</span> <span class="p">(</span><span class="n">n</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">scheme</span> <span class="o">==</span> <span class="s1">&#39;User_Defined&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">scheme</span> <span class="o">!=</span> <span class="s1">&#39;User_Defined&#39;</span><span class="p">)</span>
+        <span class="n">legend_fig</span> <span class="o">=</span> <span class="p">(</span><span class="n">n</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">scheme</span> <span class="o">==</span> <span class="s1">&#39;User_Defined&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">legend</span><span class="p">:</span> <span class="c1"># categorical legend</span>
+        <span class="n">legend_ax</span> <span class="o">=</span> <span class="p">(</span><span class="n">n</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">legend_fig</span> <span class="o">=</span> <span class="p">(</span><span class="n">n</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="n">plotOn_ax</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">gdf</span><span class="p">,</span> <span class="n">column</span> <span class="o">=</span> <span class="n">column</span><span class="p">,</span> <span class="n">scheme</span> <span class="o">=</span> <span class="n">scheme</span><span class="p">,</span> <span class="n">bins</span> <span class="o">=</span> <span class="n">bins</span><span class="p">,</span> <span class="n">classes</span> <span class="o">=</span> <span class="n">classes</span><span class="p">,</span> <span class="n">norm</span> <span class="o">=</span> <span class="n">norm</span><span class="p">,</span> <span class="n">cmap</span> <span class="o">=</span> <span class="n">cmap</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="n">color</span><span class="p">,</span> 
+                <span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">legend</span> <span class="o">=</span> <span class="n">legend_ax</span><span class="p">,</span> <span class="n">geometry_size</span> <span class="o">=</span> <span class="n">geometry_size</span><span class="p">,</span> <span class="n">geometry_size_column</span> <span class="o">=</span> <span class="n">geometry_size_column</span><span class="p">,</span> 
+                <span class="n">geometry_size_factor</span> <span class="o">=</span> <span class="n">geometry_size_factor</span><span class="p">)</span>
+                
+    <span class="k">if</span> <span class="n">legend_fig</span> <span class="ow">and</span> <span class="n">one_legend</span><span class="p">:</span>
+        <span class="n">generate_legend_fig</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">multiPlot</span><span class="p">,</span> <span class="n">gdf</span><span class="p">,</span> <span class="n">unique_categories</span><span class="p">,</span> <span class="n">cmap</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">legend_ax</span><span class="p">:</span>
+        <span class="n">generate_legend_ax</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">multiPlot</span><span class="p">)</span>
+        
+    <span class="n">multiPlot</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>  <span class="c1"># Adjust layout after adding elements    </span></div>
+
+
+<div class="viewcode-block" id="plot_baseMap">
+<a class="viewcode-back" href="../../generated/cityImage.plot_baseMap.html#cityImage.plot_baseMap">[docs]</a>
+<span class="k">def</span> <span class="nf">plot_baseMap</span><span class="p">(</span><span class="n">gdf</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">geometry_size</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span> <span class="n">zorder</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    It plots the geometries of a GeoDataFrame, coloring on the basis of the values contained in the provided columns, using a given scheme.</span>
+<span class="sd">    If only column is provided, a categorical map is depicted.</span>
+<span class="sd">    If no column is provided, a plain map is shown.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    gdf: GeoDataFrame</span>
+<span class="sd">        The GeoDataFrame containing the map data.</span>
+<span class="sd">    ax: matplotlib.axes object</span>
+<span class="sd">        The axes object on which to create the subplot.</span>
+<span class="sd">    color: str</span>
+<span class="sd">        The color to use for mapping</span>
+<span class="sd">    geometry_size: float</span>
+<span class="sd">        Point size value when plotting a Point GeoDataFrame or Width value when plotting LineString GeoDataFrame.</span>
+<span class="sd">    alpha: float</span>
+<span class="sd">        Alpha value of the plotted layer.</span>
+<span class="sd">    zorder: str</span>
+<span class="sd">        The order of the map elements with respect to other elements in the axis, default value is 0.</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">gdf</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">geom_type</span> <span class="o">==</span> <span class="s1">&#39;LineString&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">gdf</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">geom_type</span> <span class="o">==</span> <span class="s1">&#39;MultiLineString&#39;</span><span class="p">):</span>
+        <span class="n">gdf</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="n">color</span><span class="p">,</span> <span class="n">linewidth</span> <span class="o">=</span> <span class="n">geometry_size</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha</span><span class="p">,</span><span class="n">zorder</span> <span class="o">=</span> <span class="n">zorder</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">gdf</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">geom_type</span> <span class="o">==</span> <span class="s1">&#39;Point&#39;</span><span class="p">:</span>
+        <span class="n">gdf</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="n">color</span><span class="p">,</span> <span class="n">markersize</span> <span class="o">=</span> <span class="n">geometry_size</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">zorder</span> <span class="o">=</span> <span class="n">zorder</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">gdf</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">geom_type</span> <span class="o">==</span> <span class="s1">&#39;Polygon&#39;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">gdf</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">geom_type</span> <span class="o">==</span> <span class="s1">&#39;MultiPolygon&#39;</span><span class="p">):</span>
+        <span class="n">gdf</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="n">color</span><span class="p">,</span> <span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">zorder</span> <span class="o">=</span> <span class="n">zorder</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="generate_legend_fig">
+<a class="viewcode-back" href="../../generated/cityImage.generate_legend_fig.html#cityImage.generate_legend_fig">[docs]</a>
+<span class="k">def</span> <span class="nf">generate_legend_fig</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">plot</span><span class="p">,</span> <span class="n">gdf</span><span class="p">,</span> <span class="n">unique_categories</span> <span class="o">=</span> <span class="p">[],</span> <span class="n">cmap</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    It generates the legend for an entire figure.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ax: matplotlib.axes object</span>
+<span class="sd">        The axes object on which to create the subplot.</span>
+<span class="sd">    plot: Plot, MultiPlot Object</span>
+<span class="sd">        The Plot object.</span>
+<span class="sd">    gdf: GeoDataFrame</span>
+<span class="sd">        GeoDataFrame containing the geometries.</span>
+<span class="sd">    column: str</span>
+<span class="sd">        Column on which the legend is based.</span>
+<span class="sd">    unique_categories: list, optional</span>
+<span class="sd">        List of unique categories for categorical data.</span>
+<span class="sd">    cmap: str or Colormap, optional</span>
+<span class="sd">        Colormap to use for categorical data.</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">leg</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_legend</span><span class="p">()</span>    
+    
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique_categories</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">handles</span> <span class="o">=</span> <span class="n">leg</span><span class="o">.</span><span class="n">legend_handles</span>
+        <span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span><span class="o">.</span><span class="n">get_text</span><span class="p">()</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">leg</span><span class="o">.</span><span class="n">texts</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">handles</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">labels</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">geometry_type</span> <span class="o">=</span> <span class="n">gdf</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">geom_type</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">cat</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">unique_categories</span><span class="p">):</span>
+            <span class="n">color</span> <span class="o">=</span> <span class="n">cm</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="n">cmap</span><span class="p">)(</span><span class="n">i</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">unique_categories</span><span class="p">))</span>
+            <span class="k">if</span> <span class="n">geometry_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;Polygon&#39;</span><span class="p">,</span> <span class="s1">&#39;MultiPolygon&#39;</span><span class="p">]:</span>
+                <span class="n">patch</span> <span class="o">=</span> <span class="n">mpatches</span><span class="o">.</span><span class="n">Patch</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">cat</span><span class="p">))</span>
+            <span class="k">elif</span> <span class="n">geometry_type</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;LineString&#39;</span><span class="p">,</span> <span class="s1">&#39;MultiLineString&#39;</span><span class="p">]:</span>
+                <span class="n">patch</span> <span class="o">=</span> <span class="n">Line2D</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">cat</span><span class="p">))</span>
+            <span class="k">elif</span> <span class="n">geometry_type</span> <span class="o">==</span> <span class="s1">&#39;Point&#39;</span><span class="p">:</span>
+                <span class="n">patch</span> <span class="o">=</span> <span class="n">Line2D</span><span class="p">([</span><span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;o&#39;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">markerfacecolor</span><span class="o">=</span><span class="n">color</span><span class="p">,</span> <span class="n">markersize</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">cat</span><span class="p">))</span>
+            <span class="n">handles</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">patch</span><span class="p">)</span>
+            <span class="n">labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">cat</span><span class="p">))</span>
+        
+    <span class="n">fig_leg</span> <span class="o">=</span> <span class="n">plot</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">handles</span> <span class="o">=</span> <span class="n">handles</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">labels</span><span class="p">,</span> <span class="n">loc</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">borderaxespad</span><span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">get_legend</span><span class="p">()</span><span class="o">.</span><span class="n">remove</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">setp</span><span class="p">(</span><span class="n">fig_leg</span><span class="o">.</span><span class="n">texts</span><span class="p">,</span> <span class="n">family</span><span class="o">=</span><span class="s1">&#39;Times New Roman&#39;</span><span class="p">,</span> <span class="n">fontsize</span> <span class="o">=</span> <span class="n">plot</span><span class="o">.</span><span class="n">font_size_secondary</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="n">plot</span><span class="o">.</span><span class="n">text_color</span><span class="p">,</span> <span class="n">va</span> <span class="o">=</span> <span class="s1">&#39;center&#39;</span><span class="p">)</span>
+
+    <span class="n">fig_leg</span><span class="o">.</span><span class="n">get_frame</span><span class="p">()</span><span class="o">.</span><span class="n">set_linewidth</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span> <span class="c1"># remove legend border</span>
+    <span class="n">fig_leg</span><span class="o">.</span><span class="n">set_zorder</span><span class="p">(</span><span class="mi">102</span><span class="p">)</span>
+    <span class="n">fig_leg</span><span class="o">.</span><span class="n">get_frame</span><span class="p">()</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">(</span><span class="s1">&#39;none&#39;</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">handle</span> <span class="ow">in</span> <span class="n">fig_leg</span><span class="o">.</span><span class="n">legend_handles</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">mpatches</span><span class="o">.</span><span class="n">Patch</span><span class="p">):</span>
+            <span class="n">handle</span><span class="o">.</span><span class="n">set_linewidth</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># or other properties specific to patches</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">Line2D</span><span class="p">):</span>
+            <span class="n">handle</span><span class="o">.</span><span class="n">_legmarker</span><span class="o">.</span><span class="n">set_markersize</span><span class="p">(</span><span class="mi">15</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span> 
+            <span class="k">break</span>           </div>
+
+           
+<div class="viewcode-block" id="generate_legend_ax">
+<a class="viewcode-back" href="../../generated/cityImage.generate_legend_ax.html#cityImage.generate_legend_ax">[docs]</a>
+<span class="k">def</span> <span class="nf">generate_legend_ax</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">plot</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    It generate the legend for an axes.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ax: matplotlib.axes object</span>
+<span class="sd">        The axes object on which to create the subplot.</span>
+<span class="sd">    plot: Plot, MultiPlot Object</span>
+<span class="sd">        The Plot object.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">leg</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_legend</span><span class="p">()</span>  
+    <span class="n">plt</span><span class="o">.</span><span class="n">setp</span><span class="p">(</span><span class="n">leg</span><span class="o">.</span><span class="n">texts</span><span class="p">,</span> <span class="n">family</span><span class="o">=</span><span class="s1">&#39;Times New Roman&#39;</span><span class="p">,</span> <span class="n">fontsize</span> <span class="o">=</span> <span class="n">plot</span><span class="o">.</span><span class="n">font_size_secondary</span><span class="p">,</span> <span class="n">color</span> <span class="o">=</span> <span class="n">plot</span><span class="o">.</span><span class="n">text_color</span><span class="p">,</span> <span class="n">va</span> <span class="o">=</span> <span class="s1">&#39;center&#39;</span><span class="p">)</span>
+    
+    <span class="n">bbox_legend</span> <span class="o">=</span> <span class="n">leg</span><span class="o">.</span><span class="n">get_window_extent</span><span class="p">()</span>
+    <span class="n">bbox_axes</span> <span class="o">=</span> <span class="n">ax</span><span class="o">.</span><span class="n">get_window_extent</span><span class="p">()</span>
+    <span class="n">legend_height</span> <span class="o">=</span> <span class="n">bbox_legend</span><span class="o">.</span><span class="n">y1</span> <span class="o">-</span> <span class="n">bbox_legend</span><span class="o">.</span><span class="n">y0</span>
+    <span class="n">axes_height</span> <span class="o">=</span> <span class="n">bbox_axes</span><span class="o">.</span><span class="n">y1</span> <span class="o">-</span> <span class="n">bbox_axes</span><span class="o">.</span><span class="n">y0</span>
+    <span class="n">vertical_position</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">+</span><span class="p">(</span><span class="n">legend_height</span><span class="o">/</span><span class="mi">2</span><span class="o">/</span><span class="n">axes_height</span><span class="p">)</span>
+    
+    <span class="n">leg</span><span class="o">.</span><span class="n">set_bbox_to_anchor</span><span class="p">((</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">vertical_position</span><span class="p">))</span>
+    
+    <span class="n">leg</span><span class="o">.</span><span class="n">get_frame</span><span class="p">()</span><span class="o">.</span><span class="n">set_linewidth</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span> <span class="c1"># remove legend border</span>
+    <span class="n">leg</span><span class="o">.</span><span class="n">set_zorder</span><span class="p">(</span><span class="mi">102</span><span class="p">)</span>
+    
+    <span class="k">for</span> <span class="n">handle</span> <span class="ow">in</span> <span class="n">leg</span><span class="o">.</span><span class="n">legend_handles</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="n">Line2D</span><span class="p">):</span>
+            <span class="n">handle</span><span class="o">.</span><span class="n">_legmarker</span><span class="o">.</span><span class="n">set_markersize</span><span class="p">(</span><span class="mi">12</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">break</span>
+    <span class="n">leg</span><span class="o">.</span><span class="n">get_frame</span><span class="p">()</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">(</span><span class="s1">&#39;none&#39;</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="generate_colorbar">
+<a class="viewcode-back" href="../../generated/cityImage.generate_colorbar.html#cityImage.generate_colorbar">[docs]</a>
+<span class="k">def</span> <span class="nf">generate_colorbar</span><span class="p">(</span><span class="n">plot</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cmap</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">norm</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">cbar_ticks</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">cbar_max_symbol</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">cbar_min_max</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">cbar_shrink</span> <span class="o">=</span> <span class="mf">0.95</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    It plots a colorbar, given some settings.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    plot: Plot, MultiPlot Object</span>
+<span class="sd">        The Plot object.</span>
+<span class="sd">    cmap: str or matplotlib.colors.LinearSegmentedColormap</span>
+<span class="sd">        Color map for the plot. See matplotlib colormaps for a list of possible values or pass a colormap.</span>
+<span class="sd">    norm: array</span>
+<span class="sd">        A class that specifies a desired data normalisation into a [min, max] interval.</span>
+<span class="sd">    cbar_ticks: int</span>
+<span class="sd">        Number of ticks along the colorbar.</span>
+<span class="sd">    cbar_max_symbol: bool</span>
+<span class="sd">        If True, show the &quot;&gt;&quot; next to the highest tick&#39;s label in the colorbar (useful when normalizing).</span>
+<span class="sd">    cbar_min_max: bool</span>
+<span class="sd">        If True, only show the &quot;&gt;&quot; and &quot;&lt;&quot; as labels of the lowest and highest ticks&#39; the colorbar.</span>
+<span class="sd">    cbar_shrink:</span>
+<span class="sd">        Fraction by which to multiply the size of the colorbar. </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">plot</span><span class="p">,</span> <span class="n">Plot</span><span class="p">):</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plot</span><span class="o">.</span><span class="n">ax</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plot</span><span class="o">.</span><span class="n">grid</span>
+        
+    <span class="n">cb</span> <span class="o">=</span> <span class="n">plot</span><span class="o">.</span><span class="n">fig</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">cm</span><span class="o">.</span><span class="n">ScalarMappable</span><span class="p">(</span><span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span> <span class="n">cmap</span><span class="o">=</span><span class="n">cmap</span><span class="p">),</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span><span class="p">,</span> <span class="n">shrink</span> <span class="o">=</span> <span class="n">cbar_shrink</span><span class="p">)</span>
+    <span class="n">tick_locator</span> <span class="o">=</span> <span class="n">ticker</span><span class="o">.</span><span class="n">MaxNLocator</span><span class="p">(</span><span class="n">nbins</span><span class="o">=</span><span class="n">cbar_ticks</span><span class="p">)</span>
+    <span class="n">cb</span><span class="o">.</span><span class="n">locator</span> <span class="o">=</span> <span class="n">tick_locator</span>
+    <span class="n">cb</span><span class="o">.</span><span class="n">update_ticks</span><span class="p">()</span>
+    <span class="n">cb</span><span class="o">.</span><span class="n">outline</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="n">ticks</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">cb</span><span class="o">.</span><span class="n">get_ticks</span><span class="p">())</span>
+    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">ticks</span><span class="p">:</span> 
+        <span class="k">if</span> <span class="p">(</span><span class="n">t</span> <span class="o">==</span> <span class="n">ticks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">t</span> <span class="o">!=</span> <span class="n">norm</span><span class="o">.</span><span class="n">vmax</span><span class="p">)</span> <span class="p">:</span>
+            <span class="n">ticks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">norm</span><span class="o">.</span><span class="n">vmax</span>
+
+    <span class="k">if</span> <span class="n">cbar_min_max</span><span class="p">:</span>
+        <span class="n">ticks</span> <span class="o">=</span> <span class="p">[</span><span class="n">norm</span><span class="o">.</span><span class="n">vmin</span><span class="p">,</span> <span class="n">norm</span><span class="o">.</span><span class="n">vmax</span><span class="p">]</span>
+    
+    <span class="n">cb</span><span class="o">.</span><span class="n">set_ticks</span><span class="p">(</span><span class="n">ticks</span><span class="p">)</span>
+    <span class="n">cb</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">set_yticklabels</span><span class="p">([</span><span class="nb">round</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">ticks</span><span class="p">])</span>
+    <span class="k">if</span> <span class="n">cbar_max_symbol</span><span class="p">:</span>
+        <span class="n">cb</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">set_yticklabels</span><span class="p">([</span><span class="nb">round</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">t</span> <span class="o">&lt;</span> <span class="n">norm</span><span class="o">.</span><span class="n">vmax</span> <span class="k">else</span> <span class="s2">&quot;&gt; &quot;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="nb">round</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">cb</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">get_yticks</span><span class="p">()])</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">setp</span><span class="p">(</span><span class="n">plt</span><span class="o">.</span><span class="n">getp</span><span class="p">(</span><span class="n">cb</span><span class="o">.</span><span class="n">ax</span><span class="p">,</span> <span class="s2">&quot;yticklabels&quot;</span><span class="p">),</span> <span class="n">color</span> <span class="o">=</span> <span class="n">plot</span><span class="o">.</span><span class="n">text_color</span><span class="p">,</span> <span class="n">fontfamily</span> <span class="o">=</span> <span class="s1">&#39;Times New Roman&#39;</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span> <span class="n">plot</span><span class="o">.</span><span class="n">font_size_secondary</span><span class="p">)</span></div>
+
+                
+<div class="viewcode-block" id="set_axes_frame">
+<a class="viewcode-back" href="../../generated/cityImage.set_axes_frame.html#cityImage.set_axes_frame">[docs]</a>
+<span class="k">def</span> <span class="nf">set_axes_frame</span><span class="p">(</span><span class="n">axes_frame</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">black_background</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">text_color</span> <span class="o">=</span> <span class="s1">&#39;black&#39;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; </span>
+<span class="sd">    It draws the axis frame.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    axes_frame: bool</span>
+<span class="sd">        Flag indicating whether to draw axes frame or not.</span>
+<span class="sd">    ax: matplotlib.axes object</span>
+<span class="sd">        The axes object on which to create the subplot.</span>
+<span class="sd">    black_background: boolean</span>
+<span class="sd">        It indicates whether the background color is black.</span>
+<span class="sd">    text_color: str</span>
+<span class="sd">        The text color.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">axes_frame</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_axis_off</span><span class="p">()</span>
+        <span class="k">return</span>
+      
+    <span class="n">ax</span><span class="o">.</span><span class="n">xaxis</span><span class="o">.</span><span class="n">set_ticklabels</span><span class="p">([])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">set_ticklabels</span><span class="p">([])</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">tick_params</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span> <span class="s1">&#39;both&#39;</span><span class="p">,</span> <span class="n">which</span><span class="o">=</span> <span class="s1">&#39;both&#39;</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    
+    <span class="k">for</span> <span class="n">spine</span> <span class="ow">in</span> <span class="n">ax</span><span class="o">.</span><span class="n">spines</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">spines</span><span class="p">[</span><span class="n">spine</span><span class="p">]</span><span class="o">.</span><span class="n">set_color</span><span class="p">(</span><span class="n">text_color</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">black_background</span><span class="p">:</span> 
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_facecolor</span><span class="p">(</span><span class="s1">&#39;black&#39;</span><span class="p">)</span></div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae"></script>
+<script src="../../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2024, Gabriele Filomena.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.5.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.15.2.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

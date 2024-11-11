@@ -1,0 +1,938 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>cityImage.barriers &#8212; cityImage 1.2 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="../../_static/styles/bootstrap.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+
+  
+  <link href="../../_static/vendor/fontawesome/6.5.1/css/all.min.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.1/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.1/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.1/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=a746c00c" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
+  <script src="../../_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
+
+    <script src="../../_static/documentation_options.js?v=61243dd2"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/cityImage/barriers';</script>
+    <link rel="author" title="About these documents" href="../../about.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <a id="pst-skip-link" class="skip-link" href="#main-content">Skip to main content</a>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>
+    Back to top
+  </button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__primary"
+          id="__primary"/>
+  <label class="overlay overlay-primary" for="__primary"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__secondary"
+          id="__secondary"/>
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar">
+<div class="bd-header__inner bd-page-width">
+  <label class="sidebar-toggle primary-toggle" for="__primary">
+    <span class="fa-solid fa-bars"></span>
+  </label>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">cityImage 1.2 documentation</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav class="navbar-nav">
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../index.html">
+                        Home
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../notebooks/userGuide.html">
+                        userGuide
+                      </a>
+                    </li>
+                
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/cityImage" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/gfilo" title="Twitter" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <div class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          <div class="navbar-item">
+<nav class="navbar-nav">
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../index.html">
+                        Home
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../notebooks/userGuide.html">
+                        userGuide
+                      </a>
+                    </li>
+                
+  </ul>
+</nav></div>
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/cityImage" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/gfilo" title="Twitter" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+
+
+<nav aria-label="Breadcrumb">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page">cityImage.barriers</li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for cityImage.barriers</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">osmnx</span> <span class="k">as</span> <span class="nn">ox</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">geopandas</span> <span class="k">as</span> <span class="nn">gpd</span>
+
+<span class="kn">from</span> <span class="nn">shapely.geometry</span> <span class="kn">import</span> <span class="n">Point</span><span class="p">,</span> <span class="n">LineString</span><span class="p">,</span> <span class="n">Polygon</span><span class="p">,</span> <span class="n">MultiPolygon</span><span class="p">,</span> <span class="n">MultiLineString</span><span class="p">,</span> <span class="n">GeometryCollection</span>
+<span class="kn">from</span> <span class="nn">shapely.ops</span> <span class="kn">import</span> <span class="n">cascaded_union</span><span class="p">,</span> <span class="n">linemerge</span><span class="p">,</span> <span class="n">polygonize</span><span class="p">,</span> <span class="n">polygonize_full</span><span class="p">,</span> <span class="n">unary_union</span><span class="p">,</span> <span class="n">nearest_points</span>
+<span class="kn">from</span> <span class="nn">.utilities</span> <span class="kn">import</span> <span class="n">gdf_from_geometries</span><span class="p">,</span> <span class="n">downloader</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">set_option</span><span class="p">(</span><span class="s2">&quot;display.precision&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+
+<div class="viewcode-block" id="road_barriers">
+<a class="viewcode-back" href="../../generated/cityImage.road_barriers.html#cityImage.road_barriers">[docs]</a>
+<span class="k">def</span> <span class="nf">road_barriers</span><span class="p">(</span><span class="n">place</span><span class="p">,</span> <span class="n">download_method</span><span class="p">,</span> <span class="n">distance</span> <span class="o">=</span> <span class="mf">500.0</span><span class="p">,</span> <span class="n">epsg</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">include_primary</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">include_secondary</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The function downloads major roads from OSM. These can be considered to be barrier to pedestrian movement or, at least, to structure people&#39;s cognitive Image of </span>
+<span class="sd">    the City. If &#39;include_primary&#39; is true, the function considers also primary roads, beyond motorway and trunk roads.</span>
+<span class="sd">    if &#39;include_secondary&#39; is true, the function considers also secondary roads, beyond motorway and trunk roads.</span>
+<span class="sd">    The user should assess based on the study area categorisation whether primary and secondary roads may indeed constitute barriers to pedestrian movement.</span>
+<span class="sd">        </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    place: str, tuple, Shapely Polygon</span>
+<span class="sd">        Name of cities or areas in OSM: </span>
+<span class="sd">        - when using &quot;distance_from_point&quot; please provide a (lat, lon) tuple to create the bounding box around it; </span>
+<span class="sd">        - when using &quot;distance_from_address&quot; provide an existing OSM address; </span>
+<span class="sd">        - when using &quot;OSMplace&quot; provide an OSM place name. The query must be geocodable and OSM must have polygon boundaries for the geocode result.  </span>
+<span class="sd">        - when using &quot;polygon&quot; please provide a Shapely Polygon in unprojected latitude-longitude degrees (EPSG:4326) CRS;</span>
+<span class="sd">    download_method: str, {&quot;distance_from_address&quot;, &quot;distance_from_point&quot;, &quot;OSMplace&quot;, &quot;polygon&quot;}</span>
+<span class="sd">        It indicates the method that should be used for downloading the data.</span>
+<span class="sd">    distance: float</span>
+<span class="sd">        Used when download_method == &quot;distance from address&quot; or == &quot;distance from point&quot;.</span>
+<span class="sd">    epsg: int</span>
+<span class="sd">        Epsg of the area considered; if None OSMNx is used for the projection.</span>
+<span class="sd">    include_primary: boolean</span>
+<span class="sd">        When true, it includes primary roads as barriers.</span>
+<span class="sd">    include_secondary: boolean</span>
+<span class="sd">        When true, it includes primary roads as barriers.   </span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    road_barriers: LineString GeoDataFrame</span>
+<span class="sd">        The road barriers.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">crs</span> <span class="o">=</span> <span class="s1">&#39;EPSG:&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">epsg</span><span class="p">)</span>
+    <span class="n">to_keep</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;trunk&#39;</span><span class="p">,</span> <span class="s1">&#39;motorway&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">include_primary</span><span class="p">:</span>
+        <span class="n">to_keep</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;primary&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">include_secondary</span><span class="p">:</span>
+            <span class="n">to_keep</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;secondary&#39;</span><span class="p">)</span>
+
+    <span class="n">tags</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;highway&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+    <span class="n">roads</span> <span class="o">=</span> <span class="n">downloader</span><span class="p">(</span><span class="n">place</span> <span class="o">=</span> <span class="n">place</span><span class="p">,</span> <span class="n">download_method</span> <span class="o">=</span> <span class="n">download_method</span><span class="p">,</span> <span class="n">tags</span> <span class="o">=</span> <span class="n">tags</span><span class="p">,</span> <span class="n">distance</span> <span class="o">=</span> <span class="n">distance</span><span class="p">)</span><span class="o">.</span><span class="n">to_crs</span><span class="p">(</span><span class="n">crs</span><span class="p">)</span>
+    <span class="n">roads</span> <span class="o">=</span> <span class="n">roads</span><span class="p">[</span><span class="n">roads</span><span class="o">.</span><span class="n">highway</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">to_keep</span><span class="p">)]</span>
+    <span class="c1"># exclude tunnels</span>
+    <span class="k">if</span> <span class="s2">&quot;tunnel&quot;</span> <span class="ow">in</span> <span class="n">roads</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="n">roads</span><span class="p">[</span><span class="s1">&#39;tunnel&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">roads</span><span class="p">[</span><span class="s1">&#39;tunnel&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">roads</span> <span class="o">=</span> <span class="n">roads</span><span class="p">[</span><span class="n">roads</span><span class="o">.</span><span class="n">tunnel</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span>
+        
+    <span class="n">roads</span> <span class="o">=</span> <span class="n">roads</span><span class="o">.</span><span class="n">unary_union</span>
+    <span class="n">roads</span> <span class="o">=</span> <span class="n">_simplify_barrier</span><span class="p">(</span><span class="n">roads</span><span class="p">)</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;geometry&#39;</span><span class="p">:</span> <span class="n">roads</span><span class="p">,</span> <span class="s1">&#39;barrier_type&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;road&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">roads</span><span class="p">)})</span>
+    <span class="n">road_barriers</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">geometry</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;geometry&#39;</span><span class="p">],</span> <span class="n">crs</span> <span class="o">=</span> <span class="n">crs</span><span class="p">)</span>
+       
+    <span class="k">return</span> <span class="n">road_barriers</span></div>
+
+    
+<div class="viewcode-block" id="water_barriers">
+<a class="viewcode-back" href="../../generated/cityImage.water_barriers.html#cityImage.water_barriers">[docs]</a>
+<span class="k">def</span> <span class="nf">water_barriers</span><span class="p">(</span><span class="n">place</span><span class="p">,</span> <span class="n">download_method</span><span class="p">,</span> <span class="n">distance</span> <span class="o">=</span> <span class="mf">500.0</span><span class="p">,</span> <span class="n">lakes_area</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">epsg</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The function downloads water bodies from OSM. Lakes, rivers and see coastlines can be considered structuring barriers.</span>
+<span class="sd">        </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    place: str, tuple, Shapely Polygon</span>
+<span class="sd">        Name of cities or areas in OSM: </span>
+<span class="sd">        - when using &quot;distance_from_point&quot; please provide a (lat, lon) tuple to create the bounding box around it; </span>
+<span class="sd">        - when using &quot;distance_from_address&quot; provide an existing OSM address; </span>
+<span class="sd">        - when using &quot;OSMplace&quot; provide an OSM place name. The query must be geocodable and OSM must have polygon boundaries for the geocode result.  </span>
+<span class="sd">        - when using &quot;polygon&quot; please provide a Shapely Polygon in unprojected latitude-longitude degrees (EPSG:4326) CRS;</span>
+<span class="sd">    download_method: str, {&quot;distance_from_address&quot;, &quot;distance_from_point&quot;, &quot;OSMplace&quot;, &quot;polygon&quot;}</span>
+<span class="sd">        It indicates the method that should be used for downloading the data.</span>
+<span class="sd">    distance: float</span>
+<span class="sd">        Used when download_method == &quot;distance from address&quot; or == &quot;distance from point&quot;.</span>
+<span class="sd">    lakes_area = float</span>
+<span class="sd">        Minimum area for lakes to be considered.    </span>
+<span class="sd">    epsg: int</span>
+<span class="sd">        Epsg of the area considered; if None OSMNx is used for the projection.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    water_barriers: LineString GeoDataFrame</span>
+<span class="sd">        The water barriers GeoDataFrame.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">crs</span> <span class="o">=</span> <span class="s1">&#39;EPSG:&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">epsg</span><span class="p">)</span>
+    
+    <span class="c1"># rivers</span>
+    <span class="n">tags</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;waterway&quot;</span><span class="p">:</span><span class="kc">True</span><span class="p">}</span>  
+    <span class="n">rivers</span> <span class="o">=</span> <span class="n">downloader</span><span class="p">(</span><span class="n">place</span> <span class="o">=</span> <span class="n">place</span><span class="p">,</span> <span class="n">download_method</span> <span class="o">=</span> <span class="n">download_method</span><span class="p">,</span> <span class="n">tags</span> <span class="o">=</span> <span class="n">tags</span><span class="p">,</span> <span class="n">distance</span> <span class="o">=</span> <span class="n">distance</span><span class="p">)</span><span class="o">.</span><span class="n">to_crs</span><span class="p">(</span><span class="n">crs</span><span class="p">)</span>
+    <span class="n">rivers</span> <span class="o">=</span> <span class="n">rivers</span><span class="p">[(</span><span class="n">rivers</span><span class="o">.</span><span class="n">waterway</span> <span class="o">==</span> <span class="s1">&#39;river&#39;</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">rivers</span><span class="o">.</span><span class="n">waterway</span> <span class="o">==</span> <span class="s1">&#39;canal&#39;</span><span class="p">)]</span>
+    <span class="n">rivers</span> <span class="o">=</span> <span class="n">rivers</span><span class="o">.</span><span class="n">unary_union</span>
+    <span class="n">rivers</span> <span class="o">=</span> <span class="n">_simplify_barrier</span><span class="p">(</span><span class="n">rivers</span><span class="p">)</span>
+    <span class="n">rivers</span> <span class="o">=</span> <span class="n">gdf_from_geometries</span><span class="p">(</span><span class="n">rivers</span><span class="p">,</span> <span class="n">crs</span><span class="p">)</span>
+    
+    <span class="c1"># lakes   </span>
+    <span class="n">tags</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;natural&quot;</span><span class="p">:</span><span class="s2">&quot;water&quot;</span><span class="p">}</span>
+    <span class="n">lakes</span> <span class="o">=</span> <span class="n">downloader</span><span class="p">(</span><span class="n">place</span> <span class="o">=</span> <span class="n">place</span><span class="p">,</span> <span class="n">download_method</span> <span class="o">=</span> <span class="n">download_method</span><span class="p">,</span> <span class="n">tags</span> <span class="o">=</span> <span class="n">tags</span><span class="p">,</span> <span class="n">distance</span> <span class="o">=</span> <span class="n">distance</span><span class="p">)</span><span class="o">.</span><span class="n">to_crs</span><span class="p">(</span><span class="n">crs</span><span class="p">)</span>
+    <span class="n">to_remove</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;river&#39;</span><span class="p">,</span> <span class="s1">&#39;stream&#39;</span><span class="p">,</span> <span class="s1">&#39;canal&#39;</span><span class="p">,</span> <span class="s1">&#39;riverbank&#39;</span><span class="p">,</span> <span class="s1">&#39;reflecting_pool&#39;</span><span class="p">,</span> <span class="s1">&#39;reservoir&#39;</span><span class="p">,</span> <span class="s1">&#39;bay&#39;</span><span class="p">]</span>
+    <span class="n">lakes</span> <span class="o">=</span> <span class="n">lakes</span><span class="p">[</span><span class="o">~</span><span class="n">lakes</span><span class="o">.</span><span class="n">water</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">to_remove</span><span class="p">)]</span>
+    <span class="n">lakes</span><span class="p">[</span><span class="s1">&#39;area&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">lakes</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">area</span>
+    <span class="n">lakes</span> <span class="o">=</span> <span class="n">lakes</span><span class="p">[</span><span class="n">lakes</span><span class="o">.</span><span class="n">area</span> <span class="o">&gt;</span> <span class="n">lakes_area</span><span class="p">]</span>
+    <span class="n">lakes</span> <span class="o">=</span> <span class="n">lakes</span><span class="o">.</span><span class="n">unary_union</span>
+    <span class="n">lakes</span> <span class="o">=</span> <span class="n">_simplify_barrier</span><span class="p">(</span><span class="n">lakes</span><span class="p">)</span> 
+    <span class="n">lakes</span> <span class="o">=</span> <span class="n">gdf_from_geometries</span><span class="p">(</span><span class="n">lakes</span><span class="p">,</span> <span class="n">crs</span><span class="p">)</span>
+    <span class="n">lakes</span> <span class="o">=</span> <span class="n">lakes</span><span class="p">[</span><span class="n">lakes</span><span class="p">[</span><span class="s1">&#39;length&#39;</span><span class="p">]</span> <span class="o">&gt;=</span><span class="mi">500</span><span class="p">]</span>
+    
+    <span class="c1"># sea   </span>
+    <span class="n">tags</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;natural&quot;</span><span class="p">:</span><span class="s2">&quot;coastline&quot;</span><span class="p">}</span>
+    <span class="n">sea</span> <span class="o">=</span> <span class="n">downloader</span><span class="p">(</span><span class="n">place</span> <span class="o">=</span> <span class="n">place</span><span class="p">,</span> <span class="n">download_method</span> <span class="o">=</span> <span class="n">download_method</span><span class="p">,</span> <span class="n">tags</span> <span class="o">=</span> <span class="n">tags</span><span class="p">,</span> <span class="n">distance</span> <span class="o">=</span> <span class="n">distance</span><span class="p">)</span><span class="o">.</span><span class="n">to_crs</span><span class="p">(</span><span class="n">crs</span><span class="p">)</span>
+    <span class="n">sea</span> <span class="o">=</span> <span class="n">sea</span><span class="o">.</span><span class="n">unary_union</span>      
+    <span class="n">sea</span> <span class="o">=</span> <span class="n">_simplify_barrier</span><span class="p">(</span><span class="n">sea</span><span class="p">)</span>
+    <span class="n">sea</span> <span class="o">=</span> <span class="n">gdf_from_geometries</span><span class="p">(</span><span class="n">sea</span><span class="p">,</span> <span class="n">crs</span><span class="p">)</span>
+    
+    <span class="n">water</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">rivers</span><span class="p">,</span> <span class="n">lakes</span><span class="p">,</span> <span class="n">sea</span><span class="p">])</span>
+    <span class="n">water</span> <span class="o">=</span> <span class="n">water</span><span class="o">.</span><span class="n">unary_union</span>
+    <span class="n">water</span> <span class="o">=</span> <span class="n">_simplify_barrier</span><span class="p">(</span><span class="n">water</span><span class="p">)</span>
+        
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;geometry&#39;</span><span class="p">:</span> <span class="n">water</span><span class="p">,</span> <span class="s1">&#39;barrier_type&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;water&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">water</span><span class="p">)})</span>
+    <span class="n">water_barriers</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">geometry</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;geometry&#39;</span><span class="p">],</span> <span class="n">crs</span> <span class="o">=</span> <span class="n">crs</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">water_barriers</span></div>
+
+    
+<div class="viewcode-block" id="railway_barriers">
+<a class="viewcode-back" href="../../generated/cityImage.railway_barriers.html#cityImage.railway_barriers">[docs]</a>
+<span class="k">def</span> <span class="nf">railway_barriers</span><span class="p">(</span><span class="n">place</span><span class="p">,</span> <span class="n">download_method</span><span class="p">,</span> <span class="n">distance</span> <span class="o">=</span> <span class="mf">500.0</span><span class="p">,</span> <span class="n">epsg</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">keep_light_rail</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The function downloads overground railway structures from OSM. Such structures can be considered barriers which shape the Image of the City and obstruct sight and </span>
+<span class="sd">    movement.</span>
+<span class="sd">        </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    place: str, tuple, Shapely Polygon</span>
+<span class="sd">        Name of cities or areas in OSM: </span>
+<span class="sd">        - when using &quot;distance_from_point&quot; please provide a (lat, lon) tuple to create the bounding box around it; </span>
+<span class="sd">        - when using &quot;distance_from_address&quot; provide an existing OSM address; </span>
+<span class="sd">        - when using &quot;OSMplace&quot; provide an OSM place name. The query must be geocodable and OSM must have polygon boundaries for the geocode result.  </span>
+<span class="sd">        - when using &quot;polygon&quot; please provide a Shapely Polygon in unprojected latitude-longitude degrees (EPSG:4326) CRS;</span>
+<span class="sd">    download_method: str, {&quot;distance_from_address&quot;, &quot;distance_from_point&quot;, &quot;OSMplace&quot;, &quot;polygon&quot;}</span>
+<span class="sd">        It indicates the method that should be used for downloading the data.</span>
+<span class="sd">    distance: float</span>
+<span class="sd">        Used when download_method == &quot;distance from address&quot; or == &quot;distance from point&quot;.</span>
+<span class="sd">    epsg: int</span>
+<span class="sd">        Epsg of the area considered; if None OSMNx is used for the projection.</span>
+<span class="sd">    keep_light_rail: boolean</span>
+<span class="sd">        Includes light rail, like tramway.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    railway_barriers: LineString GeoDataFrame</span>
+<span class="sd">        The railway barriers GeoDataFrame.</span>
+<span class="sd">    &quot;&quot;&quot;</span>    
+    
+    <span class="n">crs</span> <span class="o">=</span> <span class="s1">&#39;EPSG:&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">epsg</span><span class="p">)</span>
+    <span class="n">tags</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;railway&quot;</span><span class="p">:</span><span class="s2">&quot;rail&quot;</span><span class="p">}</span>
+    <span class="n">railways</span> <span class="o">=</span> <span class="n">downloader</span><span class="p">(</span><span class="n">place</span> <span class="o">=</span> <span class="n">place</span><span class="p">,</span> <span class="n">download_method</span> <span class="o">=</span> <span class="n">download_method</span><span class="p">,</span> <span class="n">tags</span> <span class="o">=</span> <span class="n">tags</span><span class="p">,</span> <span class="n">distance</span> <span class="o">=</span> <span class="n">distance</span><span class="p">)</span><span class="o">.</span><span class="n">to_crs</span><span class="p">(</span><span class="n">crs</span><span class="p">)</span>
+    <span class="c1"># removing light_rail, in case</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">keep_light_rail</span><span class="p">:</span>
+        <span class="n">railways</span> <span class="o">=</span> <span class="n">railways</span><span class="p">[</span><span class="n">railways</span><span class="o">.</span><span class="n">railway</span> <span class="o">!=</span> <span class="s1">&#39;light_rail&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="s2">&quot;tunnel&quot;</span> <span class="ow">in</span> <span class="n">railways</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="n">railways</span><span class="p">[</span><span class="s1">&#39;tunnel&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">railways</span><span class="p">[</span><span class="s1">&#39;tunnel&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">railways</span> <span class="o">=</span> <span class="n">railways</span><span class="p">[</span><span class="n">railways</span><span class="o">.</span><span class="n">tunnel</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span>
+        
+    <span class="n">r</span> <span class="o">=</span> <span class="n">railways</span><span class="o">.</span><span class="n">unary_union</span>
+    <span class="n">p</span> <span class="o">=</span> <span class="n">polygonize_full</span><span class="p">(</span><span class="n">r</span><span class="p">)</span>
+    <span class="n">railways</span> <span class="o">=</span> <span class="n">unary_union</span><span class="p">(</span><span class="n">p</span><span class="p">)</span><span class="o">.</span><span class="n">buffer</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span><span class="o">.</span><span class="n">boundary</span> <span class="c1"># to simpify a bit</span>
+    <span class="n">railways</span> <span class="o">=</span> <span class="n">_simplify_barrier</span><span class="p">(</span><span class="n">railways</span><span class="p">)</span>
+        
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;geometry&#39;</span><span class="p">:</span> <span class="n">railways</span><span class="p">,</span> <span class="s1">&#39;barrier_type&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;railway&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">railways</span><span class="p">)})</span>
+    <span class="n">railway_barriers</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">geometry</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;geometry&#39;</span><span class="p">],</span> <span class="n">crs</span> <span class="o">=</span> <span class="n">crs</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">railway_barriers</span></div>
+
+    
+<div class="viewcode-block" id="park_barriers">
+<a class="viewcode-back" href="../../generated/cityImage.park_barriers.html#cityImage.park_barriers">[docs]</a>
+<span class="k">def</span> <span class="nf">park_barriers</span><span class="p">(</span><span class="n">place</span><span class="p">,</span> <span class="n">download_method</span><span class="p">,</span> <span class="n">distance</span> <span class="o">=</span> <span class="mf">500.0</span><span class="p">,</span> <span class="n">epsg</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">min_area</span> <span class="o">=</span> <span class="mi">100000</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The function downloads parks areas with a certain extent and converts them to LineString features. Parks may break continuity in the urban structure, </span>
+<span class="sd">    besides being attractive areas for pedestrians.</span>
+<span class="sd">        </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    place: str, tuple, Shapely Polygon</span>
+<span class="sd">        Name of cities or areas in OSM: </span>
+<span class="sd">        - when using &quot;distance_from_point&quot; please provide a (lat, lon) tuple to create the bounding box around it; </span>
+<span class="sd">        - when using &quot;distance_from_address&quot; provide an existing OSM address; </span>
+<span class="sd">        - when using &quot;OSMplace&quot; provide an OSM place name. The query must be geocodable and OSM must have polygon boundaries for the geocode result.  </span>
+<span class="sd">        - when using &quot;polygon&quot; please provide a Shapely Polygon in unprojected latitude-longitude degrees (EPSG:4326) CRS;</span>
+<span class="sd">    download_method: str, {&quot;distance_from_address&quot;, &quot;distance_from_point&quot;, &quot;OSMplace&quot;, &quot;polygon&quot;}</span>
+<span class="sd">        It indicates the method that should be used for downloading the data.</span>
+<span class="sd">    distance: float</span>
+<span class="sd">        Used when download_method == &quot;distance from address&quot; or == &quot;distance from point&quot;.</span>
+<span class="sd">    epsg: int</span>
+<span class="sd">        Epsg of the area considered; if None OSMNx is used for the projection.</span>
+<span class="sd">    min_area: double</span>
+<span class="sd">        Parks with an extension smaller that this parameter are disregarded.</span>
+<span class="sd">      </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    park_barriers: LineString GeoDataFrame</span>
+<span class="sd">        The park barriers GeoDataFrame.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">crs</span> <span class="o">=</span> <span class="s1">&#39;EPSG:&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">epsg</span><span class="p">)</span>
+    <span class="n">tags</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;leisure&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+    <span class="n">parks_poly</span> <span class="o">=</span> <span class="n">downloader</span><span class="p">(</span><span class="n">place</span> <span class="o">=</span> <span class="n">place</span><span class="p">,</span> <span class="n">download_method</span> <span class="o">=</span> <span class="n">download_method</span><span class="p">,</span> <span class="n">tags</span> <span class="o">=</span> <span class="n">tags</span><span class="p">,</span> <span class="n">distance</span> <span class="o">=</span> <span class="n">distance</span><span class="p">)</span><span class="o">.</span><span class="n">to_crs</span><span class="p">(</span><span class="n">crs</span><span class="p">)</span>
+    <span class="n">parks_poly</span> <span class="o">=</span> <span class="n">parks_poly</span><span class="p">[</span><span class="n">parks_poly</span><span class="o">.</span><span class="n">leisure</span> <span class="o">==</span> <span class="s1">&#39;park&#39;</span><span class="p">]</span>
+    <span class="n">parks_poly</span> <span class="o">=</span> <span class="n">parks_poly</span><span class="p">[</span><span class="o">~</span><span class="n">parks_poly</span><span class="p">[</span><span class="s1">&#39;geometry&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">is_empty</span><span class="p">]</span> 
+    <span class="n">parks_poly</span><span class="p">[</span><span class="s1">&#39;area&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">parks_poly</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">area</span>
+    <span class="n">parks_poly</span> <span class="o">=</span> <span class="n">parks_poly</span><span class="p">[</span><span class="n">parks_poly</span><span class="o">.</span><span class="n">area</span> <span class="o">&gt;=</span> <span class="n">min_area</span><span class="p">]</span>
+ 
+    <span class="n">pp</span> <span class="o">=</span> <span class="n">parks_poly</span><span class="p">[</span><span class="s1">&#39;geometry&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">unary_union</span>  
+    <span class="n">pp</span> <span class="o">=</span> <span class="n">polygonize_full</span><span class="p">(</span><span class="n">pp</span><span class="p">)</span>
+    <span class="n">parks</span> <span class="o">=</span> <span class="n">unary_union</span><span class="p">(</span><span class="n">pp</span><span class="p">)</span><span class="o">.</span><span class="n">buffer</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span><span class="o">.</span><span class="n">boundary</span> <span class="c1"># to simpify a bit</span>
+    <span class="n">parks</span> <span class="o">=</span> <span class="n">_simplify_barrier</span><span class="p">(</span><span class="n">parks</span><span class="p">)</span>
+
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;geometry&#39;</span><span class="p">:</span> <span class="n">parks</span><span class="p">,</span> <span class="s1">&#39;barrier_type&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;park&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">parks</span><span class="p">)})</span>
+    <span class="n">park_barriers</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">geometry</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;geometry&#39;</span><span class="p">],</span> <span class="n">crs</span> <span class="o">=</span> <span class="n">crs</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">park_barriers</span>     </div>
+
+     
+<div class="viewcode-block" id="along_water">
+<a class="viewcode-back" href="../../generated/cityImage.along_water.html#cityImage.along_water">[docs]</a>
+<span class="k">def</span> <span class="nf">along_water</span><span class="p">(</span><span class="n">edges_gdf</span><span class="p">,</span> <span class="n">barriers_gdf</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The function assigns to each street segment in a GeoDataFrame the list of barrierIDs corresponding to waterbodies which lay along the street segment. </span>
+<span class="sd">    No obstructions between the street segment and the barriers are admitted.</span>
+<span class="sd">        </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    edges_gdf: LineString GeoDataFrame</span>
+<span class="sd">        The street segmentes GeoDataFrame .</span>
+<span class="sd">    barriers_gdf: LineString GeoDataFrame</span>
+<span class="sd">        The barriers GeoDataFrame.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    edges_gdf: LineString GeoDataFrame</span>
+<span class="sd">        The updated street segments GeoDataFrame.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">sindex</span> <span class="o">=</span> <span class="n">edges_gdf</span><span class="o">.</span><span class="n">sindex</span>
+    <span class="n">tmp</span> <span class="o">=</span> <span class="n">barriers_gdf</span><span class="p">[</span><span class="n">barriers_gdf</span><span class="p">[</span><span class="s1">&#39;barrier_type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">([</span><span class="s1">&#39;water&#39;</span><span class="p">])]</span>
+    <span class="n">edges_gdf</span><span class="p">[</span><span class="s1">&#39;ac_rivers&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">edges_gdf</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="n">barriers_along</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;edgeID&#39;</span><span class="p">],</span> <span class="n">edges_gdf</span><span class="p">,</span> <span class="n">tmp</span><span class="p">,</span> <span class="n">sindex</span><span class="p">,</span> <span class="n">offset</span> <span class="o">=</span> <span class="mi">200</span><span class="p">),</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">edges_gdf</span><span class="p">[</span><span class="s1">&#39;c_rivers&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">edges_gdf</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="n">_crossing_barriers</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;geometry&#39;</span><span class="p">],</span> <span class="n">tmp</span><span class="p">),</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">edges_gdf</span><span class="p">[</span><span class="s1">&#39;bridge&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">edges_gdf</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="kc">True</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;c_rivers&#39;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="kc">False</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="c1"># excluding bridges</span>
+    <span class="n">edges_gdf</span><span class="p">[</span><span class="s1">&#39;a_rivers&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">edges_gdf</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;ac_rivers&#39;</span><span class="p">])</span><span class="o">-</span><span class="nb">set</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;c_rivers&#39;</span><span class="p">])),</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">edges_gdf</span><span class="p">[</span><span class="s1">&#39;a_rivers&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">edges_gdf</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;ac_rivers&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">row</span><span class="p">[</span><span class="s1">&#39;bridge&#39;</span><span class="p">]</span> <span class="k">else</span> <span class="p">[],</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">edges_gdf</span><span class="o">.</span><span class="n">drop</span><span class="p">([</span><span class="s1">&#39;ac_rivers&#39;</span><span class="p">,</span> <span class="s1">&#39;c_rivers&#39;</span><span class="p">],</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">inplace</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">edges_gdf</span></div>
+
+
+<div class="viewcode-block" id="along_within_parks">
+<a class="viewcode-back" href="../../generated/cityImage.along_within_parks.html#cityImage.along_within_parks">[docs]</a>
+<span class="k">def</span> <span class="nf">along_within_parks</span><span class="p">(</span><span class="n">edges_gdf</span><span class="p">,</span> <span class="n">barriers_gdf</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The function assigns to each street segment in a GeoDataFrame the list of barrierIDs corresponding to parks which lie along the street segments.</span>
+<span class="sd">    Also street segments within parks are considered.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    edges_gdf: LineString GeoDataFrame</span>
+<span class="sd">        The street segmentes GeoDataFrame .</span>
+<span class="sd">    barriers_gdf: LineString GeoDataFrame</span>
+<span class="sd">        The barriers GeoDataFrame.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    edges_gdf: LineString GeoDataFrame</span>
+<span class="sd">        The updated street segments GeoDataFrame.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">sindex</span> <span class="o">=</span> <span class="n">edges_gdf</span><span class="o">.</span><span class="n">sindex</span>
+    <span class="n">tmp</span> <span class="o">=</span> <span class="n">barriers_gdf</span><span class="p">[</span><span class="n">barriers_gdf</span><span class="p">[</span><span class="s1">&#39;barrier_type&#39;</span><span class="p">]</span><span class="o">==</span><span class="s1">&#39;park&#39;</span><span class="p">]</span>
+    
+    <span class="c1"># polygonize parks</span>
+    <span class="n">park_polygons</span> <span class="o">=</span> <span class="n">barriers_gdf</span><span class="p">[</span><span class="n">barriers_gdf</span><span class="p">[</span><span class="s1">&#39;barrier_type&#39;</span><span class="p">]</span><span class="o">==</span><span class="s1">&#39;park&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">park_polygons</span><span class="p">[</span><span class="s1">&#39;geometry&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">park_polygons</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="p">(</span><span class="n">polygonize_full</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;geometry&#39;</span><span class="p">]))[</span><span class="mi">0</span><span class="p">],</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">park_polygons</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="p">(</span><span class="n">park_polygons</span><span class="p">[</span><span class="s1">&#39;barrierID&#39;</span><span class="p">],</span> <span class="n">geometry</span> <span class="o">=</span> <span class="n">park_polygons</span><span class="p">[</span><span class="s1">&#39;geometry&#39;</span><span class="p">],</span> <span class="n">crs</span> <span class="o">=</span> <span class="n">edges_gdf</span><span class="o">.</span><span class="n">crs</span><span class="p">)</span>
+    
+    <span class="n">edges_gdf</span><span class="p">[</span><span class="s1">&#39;w_parks&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">edges_gdf</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="n">_within_parks</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;geometry&#39;</span><span class="p">],</span> <span class="n">park_polygons</span><span class="p">),</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="c1">#within</span>
+
+    <span class="k">return</span> <span class="n">edges_gdf</span></div>
+
+    
+<div class="viewcode-block" id="barriers_along">
+<a class="viewcode-back" href="../../generated/cityImage.barriers_along.html#cityImage.barriers_along">[docs]</a>
+<span class="k">def</span> <span class="nf">barriers_along</span><span class="p">(</span><span class="n">ix_line</span><span class="p">,</span> <span class="n">edges_gdf</span><span class="p">,</span> <span class="n">barriers_gdf</span><span class="p">,</span> <span class="n">edges_gdf_sindex</span><span class="p">,</span> <span class="n">offset</span> <span class="o">=</span> <span class="mi">100</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The function returns list of barrierIDs along the edgeID of a street segment, given a certain offset.</span>
+<span class="sd">    Touching and intersecting barriers are ignored.</span>
+<span class="sd">        </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ix_line: int</span>
+<span class="sd">        Index street segment</span>
+<span class="sd">    edges_gdf: LineString GeoDataFrame</span>
+<span class="sd">        The street segmentes GeoDataFrame.</span>
+<span class="sd">    barriers_gdf: LineString GeoDataFrame</span>
+<span class="sd">        The barriers GeoDataFrame.</span>
+<span class="sd">    edges_gdf_sindex: Spatial Index</span>
+<span class="sd">        Spatial index on edges_gdf.</span>
+<span class="sd">    offset: int</span>
+<span class="sd">        Offset along the street segment considered.</span>
+<span class="sd">      </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    barriers_along: List</span>
+<span class="sd">        A list of barriers along a given street segment.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">buffer</span> <span class="o">=</span> <span class="n">edges_gdf</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">ix_line</span><span class="p">]</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">buffer</span><span class="p">(</span><span class="n">offset</span><span class="p">)</span>
+    <span class="n">intersecting_barriers</span> <span class="o">=</span> <span class="n">barriers_gdf</span><span class="p">[</span><span class="n">barriers_gdf</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">intersects</span><span class="p">(</span><span class="n">buffer</span><span class="p">)</span> <span class="o">&amp;</span> <span class="o">~</span><span class="n">barriers_gdf</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">touches</span><span class="p">(</span><span class="n">edges_gdf</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">ix_line</span><span class="p">]</span><span class="o">.</span><span class="n">geometry</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="n">intersecting_barriers</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="n">possible_matches</span> <span class="o">=</span> <span class="n">edges_gdf</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">edges_gdf_sindex</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">buffer</span><span class="o">.</span><span class="n">bounds</span><span class="p">))]</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">ix_line</span><span class="p">)</span>
+    <span class="n">barriers_along</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">barrier</span> <span class="ow">in</span> <span class="n">intersecting_barriers</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+        <span class="n">midpoint</span> <span class="o">=</span> <span class="n">edges_gdf</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">ix_line</span><span class="p">]</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">interpolate</span><span class="p">(</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">normalized</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+        <span class="n">line</span> <span class="o">=</span> <span class="n">LineString</span><span class="p">([</span><span class="n">midpoint</span><span class="p">,</span> <span class="n">nearest_points</span><span class="p">(</span><span class="n">midpoint</span><span class="p">,</span> <span class="n">barrier</span><span class="p">[</span><span class="s1">&#39;geometry&#39;</span><span class="p">])[</span><span class="mi">1</span><span class="p">]])</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">possible_matches</span><span class="p">[</span><span class="n">possible_matches</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">intersects</span><span class="p">(</span><span class="n">line</span><span class="p">)]</span><span class="o">.</span><span class="n">empty</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="n">barriers_along</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">barrier</span><span class="p">[</span><span class="s1">&#39;barrierID&#39;</span><span class="p">])</span>
+    
+    <span class="k">return</span> <span class="n">barriers_along</span></div>
+
+        
+<span class="k">def</span> <span class="nf">_within_parks</span><span class="p">(</span><span class="n">line_geometry</span><span class="p">,</span> <span class="n">park_polygons</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The function supports the along_within_parks function. Returns a list containing the barrierID of possibly intersecting parks (should be one).</span>
+<span class="sd">        </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    line_geometry: LineString </span>
+<span class="sd">        Street segment geometry.</span>
+<span class="sd">    park_polygons: Polygon GeoDataFrame</span>
+<span class="sd">        Parks GeoDataFrame.</span>
+<span class="sd">      </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    within: List</span>
+<span class="sd">        A list of street segments within a given park&#39;s polygon.</span>
+<span class="sd">    &quot;&quot;&quot;</span>  
+    <span class="n">park_sindex</span> <span class="o">=</span> <span class="n">park_polygons</span><span class="o">.</span><span class="n">sindex</span>
+    <span class="n">possible_matches_index</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">park_sindex</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">line_geometry</span><span class="o">.</span><span class="n">bounds</span><span class="p">))</span>
+    <span class="n">possible_matches</span> <span class="o">=</span> <span class="n">park_polygons</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">possible_matches_index</span><span class="p">]</span>
+    <span class="n">intersecting_parks</span> <span class="o">=</span> <span class="n">possible_matches</span><span class="p">[</span><span class="n">possible_matches</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">intersects</span><span class="p">(</span><span class="n">line_geometry</span><span class="p">)]</span>
+    <span class="n">touching_parks</span> <span class="o">=</span> <span class="n">possible_matches</span><span class="p">[</span><span class="n">possible_matches</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">touches</span><span class="p">(</span><span class="n">line_geometry</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">intersecting_parks</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> 
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="n">intersecting_parks</span> <span class="o">=</span> <span class="n">intersecting_parks</span><span class="p">[</span><span class="o">~</span><span class="n">intersecting_parks</span><span class="o">.</span><span class="n">barrierID</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">touching_parks</span><span class="o">.</span><span class="n">barrierID</span><span class="p">))]</span>
+    <span class="n">within</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">intersecting_parks</span><span class="o">.</span><span class="n">barrierID</span><span class="p">)</span>
+   
+    <span class="k">return</span> <span class="n">within</span>
+    
+<div class="viewcode-block" id="assign_structuring_barriers">
+<a class="viewcode-back" href="../../generated/cityImage.assign_structuring_barriers.html#cityImage.assign_structuring_barriers">[docs]</a>
+<span class="k">def</span> <span class="nf">assign_structuring_barriers</span><span class="p">(</span><span class="n">edges_gdf</span><span class="p">,</span> <span class="n">barriers_gdf</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The function return a GeoDataFrame with an added boolean column field that indicates whether the street segment intersects a separating/structuring barrier.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    edges_gdf: LineString GeoDataFrame</span>
+<span class="sd">        The street segmentes GeoDataFrame.</span>
+<span class="sd">    barriers_gdf: LineString GeoDataFrame</span>
+<span class="sd">        The barriers GeoDataFrame.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    edges_gdf: LineString GeoDataFrame</span>
+<span class="sd">        The updated street segments GeoDataFrame.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">barriers_gdf</span> <span class="o">=</span> <span class="n">barriers_gdf</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">edges_gdf</span> <span class="o">=</span> <span class="n">edges_gdf</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">exlcude</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;secondary_road&#39;</span><span class="p">,</span> <span class="s1">&#39;park&#39;</span><span class="p">]</span> <span class="c1"># parks are disregarded</span>
+    <span class="n">tmp</span> <span class="o">=</span> <span class="n">barriers_gdf</span><span class="p">[</span><span class="o">~</span><span class="n">barriers_gdf</span><span class="p">[</span><span class="s1">&#39;barrier_type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">exlcude</span><span class="p">)]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> 
+    
+    <span class="n">edges_gdf</span><span class="p">[</span><span class="s1">&#39;c_barr&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">edges_gdf</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="n">_crossing_barriers</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;geometry&#39;</span><span class="p">],</span> <span class="n">tmp</span> <span class="p">),</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">edges_gdf</span><span class="p">[</span><span class="s1">&#39;sep_barr&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">edges_gdf</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="kc">True</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s1">&#39;c_barr&#39;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="kc">False</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">edges_gdf</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="s1">&#39;c_barr&#39;</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">inplace</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">edges_gdf</span></div>
+
+
+<span class="k">def</span> <span class="nf">_crossing_barriers</span><span class="p">(</span><span class="n">line_geometry</span><span class="p">,</span> <span class="n">barriers_gdf</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The function supports the assign_structuring_barriers and along_water functions. It returns a list of intersecting barrierIDs.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    line_geometry: LineString </span>
+<span class="sd">        Street segment geometry.</span>
+<span class="sd">    barriers_gdf: LineString GeoDataFrame</span>
+<span class="sd">        The barriers GeoDataFrame.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    adjacent_barriers: List</span>
+<span class="sd">        A list of adjacent barriers to a given street segment.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">adjacent_barriers</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">intersecting_barriers</span> <span class="o">=</span> <span class="n">barriers_gdf</span><span class="p">[</span><span class="n">barriers_gdf</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">intersects</span><span class="p">(</span><span class="n">line_geometry</span><span class="p">)]</span>
+    <span class="n">touching_barriers</span> <span class="o">=</span> <span class="n">barriers_gdf</span><span class="p">[</span><span class="n">barriers_gdf</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">touches</span><span class="p">(</span><span class="n">line_geometry</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">intersecting_barriers</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> 
+        <span class="k">return</span> <span class="n">adjacent_barriers</span>
+    <span class="n">intersecting_barriers</span> <span class="o">=</span> <span class="n">intersecting_barriers</span><span class="p">[</span><span class="o">~</span><span class="n">intersecting_barriers</span><span class="o">.</span><span class="n">barrierID</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">touching_barriers</span><span class="o">.</span><span class="n">barrierID</span><span class="p">))]</span>
+    <span class="n">adjacent_barriers</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">intersecting_barriers</span><span class="o">.</span><span class="n">barrierID</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">adjacent_barriers</span>
+    
+<div class="viewcode-block" id="get_barriers">
+<a class="viewcode-back" href="../../generated/cityImage.get_barriers.html#cityImage.get_barriers">[docs]</a>
+<span class="k">def</span> <span class="nf">get_barriers</span><span class="p">(</span><span class="n">place</span><span class="p">,</span> <span class="n">download_method</span><span class="p">,</span> <span class="n">distance</span> <span class="o">=</span> <span class="mf">500.0</span><span class="p">,</span> <span class="n">epsg</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">parks_min_area</span> <span class="o">=</span> <span class="mi">100000</span><span class="p">):</span> 
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The function returns all the barriers (water, park, railways, major roads) within a certain urban area.</span>
+<span class="sd">    Certain parameter are set by default. For manipulating, use the barrier-type specific functions (see above).</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    place: str, tuple</span>
+<span class="sd">        Name of cities or areas in OSM: </span>
+<span class="sd">        - when using &quot;distance_from_point&quot; please provide a (lat, lon) tuple to create the bounding box around it; </span>
+<span class="sd">        - when using &quot;distance_from_address&quot; provide an existing OSM address; </span>
+<span class="sd">        - when using &quot;OSMplace&quot; provide an OSM place name. The query must be geocodable and OSM must have polygon boundaries for the geocode result.  </span>
+<span class="sd">        - when using &quot;polygon&quot; please provide the name of a relation in OSM as an argument of place;</span>
+<span class="sd">    download_method: str, {&quot;distance_from_address&quot;, &quot;distance_from_point&quot;, &quot;OSMplace&quot;, &quot;polygon&quot;}</span>
+<span class="sd">        It indicates the method that should be used for downloading the data.</span>
+<span class="sd">    distance: float</span>
+<span class="sd">        Used when download_method == &quot;distance from address&quot; or == &quot;distance from point&quot;.</span>
+<span class="sd">    epsg: int</span>
+<span class="sd">        Epsg of the area considered; if None OSMNx is used for the projection.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    barriers_gdf: LineString GeoDataFrame</span>
+<span class="sd">        The barriers GeoDataFrame.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">rb</span> <span class="o">=</span> <span class="n">road_barriers</span><span class="p">(</span><span class="n">place</span><span class="p">,</span> <span class="n">download_method</span><span class="p">,</span> <span class="n">distance</span><span class="p">,</span> <span class="n">epsg</span> <span class="o">=</span> <span class="n">epsg</span><span class="p">,</span> <span class="n">include_primary</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+    <span class="n">wb</span> <span class="o">=</span> <span class="n">water_barriers</span><span class="p">(</span><span class="n">place</span><span class="p">,</span> <span class="n">download_method</span><span class="p">,</span> <span class="n">distance</span><span class="p">,</span> <span class="n">epsg</span> <span class="o">=</span> <span class="n">epsg</span><span class="p">)</span>
+    <span class="n">ryb</span> <span class="o">=</span> <span class="n">railway_barriers</span><span class="p">(</span><span class="n">place</span><span class="p">,</span><span class="n">download_method</span><span class="p">,</span> <span class="n">distance</span><span class="p">,</span> <span class="n">epsg</span> <span class="o">=</span> <span class="n">epsg</span><span class="p">)</span>
+    <span class="n">pb</span> <span class="o">=</span> <span class="n">park_barriers</span><span class="p">(</span><span class="n">place</span><span class="p">,</span><span class="n">download_method</span><span class="p">,</span> <span class="n">distance</span><span class="p">,</span> <span class="n">epsg</span> <span class="o">=</span> <span class="n">epsg</span><span class="p">,</span> <span class="n">min_area</span> <span class="o">=</span> <span class="n">parks_min_area</span><span class="p">)</span>
+    <span class="n">barriers_gdf</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">rb</span><span class="p">,</span> <span class="n">wb</span><span class="p">,</span> <span class="n">ryb</span><span class="p">,</span> <span class="n">pb</span><span class="p">])</span>
+    <span class="n">barriers_gdf</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">inplace</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">drop</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+    <span class="n">barriers_gdf</span><span class="p">[</span><span class="s1">&#39;barrierID&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">barriers_gdf</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">barriers_gdf</span></div>
+
+   
+<span class="k">def</span> <span class="nf">_simplify_barrier</span><span class="p">(</span><span class="n">geometries</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The function merges a list of geometries in a single geometry when possible; in any case it returns the resulting features within a list. </span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    geometry: Shapely Geometry</span>
+<span class="sd">        The geommetric representation of a barrier.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    features: list of LineString</span>
+<span class="sd">        The list of actual geometries.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+  
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">geometries</span><span class="p">)</span> <span class="ow">is</span> <span class="n">Polygon</span><span class="p">:</span> 
+        <span class="n">features</span> <span class="o">=</span> <span class="p">[</span><span class="n">geometries</span><span class="o">.</span><span class="n">boundary</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">geometries</span><span class="p">)</span> <span class="ow">is</span> <span class="n">LineString</span><span class="p">:</span> 
+        <span class="n">features</span> <span class="o">=</span> <span class="p">[</span><span class="n">geometries</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">geometries</span><span class="p">)</span> <span class="ow">is</span> <span class="n">MultiLineString</span><span class="p">:</span>
+        <span class="n">features</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">geometries</span><span class="o">.</span><span class="n">geoms</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">geometries</span><span class="p">)</span> <span class="ow">is</span> <span class="n">MultiPolygon</span><span class="p">:</span>
+        <span class="n">features</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">geometries</span><span class="o">.</span><span class="n">boundary</span><span class="o">.</span><span class="n">geoms</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">geometries</span><span class="p">)</span> <span class="ow">is</span> <span class="n">GeometryCollection</span><span class="p">:</span>
+        <span class="n">features</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">geometries</span><span class="o">.</span><span class="n">geoms</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">feature</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">features</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">feature</span><span class="p">)</span> <span class="ow">is</span> <span class="n">Polygon</span><span class="p">:</span>
+                <span class="n">features</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">feature</span><span class="o">.</span><span class="n">boundary</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="k">return</span> <span class="n">features</span>
+ 
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae"></script>
+<script src="../../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2024, Gabriele Filomena.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.5.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.15.2.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

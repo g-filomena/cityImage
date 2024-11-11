@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Landmarks (using Local Files) &#8212; cityImage 0.2 documentation</title>
+    <title>Landmarks (using Local Files) &#8212; cityImage 1.2 documentation</title>
   
   
   
@@ -29,15 +29,15 @@
 <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.1/webfonts/fa-regular-400.woff2" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
-    <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+    <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css" />
   
   <!-- Pre-loaded scripts that we'll load fully later -->
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
   <script src="../_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
 
-    <script src="../_static/documentation_options.js?v=10f1778b"></script>
-    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/documentation_options.js?v=61243dd2"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
@@ -119,7 +119,7 @@
   
   
   
-    <p class="title logo__title">cityImage 0.2 documentation</p>
+    <p class="title logo__title">cityImage 1.2 documentation</p>
   
 </a></div>
     
@@ -142,7 +142,7 @@
 
                     <li class="nav-item">
                       <a class="nav-link nav-internal" href="../notebooks/userGuide.html">
-                        User Guide
+                        userGuide
                       </a>
                     </li>
                 
@@ -180,6 +180,34 @@ document.write(`
   </button>
 `);
 </script></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/cityImage" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/gfilo" title="Twitter" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
       
     </div>
     
@@ -239,7 +267,7 @@ document.write(`
 
                     <li class="nav-item">
                       <a class="nav-link nav-internal" href="../notebooks/userGuide.html">
-                        User Guide
+                        userGuide
                       </a>
                     </li>
                 
@@ -263,6 +291,34 @@ document.write(`
   </button>
 `);
 </script></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/cityImage" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/gfilo" title="Twitter" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
         
       </div>
     
@@ -322,7 +378,7 @@ document.write(`
 <p>Four scores are here computed to extract computation landmarks: structural, visual, cultural, pragmatic. The user has to provide at least an attribute shapefile containing the height attribute (the only mandatory field). See below for further instructions on the data sources.</p>
 <p>The user can also provide, seaprately, information about cultural/historical landmarks (e.g. position of listed important buildings); see <em>3 - Cultural component</em></p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span><span class="o">,</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span><span class="o">,</span> <span class="nn">geopandas</span> <span class="k">as</span> <span class="nn">gpd</span><span class="o">,</span> <span class="nn">osmnx</span> <span class="k">as</span> <span class="nn">ox</span>
@@ -341,7 +397,7 @@ document.write(`
 <section id="Preparation">
 <h2>Preparation<a class="headerlink" href="#Preparation" title="Link to this heading">#</a></h2>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[64]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">city_name</span> <span class="o">=</span> <span class="s1">&#39;Barcelona&#39;</span>
@@ -355,7 +411,7 @@ document.write(`
 <section id="Obstructions">
 <h3>Obstructions<a class="headerlink" href="#Obstructions" title="Link to this heading">#</a></h3>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[74]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">obstructions</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">input_path</span><span class="o">+</span><span class="s1">&#39;_buildings.gpkg&#39;</span><span class="p">)</span>
@@ -371,7 +427,7 @@ document.write(`
 <section id="Buildings">
 <h3>Buildings<a class="headerlink" href="#Buildings" title="Link to this heading">#</a></h3>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[81]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># reading the street network</span>
@@ -381,7 +437,7 @@ document.write(`
 </div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[79]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">buildings</span> <span class="o">=</span> <span class="n">obstructions</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
@@ -389,18 +445,19 @@ document.write(`
 <span class="n">convex_hull</span> <span class="o">=</span> <span class="n">edges</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">unary_union</span><span class="o">.</span><span class="n">convex_hull</span>
 <span class="n">buffer</span> <span class="o">=</span> <span class="n">convex_hull</span><span class="o">.</span><span class="n">centroid</span><span class="o">.</span><span class="n">buffer</span><span class="p">(</span><span class="mi">4000</span><span class="p">)</span>
 <span class="n">buildings</span> <span class="o">=</span> <span class="n">buildings</span><span class="p">[</span><span class="n">buildings</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">within</span><span class="p">(</span><span class="n">buffer</span><span class="p">)]</span>
+<span class="n">obstructions</span> <span class="o">=</span> <span class="n">obstructions</span><span class="p">[</span><span class="n">obstructions</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">within</span><span class="p">(</span><span class="n">buildings</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">unary_union</span><span class="o">.</span><span class="n">convex_hull</span><span class="o">.</span><span class="n">buffer</span><span class="p">(</span><span class="mi">1000</span><span class="p">))]</span>
 </pre></div>
 </div>
 </div>
 <p><strong>Visualisation</strong></p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[80]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">plot_gdf</span><span class="p">(</span><span class="n">buildings</span><span class="p">,</span> <span class="n">scheme</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>  <span class="n">black_background</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">),</span>
                   <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;red&#39;</span><span class="p">,</span>
                   <span class="n">title</span> <span class="o">=</span> <span class="n">city_name</span><span class="o">+</span><span class="s1">&#39;: Buildings vs Obstructions&#39;</span><span class="p">,</span>
-                  <span class="n">base_map_gdf</span> <span class="o">=</span> <span class="n">obstructions</span><span class="p">,</span> <span class="n">base_map_color</span> <span class="o">=</span> <span class="s1">&#39;black&#39;</span><span class="p">,</span>
+                  <span class="n">base_map_gdf</span> <span class="o">=</span> <span class="n">nodes</span><span class="p">,</span> <span class="n">base_map_color</span> <span class="o">=</span> <span class="s1">&#39;black&#39;</span><span class="p">,</span>
                   <span class="n">base_map_alpha</span> <span class="o">=</span> <span class="mf">0.75</span><span class="p">,</span> <span class="n">base_map_zorder</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -410,6 +467,116 @@ document.write(`
 </div>
 <div class="output_area docutils container">
 <img alt="../_images/otherExamples_Landmarks_Local_Files_10_0.png" src="../_images/otherExamples_Landmarks_Local_Files_10_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">nodes</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ms</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+<span class="ansi-red-intense-fg ansi-bold">---------------------------------------------------------------------------</span>
+<span class="ansi-red-intense-fg ansi-bold">AttributeError</span>                            Traceback (most recent call last)
+Cell <span class="ansi-green-intense-fg ansi-bold">In[11], line 1</span>
+<span class="ansi-green-intense-fg ansi-bold">----&gt; 1</span> <span class="ansi-yellow-bg">nodes</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">plot</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">ms</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">0.1</span><span class="ansi-yellow-bg">)</span>
+
+File <span class="ansi-green-intense-fg ansi-bold">~\AppData\Local\miniconda3\envs\cityImage\Lib\site-packages\geopandas\plotting.py:979</span>, in <span class="ansi-cyan-fg">GeoplotAccessor.__call__</span><span class="ansi-blue-intense-fg ansi-bold">(self, *args, **kwargs)</span>
+<span class="ansi-green-fg">    977</span> kind <span style="color: rgb(98,98,98)">=</span> kwargs<span style="color: rgb(98,98,98)">.</span>pop(<span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">kind</span><span style="color: rgb(175,0,0)">&#34;</span>, <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">geo</span><span style="color: rgb(175,0,0)">&#34;</span>)
+<span class="ansi-green-fg">    978</span> <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> kind <span style="color: rgb(98,98,98)">==</span> <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">geo</span><span style="color: rgb(175,0,0)">&#34;</span>:
+<span class="ansi-green-intense-fg ansi-bold">--&gt; 979</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">return</span> <span class="ansi-yellow-bg">plot_dataframe</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">data</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg">args</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg">kwargs</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-fg">    980</span> <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> kind <span class="ansi-bold" style="color: rgb(175,0,255)">in</span> <span style="color: rgb(0,135,0)">self</span><span style="color: rgb(98,98,98)">.</span>_pandas_kinds:
+<span class="ansi-green-fg">    981</span>     <span style="color: rgb(95,135,135)"># Access pandas plots</span>
+<span class="ansi-green-fg">    982</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">return</span> PlotAccessor(data)(kind<span style="color: rgb(98,98,98)">=</span>kind, <span style="color: rgb(98,98,98)">*</span><span style="color: rgb(98,98,98)">*</span>kwargs)
+
+File <span class="ansi-green-intense-fg ansi-bold">~\AppData\Local\miniconda3\envs\cityImage\Lib\site-packages\geopandas\plotting.py:716</span>, in <span class="ansi-cyan-fg">plot_dataframe</span><span class="ansi-blue-intense-fg ansi-bold">(df, column, cmap, color, ax, cax, categorical, legend, scheme, k, vmin, vmax, markersize, figsize, legend_kwds, categories, classification_kwds, missing_kwds, aspect, **style_kwds)</span>
+<span class="ansi-green-fg">    713</span>     markersize <span style="color: rgb(98,98,98)">=</span> df[markersize]<span style="color: rgb(98,98,98)">.</span>values
+<span class="ansi-green-fg">    715</span> <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> column <span class="ansi-bold" style="color: rgb(175,0,255)">is</span> <span class="ansi-bold" style="color: rgb(0,135,0)">None</span>:
+<span class="ansi-green-intense-fg ansi-bold">--&gt; 716</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">return</span> <span class="ansi-yellow-bg">plot_series</span><span class="ansi-yellow-bg">(</span>
+<span class="ansi-green-fg">    717</span> <span class="ansi-yellow-bg">        </span><span class="ansi-yellow-bg">df</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">geometry</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">    718</span> <span class="ansi-yellow-bg">        </span><span class="ansi-yellow-bg">cmap</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">cmap</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">    719</span> <span class="ansi-yellow-bg">        </span><span class="ansi-yellow-bg">color</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">color</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">    720</span> <span class="ansi-yellow-bg">        </span><span class="ansi-yellow-bg">ax</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">ax</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">    721</span> <span class="ansi-yellow-bg">        </span><span class="ansi-yellow-bg">figsize</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">figsize</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">    722</span> <span class="ansi-yellow-bg">        </span><span class="ansi-yellow-bg">markersize</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">markersize</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">    723</span> <span class="ansi-yellow-bg">        </span><span class="ansi-yellow-bg">aspect</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">aspect</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">    724</span> <span class="ansi-yellow-bg">        </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg">style_kwds</span><span class="ansi-yellow-bg">,</span>
+<span class="ansi-green-fg">    725</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-fg">    727</span> <span style="color: rgb(95,135,135)"># To accept pd.Series and np.arrays as column</span>
+<span class="ansi-green-fg">    728</span> <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> <span style="color: rgb(0,135,0)">isinstance</span>(column, (np<span style="color: rgb(98,98,98)">.</span>ndarray, pd<span style="color: rgb(98,98,98)">.</span>Series)):
+
+File <span class="ansi-green-intense-fg ansi-bold">~\AppData\Local\miniconda3\envs\cityImage\Lib\site-packages\geopandas\plotting.py:490</span>, in <span class="ansi-cyan-fg">plot_series</span><span class="ansi-blue-intense-fg ansi-bold">(s, cmap, color, ax, figsize, aspect, **style_kwds)</span>
+<span class="ansi-green-fg">    487</span>     values_ <span style="color: rgb(98,98,98)">=</span> values[point_idx] <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> cmap <span class="ansi-bold" style="color: rgb(0,135,0)">else</span> <span class="ansi-bold" style="color: rgb(0,135,0)">None</span>
+<span class="ansi-green-fg">    488</span>     color_ <span style="color: rgb(98,98,98)">=</span> expl_color[point_idx] <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> color_given <span class="ansi-bold" style="color: rgb(0,135,0)">else</span> color
+<span class="ansi-green-intense-fg ansi-bold">--&gt; 490</span>     <span class="ansi-yellow-bg">_plot_point_collection</span><span class="ansi-yellow-bg">(</span>
+<span class="ansi-green-fg">    491</span> <span class="ansi-yellow-bg">        </span><span class="ansi-yellow-bg">ax</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">points</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">values_</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">color</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">color_</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">cmap</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">cmap</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg">style_kwds</span>
+<span class="ansi-green-fg">    492</span> <span class="ansi-yellow-bg">    </span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-fg">    494</span> plt<span style="color: rgb(98,98,98)">.</span>draw()
+<span class="ansi-green-fg">    495</span> <span class="ansi-bold" style="color: rgb(0,135,0)">return</span> ax
+
+File <span class="ansi-green-intense-fg ansi-bold">~\AppData\Local\miniconda3\envs\cityImage\Lib\site-packages\geopandas\plotting.py:314</span>, in <span class="ansi-cyan-fg">_plot_point_collection</span><span class="ansi-blue-intense-fg ansi-bold">(ax, geoms, values, color, cmap, vmin, vmax, marker, markersize, **kwargs)</span>
+<span class="ansi-green-fg">    311</span> _expand_kwargs(kwargs, multiindex)
+<span class="ansi-green-fg">    313</span> <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">norm</span><span style="color: rgb(175,0,0)">&#34;</span> <span class="ansi-bold" style="color: rgb(175,0,255)">not</span> <span class="ansi-bold" style="color: rgb(175,0,255)">in</span> kwargs:
+<span class="ansi-green-intense-fg ansi-bold">--&gt; 314</span>     collection <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg">ax</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">scatter</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">x</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">y</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">vmin</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">vmin</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">vmax</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">vmax</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">cmap</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">=</span><span class="ansi-yellow-bg">cmap</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg">kwargs</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-fg">    315</span> <span class="ansi-bold" style="color: rgb(0,135,0)">else</span>:
+<span class="ansi-green-fg">    316</span>     collection <span style="color: rgb(98,98,98)">=</span> ax<span style="color: rgb(98,98,98)">.</span>scatter(x, y, cmap<span style="color: rgb(98,98,98)">=</span>cmap, <span style="color: rgb(98,98,98)">*</span><span style="color: rgb(98,98,98)">*</span>kwargs)
+
+File <span class="ansi-green-intense-fg ansi-bold">~\AppData\Local\miniconda3\envs\cityImage\Lib\site-packages\matplotlib\__init__.py:1478</span>, in <span class="ansi-cyan-fg">_preprocess_data.&lt;locals&gt;.inner</span><span class="ansi-blue-intense-fg ansi-bold">(ax, data, *args, **kwargs)</span>
+<span class="ansi-green-fg">   1475</span> <span style="color: rgb(175,0,255)">@functools</span><span style="color: rgb(98,98,98)">.</span>wraps(func)
+<span class="ansi-green-fg">   1476</span> <span class="ansi-bold" style="color: rgb(0,135,0)">def</span> <span style="color: rgb(0,0,255)">inner</span>(ax, <span style="color: rgb(98,98,98)">*</span>args, data<span style="color: rgb(98,98,98)">=</span><span class="ansi-bold" style="color: rgb(0,135,0)">None</span>, <span style="color: rgb(98,98,98)">*</span><span style="color: rgb(98,98,98)">*</span>kwargs):
+<span class="ansi-green-fg">   1477</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> data <span class="ansi-bold" style="color: rgb(175,0,255)">is</span> <span class="ansi-bold" style="color: rgb(0,135,0)">None</span>:
+<span class="ansi-green-intense-fg ansi-bold">-&gt; 1478</span>         <span class="ansi-bold" style="color: rgb(0,135,0)">return</span> <span class="ansi-yellow-bg">func</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">ax</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg" style="color: rgb(0,135,0)">map</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">sanitize_sequence</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg">args</span><span class="ansi-yellow-bg">)</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">*</span><span class="ansi-yellow-bg">kwargs</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-fg">   1480</span>     bound <span style="color: rgb(98,98,98)">=</span> new_sig<span style="color: rgb(98,98,98)">.</span>bind(ax, <span style="color: rgb(98,98,98)">*</span>args, <span style="color: rgb(98,98,98)">*</span><span style="color: rgb(98,98,98)">*</span>kwargs)
+<span class="ansi-green-fg">   1481</span>     auto_label <span style="color: rgb(98,98,98)">=</span> (bound<span style="color: rgb(98,98,98)">.</span>arguments<span style="color: rgb(98,98,98)">.</span>get(label_namer)
+<span class="ansi-green-fg">   1482</span>                   <span class="ansi-bold" style="color: rgb(175,0,255)">or</span> bound<span style="color: rgb(98,98,98)">.</span>kwargs<span style="color: rgb(98,98,98)">.</span>get(label_namer))
+
+File <span class="ansi-green-intense-fg ansi-bold">~\AppData\Local\miniconda3\envs\cityImage\Lib\site-packages\matplotlib\axes\_axes.py:4766</span>, in <span class="ansi-cyan-fg">Axes.scatter</span><span class="ansi-blue-intense-fg ansi-bold">(self, x, y, s, c, marker, cmap, norm, vmin, vmax, alpha, linewidths, edgecolors, plotnonfinite, **kwargs)</span>
+<span class="ansi-green-fg">   4762</span>         keys_str <span style="color: rgb(98,98,98)">=</span> <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">, </span><span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(98,98,98)">.</span>join(<span style="color: rgb(175,0,0)">f</span><span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">&#39;</span><span class="ansi-bold" style="color: rgb(175,95,135)">{</span>k<span class="ansi-bold" style="color: rgb(175,95,135)">}</span><span style="color: rgb(175,0,0)">&#39;</span><span style="color: rgb(175,0,0)">&#34;</span> <span class="ansi-bold" style="color: rgb(0,135,0)">for</span> k <span class="ansi-bold" style="color: rgb(175,0,255)">in</span> extra_keys)
+<span class="ansi-green-fg">   4763</span>         _api<span style="color: rgb(98,98,98)">.</span>warn_external(
+<span class="ansi-green-fg">   4764</span>             <span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">No data for colormapping provided via </span><span style="color: rgb(175,0,0)">&#39;</span><span style="color: rgb(175,0,0)">c</span><span style="color: rgb(175,0,0)">&#39;</span><span style="color: rgb(175,0,0)">. </span><span style="color: rgb(175,0,0)">&#34;</span>
+<span class="ansi-green-fg">   4765</span>             <span style="color: rgb(175,0,0)">f</span><span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">Parameters </span><span class="ansi-bold" style="color: rgb(175,95,135)">{</span>keys_str<span class="ansi-bold" style="color: rgb(175,95,135)">}</span><span style="color: rgb(175,0,0)"> will be ignored</span><span style="color: rgb(175,0,0)">&#34;</span>)
+<span class="ansi-green-intense-fg ansi-bold">-&gt; 4766</span> <span class="ansi-yellow-bg">collection</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">_internal_update</span><span class="ansi-yellow-bg">(</span><span class="ansi-yellow-bg">kwargs</span><span class="ansi-yellow-bg">)</span>
+<span class="ansi-green-fg">   4768</span> <span style="color: rgb(95,135,135)"># Classic mode only:</span>
+<span class="ansi-green-fg">   4769</span> <span style="color: rgb(95,135,135)"># ensure there are margins to allow for the</span>
+<span class="ansi-green-fg">   4770</span> <span style="color: rgb(95,135,135)"># finite size of the symbols.  In v2.x, margins</span>
+<span class="ansi-green-fg">   4771</span> <span style="color: rgb(95,135,135)"># are present by default, so we disable this</span>
+<span class="ansi-green-fg">   4772</span> <span style="color: rgb(95,135,135)"># scatter-specific override.</span>
+<span class="ansi-green-fg">   4773</span> <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> mpl<span style="color: rgb(98,98,98)">.</span>rcParams[<span style="color: rgb(175,0,0)">&#39;</span><span style="color: rgb(175,0,0)">_internal.classic_mode</span><span style="color: rgb(175,0,0)">&#39;</span>]:
+
+File <span class="ansi-green-intense-fg ansi-bold">~\AppData\Local\miniconda3\envs\cityImage\Lib\site-packages\matplotlib\artist.py:1219</span>, in <span class="ansi-cyan-fg">Artist._internal_update</span><span class="ansi-blue-intense-fg ansi-bold">(self, kwargs)</span>
+<span class="ansi-green-fg">   1212</span> <span class="ansi-bold" style="color: rgb(0,135,0)">def</span> <span style="color: rgb(0,0,255)">_internal_update</span>(<span style="color: rgb(0,135,0)">self</span>, kwargs):
+<span class="ansi-green-fg">   1213</span> <span style="color: rgb(188,188,188)">    </span><span style="color: rgb(175,0,0)">&#34;&#34;&#34;</span>
+<span class="ansi-green-fg">   1214</span> <span style="color: rgb(175,0,0)">    Update artist properties without prenormalizing them, but generating</span>
+<span class="ansi-green-fg">   1215</span> <span style="color: rgb(175,0,0)">    errors as if calling `set`.</span>
+<span class="ansi-green-fg">   1216</span>
+<span class="ansi-green-fg">   1217</span> <span style="color: rgb(175,0,0)">    The lack of prenormalization is to maintain backcompatibility.</span>
+<span class="ansi-green-fg">   1218</span> <span style="color: rgb(175,0,0)">    &#34;&#34;&#34;</span>
+<span class="ansi-green-intense-fg ansi-bold">-&gt; 1219</span>     <span class="ansi-bold" style="color: rgb(0,135,0)">return</span> <span class="ansi-yellow-bg" style="color: rgb(0,135,0)">self</span><span class="ansi-yellow-bg" style="color: rgb(98,98,98)">.</span><span class="ansi-yellow-bg">_update_props</span><span class="ansi-yellow-bg">(</span>
+<span class="ansi-green-fg">   1220</span> <span class="ansi-yellow-bg">        </span><span class="ansi-yellow-bg">kwargs</span><span class="ansi-yellow-bg">,</span><span class="ansi-yellow-bg"> </span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">&#34;</span><span class="ansi-yellow-bg ansi-bold" style="color: rgb(175,95,135)">{cls.__name__}</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">.set() got an unexpected keyword argument </span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">&#34;</span>
+<span class="ansi-green-fg">   1221</span> <span class="ansi-yellow-bg">        </span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">&#34;</span><span class="ansi-yellow-bg ansi-bold" style="color: rgb(175,95,135)">{prop_name!r}</span><span class="ansi-yellow-bg" style="color: rgb(175,0,0)">&#34;</span><span class="ansi-yellow-bg">)</span>
+
+File <span class="ansi-green-intense-fg ansi-bold">~\AppData\Local\miniconda3\envs\cityImage\Lib\site-packages\matplotlib\artist.py:1193</span>, in <span class="ansi-cyan-fg">Artist._update_props</span><span class="ansi-blue-intense-fg ansi-bold">(self, props, errfmt)</span>
+<span class="ansi-green-fg">   1191</span>             func <span style="color: rgb(98,98,98)">=</span> <span style="color: rgb(0,135,0)">getattr</span>(<span style="color: rgb(0,135,0)">self</span>, <span style="color: rgb(175,0,0)">f</span><span style="color: rgb(175,0,0)">&#34;</span><span style="color: rgb(175,0,0)">set_</span><span class="ansi-bold" style="color: rgb(175,95,135)">{</span>k<span class="ansi-bold" style="color: rgb(175,95,135)">}</span><span style="color: rgb(175,0,0)">&#34;</span>, <span class="ansi-bold" style="color: rgb(0,135,0)">None</span>)
+<span class="ansi-green-fg">   1192</span>             <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> <span class="ansi-bold" style="color: rgb(175,0,255)">not</span> <span style="color: rgb(0,135,0)">callable</span>(func):
+<span class="ansi-green-intense-fg ansi-bold">-&gt; 1193</span>                 <span class="ansi-bold" style="color: rgb(0,135,0)">raise</span> <span class="ansi-bold" style="color: rgb(215,95,95)">AttributeError</span>(
+<span class="ansi-green-fg">   1194</span>                     errfmt<span style="color: rgb(98,98,98)">.</span>format(<span style="color: rgb(0,135,0)">cls</span><span style="color: rgb(98,98,98)">=</span><span style="color: rgb(0,135,0)">type</span>(<span style="color: rgb(0,135,0)">self</span>), prop_name<span style="color: rgb(98,98,98)">=</span>k))
+<span class="ansi-green-fg">   1195</span>             ret<span style="color: rgb(98,98,98)">.</span>append(func(v))
+<span class="ansi-green-fg">   1196</span> <span class="ansi-bold" style="color: rgb(0,135,0)">if</span> ret:
+
+<span class="ansi-red-intense-fg ansi-bold">AttributeError</span>: PathCollection.set() got an unexpected keyword argument &#39;ms&#39;
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/otherExamples_Landmarks_Local_Files_11_1.png" src="../_images/otherExamples_Landmarks_Local_Files_11_1.png" />
 </div>
 </div>
 </section>
@@ -438,11 +605,185 @@ the exterior of the building is shorter than the parameter, at least one point i
 <p><code class="docutils literal notranslate"><span class="pre">combined</span></code> –&gt; It computes a combined score that takes into account, per each building: * The number of sight lines towards it. * Their average length. * The maximum lenght amongst them.</p>
 <p><code class="docutils literal notranslate"><span class="pre">longest</span></code> –&gt; It just uses the longest sight line’s length as a score</p>
 <div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[95]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">buildings_gdf</span> <span class="o">=</span> <span class="n">buildings</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">add_height_to_line</span><span class="p">(</span><span class="n">exterior</span><span class="p">,</span> <span class="n">base</span><span class="p">,</span> <span class="n">height</span><span class="p">):</span>
+    <span class="n">coords</span> <span class="o">=</span> <span class="n">exterior</span><span class="o">.</span><span class="n">coords</span>
+    <span class="n">new_coords</span> <span class="o">=</span> <span class="p">[(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">height</span> <span class="o">-</span> <span class="n">base</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">coords</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">LineString</span><span class="p">(</span><span class="n">new_coords</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">process_geometry_to_linestring</span><span class="p">(</span><span class="n">geometry</span><span class="p">,</span> <span class="n">base</span><span class="p">,</span> <span class="n">height</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">geometry</span><span class="p">,</span> <span class="n">Polygon</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">add_height_to_line</span><span class="p">(</span><span class="n">geometry</span><span class="o">.</span><span class="n">exterior</span><span class="p">,</span> <span class="n">base</span><span class="p">,</span> <span class="n">height</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">geometry</span><span class="p">,</span> <span class="n">MultiPolygon</span><span class="p">):</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="n">add_height_to_line</span><span class="p">(</span><span class="n">poly</span><span class="o">.</span><span class="n">exterior</span><span class="p">,</span> <span class="n">base</span><span class="p">,</span> <span class="n">height</span><span class="p">)</span> <span class="k">for</span> <span class="n">poly</span> <span class="ow">in</span> <span class="n">geometry</span><span class="o">.</span><span class="n">geoms</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">LineString</span><span class="p">([</span><span class="n">pt</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span> <span class="k">for</span> <span class="n">pt</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">coords</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[100]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">buildings_gdf</span><span class="p">[</span><span class="s1">&#39;base&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+<span class="n">distance_along</span> <span class="o">=</span> <span class="mf">400.0</span>
+<span class="n">distance_min_observer_target</span> <span class="o">=</span> <span class="mf">400.0</span>
+<span class="n">building_exteriors_roof</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="n">process_geometry_to_linestring</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">geometry</span><span class="p">,</span> <span class="n">row</span><span class="o">.</span><span class="n">base</span><span class="p">,</span> <span class="n">row</span><span class="o">.</span><span class="n">height</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">num_intervals</span> <span class="o">=</span> <span class="p">[</span><span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">exterior</span><span class="o">.</span><span class="n">length</span> <span class="o">/</span> <span class="n">distance_along</span><span class="p">))</span> <span class="k">for</span> <span class="n">exterior</span> <span class="ow">in</span> <span class="n">building_exteriors_roof</span><span class="p">]</span>
+
+<span class="k">def</span> <span class="nf">interpolate_targets</span><span class="p">(</span><span class="n">exterior</span><span class="p">,</span> <span class="n">num_intervals</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">exterior</span><span class="o">.</span><span class="n">interpolate</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">exterior</span><span class="o">.</span><span class="n">length</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">distance_along</span><span class="p">)</span> <span class="o">*</span> <span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_intervals</span><span class="p">)]</span>
+<span class="n">buildings_gdf</span><span class="p">[</span><span class="s1">&#39;target&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">interpolate_targets</span><span class="p">(</span><span class="n">exterior</span><span class="p">,</span> <span class="n">intervals</span><span class="p">)</span> <span class="k">for</span> <span class="n">exterior</span><span class="p">,</span> <span class="n">intervals</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">building_exteriors_roof</span><span class="p">,</span> <span class="n">num_intervals</span><span class="p">)]</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[105]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">nodes_gdf</span> <span class="o">=</span> <span class="n">nodes</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+<span class="n">nodes_gdf</span><span class="p">[</span><span class="s1">&#39;observer&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">nodes_gdf</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="n">Point</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">row</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">row</span><span class="o">.</span><span class="n">z</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">tmp_buildings</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">explode</span><span class="p">(</span><span class="s1">&#39;target&#39;</span><span class="p">)</span>
+<span class="n">tmp_nodes</span> <span class="o">=</span> <span class="n">nodes_gdf</span><span class="p">[[</span><span class="s1">&#39;nodeID&#39;</span><span class="p">,</span> <span class="s1">&#39;observer&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">tmp_buildings</span> <span class="o">=</span> <span class="n">tmp_buildings</span><span class="p">[[</span><span class="s1">&#39;buildingID&#39;</span><span class="p">,</span> <span class="s1">&#39;target&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[104]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sight_lines</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">tmp_nodes</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">tmp_buildings</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">on</span><span class="o">=</span><span class="s1">&#39;key&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="s1">&#39;key&#39;</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+Exception ignored in: &lt;bound method IPythonKernel._clean_thread_parent_frames of &lt;ipykernel.ipkernel.IPythonKernel object at 0x0000016A8C040C90&gt;&gt;
+Traceback (most recent call last):
+  File &#34;C:\Users\gfilo\AppData\Local\miniconda3\envs\cityImage\Lib\site-packages\ipykernel\ipkernel.py&#34;, line 785, in _clean_thread_parent_frames
+    active_threads = {thread.ident for thread in threading.enumerate()}
+                                                 ^^^^^^^^^^^^^^^^^^^^^
+  File &#34;C:\Users\gfilo\AppData\Local\miniconda3\envs\cityImage\Lib\threading.py&#34;, line 1494, in enumerate
+    def enumerate():
+
+KeyboardInterrupt:
+
+KeyboardInterrupt
+
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sight_lines</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">compute_3d_sight_lines</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span> <span class="n">buildings</span><span class="p">,</span> <span class="n">distance_along</span> <span class="o">=</span> <span class="mi">400</span><span class="p">,</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sight_lines</span> <span class="o">=</span> <span class="n">compute_3d_sight_lines</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span> <span class="n">buildings</span><span class="p">,</span> <span class="n">distance_along</span> <span class="o">=</span> <span class="mi">400</span><span class="p">,</span>
                                                          <span class="n">distance_min_observer_target</span> <span class="o">=</span> <span class="mi">400</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+Processing sight lines:  40%|█████████████████████▌                                | 2/5 [1:55:41&lt;2:54:22, 3487.64s/it]
+</pre></div></div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[108]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">compute_3d_sight_lines</span><span class="p">(</span><span class="n">nodes_gdf</span><span class="p">,</span> <span class="n">buildings_gdf</span><span class="p">,</span> <span class="n">distance_along</span> <span class="o">=</span> <span class="mi">200</span><span class="p">,</span> <span class="n">distance_min_observer_target</span> <span class="o">=</span> <span class="mi">300</span><span class="p">,</span> <span class="n">chunk_size</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Computes the 3D sight lines between observer points in a Point GeoDataFrame and target buildings, based on a given distance along the buildings&#39; exterior and a</span>
+<span class="sd">    minimum distance between observer and target (e.g. lines will not be constructed for observer points and targets whose distance is lower</span>
+<span class="sd">    than &quot;distance_min_observer_target&quot;)</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    nodes_gdf: Point GeoDataFrame</span>
+<span class="sd">        A GeoDataFrame containing the observer nodes, with at least a Point geometry column.</span>
+<span class="sd">    buildings_gdf: Polygon GeoDataFrame</span>
+<span class="sd">        A GeoDataFrame containing the target buildings, with at least a Polygon geometry column.</span>
+<span class="sd">    distance_along: float</span>
+<span class="sd">        The distance along the exterior of the buildings for selecting target points.</span>
+<span class="sd">    distance_min_observer_target: float</span>
+<span class="sd">        The minimum distance between observer and target.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">    ----------</span>
+<span class="sd">    sight_lines: LineString GeoDataFrame</span>
+<span class="sd">        The visibile sight lines GeoDataFrame.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">nodes_gdf</span> <span class="o">=</span> <span class="n">nodes_gdf</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">buildings_gdf</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="s1">&#39;base&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="n">buildings_gdf</span><span class="p">[</span><span class="s1">&#39;base&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+    <span class="k">def</span> <span class="nf">add_height_to_line</span><span class="p">(</span><span class="n">exterior</span><span class="p">,</span> <span class="n">base</span><span class="p">,</span> <span class="n">height</span><span class="p">):</span>
+        <span class="n">coords</span> <span class="o">=</span> <span class="n">exterior</span><span class="o">.</span><span class="n">coords</span>
+        <span class="n">new_coords</span> <span class="o">=</span> <span class="p">[(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">height</span> <span class="o">-</span> <span class="n">base</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="n">coords</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">LineString</span><span class="p">(</span><span class="n">new_coords</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">process_geometry_to_linestring</span><span class="p">(</span><span class="n">geometry</span><span class="p">,</span> <span class="n">base</span><span class="p">,</span> <span class="n">height</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">geometry</span><span class="p">,</span> <span class="n">Polygon</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">add_height_to_line</span><span class="p">(</span><span class="n">geometry</span><span class="o">.</span><span class="n">exterior</span><span class="p">,</span> <span class="n">base</span><span class="p">,</span> <span class="n">height</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">geometry</span><span class="p">,</span> <span class="n">MultiPolygon</span><span class="p">):</span>
+            <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="n">add_height_to_line</span><span class="p">(</span><span class="n">poly</span><span class="o">.</span><span class="n">exterior</span><span class="p">,</span> <span class="n">base</span><span class="p">,</span> <span class="n">height</span><span class="p">)</span> <span class="k">for</span> <span class="n">poly</span> <span class="ow">in</span> <span class="n">geometry</span><span class="o">.</span><span class="n">geoms</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">LineString</span><span class="p">([</span><span class="n">pt</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span> <span class="k">for</span> <span class="n">pt</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">coords</span><span class="p">])</span>
+
+    <span class="n">building_exteriors_roof</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="n">process_geometry_to_linestring</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">geometry</span><span class="p">,</span> <span class="n">row</span><span class="o">.</span><span class="n">base</span><span class="p">,</span> <span class="n">row</span><span class="o">.</span><span class="n">height</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">num_intervals</span> <span class="o">=</span> <span class="p">[</span><span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">exterior</span><span class="o">.</span><span class="n">length</span> <span class="o">/</span> <span class="n">distance_along</span><span class="p">))</span> <span class="k">for</span> <span class="n">exterior</span> <span class="ow">in</span> <span class="n">building_exteriors_roof</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">interpolate_targets</span><span class="p">(</span><span class="n">exterior</span><span class="p">,</span> <span class="n">num_intervals</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">exterior</span><span class="o">.</span><span class="n">interpolate</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">exterior</span><span class="o">.</span><span class="n">length</span> <span class="o">/</span> <span class="mi">2</span><span class="p">,</span> <span class="n">distance_along</span><span class="p">)</span> <span class="o">*</span> <span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_intervals</span><span class="p">)]</span>
+
+    <span class="n">buildings_gdf</span><span class="p">[</span><span class="s1">&#39;target&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">interpolate_targets</span><span class="p">(</span><span class="n">exterior</span><span class="p">,</span> <span class="n">intervals</span><span class="p">)</span> <span class="k">for</span> <span class="n">exterior</span><span class="p">,</span> <span class="n">intervals</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">building_exteriors_roof</span><span class="p">,</span> <span class="n">num_intervals</span><span class="p">)]</span>
+
+    <span class="n">nodes_gdf</span><span class="p">[</span><span class="s1">&#39;observer&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">nodes_gdf</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="n">Point</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">row</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">row</span><span class="o">.</span><span class="n">z</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">tmp_buildings</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">explode</span><span class="p">(</span><span class="s1">&#39;target&#39;</span><span class="p">)</span>
+    <span class="n">tmp_nodes</span> <span class="o">=</span> <span class="n">nodes_gdf</span><span class="p">[[</span><span class="s1">&#39;nodeID&#39;</span><span class="p">,</span> <span class="s1">&#39;observer&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">tmp_buildings</span> <span class="o">=</span> <span class="n">tmp_buildings</span><span class="p">[[</span><span class="s1">&#39;buildingID&#39;</span><span class="p">,</span> <span class="s1">&#39;target&#39;</span><span class="p">]]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+
+    <span class="n">sight_lines_chunks</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">tmp_buildings_chunks</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array_split</span><span class="p">(</span><span class="n">tmp_buildings</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">tmp_buildings</span><span class="p">)</span> <span class="o">//</span> <span class="n">chunk_size</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">tmp_buildings_chunks</span><span class="p">,</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Processing sight lines&quot;</span><span class="p">):</span>
+        <span class="n">sight_lines_chunk</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">tmp_nodes</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">chunk</span><span class="o">.</span><span class="n">assign</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> <span class="n">on</span><span class="o">=</span><span class="s1">&#39;key&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="s1">&#39;key&#39;</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">sight_lines_chunk</span><span class="p">[</span><span class="s1">&#39;distance&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">p1</span><span class="o">.</span><span class="n">distance</span><span class="p">(</span><span class="n">p2</span><span class="p">)</span> <span class="k">for</span> <span class="n">p1</span><span class="p">,</span> <span class="n">p2</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">sight_lines_chunk</span><span class="o">.</span><span class="n">observer</span><span class="p">,</span> <span class="n">sight_lines_chunk</span><span class="o">.</span><span class="n">target</span><span class="p">)])</span>
+        <span class="n">sight_lines_chunk</span> <span class="o">=</span> <span class="n">sight_lines_chunk</span><span class="p">[</span><span class="n">sight_lines_chunk</span><span class="p">[</span><span class="s1">&#39;distance&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">distance_min_observer_target</span><span class="p">]</span>
+        <span class="n">sight_lines_chunk</span><span class="p">[</span><span class="s1">&#39;geometry&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">LineString</span><span class="p">([</span><span class="n">p1</span><span class="p">,</span> <span class="n">p2</span><span class="p">])</span> <span class="k">for</span> <span class="n">p1</span><span class="p">,</span> <span class="n">p2</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">sight_lines_chunk</span><span class="o">.</span><span class="n">observer</span><span class="p">,</span> <span class="n">sight_lines_chunk</span><span class="o">.</span><span class="n">target</span><span class="p">)]</span>
+        <span class="n">sight_lines_chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sight_lines_chunk</span><span class="p">)</span>
+
+    <span class="n">sight_lines</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">sight_lines_chunks</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">sight_lines</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">buildings_gdf</span><span class="p">[</span><span class="s1">&#39;building_3d&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">polygon_2d_to_3d</span><span class="p">(</span><span class="n">geo</span><span class="p">,</span> <span class="n">base</span><span class="p">,</span> <span class="n">height</span><span class="p">)</span> <span class="k">for</span> <span class="n">geo</span><span class="p">,</span> <span class="n">base</span><span class="p">,</span> <span class="n">height</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">buildings_gdf</span><span class="p">[</span><span class="s1">&#39;geometry&#39;</span><span class="p">],</span> <span class="n">buildings_gdf</span><span class="p">[</span><span class="s1">&#39;base&#39;</span><span class="p">],</span> <span class="n">buildings_gdf</span><span class="p">[</span><span class="s1">&#39;height&#39;</span><span class="p">])]</span>
+    <span class="n">sight_lines</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[[</span><span class="n">observer</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">observer</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">observer</span><span class="o">.</span><span class="n">z</span><span class="p">]</span> <span class="k">for</span> <span class="n">observer</span> <span class="ow">in</span> <span class="n">sight_lines</span><span class="o">.</span><span class="n">observer</span><span class="p">]</span>
+    <span class="n">sight_lines</span><span class="p">[</span><span class="s1">&#39;stop&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[[</span><span class="n">target</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">target</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">target</span><span class="o">.</span><span class="n">z</span><span class="p">]</span> <span class="k">for</span> <span class="n">target</span> <span class="ow">in</span> <span class="n">sight_lines</span><span class="o">.</span><span class="n">target</span><span class="p">]</span>
+    <span class="n">buildings_sindex</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">sindex</span>
+
+    <span class="n">sight_lines_chunks</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">sight_lines</span><span class="p">),</span> <span class="n">chunk_size</span><span class="p">),</span> <span class="n">desc</span><span class="o">=</span><span class="s2">&quot;Checking intervisibility&quot;</span><span class="p">):</span>
+        <span class="n">chunk</span> <span class="o">=</span> <span class="n">sight_lines</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span> <span class="o">+</span> <span class="n">chunk_size</span><span class="p">]</span>
+        <span class="n">chunk</span><span class="p">[</span><span class="s1">&#39;visible&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">chunk</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="n">intervisibility</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">geometry</span><span class="p">,</span> <span class="n">row</span><span class="o">.</span><span class="n">buildingID</span><span class="p">,</span> <span class="n">row</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="n">row</span><span class="o">.</span><span class="n">stop</span><span class="p">,</span> <span class="n">buildings_gdf</span><span class="p">,</span> <span class="n">buildings_sindex</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">chunk</span> <span class="o">=</span> <span class="n">chunk</span><span class="p">[</span><span class="n">chunk</span><span class="p">[</span><span class="s1">&#39;visible&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="kc">True</span><span class="p">]</span>
+        <span class="n">sight_lines_chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+
+    <span class="n">sight_lines</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">sight_lines_chunks</span><span class="p">)</span>
+    <span class="n">sight_lines</span><span class="o">.</span><span class="n">drop</span><span class="p">([</span><span class="s1">&#39;start&#39;</span><span class="p">,</span> <span class="s1">&#39;stop&#39;</span><span class="p">,</span> <span class="s1">&#39;observer&#39;</span><span class="p">,</span> <span class="s1">&#39;target&#39;</span><span class="p">,</span> <span class="s1">&#39;visible&#39;</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">sight_lines</span> <span class="o">=</span> <span class="n">sight_lines</span><span class="o">.</span><span class="n">set_geometry</span><span class="p">(</span><span class="s1">&#39;geometry&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">set_crs</span><span class="p">(</span><span class="n">buildings_gdf</span><span class="o">.</span><span class="n">crs</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">sight_lines</span>
 </pre></div>
 </div>
 </div>
@@ -505,7 +846,7 @@ File <span class="ansi-green-intense-fg ansi-bold">~\AppData\Local\miniconda3\en
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/otherExamples_Landmarks_Local_Files_18_0.png" src="../_images/otherExamples_Landmarks_Local_Files_18_0.png" />
+<img alt="../_images/otherExamples_Landmarks_Local_Files_24_0.png" src="../_images/otherExamples_Landmarks_Local_Files_24_0.png" />
 </div>
 </div>
 </section>
@@ -702,7 +1043,7 @@ File <span class="ansi-green-intense-fg ansi-bold">~\AppData\Local\miniconda3\en
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/otherExamples_Landmarks_Local_Files_33_0.png" src="../_images/otherExamples_Landmarks_Local_Files_33_0.png" />
+<img alt="../_images/otherExamples_Landmarks_Local_Files_39_0.png" src="../_images/otherExamples_Landmarks_Local_Files_39_0.png" />
 </div>
 </div>
 </section>
@@ -754,7 +1095,7 @@ File <span class="ansi-green-intense-fg ansi-bold">~\AppData\Local\miniconda3\en
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/otherExamples_Landmarks_Local_Files_40_0.png" src="../_images/otherExamples_Landmarks_Local_Files_40_0.png" />
+<img alt="../_images/otherExamples_Landmarks_Local_Files_46_0.png" src="../_images/otherExamples_Landmarks_Local_Files_46_0.png" />
 </div>
 </div>
 </section>
@@ -775,7 +1116,7 @@ File <span class="ansi-green-intense-fg ansi-bold">~\AppData\Local\miniconda3\en
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/otherExamples_Landmarks_Local_Files_42_0.png" src="../_images/otherExamples_Landmarks_Local_Files_42_0.png" />
+<img alt="../_images/otherExamples_Landmarks_Local_Files_48_0.png" src="../_images/otherExamples_Landmarks_Local_Files_48_0.png" />
 </div>
 </div>
 <p><strong>Exporting</strong></p>
@@ -785,14 +1126,6 @@ File <span class="ansi-green-intense-fg ansi-bold">~\AppData\Local\miniconda3\en
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># sight_lines.to_file(output_path+&#39;_sight_lines.gpkg&#39;, driver=&#39;GPKG&#39;)</span>
 <span class="n">buildings</span><span class="o">.</span><span class="n">to_file</span><span class="p">(</span><span class="n">output_path</span><span class="o">+</span><span class="s1">&#39;_landmarks.gpkg&#39;</span><span class="p">,</span> <span class="n">driver</span><span class="o">=</span><span class="s1">&#39;GPKG&#39;</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
 </pre></div>
 </div>
 </div>
@@ -892,7 +1225,7 @@ File <span class="ansi-green-intense-fg ansi-bold">~\AppData\Local\miniconda3\en
         <div class="footer-item">
 
   <p class="sphinx-version">
-    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.5.
     <br/>
   </p>
 </div>

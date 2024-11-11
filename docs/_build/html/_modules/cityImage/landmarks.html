@@ -1,0 +1,1145 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>cityImage.landmarks &#8212; cityImage 1.2 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="../../_static/styles/bootstrap.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+
+  
+  <link href="../../_static/vendor/fontawesome/6.5.1/css/all.min.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.1/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.1/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.1/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=a746c00c" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
+  <script src="../../_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
+
+    <script src="../../_static/documentation_options.js?v=61243dd2"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/cityImage/landmarks';</script>
+    <link rel="author" title="About these documents" href="../../about.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <a id="pst-skip-link" class="skip-link" href="#main-content">Skip to main content</a>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>
+    Back to top
+  </button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__primary"
+          id="__primary"/>
+  <label class="overlay overlay-primary" for="__primary"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__secondary"
+          id="__secondary"/>
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar">
+<div class="bd-header__inner bd-page-width">
+  <label class="sidebar-toggle primary-toggle" for="__primary">
+    <span class="fa-solid fa-bars"></span>
+  </label>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">cityImage 1.2 documentation</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav class="navbar-nav">
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../index.html">
+                        Home
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../notebooks/userGuide.html">
+                        userGuide
+                      </a>
+                    </li>
+                
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/cityImage" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/gfilo" title="Twitter" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <div class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          <div class="navbar-item">
+<nav class="navbar-nav">
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../index.html">
+                        Home
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../notebooks/userGuide.html">
+                        userGuide
+                      </a>
+                    </li>
+                
+  </ul>
+</nav></div>
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/cityImage" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/gfilo" title="Twitter" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+
+
+<nav aria-label="Breadcrumb">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page">cityImage.landmarks</li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for cityImage.landmarks</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">osmnx</span> <span class="k">as</span> <span class="nn">ox</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">geopandas</span> <span class="k">as</span> <span class="nn">gpd</span>
+<span class="kn">import</span> <span class="nn">pyvista</span> <span class="k">as</span> <span class="nn">pv</span>
+
+<span class="kn">from</span> <span class="nn">shapely.geometry</span> <span class="kn">import</span> <span class="n">Point</span><span class="p">,</span> <span class="n">LineString</span><span class="p">,</span> <span class="n">Polygon</span><span class="p">,</span> <span class="n">MultiPolygon</span><span class="p">,</span> <span class="n">mapping</span><span class="p">,</span> <span class="n">MultiLineString</span>
+<span class="kn">from</span> <span class="nn">shapely.ops</span> <span class="kn">import</span> <span class="n">linemerge</span><span class="p">,</span> <span class="n">unary_union</span>
+<span class="kn">from</span> <span class="nn">scipy.sparse</span> <span class="kn">import</span> <span class="n">linalg</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">set_option</span><span class="p">(</span><span class="s2">&quot;display.precision&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+
+<span class="kn">import</span> <span class="nn">concurrent.futures</span>
+<span class="kn">from</span> <span class="nn">.utilities</span> <span class="kn">import</span> <span class="n">scaling_columnDF</span><span class="p">,</span> <span class="n">polygon_2d_to_3d</span><span class="p">,</span> <span class="n">downloader</span>
+<span class="kn">from</span> <span class="nn">.visibility</span> <span class="kn">import</span> <span class="n">visibility_polygon2d</span><span class="p">,</span> <span class="n">compute_3d_sight_lines</span><span class="p">,</span> <span class="n">intervisibility</span>
+<span class="kn">from</span> <span class="nn">.angles</span> <span class="kn">import</span> <span class="n">get_coord_angle</span>
+
+<div class="viewcode-block" id="get_buildings_fromFile">
+<a class="viewcode-back" href="../../generated/cityImage.get_buildings_fromFile.html#cityImage.get_buildings_fromFile">[docs]</a>
+<span class="k">def</span> <span class="nf">get_buildings_fromFile</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">epsg</span><span class="p">,</span> <span class="n">case_study_area</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">distance_from_center</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">height_field</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">base_field</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> 
+    <span class="n">land_use_field</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;    </span>
+<span class="sd">    The function take a building footprint .shp or .gpkg, returns two GDFs of buildings: the case-study area, plus a larger area containing other </span>
+<span class="sd">    buildings, called &quot;obstructions&quot; (for analyses which include adjacent buildings). Otherise, the user can provide a &quot;distance from center&quot; </span>
+<span class="sd">    value; in this case, the buildings_gdf are extracted by selecting buildings within a buffer from the center, with a radius equal to the </span>
+<span class="sd">    distance_from_center value. If none are passed, the buildings_gdf and the obstructions_gdf will be the same. </span>
+<span class="sd">    Additionally, provide the fields containing height, base elevation, and land use information.</span>
+<span class="sd">            </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    path: str</span>
+<span class="sd">        Path where the file is stored.</span>
+<span class="sd">    epsg: int</span>
+<span class="sd">        Epsg of the area considered; if None OSMNx is used for the projection.</span>
+<span class="sd">    case_study_area: Polygon</span>
+<span class="sd">        The Polygon to be use for clipping and identifying the case-study area, within the input .shp. If not available, use &quot;distance_from_center&quot;.</span>
+<span class="sd">    distance_from_center: float</span>
+<span class="sd">        So to identify the case-study area on the basis of distance from the center of the input .shp.</span>
+<span class="sd">    height_field, base_field: str </span>
+<span class="sd">        Height and base elevation fields name in the original data-source.</span>
+<span class="sd">    land_use_field: str </span>
+<span class="sd">        Field that describes the land use of the buildings.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    buildings_gdf, obstructions_gdf: tuple of GeoDataFrames</span>
+<span class="sd">        The buildings and the obstructions GeoDataFrames.</span>
+<span class="sd">    &quot;&quot;&quot;</span>   
+    <span class="c1"># trying reading buildings footprints shapefile from directory</span>
+    <span class="n">crs</span> <span class="o">=</span> <span class="s1">&#39;EPSG:&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">epsg</span><span class="p">)</span>
+    <span class="n">obstructions_gdf</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">to_crs</span><span class="p">(</span><span class="n">crs</span><span class="p">)</span>  
+    
+    <span class="c1"># computing area, reassigning columns</span>
+    <span class="n">obstructions_gdf</span><span class="p">[</span><span class="s2">&quot;area&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">obstructions_gdf</span><span class="p">[</span><span class="s2">&quot;geometry&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">area</span>
+
+    <span class="k">if</span> <span class="n">height_field</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> 
+       <span class="n">obstructions_gdf</span><span class="p">[</span><span class="s2">&quot;height&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">obstructions_gdf</span><span class="p">[</span><span class="n">height_field</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">base_field</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span> 
+        <span class="n">obstructions_gdf</span><span class="p">[</span><span class="s2">&quot;base&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">else</span><span class="p">:</span> 
+        <span class="n">obstructions_gdf</span><span class="p">[</span><span class="s2">&quot;base&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">obstructions_gdf</span><span class="p">[</span><span class="n">base_field</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">land_use_field</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span> 
+        <span class="n">obstructions_gdf</span><span class="p">[</span><span class="s2">&quot;land_use_raw&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">obstructions_gdf</span><span class="p">[</span><span class="n">land_use_field</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">obstructions_gdf</span><span class="p">[</span><span class="s2">&quot;land_use_raw&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># dropping small buildings and buildings with null height</span>
+    <span class="n">obstructions_gdf</span> <span class="o">=</span> <span class="n">obstructions_gdf</span><span class="p">[(</span><span class="n">obstructions_gdf</span><span class="p">[</span><span class="s2">&quot;area&quot;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">50</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">obstructions_gdf</span><span class="p">[</span><span class="s2">&quot;height&quot;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">)]</span>
+    <span class="n">obstructions_gdf</span> <span class="o">=</span> <span class="n">obstructions_gdf</span><span class="p">[[</span><span class="s2">&quot;height&quot;</span><span class="p">,</span> <span class="s2">&quot;base&quot;</span><span class="p">,</span><span class="s2">&quot;geometry&quot;</span><span class="p">,</span> <span class="s2">&quot;area&quot;</span><span class="p">,</span> <span class="s2">&quot;land_use_raw&quot;</span><span class="p">]]</span>
+    <span class="c1"># assigning ID</span>
+    <span class="n">obstructions_gdf</span><span class="p">[</span><span class="s2">&quot;buildingID&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">obstructions_gdf</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    
+    <span class="c1"># if case-study area and distance not defined</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">case_study_area</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">distance_from_center</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">distance_from_center</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+        <span class="n">buildings_gdf</span> <span class="o">=</span> <span class="n">obstructions_gdf</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">buildings_gdf</span><span class="p">,</span> <span class="n">obstructions_gdf</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">case_study_area</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>     <span class="c1"># define a case study area</span>
+        <span class="n">case_study_area</span> <span class="o">=</span> <span class="n">obstructions_gdf</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">unary_union</span><span class="o">.</span><span class="n">centroid</span><span class="o">.</span><span class="n">buffer</span><span class="p">(</span><span class="n">distance_from_center</span><span class="p">)</span>
+    <span class="n">buildings_gdf</span> <span class="o">=</span> <span class="n">obstructions_gdf</span><span class="p">[</span><span class="n">obstructions_gdf</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">within</span><span class="p">(</span><span class="n">case_study_area</span><span class="p">)]</span>
+
+    <span class="k">return</span> <span class="n">buildings_gdf</span><span class="p">,</span> <span class="n">obstructions_gdf</span></div>
+
+    
+<div class="viewcode-block" id="get_buildings_fromOSM">
+<a class="viewcode-back" href="../../generated/cityImage.get_buildings_fromOSM.html#cityImage.get_buildings_fromOSM">[docs]</a>
+<span class="k">def</span> <span class="nf">get_buildings_fromOSM</span><span class="p">(</span><span class="n">place</span><span class="p">,</span> <span class="n">download_method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">epsg</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">distance</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;    </span>
+<span class="sd">    The function downloads and cleans building footprint geometries and create a buildings GeoDataFrames for the area of interest.</span>
+<span class="sd">    The function exploits OSMNx functions for downloading the data as well as for projecting it.</span>
+<span class="sd">    The land use classification for each building is extracted. Only relevant columns are kept.   </span>
+<span class="sd">            </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    place: str, tuple, Shapely Polygon</span>
+<span class="sd">        Name of cities or areas in OSM: </span>
+<span class="sd">        - when using &quot;distance_from_point&quot; please provide a (lat, lon) tuple to create the bounding box around it; </span>
+<span class="sd">        - when using &quot;distance_from_address&quot; provide an existing OSM address; </span>
+<span class="sd">        - when using &quot;OSMplace&quot; provide an OSM place name. The query must be geocodable and OSM must have polygon boundaries for the geocode result.  </span>
+<span class="sd">        - when using &quot;polygon&quot; please provide a Shapely Polygon in unprojected latitude-longitude degrees (EPSG:4326) CRS;</span>
+<span class="sd">    download_method: str, {&quot;distance_from_address&quot;, &quot;distance_from_point&quot;, &quot;OSMplace&quot;, &quot;polygon&quot;}</span>
+<span class="sd">        It indicates the method that should be used for downloading the data.</span>
+<span class="sd">    epsg: int</span>
+<span class="sd">        Epsg of the area considered; if None OSMNx is used for the projection.</span>
+<span class="sd">    distance: float</span>
+<span class="sd">        Used when download_method == &quot;distance from address&quot; or == &quot;distance from point&quot;.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    buildings_gdf: Polygon GeoDataFrame</span>
+<span class="sd">        The buildings GeoDataFrame.</span>
+<span class="sd">    &quot;&quot;&quot;</span>   
+    <span class="n">columns_to_keep</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;amenity&#39;</span><span class="p">,</span> <span class="s1">&#39;building&#39;</span><span class="p">,</span> <span class="s1">&#39;geometry&#39;</span><span class="p">,</span> <span class="s1">&#39;historic&#39;</span><span class="p">,</span> <span class="s1">&#39;land_use_raw&#39;</span><span class="p">]</span>
+    <span class="n">tags</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;building&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+    <span class="n">buildings_gdf</span> <span class="o">=</span> <span class="n">downloader</span><span class="p">(</span><span class="n">place</span> <span class="o">=</span> <span class="n">place</span><span class="p">,</span> <span class="n">download_method</span> <span class="o">=</span> <span class="n">download_method</span><span class="p">,</span> <span class="n">tags</span> <span class="o">=</span> <span class="n">tags</span><span class="p">,</span> <span class="n">distance</span> <span class="o">=</span> <span class="n">distance</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">epsg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">buildings_gdf</span> <span class="o">=</span> <span class="n">ox</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">project_gdf</span><span class="p">(</span><span class="n">buildings_gdf</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">crs</span> <span class="o">=</span> <span class="s1">&#39;EPSG:&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">epsg</span><span class="p">)</span>
+        <span class="n">buildings_gdf</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">to_crs</span><span class="p">(</span><span class="n">crs</span><span class="p">)</span>
+
+    <span class="n">buildings_gdf</span><span class="p">[</span><span class="s1">&#39;land_use_raw&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">buildings_gdf</span><span class="p">[</span><span class="s1">&#39;land_use_raw&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">regex</span><span class="o">=</span><span class="s1">&#39;^building:use:&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">name</span><span class="p">[</span><span class="mi">13</span><span class="p">:]</span> <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">notnull</span><span class="p">()</span><span class="o">.</span><span class="n">any</span><span class="p">()</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="n">col</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">col</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">columns_to_keep</span><span class="p">],</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="c1"># remove the empty geometries</span>
+    <span class="n">buildings_gdf</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="p">[</span><span class="o">~</span><span class="n">buildings_gdf</span><span class="p">[</span><span class="s1">&#39;geometry&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">is_empty</span><span class="p">]</span>
+    <span class="c1"># replace &#39;yes&#39; with NaN in &#39;building&#39; column</span>
+    <span class="n">buildings_gdf</span><span class="p">[</span><span class="s1">&#39;building&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="p">[</span><span class="s1">&#39;building&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;yes&#39;</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+    <span class="c1"># fill missing values in &#39;building&#39; column with &#39;amenity&#39; values</span>
+    <span class="n">buildings_gdf</span><span class="p">[</span><span class="s1">&#39;building&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="p">[</span><span class="s1">&#39;building&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">buildings_gdf</span><span class="p">[</span><span class="s1">&#39;amenity&#39;</span><span class="p">])</span>
+
+    <span class="c1"># fill missing values in &#39;land_use_raw&#39; column with &#39;building&#39; values</span>
+    <span class="c1"># Create a mask for rows where the &#39;building&#39; column is NA</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="p">[</span><span class="s1">&#39;building&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">isna</span><span class="p">()</span>
+    <span class="c1"># Use the mask to assign values from &#39;amenity&#39; to &#39;building&#39; only where &#39;building&#39; is NA</span>
+    <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">mask</span><span class="p">,</span> <span class="s1">&#39;building&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">mask</span><span class="p">,</span> <span class="s1">&#39;amenity&#39;</span><span class="p">]</span>
+
+    <span class="n">buildings_gdf</span><span class="p">[</span><span class="s1">&#39;land_use_raw&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="p">[</span><span class="s1">&#39;land_use_raw&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">buildings_gdf</span><span class="p">[</span><span class="s1">&#39;building&#39;</span><span class="p">])</span>
+    <span class="c1"># fill remaining missing values in &#39;land_use_raw&#39; column with &#39;residential&#39;</span>
+    <span class="n">buildings_gdf</span><span class="p">[</span><span class="s1">&#39;land_use_raw&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="p">[</span><span class="s1">&#39;land_use_raw&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="s1">&#39;residential&#39;</span><span class="p">)</span>
+
+    <span class="n">buildings_gdf</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="p">[[</span><span class="s1">&#39;geometry&#39;</span><span class="p">,</span> <span class="s1">&#39;historic&#39;</span><span class="p">,</span> <span class="s1">&#39;land_use_raw&#39;</span><span class="p">]]</span>
+    <span class="n">buildings_gdf</span><span class="p">[</span><span class="s1">&#39;area&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">area</span>
+    <span class="n">buildings_gdf</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="p">[</span><span class="n">buildings_gdf</span><span class="p">[</span><span class="s1">&#39;area&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="mi">50</span><span class="p">]</span> 
+    
+    <span class="c1"># reset index</span>
+    <span class="n">buildings_gdf</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">drop</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+    <span class="n">buildings_gdf</span><span class="p">[</span><span class="s1">&#39;buildingID&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>  
+    
+    <span class="k">return</span> <span class="n">buildings_gdf</span></div>
+
+
+<div class="viewcode-block" id="structural_score">
+<a class="viewcode-back" href="../../generated/cityImage.structural_score.html#cityImage.structural_score">[docs]</a>
+<span class="k">def</span> <span class="nf">structural_score</span><span class="p">(</span><span class="n">buildings_gdf</span><span class="p">,</span> <span class="n">obstructions_gdf</span><span class="p">,</span> <span class="n">edges_gdf</span><span class="p">,</span> <span class="n">advance_vis_expansion_distance</span> <span class="o">=</span> <span class="mi">300</span><span class="p">,</span> <span class="n">neighbours_radius</span> <span class="o">=</span> <span class="mi">150</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The function computes the &quot;Structural Landmark Component&quot; sub-scores of each building.</span>
+<span class="sd">    It considers:</span>
+<span class="sd">    - distance from the street network:</span>
+<span class="sd">    - advance 2d visibility polygon;</span>
+<span class="sd">    - number of neighbouring buildings in a given radius.</span>
+<span class="sd">         </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    buildings_gdf: Polygon GeoDataFrame</span>
+<span class="sd">        Buildings GeoDataFrame - case study area.</span>
+<span class="sd">    edges_gdf: LineString GeoDataFrame</span>
+<span class="sd">        Street segmetns GeoDataFrame.</span>
+<span class="sd">    obstructions_gdf: Polygon GeoDataFrame</span>
+<span class="sd">        Obstructions GeoDataFrame.  </span>
+<span class="sd">    advance_vis_expansion_distance: float</span>
+<span class="sd">        2d advance visibility - it indicates up to which distance from the building boundaries the 2dvisibility polygon can expand.</span>
+<span class="sd">    neighbours_radius: float</span>
+<span class="sd">        Neighbours - research radius for other adjacent buildings.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    buildings_gdf: Polygon GeoDataFrame</span>
+<span class="sd">        The updated buildings GeoDataFrame.</span>
+<span class="sd">    &quot;&quot;&quot;</span>  
+    <span class="n">buildings_gdf</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">obstructions_gdf</span> <span class="o">=</span> <span class="n">buildings_gdf</span> <span class="k">if</span> <span class="n">obstructions_gdf</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">obstructions_gdf</span>
+    <span class="n">sindex</span> <span class="o">=</span> <span class="n">obstructions_gdf</span><span class="o">.</span><span class="n">sindex</span>
+    <span class="n">street_network</span> <span class="o">=</span> <span class="n">edges_gdf</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">unary_union</span>
+
+    <span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;road&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">distance</span><span class="p">(</span><span class="n">street_network</span><span class="p">)</span>
+    <span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;2dvis&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="n">visibility_polygon2d</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">obstructions_gdf</span><span class="p">,</span> <span class="n">sindex</span><span class="p">,</span> <span class="n">max_expansion_distance</span><span class="o">=</span>
+                                    <span class="n">advance_vis_expansion_distance</span><span class="p">))</span>
+    <span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;neigh&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="n">number_neighbours</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">obstructions_gdf</span><span class="p">,</span> <span class="n">sindex</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="n">neighbours_radius</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">buildings_gdf</span></div>
+
+    
+<div class="viewcode-block" id="number_neighbours">
+<a class="viewcode-back" href="../../generated/cityImage.number_neighbours.html#cityImage.number_neighbours">[docs]</a>
+<span class="k">def</span> <span class="nf">number_neighbours</span><span class="p">(</span><span class="n">geometry</span><span class="p">,</span> <span class="n">obstructions_gdf</span><span class="p">,</span> <span class="n">obstructions_sindex</span><span class="p">,</span> <span class="n">radius</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The function counts the number of neighbours, in a GeoDataFrame, around a given geometry, within a</span>
+<span class="sd">    research radius.</span>
+<span class="sd">     </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    geometry: Shapely Geometry</span>
+<span class="sd">        The geometry for which neighbors are counted.</span>
+<span class="sd">    obstructions_gdf: GeoDataFrame</span>
+<span class="sd">        The GeoDataFrame containing the obstructions.</span>
+<span class="sd">    obstructions_sindex: Spatial Index</span>
+<span class="sd">        The spatial index of the obstructions GeoDataFrame.</span>
+<span class="sd">    radius: float</span>
+<span class="sd">        The research radius for neighboring buildings.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    int</span>
+<span class="sd">        The number of neighbors.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">buffer</span> <span class="o">=</span> <span class="n">geometry</span><span class="o">.</span><span class="n">buffer</span><span class="p">(</span><span class="n">radius</span><span class="p">)</span>
+    <span class="n">possible_neigh_index</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">obstructions_sindex</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">buffer</span><span class="o">.</span><span class="n">bounds</span><span class="p">))</span>
+    <span class="n">possible_neigh</span> <span class="o">=</span> <span class="n">obstructions_gdf</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">possible_neigh_index</span><span class="p">]</span>
+    <span class="n">precise_neigh</span> <span class="o">=</span> <span class="n">possible_neigh</span><span class="p">[</span><span class="n">possible_neigh</span><span class="o">.</span><span class="n">intersects</span><span class="p">(</span><span class="n">buffer</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">precise_neigh</span><span class="p">)</span></div>
+
+  
+<div class="viewcode-block" id="visibility_score">
+<a class="viewcode-back" href="../../generated/cityImage.visibility_score.html#cityImage.visibility_score">[docs]</a>
+<span class="k">def</span> <span class="nf">visibility_score</span><span class="p">(</span><span class="n">buildings_gdf</span><span class="p">,</span> <span class="n">sight_lines</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;a&#39;</span><span class="p">:</span> <span class="p">[]}),</span> <span class="n">method</span> <span class="o">=</span> <span class="s1">&#39;longest&#39;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The function calculates the sub-scores of the &quot;Visibility Landmark Component&quot;.</span>
+<span class="sd">    - 3d visibility;</span>
+<span class="sd">    - facade area;</span>
+<span class="sd">    - (height).</span>
+<span class="sd">     </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    buildings_gdf: Polygon GeoDataFrame</span>
+<span class="sd">        Buildings GeoDataFrame - case study area.</span>
+<span class="sd">    sight_lines: LineString GeoDataFrame</span>
+<span class="sd">        The Sight Lines GeoDataFrame.</span>
+<span class="sd">        </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    buildings_gdf: Polygon GeoDataFrame</span>
+<span class="sd">        The updated buildings GeoDataFrame.</span>
+<span class="sd">    &quot;&quot;&quot;</span>  
+    <span class="n">buildings_gdf</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;fac&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="k">if</span> <span class="p">(</span><span class="s2">&quot;height&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">sight_lines</span><span class="o">.</span><span class="n">empty</span><span class="p">):</span> 
+        <span class="k">return</span> <span class="n">buildings_gdf</span><span class="p">,</span> <span class="n">sight_lines</span>
+
+    <span class="n">sight_lines</span><span class="p">[</span><span class="s1">&#39;nodeID&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sight_lines</span><span class="p">[</span><span class="s1">&#39;nodeID&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">sight_lines</span><span class="p">[</span><span class="s1">&#39;buildingID&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sight_lines</span><span class="p">[</span><span class="s1">&#39;buildingID&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+
+    <span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;fac&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="n">facade_area</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;geometry&quot;</span><span class="p">],</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;height&quot;</span><span class="p">]),</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">sight_lines</span><span class="p">[</span><span class="s2">&quot;length&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sight_lines</span><span class="p">[</span><span class="s2">&quot;geometry&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">length</span>
+    <span class="n">sight_lines</span> <span class="o">=</span> <span class="n">sight_lines</span><span class="o">.</span><span class="n">sort_values</span><span class="p">([</span><span class="s1">&#39;buildingID&#39;</span><span class="p">,</span> <span class="s1">&#39;nodeID&#39;</span><span class="p">,</span> <span class="s1">&#39;length&#39;</span><span class="p">],</span><span class="n">ascending</span><span class="o">=</span><span class="p">[</span><span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">])</span><span class="o">.</span><span class="n">drop_duplicates</span><span class="p">([</span><span class="s1">&#39;buildingID&#39;</span><span class="p">,</span> <span class="s1">&#39;nodeID&#39;</span><span class="p">],</span> <span class="n">keep</span><span class="o">=</span><span class="s1">&#39;first&#39;</span><span class="p">)</span>
+    <span class="n">sight_lines</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">inplace</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">drop</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">stats</span> <span class="o">=</span> <span class="n">sight_lines</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="s1">&#39;buildingID&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">agg</span><span class="p">({</span><span class="s1">&#39;length&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;mean&#39;</span><span class="p">,</span><span class="s1">&#39;max&#39;</span><span class="p">,</span> <span class="s1">&#39;count&#39;</span><span class="p">]})</span> 
+    <span class="n">stats</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="n">stats</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">droplevel</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">stats</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;count&quot;</span><span class="p">:</span> <span class="s2">&quot;nr_lines&quot;</span><span class="p">},</span> <span class="n">inplace</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;max&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">((</span><span class="n">stats</span><span class="p">[</span><span class="s2">&quot;max&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()),</span> <span class="n">inplace</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+    <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;mean&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">((</span><span class="n">stats</span><span class="p">[</span><span class="s2">&quot;mean&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()),</span> <span class="n">inplace</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+    <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;nr_lines&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">((</span><span class="n">stats</span><span class="p">[</span><span class="s2">&quot;nr_lines&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()),</span> <span class="n">inplace</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+    <span class="n">stats</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">inplace</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+    <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;max&quot;</span><span class="p">,</span> <span class="s2">&quot;mean&quot;</span><span class="p">,</span> <span class="s2">&quot;nr_lines&quot;</span><span class="p">]</span>
+
+    <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">columns</span><span class="p">:</span>
+        <span class="n">stats</span><span class="p">[</span><span class="n">column</span><span class="o">+</span><span class="s2">&quot;_sc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">scaling_columnDF</span><span class="p">(</span><span class="n">stats</span><span class="p">[</span><span class="n">column</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;longest&#39;</span><span class="p">:</span>
+        <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;3dvis&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;max_sc&quot;</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;combined&#39;</span><span class="p">:</span>
+        <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;3dvis&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;max_sc&quot;</span><span class="p">]</span><span class="o">*</span><span class="mf">0.5</span><span class="o">+</span><span class="n">stats</span><span class="p">[</span><span class="s2">&quot;mean_sc&quot;</span><span class="p">]</span><span class="o">*</span><span class="mf">0.25</span><span class="o">+</span><span class="n">stats</span><span class="p">[</span><span class="s2">&quot;nr_lines_sc&quot;</span><span class="p">]</span><span class="o">*</span><span class="mf">0.25</span>
+
+    <span class="n">buildings_gdf</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">buildings_gdf</span><span class="p">,</span> <span class="n">stats</span><span class="p">[[</span><span class="s2">&quot;buildingID&quot;</span><span class="p">,</span> <span class="s2">&quot;3dvis&quot;</span><span class="p">]],</span> <span class="n">on</span> <span class="o">=</span> <span class="s2">&quot;buildingID&quot;</span><span class="p">,</span> <span class="n">how</span> <span class="o">=</span> <span class="s2">&quot;left&quot;</span><span class="p">)</span> 
+    <span class="n">buildings_gdf</span><span class="p">[</span><span class="s1">&#39;3dvis&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="p">[</span><span class="s1">&#39;3dvis&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">notnull</span><span class="p">(</span><span class="n">buildings_gdf</span><span class="p">[</span><span class="s1">&#39;3dvis&#39;</span><span class="p">]),</span> <span class="mf">0.0</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">buildings_gdf</span><span class="p">,</span> <span class="n">sight_lines</span></div>
+
+
+<div class="viewcode-block" id="facade_area">
+<a class="viewcode-back" href="../../generated/cityImage.facade_area.html#cityImage.facade_area">[docs]</a>
+<span class="k">def</span> <span class="nf">facade_area</span><span class="p">(</span><span class="n">building_geometry</span><span class="p">,</span> <span class="n">building_height</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Compute the approximate facade area of a building given its geometry and height.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    building_geometry: Polygon</span>
+<span class="sd">        The geometry of the building.</span>
+<span class="sd">    building_height: float</span>
+<span class="sd">        The height of the building.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        The computed approximate facade area of the building.</span>
+<span class="sd">    &quot;&quot;&quot;</span>    
+    <span class="n">envelope</span> <span class="o">=</span> <span class="n">building_geometry</span><span class="o">.</span><span class="n">envelope</span>
+    <span class="n">coords</span> <span class="o">=</span> <span class="n">mapping</span><span class="p">(</span><span class="n">envelope</span><span class="p">)[</span><span class="s2">&quot;coordinates&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">d</span> <span class="o">=</span> <span class="p">[(</span><span class="n">Point</span><span class="p">(</span><span class="n">coords</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span><span class="o">.</span><span class="n">distance</span><span class="p">(</span><span class="n">Point</span><span class="p">(</span><span class="n">coords</span><span class="p">[</span><span class="mi">1</span><span class="p">])),</span> <span class="p">(</span><span class="n">Point</span><span class="p">(</span><span class="n">coords</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span><span class="o">.</span><span class="n">distance</span><span class="p">(</span><span class="n">Point</span><span class="p">(</span><span class="n">coords</span><span class="p">[</span><span class="mi">2</span><span class="p">]))]</span>
+    <span class="n">width</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">width</span><span class="o">*</span><span class="n">building_height</span></div>
+
+ 
+<div class="viewcode-block" id="get_historical_buildings_fromOSM">
+<a class="viewcode-back" href="../../generated/cityImage.get_historical_buildings_fromOSM.html#cityImage.get_historical_buildings_fromOSM">[docs]</a>
+<span class="k">def</span> <span class="nf">get_historical_buildings_fromOSM</span><span class="p">(</span><span class="n">place</span><span class="p">,</span> <span class="n">download_method</span><span class="p">,</span> <span class="n">epsg</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">distance</span> <span class="o">=</span> <span class="mi">1000</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;    </span>
+<span class="sd">    The function downloads and cleans building footprint geometries and create a buildings GeoDataFrames for the area of interest.</span>
+<span class="sd">    However, it only keeps the buildings that are considered historical buildings or heritage buildings in OSM. </span>
+<span class="sd">            </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    place: str, tuple, Shapely Polygon</span>
+<span class="sd">        Name of cities or areas in OSM: </span>
+<span class="sd">        - when using &quot;distance_from_point&quot; please provide a (lat, lon) tuple to create the bounding box around it; </span>
+<span class="sd">        - when using &quot;distance_from_address&quot; provide an existing OSM address; </span>
+<span class="sd">        - when using &quot;OSMplace&quot; provide an OSM place name. The query must be geocodable and OSM must have polygon boundaries for the geocode result.  </span>
+<span class="sd">        - when using &quot;polygon&quot; please provide a Shapely Polygon in unprojected latitude-longitude degrees (EPSG:4326) CRS;</span>
+<span class="sd">    download_method: str, {&quot;distance_from_address&quot;, &quot;distance_from_point&quot;, &quot;OSMplace&quot;, &quot;polygon&quot;}</span>
+<span class="sd">        It indicates the method that should be used for downloading the data.</span>
+<span class="sd">    epsg: int</span>
+<span class="sd">        Epsg of the area considered; if None OSMNx is used for the projection.</span>
+<span class="sd">    distance: float</span>
+<span class="sd">        Used when download_method == &quot;distance from address&quot; or == &quot;distance from point&quot;.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    historic_buildings: Polygon GeoDataFrame</span>
+<span class="sd">        The historic buildings GeoDataFrame.</span>
+<span class="sd">    &quot;&quot;&quot;</span>   
+    
+    <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;geometry&#39;</span><span class="p">,</span> <span class="s1">&#39;historic&#39;</span><span class="p">]</span>
+    <span class="n">tags</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;building&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+    <span class="n">historic_buildings</span> <span class="o">=</span> <span class="n">downloader</span><span class="p">(</span><span class="n">place</span> <span class="o">=</span> <span class="n">place</span><span class="p">,</span> <span class="n">download_method</span> <span class="o">=</span> <span class="n">download_method</span><span class="p">,</span> <span class="n">tags</span> <span class="o">=</span> <span class="n">tags</span><span class="p">,</span> <span class="n">distance</span> <span class="o">=</span> <span class="n">distance</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="s1">&#39;heritage&#39;</span> <span class="ow">in</span> <span class="n">historic_buildings</span><span class="p">:</span>
+        <span class="n">columns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;heritage&#39;</span><span class="p">)</span>
+    <span class="n">historic_buildings</span> <span class="o">=</span> <span class="n">historic_buildings</span><span class="p">[</span><span class="n">columns</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="s1">&#39;heritage&#39;</span> <span class="ow">in</span> <span class="n">historic_buildings</span><span class="p">:</span>
+        <span class="n">historic_buildings</span> <span class="o">=</span> <span class="n">historic_buildings</span><span class="p">[</span><span class="o">~</span><span class="p">(</span><span class="n">historic_buildings</span><span class="o">.</span><span class="n">historic</span><span class="o">.</span><span class="n">isnull</span><span class="p">()</span> <span class="o">&amp;</span> <span class="n">historic_buildings</span><span class="o">.</span><span class="n">heritage</span><span class="o">.</span><span class="n">isnull</span><span class="p">())]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">historic_buildings</span> <span class="o">=</span> <span class="n">historic_buildings</span><span class="p">[</span><span class="o">~</span><span class="n">historic_buildings</span><span class="o">.</span><span class="n">historic</span><span class="o">.</span><span class="n">isnull</span><span class="p">()]</span>
+    
+    <span class="k">if</span> <span class="n">epsg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">historic_buildings</span> <span class="o">=</span> <span class="n">ox</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">project_gdf</span><span class="p">(</span><span class="n">historic_buildings</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">crs</span> <span class="o">=</span> <span class="s1">&#39;EPSG:&#39;</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">epsg</span><span class="p">)</span>
+        <span class="n">historic_buildings</span> <span class="o">=</span> <span class="n">historic_buildings</span><span class="o">.</span><span class="n">to_crs</span><span class="p">(</span><span class="n">crs</span><span class="p">)</span>
+
+    <span class="n">historic_buildings</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">historic_buildings</span><span class="p">[</span><span class="s2">&quot;historic&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;historic&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">historic_buildings</span> <span class="o">=</span> <span class="n">historic_buildings</span><span class="p">[[</span><span class="s1">&#39;geometry&#39;</span><span class="p">,</span> <span class="s1">&#39;historic&#39;</span><span class="p">]]</span>
+    <span class="n">historic_buildings</span><span class="p">[</span><span class="s1">&#39;area&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">historic_buildings</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">area</span>
+       
+    <span class="k">return</span> <span class="n">historic_buildings</span></div>
+
+ 
+<div class="viewcode-block" id="cultural_score">
+<a class="viewcode-back" href="../../generated/cityImage.cultural_score.html#cityImage.cultural_score">[docs]</a>
+<span class="k">def</span> <span class="nf">cultural_score</span><span class="p">(</span><span class="n">buildings_gdf</span><span class="p">,</span> <span class="n">historical_elements_gdf</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;a&#39;</span><span class="p">:</span> <span class="p">[]}),</span> <span class="n">historical_score</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">from_OSM</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The function computes the &quot;Cultural Landmark Component&quot; based on the number of features listed in historical/cultural landmarks datasets. It can be</span>
+<span class="sd">    obtained either on the basis of a score given by the data-provider or on the number of features intersecting the buildings object </span>
+<span class="sd">    of analysis.</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;historical_score&quot; indicates the attribute field containing scores assigned to historical buildings, if existing.</span>
+<span class="sd">    Alternatively, if the column has been already assigned to the buildings_gdf, one can use OSM historic categorisation (binbary).</span>
+<span class="sd">     </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    buildings_gdf: Polygon GeoDataFrame</span>
+<span class="sd">        Buildings GeoDataFrame - case study area.</span>
+<span class="sd">    historical_elements_gdf: Point or Polygon GeoDataFrame</span>
+<span class="sd">        The GeoDataFrame containing information about listed historical buildings or elements.</span>
+<span class="sd">    historical_score: str</span>
+<span class="sd">        The name of the column in the historical_elements_gdf that provides information on the classification of the historical listings.</span>
+<span class="sd">    from_OSM: boolean</span>
+<span class="sd">        If using the historic field from OSM. This column should be already in the buildings_gdf columns.</span>
+<span class="sd">   </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    buildings_gdf: Polygon GeoDataFrame</span>
+<span class="sd">        The updated buildings GeoDataFrame.</span>
+<span class="sd">    &quot;&quot;&quot;</span>  
+    <span class="n">buildings_gdf</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;cult&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="c1"># using OSM binary value</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">from_OSM</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="s2">&quot;historic&quot;</span> <span class="ow">in</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">columns</span><span class="p">):</span>
+        <span class="c1"># Set &#39;historic&#39; column to 0 where it is currently null</span>
+        <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;historic&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">isnull</span><span class="p">(),</span> <span class="s2">&quot;historic&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="c1"># Set &#39;historic&#39; column to 1 where it is not 0</span>
+        <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;historic&quot;</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">&quot;historic&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;cult&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;historic&quot;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">buildings_gdf</span>
+    
+    <span class="k">def</span> <span class="nf">_cultural_score_building</span><span class="p">(</span><span class="n">building_geometry</span><span class="p">,</span> <span class="n">historical_elements_gdf</span><span class="p">,</span> <span class="n">historical_elements_gdf_sindex</span><span class="p">,</span> <span class="n">score</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the cultural score for a single building based on its intersection with historical elements.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        building_geometry: Polygon</span>
+<span class="sd">            The geometry of the building.</span>
+<span class="sd">        historical_elements_gdf: GeoDataFrame</span>
+<span class="sd">            The GeoDataFrame containing historical elements.</span>
+<span class="sd">        historical_elements_gdf_sindex: Spatial Index</span>
+<span class="sd">            The spatial index of the historical elements GeoDataFrame.</span>
+<span class="sd">        score: str</span>
+<span class="sd">            The name of the score column in the historical elements GeoDataFrame, by default None.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        float</span>
+<span class="sd">            The computed cultural score for the building.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">possible_matches_index</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">historical_elements_gdf_sindex</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">building_geometry</span><span class="o">.</span><span class="n">bounds</span><span class="p">))</span> <span class="c1"># looking for possible candidates in the external GDF</span>
+        <span class="n">possible_matches</span> <span class="o">=</span> <span class="n">historical_elements_gdf</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">possible_matches_index</span><span class="p">]</span>
+        <span class="n">matches</span> <span class="o">=</span> <span class="n">possible_matches</span><span class="p">[</span><span class="n">possible_matches</span><span class="o">.</span><span class="n">intersects</span><span class="p">(</span><span class="n">building_geometry</span><span class="p">)]</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">score</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="n">cs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">matches</span><span class="p">)</span> <span class="c1"># score only based on number of intersecting elements</span>
+        <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">matches</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> 
+            <span class="n">cs</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">else</span><span class="p">:</span> 
+            <span class="n">cs</span> <span class="o">=</span> <span class="n">matches</span><span class="p">[</span><span class="n">score</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> <span class="c1"># otherwise sum the scores of the intersecting elements</span>
+        <span class="k">return</span> <span class="n">cs</span>
+
+    <span class="c1"># spatial index</span>
+    <span class="n">sindex</span> <span class="o">=</span> <span class="n">historical_elements_gdf</span><span class="o">.</span><span class="n">sindex</span> 
+    <span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;cult&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="n">_cultural_score_building</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">historical_elements_gdf</span><span class="p">,</span> <span class="n">sindex</span><span class="p">,</span> <span class="n">score</span> <span class="o">=</span> <span class="n">historical_score</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">buildings_gdf</span></div>
+
+
+<div class="viewcode-block" id="pragmatic_score">
+<a class="viewcode-back" href="../../generated/cityImage.pragmatic_score.html#cityImage.pragmatic_score">[docs]</a>
+<span class="k">def</span> <span class="nf">pragmatic_score</span><span class="p">(</span><span class="n">buildings_gdf</span><span class="p">,</span> <span class="n">research_radius</span> <span class="o">=</span> <span class="mi">200</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The function computes the &quot;Pragmatic Landmark Component&quot; based on the frequency, and therefore unexpectedness, of a land_use class in an area around a building.</span>
+<span class="sd">    The area is defined by the parameter &quot;research_radius&quot;.</span>
+<span class="sd">     </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    buildings_gdf: Polygon GeoDataFrame</span>
+<span class="sd">        Buildings GeoDataFrame - case study area.</span>
+<span class="sd">    research_radius: float</span>
+<span class="sd">        The radius to be used around the given building to identify neighbours.</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    buildings_gdf: Polygon GeoDataFrame</span>
+<span class="sd">        The updated buildings GeoDataFrame.</span>
+<span class="sd">    &quot;&quot;&quot;</span>  
+    
+    <span class="n">buildings_gdf</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>   
+    <span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;nr&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span> <span class="c1"># to count</span>
+    <span class="n">sindex</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">sindex</span> <span class="c1"># spatial index</span>
+    
+    <span class="k">if</span> <span class="s1">&#39;land_use&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="n">buildings_gdf</span><span class="p">[</span><span class="s1">&#39;land_use&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="p">[</span><span class="s1">&#39;land_use_raw&#39;</span><span class="p">]</span>
+        
+    <span class="k">def</span> <span class="nf">_pragmatic_meaning_building</span><span class="p">(</span><span class="n">building_geometry</span><span class="p">,</span> <span class="n">building_land_use</span><span class="p">,</span> <span class="n">buildings_gdf</span><span class="p">,</span> <span class="n">buildings_gdf_sindex</span><span class="p">,</span> <span class="n">radius</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Compute the pragmatic score for a single building based on its proximity to buildings with the same land use.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        building_geometry: Polygon</span>
+<span class="sd">            The geometry of the building.</span>
+<span class="sd">        building_land_use: str</span>
+<span class="sd">            The land use category of the building.</span>
+<span class="sd">        buildings_gdf: Polygon GeoDataFrame</span>
+<span class="sd">            The buildings GeoDataFrame for the case study area.</span>
+<span class="sd">        buildings_gdf_sindex: Spatial Index</span>
+<span class="sd">            The spatial index of the buildings GeoDataFrame.</span>
+<span class="sd">        radius: float</span>
+<span class="sd">            The radius to consider for proximity calculation.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        float</span>
+<span class="sd">            The computed pragmatic score for the building.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">buffer</span> <span class="o">=</span> <span class="n">building_geometry</span><span class="o">.</span><span class="n">buffer</span><span class="p">(</span><span class="n">radius</span><span class="p">)</span>
+        <span class="n">possible_matches_index</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">buildings_gdf_sindex</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">buffer</span><span class="o">.</span><span class="n">bounds</span><span class="p">))</span>
+        <span class="n">possible_matches</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">possible_matches_index</span><span class="p">]</span>
+        <span class="n">matches</span> <span class="o">=</span> <span class="n">possible_matches</span><span class="p">[</span><span class="n">possible_matches</span><span class="o">.</span><span class="n">intersects</span><span class="p">(</span><span class="n">buffer</span><span class="p">)]</span>
+        <span class="n">neigh</span> <span class="o">=</span> <span class="n">matches</span><span class="o">.</span><span class="n">groupby</span><span class="p">([</span><span class="s2">&quot;land_use&quot;</span><span class="p">],</span> <span class="n">as_index</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)[</span><span class="s2">&quot;nr&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span> 
+
+        <span class="n">Nj</span> <span class="o">=</span> <span class="n">neigh</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">building_land_use</span><span class="p">]</span> <span class="c1"># nr of neighbours with same land_use</span>
+        <span class="n">Pj</span> <span class="o">=</span> <span class="mi">1</span><span class="o">-</span><span class="p">(</span><span class="n">Nj</span><span class="o">/</span><span class="n">matches</span><span class="p">[</span><span class="s2">&quot;nr&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">())</span> <span class="c1"># inverting the value # Pj = Nj/N</span>
+        <span class="k">return</span> <span class="n">Pj</span>    
+        
+    <span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;prag&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="n">_pragmatic_meaning_building</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">geometry</span><span class="p">,</span> <span class="n">row</span><span class="o">.</span><span class="n">land_use</span><span class="p">,</span> <span class="n">buildings_gdf</span><span class="p">,</span> 
+                                        <span class="n">sindex</span><span class="p">,</span> <span class="n">radius</span> <span class="o">=</span> <span class="n">research_radius</span><span class="p">),</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="s1">&#39;nr&#39;</span><span class="p">,</span> <span class="n">axis</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">inplace</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">buildings_gdf</span></div>
+
+    
+<div class="viewcode-block" id="compute_global_scores">
+<a class="viewcode-back" href="../../generated/cityImage.compute_global_scores.html#cityImage.compute_global_scores">[docs]</a>
+<span class="k">def</span> <span class="nf">compute_global_scores</span><span class="p">(</span><span class="n">buildings_gdf</span><span class="p">,</span> <span class="n">global_components_weights</span><span class="p">,</span> <span class="n">global_indexes_weights</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Computes the component and global scores for a buildings GeoDataFrame, rescaling values when necessary and assigning weights to the different properties measured.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    buildings_gdf: Polygon GeoDataFrame</span>
+<span class="sd">        The input GeoDataFrame containing buildings information.</span>
+<span class="sd">    global_indexes_weights: dict</span>
+<span class="sd">        Dictionary with index names (string) as keys and weights as values.</span>
+<span class="sd">    global_components_weights: dict</span>
+<span class="sd">        Dictionary with component names (string) as keys and weights as values.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    buildings_gdf: Polygon GeoDataFrame</span>
+<span class="sd">        The updated buildings GeoDataFrame with computed scores.</span>
+<span class="sd">    </span>
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    # Example 1: Computing global scores for a buildings GeoDataFrame</span>
+<span class="sd">    &gt;&gt;&gt; buildings_gdf = gpd.GeoDataFrame(...)</span>
+<span class="sd">    &gt;&gt;&gt; global_indexes_weights = {&quot;3dvis&quot;: 0.50, &quot;fac&quot;: 0.30, &quot;height&quot;: 0.20, &quot;area&quot;: 0.30, &quot;2dvis&quot;: 0.30, &quot;neigh&quot;: 0.20, &quot;road&quot;: 0.20}</span>
+<span class="sd">    &gt;&gt;&gt; global_components_weights = {&quot;vScore&quot;: 0.50, &quot;sScore&quot;: 0.30, &quot;cScore&quot;: 0.20, &quot;pScore&quot;: 0.10}</span>
+<span class="sd">    &quot;&quot;&quot;</span>  
+    <span class="c1"># scaling</span>
+    <span class="n">col</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;3dvis&quot;</span><span class="p">,</span> <span class="s2">&quot;fac&quot;</span><span class="p">,</span> <span class="s2">&quot;height&quot;</span><span class="p">,</span> <span class="s2">&quot;area&quot;</span><span class="p">,</span><span class="s2">&quot;2dvis&quot;</span><span class="p">,</span> <span class="s2">&quot;cult&quot;</span><span class="p">,</span> <span class="s2">&quot;prag&quot;</span><span class="p">]</span>
+    <span class="n">col_inverse</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;neigh&quot;</span><span class="p">,</span> <span class="s2">&quot;road&quot;</span><span class="p">]</span>
+
+    <span class="c1"># keeping out visibility analysis if there is no information about buildings&#39; elevation. Reassigning the weights to the other</span>
+    <span class="c1"># components if any was given to the visibility</span>
+    <span class="k">if</span> <span class="p">(</span><span class="s2">&quot;height&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span> <span class="ow">or</span> <span class="p">((</span><span class="s2">&quot;height&quot;</span> <span class="ow">in</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">buildings_gdf</span><span class="o">.</span><span class="n">height</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">)):</span>
+        <span class="n">buildings_gdf</span><span class="p">[[</span><span class="s1">&#39;height&#39;</span><span class="p">,</span><span class="s1">&#39;3dvis&#39;</span><span class="p">,</span> <span class="s1">&#39;fac&#39;</span><span class="p">]]</span>  <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">if</span> <span class="n">global_components_weights</span><span class="p">[</span><span class="s1">&#39;vScore&#39;</span><span class="p">]</span> <span class="o">!=</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="n">to_add</span> <span class="o">=</span> <span class="n">global_components_weights</span><span class="p">[</span><span class="s1">&#39;vScore&#39;</span><span class="p">]</span><span class="o">/</span><span class="mi">3</span>
+            <span class="n">global_components_weights</span><span class="p">[</span><span class="s1">&#39;sScore&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">to_add</span>
+            <span class="n">global_components_weights</span><span class="p">[</span><span class="s1">&#39;cScore&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">to_add</span>
+            <span class="n">global_components_weights</span><span class="p">[</span><span class="s1">&#39;pScore&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="n">to_add</span>
+            <span class="n">global_components_weights</span><span class="p">[</span><span class="s1">&#39;vScore&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+    
+    <span class="c1"># rescaling values from 0 to 1</span>
+    <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">col</span> <span class="o">+</span> <span class="n">col_inverse</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">buildings_gdf</span><span class="p">[</span><span class="n">column</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">:</span>
+            <span class="n">buildings_gdf</span><span class="p">[</span><span class="n">column</span><span class="o">+</span><span class="s2">&quot;_sc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">buildings_gdf</span><span class="p">[</span><span class="n">column</span><span class="o">+</span><span class="s2">&quot;_sc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">scaling_columnDF</span><span class="p">(</span><span class="n">buildings_gdf</span><span class="p">[</span><span class="n">column</span><span class="p">],</span> <span class="n">inverse</span> <span class="o">=</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">col_inverse</span><span class="p">)</span>
+  
+    <span class="c1"># computing component scores   </span>
+    <span class="n">vScore_terms</span> <span class="o">=</span> <span class="p">[</span><span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;fac_sc&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">global_indexes_weights</span><span class="p">[</span><span class="s2">&quot;fac&quot;</span><span class="p">],</span>
+                    <span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;height_sc&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">global_indexes_weights</span><span class="p">[</span><span class="s2">&quot;height&quot;</span><span class="p">],</span>
+                    <span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;3dvis_sc&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">global_indexes_weights</span><span class="p">[</span><span class="s2">&quot;3dvis&quot;</span><span class="p">]]</span>
+    <span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;vScore&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">vScore_terms</span><span class="p">)</span>
+
+    <span class="n">sScore_terms</span> <span class="o">=</span> <span class="p">[</span><span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;area_sc&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">global_indexes_weights</span><span class="p">[</span><span class="s2">&quot;area&quot;</span><span class="p">],</span>
+                    <span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;neigh_sc&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">global_indexes_weights</span><span class="p">[</span><span class="s2">&quot;neigh&quot;</span><span class="p">],</span>
+                    <span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;2dvis_sc&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">global_indexes_weights</span><span class="p">[</span><span class="s2">&quot;2dvis&quot;</span><span class="p">],</span>
+                    <span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;road_sc&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">global_indexes_weights</span><span class="p">[</span><span class="s2">&quot;road&quot;</span><span class="p">]]</span>    
+    <span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;sScore&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">sScore_terms</span><span class="p">)</span>
+    
+    <span class="c1"># rescaling them</span>
+    <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;vScore&quot;</span><span class="p">,</span> <span class="s2">&quot;sScore&quot;</span><span class="p">]:</span> 
+        <span class="k">if</span> <span class="n">buildings_gdf</span><span class="p">[</span><span class="n">column</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">:</span> 
+            <span class="n">buildings_gdf</span><span class="p">[</span><span class="n">column</span><span class="o">+</span><span class="s2">&quot;_sc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">else</span><span class="p">:</span> 
+            <span class="n">buildings_gdf</span><span class="p">[</span><span class="n">column</span><span class="o">+</span><span class="s2">&quot;_sc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">scaling_columnDF</span><span class="p">(</span><span class="n">buildings_gdf</span><span class="p">[</span><span class="n">column</span><span class="p">])</span>
+    
+    <span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;cScore&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;cult_sc&quot;</span><span class="p">]</span>
+    <span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;pScore&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;prag_sc&quot;</span><span class="p">]</span>
+    <span class="c1"># final global score</span>
+    <span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;gScore&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;vScore_sc&quot;</span><span class="p">]</span><span class="o">*</span><span class="n">global_components_weights</span><span class="p">[</span><span class="s2">&quot;vScore&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;sScore_sc&quot;</span><span class="p">]</span><span class="o">*</span><span class="n">global_components_weights</span><span class="p">[</span><span class="s2">&quot;sScore&quot;</span><span class="p">]</span> <span class="o">+</span> 
+                               <span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;cScore&quot;</span><span class="p">]</span><span class="o">*</span><span class="n">global_components_weights</span><span class="p">[</span><span class="s2">&quot;cScore&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;pScore&quot;</span><span class="p">]</span><span class="o">*</span><span class="n">global_components_weights</span><span class="p">[</span><span class="s2">&quot;pScore&quot;</span><span class="p">])</span>
+
+    <span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;gScore_sc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">scaling_columnDF</span><span class="p">(</span><span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;gScore&quot;</span><span class="p">])</span>
+    
+    <span class="k">return</span> <span class="n">buildings_gdf</span></div>
+
+
+<div class="viewcode-block" id="compute_local_scores">
+<a class="viewcode-back" href="../../generated/cityImage.compute_local_scores.html#cityImage.compute_local_scores">[docs]</a>
+<span class="k">def</span> <span class="nf">compute_local_scores</span><span class="p">(</span><span class="n">buildings_gdf</span><span class="p">,</span> <span class="n">local_indexes_weights</span><span class="p">,</span> <span class="n">local_components_weights</span><span class="p">,</span> <span class="n">rescaling_radius</span> <span class="o">=</span> <span class="mi">1500</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The function computes landmarkness at the local level. The components&#39; weights may be different from the ones used to calculate the</span>
+<span class="sd">    global score. The radius parameter indicates the extent of the area considered to rescale the landmarkness local score.</span>
+<span class="sd">    - local_indexes_weights: keys are index names (string), items are weights.</span>
+<span class="sd">    - local_components_weights: keys are component names (string), items are weights.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    buildings_gdf: Polygon GeoDataFrame</span>
+<span class="sd">        The input GeoDataFrame containing buildings information.</span>
+<span class="sd">    local_indexes_weights: dict</span>
+<span class="sd">        Dictionary with index names (string) as keys and weights as values.</span>
+<span class="sd">    local_components_weights: dict</span>
+<span class="sd">        Dictionary with component names (string) as keys and weights as values.</span>
+<span class="sd">   </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    buildings_gdf: Polygon GeoDataFrame</span>
+<span class="sd">        The updated buildings GeoDataFrame.</span>
+<span class="sd">    </span>
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; # local landmarkness indexes weights, cScore and pScore have only 1 index each</span>
+<span class="sd">    &gt;&gt;&gt; local_indexes_weights = {&quot;3dvis&quot;: 0.50, &quot;fac&quot;: 0.30, &quot;height&quot;: 0.20, &quot;area&quot;: 0.40, &quot;2dvis&quot;: 0.00, &quot;neigh&quot;: 0.30 , &quot;road&quot;: 0.30}</span>
+<span class="sd">    &gt;&gt;&gt; # local landmarkness components weights</span>
+<span class="sd">    &gt;&gt;&gt; local_components_weights = {&quot;vScore&quot;: 0.25, &quot;sScore&quot;: 0.35, &quot;cScore&quot;:0.10 , &quot;pScore&quot;: 0.30} </span>
+<span class="sd">    &quot;&quot;&quot;</span>  
+    <span class="n">buildings_gdf</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">buildingID</span>
+    <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="kc">None</span>
+    
+    <span class="n">sindex</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">sindex</span> <span class="c1"># spatial index</span>
+    <span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;lScore&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;vScore_l&quot;</span><span class="p">],</span> <span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;sScore_l&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span>
+    
+    <span class="k">def</span> <span class="nf">_building_local_score</span><span class="p">(</span><span class="n">building_geometry</span><span class="p">,</span> <span class="n">buildingID</span><span class="p">,</span> <span class="n">buildings_gdf</span><span class="p">,</span> <span class="n">buildings_gdf_sindex</span><span class="p">,</span> <span class="n">local_components_weights</span><span class="p">,</span> <span class="n">local_indexes_weights</span><span class="p">,</span> <span class="n">radius</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        The function computes landmarkness at the local level for a single building. </span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        building_geometry  Polygon</span>
+<span class="sd">            The geometry of the building.</span>
+<span class="sd">        buildingID: int</span>
+<span class="sd">            The ID of the building.</span>
+<span class="sd">        buildings_gdf: Polygon GeoDataFrame</span>
+<span class="sd">            The GeoDataFrame containing the buildings.</span>
+<span class="sd">        buildings_gdf_sindex: Spatial Index</span>
+<span class="sd">            The spatial index of the buildings GeoDataFrame.</span>
+<span class="sd">        local_components_weights: dictionary</span>
+<span class="sd">            The weights assigned to local-level components.</span>
+<span class="sd">        local_indexes_weights: dictionary</span>
+<span class="sd">            The weights assigned to local-level indexes.</span>
+<span class="sd">        radius: float</span>
+<span class="sd">            The radius that regulates the area around the building within which the scores are recomputed.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        score : float</span>
+<span class="sd">            The computed local-level landmarkness score for the building.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+                                                 
+        <span class="n">col</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;3dvis&quot;</span><span class="p">,</span> <span class="s2">&quot;fac&quot;</span><span class="p">,</span> <span class="s2">&quot;height&quot;</span><span class="p">,</span> <span class="s2">&quot;area&quot;</span><span class="p">,</span><span class="s2">&quot;2dvis&quot;</span><span class="p">,</span> <span class="s2">&quot;cult&quot;</span><span class="p">,</span><span class="s2">&quot;prag&quot;</span><span class="p">]</span>
+        <span class="n">col_inverse</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;neigh&quot;</span><span class="p">,</span> <span class="s2">&quot;road&quot;</span><span class="p">]</span>
+        
+        <span class="n">buffer</span> <span class="o">=</span> <span class="n">building_geometry</span><span class="o">.</span><span class="n">buffer</span><span class="p">(</span><span class="n">radius</span><span class="p">)</span>
+        <span class="n">possible_matches_index</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">buildings_gdf_sindex</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">buffer</span><span class="o">.</span><span class="n">bounds</span><span class="p">))</span>
+        <span class="n">possible_matches</span> <span class="o">=</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">possible_matches_index</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">matches</span> <span class="o">=</span> <span class="n">possible_matches</span><span class="p">[</span><span class="n">possible_matches</span><span class="o">.</span><span class="n">intersects</span><span class="p">(</span><span class="n">buffer</span><span class="p">)]</span>
+                    
+        <span class="c1"># rescaling the values </span>
+        <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">col</span> <span class="o">+</span> <span class="n">col_inverse</span><span class="p">:</span> 
+            <span class="k">if</span> <span class="n">matches</span><span class="p">[</span><span class="n">column</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">:</span> 
+                <span class="n">matches</span><span class="p">[</span><span class="n">column</span><span class="o">+</span><span class="s2">&quot;_sc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">matches</span><span class="p">[</span><span class="n">column</span><span class="o">+</span><span class="s2">&quot;_sc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">scaling_columnDF</span><span class="p">(</span><span class="n">matches</span><span class="p">[</span><span class="n">column</span><span class="p">],</span> <span class="n">inverse</span> <span class="o">=</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">col_inverse</span><span class="p">)</span>
+      
+        <span class="c1"># recomputing scores</span>
+        <span class="n">vScore_terms</span> <span class="o">=</span> <span class="p">[</span><span class="n">matches</span><span class="p">[</span><span class="s2">&quot;fac_sc&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">local_indexes_weights</span><span class="p">[</span><span class="s2">&quot;fac&quot;</span><span class="p">],</span>
+                        <span class="n">matches</span><span class="p">[</span><span class="s2">&quot;height_sc&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">local_indexes_weights</span><span class="p">[</span><span class="s2">&quot;height&quot;</span><span class="p">],</span>
+                        <span class="n">matches</span><span class="p">[</span><span class="s2">&quot;3dvis&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">local_indexes_weights</span><span class="p">[</span><span class="s2">&quot;3dvis&quot;</span><span class="p">]]</span>
+        <span class="n">matches</span><span class="p">[</span><span class="s2">&quot;vScore_l&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">vScore_terms</span><span class="p">)</span>
+
+        <span class="n">sScore_terms</span> <span class="o">=</span> <span class="p">[</span><span class="n">matches</span><span class="p">[</span><span class="s2">&quot;area_sc&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">local_indexes_weights</span><span class="p">[</span><span class="s2">&quot;area&quot;</span><span class="p">],</span>
+                        <span class="n">matches</span><span class="p">[</span><span class="s2">&quot;neigh_sc&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">local_indexes_weights</span><span class="p">[</span><span class="s2">&quot;neigh&quot;</span><span class="p">],</span>
+                        <span class="n">matches</span><span class="p">[</span><span class="s2">&quot;road_sc&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">local_indexes_weights</span><span class="p">[</span><span class="s2">&quot;road&quot;</span><span class="p">],</span>
+                        <span class="n">matches</span><span class="p">[</span><span class="s2">&quot;2dvis_sc&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="n">local_indexes_weights</span><span class="p">[</span><span class="s2">&quot;fac&quot;</span><span class="p">]]</span>
+        <span class="n">matches</span><span class="p">[</span><span class="s2">&quot;sScore_l&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">sScore_terms</span><span class="p">)</span>
+       
+        <span class="n">matches</span><span class="p">[</span><span class="s2">&quot;cScore_l&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">matches</span><span class="p">[</span><span class="s2">&quot;cult_sc&quot;</span><span class="p">]</span>
+        <span class="n">matches</span><span class="p">[</span><span class="s2">&quot;pScore_l&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">matches</span><span class="p">[</span><span class="s2">&quot;prag_sc&quot;</span><span class="p">]</span>
+        
+        <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;vScore_l&quot;</span><span class="p">,</span> <span class="s2">&quot;sScore_l&quot;</span><span class="p">]:</span> 
+            <span class="k">if</span> <span class="n">matches</span><span class="p">[</span><span class="n">column</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">==</span> <span class="mf">0.0</span><span class="p">:</span> 
+                <span class="n">matches</span><span class="p">[</span><span class="n">column</span><span class="o">+</span><span class="s2">&quot;_sc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">matches</span><span class="p">[</span><span class="n">column</span><span class="o">+</span><span class="s2">&quot;_sc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">scaling_columnDF</span><span class="p">(</span><span class="n">matches</span><span class="p">[</span><span class="n">column</span><span class="p">])</span>
+        
+        <span class="n">lScore_terms</span> <span class="o">=</span> <span class="p">[</span><span class="n">matches</span><span class="p">[</span><span class="s2">&quot;vScore_l_sc&quot;</span><span class="p">]</span><span class="o">*</span><span class="n">local_components_weights</span><span class="p">[</span><span class="s2">&quot;vScore&quot;</span><span class="p">],</span>
+                        <span class="n">matches</span><span class="p">[</span><span class="s2">&quot;sScore_l_sc&quot;</span><span class="p">]</span><span class="o">*</span><span class="n">local_components_weights</span><span class="p">[</span><span class="s2">&quot;sScore&quot;</span><span class="p">],</span>
+                        <span class="n">matches</span><span class="p">[</span><span class="s2">&quot;cScore_l&quot;</span><span class="p">]</span><span class="o">*</span><span class="n">local_components_weights</span><span class="p">[</span><span class="s2">&quot;cScore&quot;</span><span class="p">],</span> 
+                        <span class="n">matches</span><span class="p">[</span><span class="s2">&quot;pScore_l&quot;</span><span class="p">]</span><span class="o">*</span><span class="n">local_components_weights</span><span class="p">[</span><span class="s2">&quot;pScore&quot;</span><span class="p">]]</span>
+        <span class="n">matches</span><span class="p">[</span><span class="s2">&quot;lScore&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">lScore_terms</span><span class="p">)</span>
+        
+        <span class="n">local_score</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">{0:.3f}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">matches</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">buildingID</span><span class="p">,</span> <span class="s2">&quot;lScore&quot;</span><span class="p">]))</span>
+        
+        <span class="k">return</span> <span class="n">local_score</span>
+    
+    <span class="k">with</span> <span class="n">concurrent</span><span class="o">.</span><span class="n">futures</span><span class="o">.</span><span class="n">ThreadPoolExecutor</span><span class="p">()</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>
+        <span class="n">future_scores</span> <span class="o">=</span> <span class="p">{</span><span class="n">executor</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">_building_local_score</span><span class="p">,</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;geometry&quot;</span><span class="p">],</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;buildingID&quot;</span><span class="p">],</span> <span class="n">buildings_gdf</span><span class="p">,</span> <span class="n">sindex</span><span class="p">,</span> <span class="n">local_components_weights</span><span class="p">,</span> <span class="n">local_indexes_weights</span><span class="p">,</span> 
+                        <span class="n">rescaling_radius</span><span class="p">):</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;buildingID&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">iterrows</span><span class="p">()}</span>
+        <span class="k">for</span> <span class="n">future</span> <span class="ow">in</span> <span class="n">concurrent</span><span class="o">.</span><span class="n">futures</span><span class="o">.</span><span class="n">as_completed</span><span class="p">(</span><span class="n">future_scores</span><span class="p">):</span>
+            <span class="n">buildingID</span> <span class="o">=</span> <span class="n">future_scores</span><span class="p">[</span><span class="n">future</span><span class="p">]</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">score</span> <span class="o">=</span> <span class="n">future</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
+                <span class="n">buildings_gdf</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">buildingID</span><span class="p">,</span> <span class="s2">&quot;lScore&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">score</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">buildingID</span><span class="si">}</span><span class="s1"> generated an exception: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    
+    <span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;lScore_sc&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">scaling_columnDF</span><span class="p">(</span><span class="n">buildings_gdf</span><span class="p">[</span><span class="s2">&quot;lScore&quot;</span><span class="p">])</span>
+    
+    <span class="k">return</span> <span class="n">buildings_gdf</span></div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae"></script>
+<script src="../../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2024, Gabriele Filomena.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.5.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.15.2.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

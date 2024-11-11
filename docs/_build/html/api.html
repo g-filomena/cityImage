@@ -1,0 +1,841 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="./" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>cityImage API reference &#8212; cityImage 1.2 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="_static/styles/bootstrap.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+
+  
+  <link href="_static/vendor/fontawesome/6.5.1/css/all.min.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.1/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.1/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="_static/vendor/fontawesome/6.5.1/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=a746c00c" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
+  <script src="_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
+
+    <script src="_static/documentation_options.js?v=61243dd2"></script>
+    <script src="_static/doctools.js?v=9a2dae69"></script>
+    <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'api';</script>
+    <link rel="author" title="About these documents" href="about.html" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <a id="pst-skip-link" class="skip-link" href="#main-content">Skip to main content</a>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>
+    Back to top
+  </button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__primary"
+          id="__primary"/>
+  <label class="overlay overlay-primary" for="__primary"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__secondary"
+          id="__secondary"/>
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar">
+<div class="bd-header__inner bd-page-width">
+  <label class="sidebar-toggle primary-toggle" for="__primary">
+    <span class="fa-solid fa-bars"></span>
+  </label>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+
+<a class="navbar-brand logo" href="index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">cityImage 1.2 documentation</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav class="navbar-nav">
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="index.html">
+                        Home
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="notebooks/userGuide.html">
+                        userGuide
+                      </a>
+                    </li>
+                
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/cityImage" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/gfilo" title="Twitter" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script>
+    </div>
+  
+
+  
+    <label class="sidebar-toggle secondary-toggle" for="__secondary" tabindex="0">
+      <span class="fa-solid fa-outdent"></span>
+    </label>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <div class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          <div class="navbar-item">
+<nav class="navbar-nav">
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="index.html">
+                        Home
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="notebooks/userGuide.html">
+                        userGuide
+                      </a>
+                    </li>
+                
+  </ul>
+</nav></div>
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/cityImage" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/gfilo" title="Twitter" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+
+
+<nav aria-label="Breadcrumb">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    <li class="breadcrumb-item active" aria-current="page">cityImage...</li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="cityimage-api-reference">
+<span id="module-cityImage"></span><span id="api-ref"></span><h1>cityImage API reference<a class="headerlink" href="#cityimage-api-reference" title="Link to this heading">#</a></h1>
+<section id="angles">
+<h2>angles<a class="headerlink" href="#angles" title="Link to this heading">#</a></h2>
+<table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.get_coord_angle.html#cityImage.get_coord_angle" title="cityImage.get_coord_angle"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_coord_angle</span></code></a>(origin, distance, angle)</p></td>
+<td><p>The function returns the coordinates of the line starting from a tuple of coordinates, which forms with the y axis an angle in degree of a certain magnitude, given the distance from the origin.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="api/cityImage.angle_line_geometries.html#cityImage.angle_line_geometries" title="cityImage.angle_line_geometries"><code class="xref py py-obj docutils literal notranslate"><span class="pre">angle_line_geometries</span></code></a>(line_geometryA, ...[, ...])</p></td>
+<td><p>Given two LineStrings it computes the angle between them.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="barriers">
+<h2>Barriers<a class="headerlink" href="#barriers" title="Link to this heading">#</a></h2>
+<table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.road_barriers.html#cityImage.road_barriers" title="cityImage.road_barriers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">road_barriers</span></code></a>(place, download_method[, ...])</p></td>
+<td><p>The function downloads major roads from OSM.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.water_barriers.html#cityImage.water_barriers" title="cityImage.water_barriers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">water_barriers</span></code></a>(place, download_method[, ...])</p></td>
+<td><p>The function downloads water bodies from OSM.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.railway_barriers.html#cityImage.railway_barriers" title="cityImage.railway_barriers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">railway_barriers</span></code></a>(place, download_method[, ...])</p></td>
+<td><p>The function downloads overground railway structures from OSM.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.park_barriers.html#cityImage.park_barriers" title="cityImage.park_barriers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">park_barriers</span></code></a>(place, download_method[, ...])</p></td>
+<td><p>The function downloads parks areas with a certain extent and converts them to LineString features.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.along_water.html#cityImage.along_water" title="cityImage.along_water"><code class="xref py py-obj docutils literal notranslate"><span class="pre">along_water</span></code></a>(edges_gdf, barriers_gdf)</p></td>
+<td><p>The function assigns to each street segment in a GeoDataFrame the list of barrierIDs corresponding to waterbodies which lay along the street segment.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.along_within_parks.html#cityImage.along_within_parks" title="cityImage.along_within_parks"><code class="xref py py-obj docutils literal notranslate"><span class="pre">along_within_parks</span></code></a>(edges_gdf, barriers_gdf)</p></td>
+<td><p>The function assigns to each street segment in a GeoDataFrame the list of barrierIDs corresponding to parks which lie along the street segments.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.barriers_along.html#cityImage.barriers_along" title="cityImage.barriers_along"><code class="xref py py-obj docutils literal notranslate"><span class="pre">barriers_along</span></code></a>(ix_line, edges_gdf, ...[, offset])</p></td>
+<td><p>The function returns list of barrierIDs along the edgeID of a street segment, given a certain offset.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.assign_structuring_barriers.html#cityImage.assign_structuring_barriers" title="cityImage.assign_structuring_barriers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">assign_structuring_barriers</span></code></a>(edges_gdf, ...)</p></td>
+<td><p>The function return a GeoDataFrame with an added boolean column field that indicates whether the street segment intersects a separating/structuring barrier.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.get_barriers.html#cityImage.get_barriers" title="cityImage.get_barriers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_barriers</span></code></a>(place, download_method[, ...])</p></td>
+<td><p>The function returns all the barriers (water, park, railways, major roads) within a certain urban area.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="centrality">
+<h2>centrality<a class="headerlink" href="#centrality" title="Link to this heading">#</a></h2>
+<table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.calculate_centrality.html#cityImage.calculate_centrality" title="cityImage.calculate_centrality"><code class="xref py py-obj docutils literal notranslate"><span class="pre">calculate_centrality</span></code></a>(nx_graph[, measure, ...])</p></td>
+<td><p>Convert a NetworkX graph to an igraph graph and calculate centrality measures.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.reach_centrality.html#cityImage.reach_centrality" title="cityImage.reach_centrality"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reach_centrality</span></code></a>(ig_graph, weight, radius, ...)</p></td>
+<td><p>Calculates the reach centrality of each node in the graph G based on the attribute of the reachable nodes within a given radius.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.straightness_centrality.html#cityImage.straightness_centrality" title="cityImage.straightness_centrality"><code class="xref py py-obj docutils literal notranslate"><span class="pre">straightness_centrality</span></code></a>(ig_graph, weight[, ...])</p></td>
+<td><p>Calculate the straightness centrality for each node in the graph.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.weight_nodes.html#cityImage.weight_nodes" title="cityImage.weight_nodes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">weight_nodes</span></code></a>(nodes_gdf, services_gdf, ...[, ...])</p></td>
+<td><p>Given a nodes' and a services/points' GeoDataFrame, the function assigns an attribute to nodes in the graph G (prevously derived from nodes_gdf) based on the amount of features in the services_gdf in a buffer around each node.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.append_edges_metrics.html#cityImage.append_edges_metrics" title="cityImage.append_edges_metrics"><code class="xref py py-obj docutils literal notranslate"><span class="pre">append_edges_metrics</span></code></a>(edges_gdf, G, dicts, ...)</p></td>
+<td><p></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="clean">
+<h2>clean<a class="headerlink" href="#clean" title="Link to this heading">#</a></h2>
+<table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.clean_network.html#cityImage.clean_network" title="cityImage.clean_network"><code class="xref py py-obj docutils literal notranslate"><span class="pre">clean_network</span></code></a>(nodes_gdf, edges_gdf[, ...])</p></td>
+<td><p>It calls a series of functions to clean nodes and edges GeoDataFrames. It handles:     - pseudo-nodes;     - duplicate-geometries (nodes and edges);     - disconnected islands - optional;     - edges with different geometry but same nodes - optional;     - dead-ends - optional;     - self-loops - optional;     - toplogy issues - optional.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.simplify_graph.html#cityImage.simplify_graph" title="cityImage.simplify_graph"><code class="xref py py-obj docutils literal notranslate"><span class="pre">simplify_graph</span></code></a>(nodes_gdf, edges_gdf[, ...])</p></td>
+<td><p>The function identify pseudo-nodes, namely nodes that represent intersection between only 2 segments.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.duplicate_nodes.html#cityImage.duplicate_nodes" title="cityImage.duplicate_nodes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">duplicate_nodes</span></code></a>(nodes_gdf, edges_gdf[, nodeID])</p></td>
+<td><p>The function checks the existencce of duplicate nodes through the network, on the basis of geometry.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.fix_dead_ends.html#cityImage.fix_dead_ends" title="cityImage.fix_dead_ends"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fix_dead_ends</span></code></a>(nodes_gdf, edges_gdf)</p></td>
+<td><p>The function removes dead-ends.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.is_nodes_simplified.html#cityImage.is_nodes_simplified" title="cityImage.is_nodes_simplified"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_nodes_simplified</span></code></a>(nodes_gdf, edges_gdf[, ...])</p></td>
+<td><p>The function checks the presence of pseudo-junctions, by using the edges_gdf GeoDataFrame.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.is_edges_simplified.html#cityImage.is_edges_simplified" title="cityImage.is_edges_simplified"><code class="xref py py-obj docutils literal notranslate"><span class="pre">is_edges_simplified</span></code></a>(edges_gdf, ...)</p></td>
+<td><p>The function checks the presence of possible duplicate geometries in the edges_gdf GeoDataFrame.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.merge_pseudo_edges.html#cityImage.merge_pseudo_edges" title="cityImage.merge_pseudo_edges"><code class="xref py py-obj docutils literal notranslate"><span class="pre">merge_pseudo_edges</span></code></a>(first_edge, second_edge, ...)</p></td>
+<td><p>Merge pseudo-edges by updating node and edge information in the corresponding GeoDataFrames.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.simplify_same_vertexes_edges.html#cityImage.simplify_same_vertexes_edges" title="cityImage.simplify_same_vertexes_edges"><code class="xref py py-obj docutils literal notranslate"><span class="pre">simplify_same_vertexes_edges</span></code></a>(nodes_gdf, ...)</p></td>
+<td><p>This function is used to simplify edges that have the same start and end point (i.e. 'u' and 'v' values) in the edges_gdf GeoDataFrame.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.clean_edges.html#cityImage.clean_edges" title="cityImage.clean_edges"><code class="xref py py-obj docutils literal notranslate"><span class="pre">clean_edges</span></code></a>(nodes_gdf, edges_gdf[, ...])</p></td>
+<td><p></p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.fix_network_topology.html#cityImage.fix_network_topology" title="cityImage.fix_network_topology"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fix_network_topology</span></code></a>(nodes_gdf, edges_gdf)</p></td>
+<td><p>Fix the network topology by splitting intersecting edges and adding fixed edges to the network.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.fix_self_loops.html#cityImage.fix_self_loops" title="cityImage.fix_self_loops"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fix_self_loops</span></code></a>(nodes_gdf, edges_gdf)</p></td>
+<td><p>Fix the network topology by removing (fake) self-loops and adding fixed edges.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.remove_disconnected_islands.html#cityImage.remove_disconnected_islands" title="cityImage.remove_disconnected_islands"><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove_disconnected_islands</span></code></a>(nodes_gdf, ...)</p></td>
+<td><p>Remove disconnected islands from a graph.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.correct_edges.html#cityImage.correct_edges" title="cityImage.correct_edges"><code class="xref py py-obj docutils literal notranslate"><span class="pre">correct_edges</span></code></a>(nodes_gdf, edges_gdf)</p></td>
+<td><p>The function adjusts the edges LineString coordinates consistently with their relative u and v nodes' coordinates.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="colors">
+<h2>colors<a class="headerlink" href="#colors" title="Link to this heading">#</a></h2>
+<table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.random_colors_list.html#cityImage.random_colors_list" title="cityImage.random_colors_list"><code class="xref py py-obj docutils literal notranslate"><span class="pre">random_colors_list</span></code></a>(nlabels[, vmin, vmax, hsv])</p></td>
+<td><p>Generates a list of random HSV colors given the number of classes, minimum and maximum values in the HSV spectrum.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.rand_cmap.html#cityImage.rand_cmap" title="cityImage.rand_cmap"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rand_cmap</span></code></a>(nlabels[, type_color])</p></td>
+<td><p>It generates a categorical random color map, given the number of classes</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.kindlmann.html#cityImage.kindlmann" title="cityImage.kindlmann"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kindlmann</span></code></a>()</p></td>
+<td><p>It returns a Kindlmann color map.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.normalize.html#cityImage.normalize" title="cityImage.normalize"><code class="xref py py-obj docutils literal notranslate"><span class="pre">normalize</span></code></a>(n, range1, range2)</p></td>
+<td><p>Normalizes a value <cite>n</cite> from one range to another range.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.lighten_color.html#cityImage.lighten_color" title="cityImage.lighten_color"><code class="xref py py-obj docutils literal notranslate"><span class="pre">lighten_color</span></code></a>(color[, amount])</p></td>
+<td><p>Lightens the given color by multiplying (1-luminosity) by the given amount.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="graph">
+<h2>graph<a class="headerlink" href="#graph" title="Link to this heading">#</a></h2>
+<table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.graph_fromGDF.html#cityImage.graph_fromGDF" title="cityImage.graph_fromGDF"><code class="xref py py-obj docutils literal notranslate"><span class="pre">graph_fromGDF</span></code></a>(nodes_gdf, edges_gdf[, nodeID])</p></td>
+<td><p>From two GeoDataFrames (nodes and edges), it creates a NetworkX undirected Graph.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.multiGraph_fromGDF.html#cityImage.multiGraph_fromGDF" title="cityImage.multiGraph_fromGDF"><code class="xref py py-obj docutils literal notranslate"><span class="pre">multiGraph_fromGDF</span></code></a>(nodes_gdf, edges_gdf, ...)</p></td>
+<td><p>From two GeoDataFrames (nodes and edges), it creates a NetworkX.MultiGraph.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.dual_gdf.html#cityImage.dual_gdf" title="cityImage.dual_gdf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dual_gdf</span></code></a>(nodes_gdf, edges_gdf, epsg[, ...])</p></td>
+<td><p>It creates two dataframes that are later exploited to generate the dual graph of a street network.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.dual_graph_fromGDF.html#cityImage.dual_graph_fromGDF" title="cityImage.dual_graph_fromGDF"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dual_graph_fromGDF</span></code></a>(nodes_dual, edges_dual)</p></td>
+<td><p>The function generates a NetworkX.Graph from dual-nodes and -edges GeoDataFrames.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.dual_id_dict.html#cityImage.dual_id_dict" title="cityImage.dual_id_dict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dual_id_dict</span></code></a>(dict_values, G, node_attribute)</p></td>
+<td><p>It can be used when one deals with a dual graph and wants to link analyses conducted on this representation to the primal graph.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.nodes_degree.html#cityImage.nodes_degree" title="cityImage.nodes_degree"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nodes_degree</span></code></a>(edges_gdf)</p></td>
+<td><p>It returns a dictionary where keys are nodes identifier (e.g. &quot;nodeID&quot;) and values their degree.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="land-use">
+<h2>land_use<a class="headerlink" href="#land-use" title="Link to this heading">#</a></h2>
+<table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.classify_land_use.html#cityImage.classify_land_use" title="cityImage.classify_land_use"><code class="xref py py-obj docutils literal notranslate"><span class="pre">classify_land_use</span></code></a>(buildings_gdf, ...)</p></td>
+<td><p>The function reclassifies land-use descriptors in a land-use field according to the categorisation presented below.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.land_use_from_other_gdf.html#cityImage.land_use_from_other_gdf" title="cityImage.land_use_from_other_gdf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">land_use_from_other_gdf</span></code></a>(buildings_gdf, ...)</p></td>
+<td><p>It assigns land-use attributes to buildings in a buildings GeoDataFrame, looking for possible matches in &quot;other_gdf&quot;, a Polygon or Point GeoDataFrame Polygon: Possible matches here means the buildings in &quot;other_gdf&quot; whose area of interesection with the examined building (y), covers at least 60% of the building's (y) area.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="landmarks">
+<h2>landmarks<a class="headerlink" href="#landmarks" title="Link to this heading">#</a></h2>
+<table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.get_buildings_fromFile.html#cityImage.get_buildings_fromFile" title="cityImage.get_buildings_fromFile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_buildings_fromFile</span></code></a>(path, epsg[, ...])</p></td>
+<td><p>The function take a building footprint .shp or .gpkg, returns two GDFs of buildings: the case-study area, plus a larger area containing other buildings, called &quot;obstructions&quot; (for analyses which include adjacent buildings).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.get_buildings_fromOSM.html#cityImage.get_buildings_fromOSM" title="cityImage.get_buildings_fromOSM"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_buildings_fromOSM</span></code></a>(place, download_method)</p></td>
+<td><p>The function downloads and cleans building footprint geometries and create a buildings GeoDataFrames for the area of interest.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.structural_score.html#cityImage.structural_score" title="cityImage.structural_score"><code class="xref py py-obj docutils literal notranslate"><span class="pre">structural_score</span></code></a>(buildings_gdf, ...[, ...])</p></td>
+<td><p>The function computes the &quot;Structural Landmark Component&quot; sub-scores of each building.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.number_neighbours.html#cityImage.number_neighbours" title="cityImage.number_neighbours"><code class="xref py py-obj docutils literal notranslate"><span class="pre">number_neighbours</span></code></a>(geometry, ...)</p></td>
+<td><p>The function counts the number of neighbours, in a GeoDataFrame, around a given geometry, within a research radius.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.visibility_score.html#cityImage.visibility_score" title="cityImage.visibility_score"><code class="xref py py-obj docutils literal notranslate"><span class="pre">visibility_score</span></code></a>(buildings_gdf[, ...])</p></td>
+<td><p>The function calculates the sub-scores of the &quot;Visibility Landmark Component&quot;.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.facade_area.html#cityImage.facade_area" title="cityImage.facade_area"><code class="xref py py-obj docutils literal notranslate"><span class="pre">facade_area</span></code></a>(building_geometry, building_height)</p></td>
+<td><p>Compute the approximate facade area of a building given its geometry and height.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.get_historical_buildings_fromOSM.html#cityImage.get_historical_buildings_fromOSM" title="cityImage.get_historical_buildings_fromOSM"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_historical_buildings_fromOSM</span></code></a>(place, ...)</p></td>
+<td><p>The function downloads and cleans building footprint geometries and create a buildings GeoDataFrames for the area of interest.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.cultural_score.html#cityImage.cultural_score" title="cityImage.cultural_score"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cultural_score</span></code></a>(buildings_gdf[, ...])</p></td>
+<td><p>The function computes the &quot;Cultural Landmark Component&quot; based on the number of features listed in historical/cultural landmarks datasets.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.pragmatic_score.html#cityImage.pragmatic_score" title="cityImage.pragmatic_score"><code class="xref py py-obj docutils literal notranslate"><span class="pre">pragmatic_score</span></code></a>(buildings_gdf[, research_radius])</p></td>
+<td><p>The function computes the &quot;Pragmatic Landmark Component&quot; based on the frequency, and therefore unexpectedness, of a land_use class in an area around a building.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.compute_global_scores.html#cityImage.compute_global_scores" title="cityImage.compute_global_scores"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_global_scores</span></code></a>(buildings_gdf, ...)</p></td>
+<td><p>Computes the component and global scores for a buildings GeoDataFrame, rescaling values when necessary and assigning weights to the different properties measured.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.compute_local_scores.html#cityImage.compute_local_scores" title="cityImage.compute_local_scores"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_local_scores</span></code></a>(buildings_gdf, ...[, ...])</p></td>
+<td><p>The function computes landmarkness at the local level.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="load">
+<h2>load<a class="headerlink" href="#load" title="Link to this heading">#</a></h2>
+<table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.get_network_fromOSM.html#cityImage.get_network_fromOSM" title="cityImage.get_network_fromOSM"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_network_fromOSM</span></code></a>(place, download_method)</p></td>
+<td><p>The function downloads and creates a simplified OSMNx graph for a selected area's street network.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.get_network_fromFile.html#cityImage.get_network_fromFile" title="cityImage.get_network_fromFile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_network_fromFile</span></code></a>(path, epsg[, ...])</p></td>
+<td><p>The function loads a vector lines from a specified directory, along with the epsg coordinate code.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.get_network_fromGDF.html#cityImage.get_network_fromGDF" title="cityImage.get_network_fromGDF"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_network_fromGDF</span></code></a>(edges_gdf, epsg[, ...])</p></td>
+<td><p>The function loads a vector lines shapefile from a given LineString GeoDataFrame, along with the epsg coordinate code.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.obtain_nodes_gdf.html#cityImage.obtain_nodes_gdf" title="cityImage.obtain_nodes_gdf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">obtain_nodes_gdf</span></code></a>(edges_gdf, crs)</p></td>
+<td><p>It obtains the nodes GeoDataFrame from the unique coordinates pairs in the edges_gdf GeoDataFrame.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.join_nodes_edges_by_coordinates.html#cityImage.join_nodes_edges_by_coordinates" title="cityImage.join_nodes_edges_by_coordinates"><code class="xref py py-obj docutils literal notranslate"><span class="pre">join_nodes_edges_by_coordinates</span></code></a>(nodes_gdf, ...)</p></td>
+<td><p>The function merge the u-v nodes information, from the nodes GeoDataFrame, with the edges_gdf GeoDataFrame.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.reset_index_graph_gdfs.html#cityImage.reset_index_graph_gdfs" title="cityImage.reset_index_graph_gdfs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reset_index_graph_gdfs</span></code></a>(nodes_gdf, edges_gdf)</p></td>
+<td><p>The function simply resets the indexes of the two dataframes.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="plot">
+<h2>plot<a class="headerlink" href="#plot" title="Link to this heading">#</a></h2>
+<table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.plot_gdf.html#cityImage.plot_gdf" title="cityImage.plot_gdf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_gdf</span></code></a>(gdf[, column, title, ...])</p></td>
+<td><p>It plots the geometries of a single GeoDataFrame, coloring on the bases of the values contained in column, using a given scheme.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.plot_grid_gdfs_column.html#cityImage.plot_grid_gdfs_column" title="cityImage.plot_grid_gdfs_column"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_grid_gdfs_column</span></code></a>([gdfs, column, ncols, ...])</p></td>
+<td><p>It plots the geometries of different GeoDataFrames, coloring on the bases of the values contained in the provided column, using a given scheme.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.plot_grid_gdf_columns.html#cityImage.plot_grid_gdf_columns" title="cityImage.plot_grid_gdf_columns"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_grid_gdf_columns</span></code></a>(gdf[, columns, ncols, ...])</p></td>
+<td><p>It plots the geometries of a GeoDataFrame, coloring on the bases of the values contained in two or more provided columns, using a given scheme.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="regions">
+<h2>regions<a class="headerlink" href="#regions" title="Link to this heading">#</a></h2>
+<table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.identify_regions.html#cityImage.identify_regions" title="cityImage.identify_regions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">identify_regions</span></code></a>(dual_graph, edges_gdf[, weight])</p></td>
+<td><p>It identifies regions in the street network, using the dual graph representation.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.identify_regions_primal.html#cityImage.identify_regions_primal" title="cityImage.identify_regions_primal"><code class="xref py py-obj docutils literal notranslate"><span class="pre">identify_regions_primal</span></code></a>(graph, nodes_gdf[, ...])</p></td>
+<td><p>It identifies regions in the street network, using the primal graph representation.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.polygonise_partitions.html#cityImage.polygonise_partitions" title="cityImage.polygonise_partitions"><code class="xref py py-obj docutils literal notranslate"><span class="pre">polygonise_partitions</span></code></a>(edges_gdf, column[, ...])</p></td>
+<td><p>Given districts assign to street segments it create polygons representing districts, either by creating a convex_hull for each group of segments or simply polygonising them.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.district_to_nodes_from_edges.html#cityImage.district_to_nodes_from_edges" title="cityImage.district_to_nodes_from_edges"><code class="xref py py-obj docutils literal notranslate"><span class="pre">district_to_nodes_from_edges</span></code></a>(nodes_gdf, ...)</p></td>
+<td><p>It assigns districts' identifiers to the street junctions (nodes), when the districts are assigned to the street segments (edges), i.e. communities are identified on the dual graph.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.districts_to_edges_from_nodes.html#cityImage.districts_to_edges_from_nodes" title="cityImage.districts_to_edges_from_nodes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">districts_to_edges_from_nodes</span></code></a>(nodes_gdf, ...)</p></td>
+<td><p>It assigns districts' identifiers to the street segments (edges), when the districts are assigned to the junctions(nodes), i.e. communities are identified on the primal graph.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.district_to_nodes_from_polygons.html#cityImage.district_to_nodes_from_polygons" title="cityImage.district_to_nodes_from_polygons"><code class="xref py py-obj docutils literal notranslate"><span class="pre">district_to_nodes_from_polygons</span></code></a>(nodes_gdf, ...)</p></td>
+<td><p>It assigns districts' identifiers to the street junctions (nodes), from polygons representing district areas.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.amend_nodes_membership.html#cityImage.amend_nodes_membership" title="cityImage.amend_nodes_membership"><code class="xref py py-obj docutils literal notranslate"><span class="pre">amend_nodes_membership</span></code></a>(nodes_gdf, edges_gdf, ...)</p></td>
+<td><p>Amend the membership of nodes to districts based on connectivity and minimum district size.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.find_gateways.html#cityImage.find_gateways" title="cityImage.find_gateways"><code class="xref py py-obj docutils literal notranslate"><span class="pre">find_gateways</span></code></a>(nodes_gdf, edges_gdf, column)</p></td>
+<td><p>This function identifies junctions lying on the boundary of a district, thus connected to other districts through &quot;bridge&quot; edges.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="utilities">
+<h2>utilities<a class="headerlink" href="#utilities" title="Link to this heading">#</a></h2>
+<table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.downloader.html#cityImage.downloader" title="cityImage.downloader"><code class="xref py py-obj docutils literal notranslate"><span class="pre">downloader</span></code></a>(place, download_method[, tags, ...])</p></td>
+<td><p>The function downloads certain geometries from OSM, by means of OSMNX functions.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.scaling_columnDF.html#cityImage.scaling_columnDF" title="cityImage.scaling_columnDF"><code class="xref py py-obj docutils literal notranslate"><span class="pre">scaling_columnDF</span></code></a>(series[, inverse])</p></td>
+<td><p>Rescales the values in a dataframe's column from 0 to 1 or from 1 to 0.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.dict_to_df.html#cityImage.dict_to_df" title="cityImage.dict_to_df"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dict_to_df</span></code></a>(list_dict, list_col)</p></td>
+<td><p>It takes a list of dictionaries and creates from them a pandas DataFrame.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.center_line.html#cityImage.center_line" title="cityImage.center_line"><code class="xref py py-obj docutils literal notranslate"><span class="pre">center_line</span></code></a>(line_geometryA, line_geometryB)</p></td>
+<td><p>Given two LineStrings, it derives the corresponding center line</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.min_distance_geometry_gdf.html#cityImage.min_distance_geometry_gdf" title="cityImage.min_distance_geometry_gdf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min_distance_geometry_gdf</span></code></a>(geometry, gdf)</p></td>
+<td><p>Given a geometry and a GeoDataFrame, it returns the minimum distance between the geometry and the GeoDataFrame.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.split_line_at_MultiPoint.html#cityImage.split_line_at_MultiPoint" title="cityImage.split_line_at_MultiPoint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">split_line_at_MultiPoint</span></code></a>(line_geometry, ...)</p></td>
+<td><p>The function checks whether the coordinates of one or more Points in a Point Collections are part of the sequence of coordinates of a LineString.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.merge_line_geometries.html#cityImage.merge_line_geometries" title="cityImage.merge_line_geometries"><code class="xref py py-obj docutils literal notranslate"><span class="pre">merge_line_geometries</span></code></a>(line_geometries)</p></td>
+<td><p>Given a list of LineString geometries, this function reorders the geometries in the correct sequence based on their starting and ending points, and returns a merged LineString feature.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.envelope_wgs.html#cityImage.envelope_wgs" title="cityImage.envelope_wgs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">envelope_wgs</span></code></a>(gdf)</p></td>
+<td><p>Given a GeoDataFrame it derives its envelope in the WGS coordinate system.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.convex_hull_wgs.html#cityImage.convex_hull_wgs" title="cityImage.convex_hull_wgs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">convex_hull_wgs</span></code></a>(gdf)</p></td>
+<td><p>Given a GeoDataFrame it derives its convex hull in the WGS coordinate system.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.rescale_ranges.html#cityImage.rescale_ranges" title="cityImage.rescale_ranges"><code class="xref py py-obj docutils literal notranslate"><span class="pre">rescale_ranges</span></code></a>(n, range1, range2)</p></td>
+<td><p>Given a value n and the range which it belongs to, the function rescale the value, between a different range.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.gdf_from_geometries.html#cityImage.gdf_from_geometries" title="cityImage.gdf_from_geometries"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gdf_from_geometries</span></code></a>(geometries, crs)</p></td>
+<td><p>The function creates a GeoDataFrame from a list of geometries.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.line_at_centroid.html#cityImage.line_at_centroid" title="cityImage.line_at_centroid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">line_at_centroid</span></code></a>(line_geometry, offset)</p></td>
+<td><p>Given a LineString, it creates a perpendicular LineString that intersects the given geometry at its centroid.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.sum_at_centroid.html#cityImage.sum_at_centroid" title="cityImage.sum_at_centroid"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sum_at_centroid</span></code></a>(line_geometry, lines_gdf, column)</p></td>
+<td><p>Given a LineString geometry, it sums the column values of all the features in a LineString GeoDataFrame intersecting the line.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.polygons_gdf_multiparts_to_singleparts.html#cityImage.polygons_gdf_multiparts_to_singleparts" title="cityImage.polygons_gdf_multiparts_to_singleparts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">polygons_gdf_multiparts_to_singleparts</span></code></a>(...)</p></td>
+<td><p>The function extracts the individual parts of the multi-part geometries and creates a new GeoDataFrame with single part geometries.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.fix_multiparts_LineString_gdf.html#cityImage.fix_multiparts_LineString_gdf" title="cityImage.fix_multiparts_LineString_gdf"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fix_multiparts_LineString_gdf</span></code></a>(gdf)</p></td>
+<td><p>Fixes MultiLineString geometries in a GeoDataFrame by merging them into LineString geometries.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.remove_lists_columns.html#cityImage.remove_lists_columns" title="cityImage.remove_lists_columns"><code class="xref py py-obj docutils literal notranslate"><span class="pre">remove_lists_columns</span></code></a>(df)</p></td>
+<td><p>For each cell in the DataFrame, if the cell contains a list, update it to keep only the first element of the list.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.polygon_2d_to_3d.html#cityImage.polygon_2d_to_3d" title="cityImage.polygon_2d_to_3d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">polygon_2d_to_3d</span></code></a>(building_polygon, base, height)</p></td>
+<td><p>Convert a 2D polygon to a 3D polygon.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="visibility">
+<h2>visibility<a class="headerlink" href="#visibility" title="Link to this heading">#</a></h2>
+<table class="autosummary longtable table autosummary">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.visibility_polygon2d.html#cityImage.visibility_polygon2d" title="cityImage.visibility_polygon2d"><code class="xref py py-obj docutils literal notranslate"><span class="pre">visibility_polygon2d</span></code></a>(building_geometry, ...)</p></td>
+<td><p>It creates a 2d polygon of visibility around a polygon geometry (e.g. building footprint) and computes its area.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="generated/cityImage.compute_3d_sight_lines.html#cityImage.compute_3d_sight_lines" title="cityImage.compute_3d_sight_lines"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_3d_sight_lines</span></code></a>(nodes_gdf, buildings_gdf)</p></td>
+<td><p>Computes the 3D sight lines between observer points in a Point GeoDataFrame and target buildings, based on a given distance along the buildings' exterior and a minimum distance between observer and target (e.g. lines will not be constructed for observer points and targets whose distance is lower than &quot;distance_min_observer_target&quot;).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="generated/cityImage.intervisibility.html#cityImage.intervisibility" title="cityImage.intervisibility"><code class="xref py py-obj docutils literal notranslate"><span class="pre">intervisibility</span></code></a>(line2d, buildingID, start, ...)</p></td>
+<td><p>Check if a 3d line of sight between two points is obstructed by any buildings.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#angles">angles</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#barriers">Barriers</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#centrality">centrality</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#clean">clean</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#colors">colors</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#graph">graph</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#land-use">land_use</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#landmarks">landmarks</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#load">load</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#plot">plot</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#regions">regions</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#utilities">utilities</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#visibility">visibility</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="_sources/api.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae"></script>
+<script src="_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2024, Gabriele Filomena.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.5.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.15.2.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

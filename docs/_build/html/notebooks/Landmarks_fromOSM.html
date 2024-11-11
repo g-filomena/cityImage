@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Landmarks (OSM Data) &#8212; cityImage 0.2 documentation</title>
+    <title>Landmarks (OSM Data) &#8212; cityImage 1.2 documentation</title>
   
   
   
@@ -36,8 +36,8 @@
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
   <script src="../_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
 
-    <script src="../_static/documentation_options.js?v=10f1778b"></script>
-    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/documentation_options.js?v=61243dd2"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
@@ -119,7 +119,7 @@
   
   
   
-    <p class="title logo__title">cityImage 0.2 documentation</p>
+    <p class="title logo__title">cityImage 1.2 documentation</p>
   
 </a></div>
     
@@ -142,7 +142,7 @@
 
                     <li class="nav-item">
                       <a class="nav-link nav-internal" href="userGuide.html">
-                        User Guide
+                        userGuide
                       </a>
                     </li>
                 
@@ -180,6 +180,34 @@ document.write(`
   </button>
 `);
 </script></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/cityImage" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/gfilo" title="Twitter" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
       
     </div>
     
@@ -239,7 +267,7 @@ document.write(`
 
                     <li class="nav-item">
                       <a class="nav-link nav-internal" href="userGuide.html">
-                        User Guide
+                        userGuide
                       </a>
                     </li>
                 
@@ -263,6 +291,34 @@ document.write(`
   </button>
 `);
 </script></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/cityImage" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/gfilo" title="Twitter" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
         
       </div>
     
@@ -321,7 +377,7 @@ document.write(`
 <h1>Landmarks (OSM Data)<a class="headerlink" href="#Landmarks-(OSM-Data)" title="Link to this heading">#</a></h1>
 <p>Four scores are here computed to extract computation landmarks: structural, visual, pragmatic. Currently, the user has to provide the building shapefile, collected independently. The height is the only necessary field, plus two datasets containing respectively information about cultural/historical landmarks (e.g. position of listed important buildings) and land-use.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">osmnx</span> <span class="k">as</span> <span class="nn">ox</span><span class="o">,</span> <span class="nn">matplotlib.cm</span> <span class="k">as</span> <span class="nn">cm</span><span class="o">,</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span><span class="o">,</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span><span class="o">,</span> <span class="nn">geopandas</span> <span class="k">as</span> <span class="nn">gpd</span>
@@ -339,8 +395,8 @@ document.write(`
 <section id="Obtaining-the-Data">
 <h2>Obtaining the Data<a class="headerlink" href="#Obtaining-the-Data" title="Link to this heading">#</a></h2>
 <p>Fill the list ‘places’ with the names of the cities of interest. Buildings footprints are dowloaded for each city from OpenStreetMap within a certain distance from the centre of each city. The distance is set by the user. Each geodataframe is projected automatically (check OSMNx documentation for more information). The geodataframes are then cleaned and only relevant columns are kept.</p>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">distance_from_center</span> <span class="o">=</span> <span class="mi">1000</span>
@@ -353,70 +409,9 @@ document.write(`
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area stderr docutils container">
-<div class="highlight"><pre>
-C:\Users\gfilo\AppData\Local\miniconda3\envs\cityImage\Lib\site-packages\cityImage\landmarks.py:137: FutureWarning: A value is trying to be set on a copy of a DataFrame or Series through chained assignment using an inplace method.
-The behavior will change in pandas 3.0. This inplace method will never work because the intermediate object on which we are setting values always behaves as a copy.
-
-For example, when doing &#39;df[col].method(value, inplace=True)&#39;, try using &#39;df.method({col: value}, inplace=True)&#39; or df[col] = df[col].method(value) instead, to perform the operation inplace on the original object.
-
-
-  buildings_gdf[&#39;land_use_raw&#39;].replace(&#39;nan&#39;, np.nan, inplace=True)
-C:\Users\gfilo\AppData\Local\miniconda3\envs\cityImage\Lib\site-packages\cityImage\landmarks.py:137: FutureWarning: Downcasting behavior in `replace` is deprecated and will be removed in a future version. To retain the old behavior, explicitly call `result.infer_objects(copy=False)`. To opt-in to the future behavior, set `pd.set_option(&#39;future.no_silent_downcasting&#39;, True)`
-  buildings_gdf[&#39;land_use_raw&#39;].replace(&#39;nan&#39;, np.nan, inplace=True)
-C:\Users\gfilo\AppData\Local\miniconda3\envs\cityImage\Lib\site-packages\cityImage\landmarks.py:137: FutureWarning: A value is trying to be set on a copy of a DataFrame or Series through chained assignment using an inplace method.
-The behavior will change in pandas 3.0. This inplace method will never work because the intermediate object on which we are setting values always behaves as a copy.
-
-For example, when doing &#39;df[col].method(value, inplace=True)&#39;, try using &#39;df.method({col: value}, inplace=True)&#39; or df[col] = df[col].method(value) instead, to perform the operation inplace on the original object.
-
-
-  buildings_gdf[&#39;land_use_raw&#39;].replace(&#39;nan&#39;, np.nan, inplace=True)
-C:\Users\gfilo\AppData\Local\miniconda3\envs\cityImage\Lib\site-packages\cityImage\landmarks.py:137: FutureWarning: Downcasting behavior in `replace` is deprecated and will be removed in a future version. To retain the old behavior, explicitly call `result.infer_objects(copy=False)`. To opt-in to the future behavior, set `pd.set_option(&#39;future.no_silent_downcasting&#39;, True)`
-  buildings_gdf[&#39;land_use_raw&#39;].replace(&#39;nan&#39;, np.nan, inplace=True)
-C:\Users\gfilo\AppData\Local\miniconda3\envs\cityImage\Lib\site-packages\cityImage\landmarks.py:137: FutureWarning: A value is trying to be set on a copy of a DataFrame or Series through chained assignment using an inplace method.
-The behavior will change in pandas 3.0. This inplace method will never work because the intermediate object on which we are setting values always behaves as a copy.
-
-For example, when doing &#39;df[col].method(value, inplace=True)&#39;, try using &#39;df.method({col: value}, inplace=True)&#39; or df[col] = df[col].method(value) instead, to perform the operation inplace on the original object.
-
-
-  buildings_gdf[&#39;land_use_raw&#39;].replace(&#39;nan&#39;, np.nan, inplace=True)
-C:\Users\gfilo\AppData\Local\miniconda3\envs\cityImage\Lib\site-packages\cityImage\landmarks.py:137: FutureWarning: Downcasting behavior in `replace` is deprecated and will be removed in a future version. To retain the old behavior, explicitly call `result.infer_objects(copy=False)`. To opt-in to the future behavior, set `pd.set_option(&#39;future.no_silent_downcasting&#39;, True)`
-  buildings_gdf[&#39;land_use_raw&#39;].replace(&#39;nan&#39;, np.nan, inplace=True)
-C:\Users\gfilo\AppData\Local\miniconda3\envs\cityImage\Lib\site-packages\cityImage\landmarks.py:137: FutureWarning: A value is trying to be set on a copy of a DataFrame or Series through chained assignment using an inplace method.
-The behavior will change in pandas 3.0. This inplace method will never work because the intermediate object on which we are setting values always behaves as a copy.
-
-For example, when doing &#39;df[col].method(value, inplace=True)&#39;, try using &#39;df.method({col: value}, inplace=True)&#39; or df[col] = df[col].method(value) instead, to perform the operation inplace on the original object.
-
-
-  buildings_gdf[&#39;land_use_raw&#39;].replace(&#39;nan&#39;, np.nan, inplace=True)
-C:\Users\gfilo\AppData\Local\miniconda3\envs\cityImage\Lib\site-packages\cityImage\landmarks.py:137: FutureWarning: Downcasting behavior in `replace` is deprecated and will be removed in a future version. To retain the old behavior, explicitly call `result.infer_objects(copy=False)`. To opt-in to the future behavior, set `pd.set_option(&#39;future.no_silent_downcasting&#39;, True)`
-  buildings_gdf[&#39;land_use_raw&#39;].replace(&#39;nan&#39;, np.nan, inplace=True)
-C:\Users\gfilo\AppData\Local\miniconda3\envs\cityImage\Lib\site-packages\cityImage\landmarks.py:137: FutureWarning: A value is trying to be set on a copy of a DataFrame or Series through chained assignment using an inplace method.
-The behavior will change in pandas 3.0. This inplace method will never work because the intermediate object on which we are setting values always behaves as a copy.
-
-For example, when doing &#39;df[col].method(value, inplace=True)&#39;, try using &#39;df.method({col: value}, inplace=True)&#39; or df[col] = df[col].method(value) instead, to perform the operation inplace on the original object.
-
-
-  buildings_gdf[&#39;land_use_raw&#39;].replace(&#39;nan&#39;, np.nan, inplace=True)
-C:\Users\gfilo\AppData\Local\miniconda3\envs\cityImage\Lib\site-packages\cityImage\landmarks.py:137: FutureWarning: Downcasting behavior in `replace` is deprecated and will be removed in a future version. To retain the old behavior, explicitly call `result.infer_objects(copy=False)`. To opt-in to the future behavior, set `pd.set_option(&#39;future.no_silent_downcasting&#39;, True)`
-  buildings_gdf[&#39;land_use_raw&#39;].replace(&#39;nan&#39;, np.nan, inplace=True)
-C:\Users\gfilo\AppData\Local\miniconda3\envs\cityImage\Lib\site-packages\cityImage\landmarks.py:137: FutureWarning: A value is trying to be set on a copy of a DataFrame or Series through chained assignment using an inplace method.
-The behavior will change in pandas 3.0. This inplace method will never work because the intermediate object on which we are setting values always behaves as a copy.
-
-For example, when doing &#39;df[col].method(value, inplace=True)&#39;, try using &#39;df.method({col: value}, inplace=True)&#39; or df[col] = df[col].method(value) instead, to perform the operation inplace on the original object.
-
-
-  buildings_gdf[&#39;land_use_raw&#39;].replace(&#39;nan&#39;, np.nan, inplace=True)
-C:\Users\gfilo\AppData\Local\miniconda3\envs\cityImage\Lib\site-packages\cityImage\landmarks.py:137: FutureWarning: Downcasting behavior in `replace` is deprecated and will be removed in a future version. To retain the old behavior, explicitly call `result.infer_objects(copy=False)`. To opt-in to the future behavior, set `pd.set_option(&#39;future.no_silent_downcasting&#39;, True)`
-  buildings_gdf[&#39;land_use_raw&#39;].replace(&#39;nan&#39;, np.nan, inplace=True)
-</pre></div></div>
-</div>
 <p><strong>Visualisation</strong></p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">plot_grid_gdfs_column</span><span class="p">(</span><span class="n">gdfs</span> <span class="o">=</span> <span class="n">buildings_gdfs</span><span class="p">,</span> <span class="n">titles</span> <span class="o">=</span> <span class="n">places</span><span class="p">,</span> <span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">15</span><span class="p">),</span> <span class="n">color</span> <span class="o">=</span> <span class="s1">&#39;grey&#39;</span><span class="p">,</span> <span class="n">black_background</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -443,25 +438,139 @@ C:\Users\gfilo\AppData\Local\miniconda3\envs\cityImage\Lib\site-packages\cityIma
 <li><p>The number of adjacent buildings, within the given <code class="docutils literal notranslate"><span class="pre">neighbours_radius</span></code>, around it.</p></li>
 <li><p>A measure of 2d advance visibility, expanded till a maximum distance from the center of the building on the basis of the <code class="docutils literal notranslate"><span class="pre">advance_vis_expansion_distance</span></code> parameter.</p></li>
 </ul>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">sn</span> <span class="o">=</span> <span class="p">[]</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">edges_graphs</span> <span class="o">=</span> <span class="p">[]</span>
 <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">city</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">places</span><span class="p">):</span>
     <span class="c1"># reading the street network</span>
     <span class="n">_</span><span class="p">,</span> <span class="n">edges_graph</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">get_network_fromOSM</span><span class="p">(</span><span class="n">place</span> <span class="o">=</span> <span class="n">city</span><span class="p">,</span> <span class="n">download_method</span> <span class="o">=</span> <span class="s1">&#39;distance_from_address&#39;</span><span class="p">,</span>
                                             <span class="n">distance</span> <span class="o">=</span> <span class="n">distance_from_center</span><span class="p">,</span>
-                                            <span class="n">network_type</span> <span class="o">=</span> <span class="s1">&#39;walk&#39;</span><span class="p">,</span> <span class="n">epsg</span> <span class="o">=</span> <span class="n">epsg</span><span class="p">)</span>
-    <span class="n">ox</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">project_gdf</span><span class="p">(</span><span class="n">streets_gdf</span><span class="p">)</span>
-    <span class="n">sn</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">streets_gdf</span><span class="p">)</span>
+                                            <span class="n">network_type</span> <span class="o">=</span> <span class="s1">&#39;walk&#39;</span><span class="p">)</span>
+    <span class="n">ox</span><span class="o">.</span><span class="n">projection</span><span class="o">.</span><span class="n">project_gdf</span><span class="p">(</span><span class="n">edges_graph</span><span class="p">)</span>
+    <span class="n">edges_graphs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">edges_graph</span><span class="p">)</span>
 
 <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">city</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">places</span><span class="p">):</span>
     <span class="c1"># structural score</span>
+    <span class="n">buildings</span> <span class="o">=</span> <span class="n">buildings_gdfs</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
     <span class="n">obstructions</span> <span class="o">=</span> <span class="n">buildings</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
-    <span class="n">edges</span> <span class="o">=</span> <span class="n">sn</span><span class="p">[</span><span class="n">nb</span><span class="p">]</span>
-    <span class="n">buildings_gdfs</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">structural_score</span><span class="p">(</span><span class="n">buildings</span><span class="p">,</span> <span class="n">obstructions</span><span class="p">,</span> <span class="n">edges</span><span class="p">,</span> <span class="n">advance_vis_expansion_distance</span> <span class="o">=</span> <span class="mi">300</span><span class="p">,</span>
+    <span class="n">edges_graph</span> <span class="o">=</span> <span class="n">edges_graphs</span><span class="p">[</span><span class="n">n</span><span class="p">]</span>
+    <span class="n">buildings_gdfs</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">structural_score</span><span class="p">(</span><span class="n">buildings</span><span class="p">,</span> <span class="n">obstructions</span><span class="p">,</span> <span class="n">edges_graph</span><span class="p">,</span> <span class="n">advance_vis_expansion_distance</span> <span class="o">=</span> <span class="mi">300</span><span class="p">,</span>
                                 <span class="n">neighbours_radius</span> <span class="o">=</span> <span class="mi">150</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+<section id="Visual-Component">
+<h2>Visual Component<a class="headerlink" href="#Visual-Component" title="Link to this heading">#</a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">city</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">places</span><span class="p">):</span>
+    <span class="c1"># visual score: not really computed at the moment as in most of the cases height information is not provided in OSM</span>
+    <span class="n">buildings_gdfs</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="n">_</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">visibility_score</span><span class="p">(</span><span class="n">buildings_gdfs</span><span class="p">[</span><span class="n">n</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Cultural-Component">
+<h2>Cultural Component<a class="headerlink" href="#Cultural-Component" title="Link to this heading">#</a></h2>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">city</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">places</span><span class="p">):</span>
+    <span class="c1"># culturalscore:</span>
+    <span class="n">buildings_gdfs</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">cultural_score</span><span class="p">(</span><span class="n">buildings_gdfs</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="n">from_OSM</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Pragmatic-Score">
+<h2>Pragmatic Score<a class="headerlink" href="#Pragmatic-Score" title="Link to this heading">#</a></h2>
+<section id="Land-use">
+<h3>Land use<a class="headerlink" href="#Land-use" title="Link to this heading">#</a></h3>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">adult_entertainment</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;brothel&#39;</span><span class="p">,</span> <span class="s1">&#39;casino&#39;</span><span class="p">,</span> <span class="s1">&#39;gambling&#39;</span><span class="p">,</span> <span class="s1">&#39;nightclub&#39;</span><span class="p">,</span> <span class="s1">&#39;private_club&#39;</span><span class="p">,</span> <span class="s1">&#39;stripclub&#39;</span><span class="p">,</span> <span class="s1">&#39;swingerclub&#39;</span><span class="p">]</span>
+<span class="n">agriculture</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;agricultural and forestry&#39;</span><span class="p">,</span> <span class="s1">&#39;barn&#39;</span><span class="p">,</span> <span class="s1">&#39;building in the botanical garden&#39;</span><span class="p">,</span> <span class="s1">&#39;greenhouse&#39;</span><span class="p">,</span> <span class="s1">&#39;greenhouse (botany)&#39;</span><span class="p">,</span> <span class="s1">&#39;shed&#39;</span><span class="p">,</span> <span class="s1">&#39;silo&#39;</span><span class="p">,</span> <span class="s1">&#39;stable&#39;</span><span class="p">]</span>
+<span class="n">attractions</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;aquarium&#39;</span><span class="p">,</span> <span class="s1">&#39;attraction&#39;</span><span class="p">,</span> <span class="s1">&#39;attraction and leisure&#39;</span><span class="p">,</span> <span class="s1">&#39;attractions&#39;</span><span class="p">,</span> <span class="s1">&#39;bath house, thermal baths&#39;</span><span class="p">,</span> <span class="s1">&#39;boathouse&#39;</span><span class="p">,</span> <span class="s1">&#39;entertainment hall&#39;</span><span class="p">,</span>
+               <span class="s1">&#39;exhibition hall, trade hall&#39;</span><span class="p">,</span> <span class="s1">&#39;information&#39;</span><span class="p">,</span> <span class="s1">&#39;recreation and amusement park&#39;</span><span class="p">,</span> <span class="s1">&#39;sauna&#39;</span><span class="p">,</span> <span class="s1">&#39;terrace&#39;</span><span class="p">,</span>
+               <span class="s1">&#39;tourist information center&#39;</span><span class="p">,</span> <span class="s1">&#39;viewpoint&#39;</span><span class="p">,</span> <span class="s1">&#39;zoo&#39;</span><span class="p">]</span>
+<span class="n">business_services</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;administrative building&#39;</span><span class="p">,</span> <span class="s1">&#39;atm&#39;</span><span class="p">,</span> <span class="s1">&#39;bank&#39;</span><span class="p">,</span> <span class="s1">&#39;bureau_de_change&#39;</span><span class="p">,</span> <span class="s1">&#39;conference_centre&#39;</span><span class="p">,</span> <span class="s1">&#39;coworking_space&#39;</span><span class="p">,</span> <span class="s1">&#39;customs office&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;data_center&#39;</span><span class="p">,</span> <span class="s1">&#39;facility building&#39;</span><span class="p">,</span> <span class="s1">&#39;foundation&#39;</span><span class="p">,</span> <span class="s1">&#39;insurance&#39;</span><span class="p">,</span> <span class="s1">&#39;office&#39;</span><span class="p">,</span> <span class="s1">&#39;offices&#39;</span><span class="p">,</span> <span class="s1">&#39;post&#39;</span><span class="p">,</span> <span class="s1">&#39;post_office&#39;</span><span class="p">,</span> <span class="s1">&#39;post_office;atm&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;residential building with trade and services&#39;</span><span class="p">,</span> <span class="s1">&#39;service&#39;</span><span class="p">,</span> <span class="s1">&#39;stock_exchange&#39;</span><span class="p">,</span> <span class="s1">&#39;tax office&#39;</span><span class="p">,</span> <span class="s1">&#39;tax_office&#39;</span><span class="p">,</span> <span class="s1">&#39;trade and services&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;trade and services building&#39;</span><span class="p">]</span>
+<span class="n">commercial</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;bicycle_rental&#39;</span><span class="p">,</span> <span class="s1">&#39;boat_rental&#39;</span><span class="p">,</span> <span class="s1">&#39;boat_sharing&#39;</span><span class="p">,</span> <span class="s1">&#39;books&#39;</span><span class="p">,</span> <span class="s1">&#39;car_rental&#39;</span><span class="p">,</span> <span class="s1">&#39;car_sharing&#39;</span><span class="p">,</span> <span class="s1">&#39;car wash&#39;</span><span class="p">,</span> <span class="s1">&#39;car_wash&#39;</span><span class="p">,</span> <span class="s1">&#39;commercial&#39;</span><span class="p">,</span>
+              <span class="s1">&#39;commercial and industry buidling&#39;</span><span class="p">,</span> <span class="s1">&#39;commercial and industry building&#39;</span><span class="p">,</span> <span class="s1">&#39;commercial building&#39;</span><span class="p">,</span>
+              <span class="s1">&#39;commercial building to traffic facilities (general)&#39;</span><span class="p">,</span> <span class="s1">&#39;commercial land&#39;</span><span class="p">,</span> <span class="s1">&#39;commercial services&#39;</span><span class="p">,</span> <span class="s1">&#39;commercial;educa&#39;</span><span class="p">,</span>
+              <span class="s1">&#39;crematorium&#39;</span><span class="p">,</span> <span class="s1">&#39;dive_centre&#39;</span><span class="p">,</span> <span class="s1">&#39;driving_school&#39;</span><span class="p">,</span> <span class="s1">&#39;fuel&#39;</span><span class="p">,</span> <span class="s1">&#39;funeral parlor&#39;</span><span class="p">,</span> <span class="s1">&#39;gas station&#39;</span><span class="p">,</span> <span class="s1">&#39;internet_cafe&#39;</span><span class="p">,</span> <span class="s1">&#39;kiosk&#39;</span><span class="p">,</span>
+              <span class="s1">&#39;mall&#39;</span><span class="p">,</span> <span class="s1">&#39;marketplace&#39;</span><span class="p">,</span> <span class="s1">&#39;pharmacy&#39;</span><span class="p">,</span> <span class="s1">&#39;pumping station&#39;</span><span class="p">,</span> <span class="s1">&#39;retail&#39;</span><span class="p">,</span> <span class="s1">&#39;retail;yes&#39;</span><span class="p">,</span> <span class="s1">&#39;shop&#39;</span><span class="p">,</span> <span class="s1">&#39;supermarket&#39;</span><span class="p">]</span>
+<span class="n">culture</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;arts_centre&#39;</span><span class="p">,</span> <span class="s1">&#39;cinema&#39;</span><span class="p">,</span> <span class="s1">&#39;club_house&#39;</span><span class="p">,</span> <span class="s1">&#39;cultural facility&#39;</span><span class="p">,</span> <span class="s1">&#39;cultural_centre&#39;</span><span class="p">,</span> <span class="s1">&#39;culture&#39;</span><span class="p">,</span> <span class="s1">&#39;exhibition_centre&#39;</span><span class="p">,</span> <span class="s1">&#39;gallery&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;music_school&#39;</span><span class="p">,</span> <span class="s1">&#39;museum&#39;</span><span class="p">,</span> <span class="s1">&#39;opera_house&#39;</span><span class="p">,</span> <span class="s1">&#39;planetarium&#39;</span><span class="p">,</span> <span class="s1">&#39;studio&#39;</span><span class="p">,</span> <span class="s1">&#39;theater&#39;</span><span class="p">,</span> <span class="s1">&#39;theatre&#39;</span><span class="p">]</span>
+<span class="n">eating_drinking</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;accommodation, eating and drinking&#39;</span><span class="p">,</span> <span class="s1">&#39;bar&#39;</span><span class="p">,</span> <span class="s1">&#39;bbq&#39;</span><span class="p">,</span> <span class="s1">&#39;biergarten&#39;</span><span class="p">,</span> <span class="s1">&#39;cafe&#39;</span><span class="p">,</span> <span class="s1">&#39;cafe;restaurant&#39;</span><span class="p">,</span> <span class="s1">&#39;fast_food&#39;</span><span class="p">,</span> <span class="s1">&#39;food_court&#39;</span><span class="p">,</span>
+                   <span class="s1">&#39;ice_cream&#39;</span><span class="p">,</span> <span class="s1">&#39;kitchen&#39;</span><span class="p">,</span> <span class="s1">&#39;pub&#39;</span><span class="p">,</span> <span class="s1">&#39;restaurant&#39;</span><span class="p">]</span>
+<span class="n">education_research</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;education and research&#39;</span><span class="p">,</span> <span class="s1">&#39;research&#39;</span><span class="p">,</span> <span class="s1">&#39;research_institute&#39;</span><span class="p">,</span> <span class="s1">&#39;research_institu&#39;</span><span class="p">,</span> <span class="s1">&#39;university&#39;</span><span class="p">,</span> <span class="s1">&#39;university building&#39;</span><span class="p">]</span>
+<span class="n">emergency_service</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;emergency_service&#39;</span><span class="p">,</span> <span class="s1">&#39;fire brigade&#39;</span><span class="p">,</span> <span class="s1">&#39;fire_station&#39;</span><span class="p">,</span> <span class="s1">&#39;police&#39;</span><span class="p">,</span> <span class="s1">&#39;ranger_station&#39;</span><span class="p">,</span> <span class="s1">&#39;resque_station&#39;</span><span class="p">,</span> <span class="s1">&#39;security&#39;</span><span class="p">]</span>
+<span class="n">general_education</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;childcare&#39;</span><span class="p">,</span> <span class="s1">&#39;children home&#39;</span><span class="p">,</span> <span class="s1">&#39;college&#39;</span><span class="p">,</span> <span class="s1">&#39;education&#39;</span><span class="p">,</span> <span class="s1">&#39;education and health&#39;</span><span class="p">,</span> <span class="s1">&#39;general education school&#39;</span><span class="p">,</span> <span class="s1">&#39;kindergarten&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;language_school&#39;</span><span class="p">,</span> <span class="s1">&#39;nursery&#39;</span><span class="p">,</span> <span class="s1">&#39;school&#39;</span><span class="p">]</span>
+<span class="n">hospitality</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;building for accommodation&#39;</span><span class="p">,</span> <span class="s1">&#39;guest_house&#39;</span><span class="p">,</span> <span class="s1">&#39;hostel&#39;</span><span class="p">,</span> <span class="s1">&#39;hotel&#39;</span><span class="p">,</span> <span class="s1">&#39;hotel, motel, pension&#39;</span><span class="p">,</span> <span class="s1">&#39;refuge&#39;</span><span class="p">]</span>
+<span class="n">industrial</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;construction&#39;</span><span class="p">,</span> <span class="s1">&#39;factory&#39;</span><span class="p">,</span> <span class="s1">&#39;gasometer&#39;</span><span class="p">,</span> <span class="s1">&#39;industrial&#39;</span><span class="p">,</span> <span class="s1">&#39;manufacture&#39;</span><span class="p">,</span> <span class="s1">&#39;manufacturing and production&#39;</span><span class="p">,</span> <span class="s1">&#39;production building&#39;</span><span class="p">,</span> <span class="s1">&#39;workshop&#39;</span><span class="p">]</span>
+<span class="n">medical_care</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;clinic&#39;</span><span class="p">,</span> <span class="s1">&#39;dentist&#39;</span><span class="p">,</span> <span class="s1">&#39;doctors&#39;</span><span class="p">,</span> <span class="s1">&#39;healthcare&#39;</span><span class="p">,</span> <span class="s1">&#39;hospital&#39;</span><span class="p">,</span> <span class="s1">&#39;medical care&#39;</span><span class="p">,</span> <span class="s1">&#39;mortuary&#39;</span><span class="p">,</span> <span class="s1">&#39;nursing_home&#39;</span><span class="p">,</span> <span class="s1">&#39;retirement home&#39;</span><span class="p">,</span>
+                <span class="s1">&#39;sanatorium, nursing home&#39;</span><span class="p">,</span> <span class="s1">&#39;veterinary&#39;</span><span class="p">]</span>
+<span class="n">military_detainment</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;barracks&#39;</span><span class="p">,</span> <span class="s1">&#39;bunker&#39;</span><span class="p">,</span> <span class="s1">&#39;bunker, shelter&#39;</span><span class="p">,</span> <span class="s1">&#39;general aviation&#39;</span><span class="p">,</span> <span class="s1">&#39;military&#39;</span><span class="p">,</span> <span class="s1">&#39;penitentiary&#39;</span><span class="p">,</span> <span class="s1">&#39;prison&#39;</span><span class="p">]</span>
+<span class="n">monument</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;arch&#39;</span><span class="p">,</span> <span class="s1">&#39;bridge&#39;</span><span class="p">,</span> <span class="s1">&#39;castle&#39;</span><span class="p">,</span> <span class="s1">&#39;gate&#39;</span><span class="p">,</span> <span class="s1">&#39;gatehouse&#39;</span><span class="p">,</span><span class="s1">&#39;monument&#39;</span><span class="p">,</span> <span class="s1">&#39;palace&#39;</span><span class="p">,</span> <span class="s1">&#39;ruins&#39;</span><span class="p">,</span> <span class="s1">&#39;tower&#39;</span><span class="p">,</span> <span class="s1">&#39;wall&#39;</span><span class="p">]</span>
+<span class="n">other</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;abandoned&#39;</span><span class="p">,</span> <span class="s1">&#39;air_shaft&#39;</span><span class="p">,</span> <span class="s1">&#39;block&#39;</span><span class="p">,</span> <span class="s1">&#39;boat&#39;</span><span class="p">,</span> <span class="s1">&#39;canopy&#39;</span><span class="p">,</span> <span class="s1">&#39;container&#39;</span><span class="p">,</span> <span class="s1">&#39;converter&#39;</span><span class="p">,</span> <span class="s1">&#39;exempt&#39;</span><span class="p">,</span> <span class="s1">&#39;exempt 121a&#39;</span><span class="p">,</span> <span class="s1">&#39;garage&#39;</span><span class="p">,</span>
+         <span class="s1">&#39;garages&#39;</span><span class="p">,</span> <span class="s1">&#39;gazebo&#39;</span><span class="p">,</span> <span class="s1">&#39;houseboat&#39;</span><span class="p">,</span> <span class="s1">&#39;hut&#39;</span><span class="p">,</span> <span class="s1">&#39;no&#39;</span><span class="p">,</span> <span class="s1">&#39;parking&#39;</span><span class="p">,</span> <span class="s1">&#39;pavilion&#39;</span><span class="p">,</span> <span class="s1">&#39;picnic_site&#39;</span><span class="p">,</span> <span class="s1">&#39;roof&#39;</span><span class="p">,</span> <span class="s1">&#39;ship&#39;</span><span class="p">,</span> <span class="s1">&#39;shelter&#39;</span><span class="p">,</span> <span class="s1">&#39;steps&#39;</span><span class="p">,</span> <span class="s1">&#39;storage_tank&#39;</span><span class="p">,</span>
+         <span class="s1">&#39;toilet&#39;</span><span class="p">,</span> <span class="s1">&#39;toilets&#39;</span><span class="p">,</span> <span class="s1">&#39;ventilation_shaft&#39;</span><span class="p">,</span> <span class="s1">&#39;viaduct&#39;</span><span class="p">,</span> <span class="s1">&#39;warehouse&#39;</span><span class="p">]</span>
+<span class="n">public</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;community_centre&#39;</span><span class="p">,</span> <span class="s1">&#39;civic&#39;</span><span class="p">,</span> <span class="s1">&#39;courthouse&#39;</span><span class="p">,</span> <span class="s1">&#39;district government&#39;</span><span class="p">,</span> <span class="s1">&#39;embassy&#39;</span><span class="p">,</span> <span class="s1">&#39;government&#39;</span><span class="p">,</span> <span class="s1">&#39;library&#39;</span><span class="p">,</span> <span class="s1">&#39;public&#39;</span><span class="p">,</span> <span class="s1">&#39;public infrastructure&#39;</span><span class="p">,</span>
+          <span class="s1">&#39;public_building&#39;</span><span class="p">,</span> <span class="s1">&#39;residential building with public facilities&#39;</span><span class="p">,</span> <span class="s1">&#39;townhall&#39;</span><span class="p">,</span> <span class="s1">&#39;trade_union&#39;</span><span class="p">,</span> <span class="s1">&#39;yes;public&#39;</span><span class="p">]</span>
+<span class="n">religious</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;basilica&#39;</span><span class="p">,</span> <span class="s1">&#39;cathedral&#39;</span><span class="p">,</span> <span class="s1">&#39;chapel&#39;</span><span class="p">,</span> <span class="s1">&#39;church&#39;</span><span class="p">,</span> <span class="s1">&#39;convent&#39;</span><span class="p">,</span> <span class="s1">&#39;monastery&#39;</span><span class="p">,</span><span class="s1">&#39;mosque&#39;</span><span class="p">,</span> <span class="s1">&#39;nuns home&#39;</span><span class="p">,</span> <span class="s1">&#39;place_of_worship&#39;</span><span class="p">,</span> <span class="s1">&#39;rectory&#39;</span><span class="p">,</span>
+             <span class="s1">&#39;religious building&#39;</span><span class="p">,</span> <span class="s1">&#39;religious buildings&#39;</span><span class="p">,</span> <span class="s1">&#39;synagogue&#39;</span><span class="p">,</span> <span class="s1">&#39;vocational school&#39;</span><span class="p">]</span>
+<span class="n">residential</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;apartments&#39;</span><span class="p">,</span> <span class="s1">&#39;apartments 4-6 units&#39;</span><span class="p">,</span> <span class="s1">&#39;apartments 7 units above&#39;</span><span class="p">,</span> <span class="s1">&#39;building&#39;</span><span class="p">,</span> <span class="s1">&#39;building usage mixed with living&#39;</span><span class="p">,</span>
+               <span class="s1">&#39;commercial condo unit&#39;</span><span class="p">,</span> <span class="s1">&#39;condominium master&#39;</span><span class="p">,</span> <span class="s1">&#39;condominium parking&#39;</span><span class="p">,</span> <span class="s1">&#39;detached&#39;</span><span class="p">,</span> <span class="s1">&#39;exempt&#39;</span><span class="p">,</span> <span class="s1">&#39;flats&#39;</span><span class="p">,</span> <span class="s1">&#39;house&#39;</span><span class="p">,</span> <span class="s1">&#39;houses&#39;</span><span class="p">,</span>
+               <span class="s1">&#39;mixed use res/comm&#39;</span><span class="p">,</span> <span class="s1">&#39;NaN&#39;</span><span class="p">,</span> <span class="s1">&#39;residential&#39;</span><span class="p">,</span> <span class="s1">&#39;residential building&#39;</span><span class="p">,</span> <span class="s1">&#39;residential condo unit&#39;</span><span class="p">,</span> <span class="s1">&#39;residential land&#39;</span><span class="p">,</span>
+               <span class="s1">&#39;residential single family&#39;</span><span class="p">,</span> <span class="s1">&#39;residential three family&#39;</span><span class="p">,</span> <span class="s1">&#39;residential two family&#39;</span><span class="p">,</span> <span class="s1">&#39;student dorm&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+<span class="n">social</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;community buidling&#39;</span><span class="p">,</span> <span class="s1">&#39;community centre&#39;</span><span class="p">,</span> <span class="s1">&#39;community hall&#39;</span><span class="p">,</span> <span class="s1">&#39;commercial social facility&#39;</span><span class="p">,</span> <span class="s1">&#39;dormitory&#39;</span><span class="p">,</span> <span class="s1">&#39;recreational&#39;</span><span class="p">,</span>
+          <span class="s1">&#39;social centre&#39;</span><span class="p">,</span> <span class="s1">&#39;social_facility&#39;</span><span class="p">,</span> <span class="s1">&#39;social services&#39;</span><span class="p">,</span> <span class="s1">&#39;social services building&#39;</span><span class="p">,</span> <span class="s1">&#39;society&#39;</span><span class="p">]</span>
+<span class="n">sport</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;bowling hall&#39;</span><span class="p">,</span> <span class="s1">&#39;grandstand&#39;</span><span class="p">,</span> <span class="s1">&#39;gym&#39;</span><span class="p">,</span> <span class="s1">&#39;horse riding school&#39;</span><span class="p">,</span> <span class="s1">&#39;indoor swimming pool&#39;</span><span class="p">,</span> <span class="s1">&#39;sport and entertainment&#39;</span><span class="p">,</span>
+         <span class="s1">&#39;sport hall&#39;</span><span class="p">,</span> <span class="s1">&#39;sports building&#39;</span><span class="p">,</span> <span class="s1">&#39;sports hall&#39;</span><span class="p">,</span> <span class="s1">&#39;sports or exercise facility&#39;</span><span class="p">,</span> <span class="s1">&#39;stadium&#39;</span><span class="p">,</span> <span class="s1">&#39;swimming pool&#39;</span><span class="p">]</span>
+<span class="n">transport</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;bus_station&#39;</span><span class="p">,</span> <span class="s1">&#39;ferry_terminal&#39;</span><span class="p">,</span> <span class="s1">&#39;light rapid transit station&#39;</span><span class="p">,</span> <span class="s1">&#39;light rapid transit station and railway station&#39;</span><span class="p">,</span>
+             <span class="s1">&#39;london underground station&#39;</span><span class="p">,</span> <span class="s1">&#39;railway building&#39;</span><span class="p">,</span> <span class="s1">&#39;railway station&#39;</span><span class="p">,</span> <span class="s1">&#39;railway station and london underground station&#39;</span><span class="p">,</span> <span class="s1">&#39;road transport&#39;</span><span class="p">,</span>
+             <span class="s1">&#39;shipping facility building&#39;</span><span class="p">,</span> <span class="s1">&#39;station&#39;</span><span class="p">,</span> <span class="s1">&#39;subway_entrance&#39;</span><span class="p">,</span> <span class="s1">&#39;train_station&#39;</span><span class="p">,</span> <span class="s1">&#39;transport&#39;</span><span class="p">,</span> <span class="s1">&#39;transportation&#39;</span><span class="p">]</span>
+<span class="n">utilities</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;boiler house&#39;</span><span class="p">,</span> <span class="s1">&#39;electricity substation&#39;</span><span class="p">,</span> <span class="s1">&#39;electricity supply&#39;</span><span class="p">,</span> <span class="s1">&#39;electricity&#39;</span><span class="p">,</span> <span class="s1">&#39;gas supply&#39;</span><span class="p">,</span> <span class="s1">&#39;heating plant&#39;</span><span class="p">,</span> <span class="s1">&#39;smokestack&#39;</span><span class="p">,</span>
+             <span class="s1">&#39;supply systems&#39;</span><span class="p">,</span> <span class="s1">&#39;telecommunication&#39;</span><span class="p">,</span> <span class="s1">&#39;waste management&#39;</span><span class="p">,</span> <span class="s1">&#39;waste treatment building&#39;</span><span class="p">,</span> <span class="s1">&#39;waste water treatment plant&#39;</span><span class="p">,</span> <span class="s1">&#39;water supply&#39;</span><span class="p">,</span>
+             <span class="s1">&#39;water works&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">categories</span> <span class="o">=</span> <span class="p">[</span><span class="n">adult_entertainment</span><span class="p">,</span> <span class="n">agriculture</span><span class="p">,</span> <span class="n">attractions</span><span class="p">,</span> <span class="n">business_services</span><span class="p">,</span> <span class="n">commercial</span><span class="p">,</span> <span class="n">culture</span><span class="p">,</span> <span class="n">eating_drinking</span><span class="p">,</span>
+       <span class="n">education_research</span><span class="p">,</span> <span class="n">emergency_service</span><span class="p">,</span> <span class="n">general_education</span><span class="p">,</span> <span class="n">hospitality</span><span class="p">,</span> <span class="n">industrial</span><span class="p">,</span> <span class="n">medical_care</span><span class="p">,</span> <span class="n">military_detainment</span><span class="p">,</span> <span class="n">monument</span><span class="p">,</span>
+       <span class="n">other</span><span class="p">,</span> <span class="n">public</span><span class="p">,</span> <span class="n">religious</span><span class="p">,</span> <span class="n">residential</span><span class="p">,</span> <span class="n">social</span><span class="p">,</span> <span class="n">sport</span><span class="p">,</span> <span class="n">transport</span><span class="p">,</span> <span class="n">utilities</span><span class="p">]</span>
+<span class="n">strings</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;adult_entertainment&#39;</span><span class="p">,</span> <span class="s1">&#39;agriculture&#39;</span><span class="p">,</span> <span class="s1">&#39;attractions&#39;</span><span class="p">,</span> <span class="s1">&#39;business_services&#39;</span><span class="p">,</span> <span class="s1">&#39;commercial&#39;</span><span class="p">,</span> <span class="s1">&#39;culture&#39;</span><span class="p">,</span> <span class="s1">&#39;eating_drinking&#39;</span><span class="p">,</span>
+       <span class="s1">&#39;education_research&#39;</span><span class="p">,</span> <span class="s1">&#39;emergency_service&#39;</span><span class="p">,</span> <span class="s1">&#39;general_education&#39;</span><span class="p">,</span> <span class="s1">&#39;monument&#39;</span><span class="p">,</span> <span class="s1">&#39;hospitality&#39;</span><span class="p">,</span> <span class="s1">&#39;industrial&#39;</span><span class="p">,</span> <span class="s1">&#39;medical_care&#39;</span><span class="p">,</span>
+           <span class="s1">&#39;military_detainment&#39;</span><span class="p">,</span> <span class="s1">&#39;other&#39;</span><span class="p">,</span> <span class="s1">&#39;public&#39;</span><span class="p">,</span> <span class="s1">&#39;religious&#39;</span><span class="p">,</span> <span class="s1">&#39;residential&#39;</span><span class="p">,</span> <span class="s1">&#39;social&#39;</span><span class="p">,</span> <span class="s1">&#39;sport&#39;</span><span class="p">,</span> <span class="s1">&#39;transport&#39;</span><span class="p">,</span> <span class="s1">&#39;utilities&#39;</span><span class="p">]</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">city</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">places</span><span class="p">):</span>
+    <span class="n">all_uses</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span> <span class="k">for</span> <span class="n">sublist</span> <span class="ow">in</span> <span class="n">categories</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">sublist</span><span class="p">]</span>
+    <span class="n">land_uses</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">buildings_gdfs</span><span class="p">[</span><span class="n">n</span><span class="p">]</span><span class="o">.</span><span class="n">land_use_raw</span><span class="o">.</span><span class="n">unique</span><span class="p">())</span>
+    <span class="n">to_categorise</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">land_uses</span> <span class="k">if</span> <span class="n">item</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">all_uses</span><span class="p">]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">to_categorise</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -470,89 +579,76 @@ C:\Users\gfilo\AppData\Local\miniconda3\envs\cityImage\Lib\site-packages\cityIma
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-<span class="ansi-red-intense-fg ansi-bold">---------------------------------------------------------------------------</span>
-<span class="ansi-red-intense-fg ansi-bold">NameError</span>                                 Traceback (most recent call last)
-Cell <span class="ansi-green-intense-fg ansi-bold">In[11], line 6</span>
-<span class="ansi-green-fg">      1</span> sn <span style="color: rgb(98,98,98)">=</span> []
-<span class="ansi-green-fg">      2</span> <span class="ansi-bold" style="color: rgb(0,135,0)">for</span> n, city <span class="ansi-bold" style="color: rgb(175,0,255)">in</span> <span style="color: rgb(0,135,0)">enumerate</span>(places):
-<span class="ansi-green-fg">      3</span>     <span style="color: rgb(95,135,135)"># reading the street network</span>
-<span class="ansi-green-fg">      4</span>     _, edges_graph <span style="color: rgb(98,98,98)">=</span> ci<span style="color: rgb(98,98,98)">.</span>get_network_fromOSM(place <span style="color: rgb(98,98,98)">=</span> city, download_method <span style="color: rgb(98,98,98)">=</span> <span style="color: rgb(175,0,0)">&#39;</span><span style="color: rgb(175,0,0)">distance_from_address</span><span style="color: rgb(175,0,0)">&#39;</span>,
-<span class="ansi-green-fg">      5</span>                                             distance <span style="color: rgb(98,98,98)">=</span> distance_from_center,
-<span class="ansi-green-intense-fg ansi-bold">----&gt; 6</span>                                             network_type <span style="color: rgb(98,98,98)">=</span> <span style="color: rgb(175,0,0)">&#39;</span><span style="color: rgb(175,0,0)">walk</span><span style="color: rgb(175,0,0)">&#39;</span>, epsg <span style="color: rgb(98,98,98)">=</span> <span class="ansi-yellow-bg">crs</span>)
-<span class="ansi-green-fg">      7</span>     ox<span style="color: rgb(98,98,98)">.</span>projection<span style="color: rgb(98,98,98)">.</span>project_gdf(streets_gdf)
-<span class="ansi-green-fg">      8</span>     sn<span style="color: rgb(98,98,98)">.</span>append(streets_gdf)
-
-<span class="ansi-red-intense-fg ansi-bold">NameError</span>: name &#39;crs&#39; is not defined
+[&#39;events_venue&#39;, &#39;religious&#39;, &#39;semidetached_house&#39;, &#39;swimming_pool&#39;, &#39;apartments;yes&#39;]
+[]
+[&#39;sports_centre&#39;, &#39;bungalow&#39;, &#39;sports_hall&#39;, &#39;religious&#39;]
+[&#39;hangar&#39;]
+[]
+[]
 </pre></div></div>
 </div>
+<p>The <code class="docutils literal notranslate"><span class="pre">radius</span></code> parameter indicates the extension of the area that is used to compute the score of a building, on the basis of its land-use’s frequency, in an area of ‘buffer’ meters around it.</p>
 </section>
-</section>
-<section id="Visual-Component">
-<h2>Visual Component<a class="headerlink" href="#Visual-Component" title="Link to this heading">#</a></h2>
+<section id="Score-computation">
+<h3>Score computation<a class="headerlink" href="#Score-computation" title="Link to this heading">#</a></h3>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">city</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">places</span><span class="p">):</span>
-    <span class="c1"># visual score: not really computed at the moment as in most of the cases height information is not provided in OSM</span>
-    <span class="n">buildings_gdfs</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">visibility_score</span><span class="p">(</span><span class="n">buildings_gdfs</span><span class="p">[</span><span class="n">n</span><span class="p">])</span>
+    <span class="n">buildings_gdfs</span><span class="p">[</span><span class="n">n</span><span class="p">][</span><span class="s1">&#39;land_use_raw&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">buildings_gdfs</span><span class="p">[</span><span class="n">n</span><span class="p">][</span><span class="s1">&#39;land_use_raw&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="n">buildings_gdfs</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">classify_land_use</span><span class="p">(</span><span class="n">buildings_gdfs</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="s1">&#39;land_use&#39;</span><span class="p">,</span><span class="s1">&#39;land_use_raw&#39;</span><span class="p">,</span> <span class="n">categories</span><span class="p">,</span> <span class="n">strings</span><span class="p">)</span>
+    <span class="n">buildings_gdfs</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">pragmatic_score</span><span class="p">(</span><span class="n">buildings_gdfs</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="n">research_radius</span> <span class="o">=</span> <span class="mi">200</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
-</section>
-<section id="Cultural-Component">
-<h2>Cultural Component<a class="headerlink" href="#Cultural-Component" title="Link to this heading">#</a></h2>
+<p><strong>Visualisation</strong></p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">city</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">places</span><span class="p">):</span>
-    <span class="c1"># culturalscore:</span>
-    <span class="n">buildings_gdfs</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">cultural_score_from_OSM</span><span class="p">(</span><span class="n">buildings_gdfs</span><span class="p">[</span><span class="n">n</span><span class="p">])</span>
-</pre></div>
-</div>
-</div>
-</section>
-<section id="Pragmatic-Score">
-<h2>Pragmatic Score<a class="headerlink" href="#Pragmatic-Score" title="Link to this heading">#</a></h2>
-<div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># pragmatic score</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    The &quot;radius&quot; parameter indicates the extension of the area that is used to compute the score of a building, on the basis of</span>
-<span class="sd">    its land-use&#39;s frequency, in an area of &#39;buffer&#39; meters around it.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">buildings_gdfs</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">classify_land_use</span><span class="p">(</span><span class="n">buildings_gdfs</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="s1">&#39;land_use&#39;</span><span class="p">)</span> <span class="c1">#check function for classification methodology</span>
-    <span class="n">buildings_gdfs</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">pragmatic_score</span><span class="p">(</span><span class="n">buildings_gdfs</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="n">radius</span> <span class="o">=</span> <span class="mi">200</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">nr_categories</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">gdf</span><span class="p">[</span><span class="s1">&#39;land_use&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">())</span> <span class="k">for</span> <span class="n">gdf</span> <span class="ow">in</span> <span class="n">buildings_gdfs</span><span class="p">])</span>
+<span class="n">cmap</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">rand_cmap</span><span class="p">(</span><span class="n">nr_categories</span><span class="p">,</span> <span class="n">type_color</span> <span class="o">=</span> <span class="s1">&#39;bright&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[421]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># visualising land use categorisation</span>
-<span class="n">nr_categories</span> <span class="o">=</span> <span class="nb">max</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">gdf</span><span class="p">[</span><span class="s1">&#39;land_use&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">())</span> <span class="k">for</span> <span class="n">gdf</span> <span class="ow">in</span> <span class="n">buildings_gdfs</span><span class="p">])</span>
-<span class="n">cmap</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">rand_cmap</span><span class="p">(</span><span class="n">nr_categories</span><span class="p">,</span> <span class="n">type_color</span> <span class="o">=</span> <span class="s1">&#39;bright&#39;</span><span class="p">)</span>
-<span class="n">fig</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">plot_gdfs</span><span class="p">(</span><span class="n">buildings_gdfs</span><span class="p">,</span><span class="n">titles</span> <span class="o">=</span> <span class="n">places</span><span class="p">,</span> <span class="n">cmap</span> <span class="o">=</span> <span class="n">cmap</span><span class="p">,</span> <span class="n">column</span> <span class="o">=</span> <span class="s1">&#39;land_use&#39;</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span> <span class="o">=</span> <span class="n">plot_grid_gdfs_column</span><span class="p">(</span><span class="n">buildings_gdfs</span><span class="p">,</span><span class="n">titles</span> <span class="o">=</span> <span class="n">places</span><span class="p">,</span> <span class="n">cmap</span> <span class="o">=</span> <span class="n">cmap</span><span class="p">,</span> <span class="n">column</span> <span class="o">=</span> <span class="s1">&#39;land_use&#39;</span><span class="p">,</span> <span class="n">nrows</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">ncols</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+                              <span class="n">legend</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">10</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">(</span><span class="n">pad</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">rect</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.85</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>  <span class="c1"># Adjust rect to leave space on the right</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+C:\Users\gfilo\AppData\Local\Temp\ipykernel_5492\2141898104.py:432: MatplotlibDeprecationWarning: The get_cmap function was deprecated in Matplotlib 3.7 and will be removed two minor releases later. Use ``matplotlib.colormaps[name]`` or ``matplotlib.colormaps.get_cmap(obj)`` instead.
+  color = cm.get_cmap(cmap)(i / len(unique_categories))
+</pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_Landmarks_fromOSM_15_0.png" src="../_images/notebooks_Landmarks_fromOSM_15_0.png" />
+<img alt="../_images/notebooks_Landmarks_fromOSM_22_1.png" src="../_images/notebooks_Landmarks_fromOSM_22_1.png" />
 </div>
 </div>
 </section>
 </section>
-<section id="5---Final-scores">
-<h1>5 - Final scores<a class="headerlink" href="#5---Final-scores" title="Link to this heading">#</a></h1>
+<section id="Final-scores">
+<h2>Final scores<a class="headerlink" href="#Final-scores" title="Link to this heading">#</a></h2>
+<section id="Weights-definition.">
+<h3>Weights definition.<a class="headerlink" href="#Weights-definition." title="Link to this heading">#</a></h3>
+<section id="Weights-of-components-and-indexes-that-are-not-computed-due-to-data-availability-are-set-to-0">
+<h4>Weights of components and indexes that are not computed due to data availability are set to 0<a class="headerlink" href="#Weights-of-components-and-indexes-that-are-not-computed-due-to-data-availability-are-set-to-0" title="Link to this heading">#</a></h4>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># global landmarkness components weights</span>
@@ -568,23 +664,31 @@ Cell <span class="ansi-green-intense-fg ansi-bold">In[11], line 6</span>
 </div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[28]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Global and Local Score (1500 mt area)</span>
 <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">city</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">places</span><span class="p">):</span>
-    <span class="n">buildings_gdfs</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">compute_global_scores</span><span class="p">(</span><span class="n">buildings_gdfs</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="n">g_cW</span><span class="p">,</span> <span class="n">g_iW</span><span class="p">)</span>
-    <span class="n">buildings_gdfs</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">compute_local_scores</span><span class="p">(</span><span class="n">buildings_gdfs</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="n">l_cW</span><span class="p">,</span> <span class="n">l_iW</span><span class="p">,</span> <span class="mi">1500</span><span class="p">)</span>
+    <span class="n">buildings_gdfs</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">compute_global_scores</span><span class="p">(</span><span class="n">buildings_gdfs</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="n">g_iW</span><span class="p">,</span><span class="n">g_cW</span><span class="p">)</span>
+    <span class="n">buildings_gdfs</span><span class="p">[</span><span class="n">n</span><span class="p">]</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">compute_local_scores</span><span class="p">(</span><span class="n">buildings_gdfs</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="n">l_iW</span><span class="p">,</span> <span class="n">l_cW</span><span class="p">,</span> <span class="mi">1500</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
+</section>
+</section>
+</section>
+<section id="Visualisation">
+<h2>Visualisation<a class="headerlink" href="#Visualisation" title="Link to this heading">#</a></h2>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[434]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[116]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># visualising the four componets&#39; maps, the color bar can be activated adding: cbar = True</span>
-<span class="n">fig</span> <span class="o">=</span> <span class="n">plot_gdfs</span><span class="p">(</span><span class="n">buildings_gdfs</span><span class="p">,</span> <span class="n">main_title</span> <span class="o">=</span> <span class="s2">&quot;Structural Score&quot;</span><span class="p">,</span> <span class="n">titles</span> <span class="o">=</span> <span class="n">places</span><span class="p">,</span> <span class="n">classes</span> <span class="o">=</span> <span class="mi">7</span><span class="p">,</span> <span class="n">column</span> <span class="o">=</span> <span class="s1">&#39;sScore_sc&#39;</span><span class="p">,</span>
-                <span class="n">cmap</span> <span class="o">=</span> <span class="s1">&#39;magma&#39;</span><span class="p">,</span> <span class="n">scheme</span> <span class="o">=</span> <span class="s1">&#39;Lynch_Breaks&#39;</span><span class="p">,</span> <span class="n">legend</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">fig_size</span> <span class="o">=</span> <span class="mi">10</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">scheme_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;bins&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="mf">0.125</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">,</span> <span class="mf">1.00</span><span class="p">],</span> <span class="s1">&#39;scheme&#39;</span> <span class="p">:</span> <span class="s1">&#39;User_Defined&#39;</span><span class="p">}</span>
+
+<span class="n">fig</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">plot_grid_gdfs_column</span><span class="p">(</span><span class="n">buildings_gdfs</span><span class="p">,</span> <span class="n">main_title</span> <span class="o">=</span> <span class="s1">&#39;Structural score&#39;</span><span class="p">,</span> <span class="n">titles</span> <span class="o">=</span> <span class="n">places</span><span class="p">,</span> <span class="n">classes</span> <span class="o">=</span> <span class="mi">7</span><span class="p">,</span> <span class="n">column</span> <span class="o">=</span> <span class="s1">&#39;sScore_sc&#39;</span><span class="p">,</span> <span class="n">nrows</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">ncols</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+                <span class="n">cmap</span> <span class="o">=</span> <span class="s1">&#39;magma&#39;</span><span class="p">,</span> <span class="n">legend</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">),</span> <span class="o">**</span><span class="n">scheme_dict</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">(</span><span class="n">pad</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">rect</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.90</span><span class="p">,</span> <span class="mf">1.05</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -592,15 +696,17 @@ Cell <span class="ansi-green-intense-fg ansi-bold">In[11], line 6</span>
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_Landmarks_fromOSM_20_0.png" src="../_images/notebooks_Landmarks_fromOSM_20_0.png" />
+<img alt="../_images/notebooks_Landmarks_fromOSM_28_0.png" src="../_images/notebooks_Landmarks_fromOSM_28_0.png" />
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[416]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[117]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">plot_gdfs</span><span class="p">(</span><span class="n">buildings_gdfs</span><span class="p">,</span> <span class="n">main_title</span> <span class="o">=</span> <span class="s2">&quot;Pragmatic Score&quot;</span><span class="p">,</span> <span class="n">titles</span> <span class="o">=</span> <span class="n">places</span><span class="p">,</span> <span class="n">column</span> <span class="o">=</span> <span class="s1">&#39;pScore&#39;</span><span class="p">,</span>
-                <span class="n">cmap</span> <span class="o">=</span> <span class="s1">&#39;magma&#39;</span><span class="p">,</span> <span class="n">scheme</span> <span class="o">=</span> <span class="s1">&#39;Lynch_Breaks&#39;</span><span class="p">,</span> <span class="n">legend</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">plot_grid_gdfs_column</span><span class="p">(</span><span class="n">buildings_gdfs</span><span class="p">,</span><span class="n">main_title</span> <span class="o">=</span> <span class="s1">&#39;Pragmatic score&#39;</span><span class="p">,</span> <span class="n">titles</span> <span class="o">=</span> <span class="n">places</span><span class="p">,</span> <span class="n">classes</span> <span class="o">=</span> <span class="mi">7</span><span class="p">,</span> <span class="n">column</span> <span class="o">=</span> <span class="s1">&#39;pScore&#39;</span><span class="p">,</span> <span class="n">nrows</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">ncols</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+                <span class="n">cmap</span> <span class="o">=</span> <span class="s1">&#39;magma&#39;</span><span class="p">,</span> <span class="n">legend</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">),</span> <span class="o">**</span><span class="n">scheme_dict</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">(</span><span class="n">pad</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">rect</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.90</span><span class="p">,</span> <span class="mf">1.05</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -608,115 +714,17 @@ Cell <span class="ansi-green-intense-fg ansi-bold">In[11], line 6</span>
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_Landmarks_fromOSM_21_0.png" src="../_images/notebooks_Landmarks_fromOSM_21_0.png" />
+<img alt="../_images/notebooks_Landmarks_fromOSM_29_0.png" src="../_images/notebooks_Landmarks_fromOSM_29_0.png" />
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[433]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[119]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">buildings_gdfs</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">lScore_sc</span>
-</pre></div>
-</div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[433]:
-</pre></div>
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-858    nan
-954    nan
-1078   nan
-1092   nan
-1230   nan
-        ..
-397    nan
-1455   nan
-1112   nan
-324    nan
-321    nan
-Name: lScore_sc, Length: 1489, dtype: float64
-</pre></div></div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[430]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span> <span class="o">=</span> <span class="n">plot_gdfs</span><span class="p">(</span><span class="n">buildings_gdfs</span><span class="p">,</span> <span class="n">main_title</span> <span class="o">=</span> <span class="s2">&quot;Local Landmark Score&quot;</span><span class="p">,</span> <span class="n">titles</span> <span class="o">=</span> <span class="n">places</span><span class="p">,</span> <span class="n">column</span> <span class="o">=</span> <span class="s1">&#39;lScore&#39;</span><span class="p">,</span>
-                <span class="n">cmap</span> <span class="o">=</span> <span class="s1">&#39;magma&#39;</span><span class="p">,</span> <span class="n">scheme</span> <span class="o">=</span> <span class="s1">&#39;Fisher_Jenks&#39;</span><span class="p">,</span> <span class="n">legend</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-<span class="ansi-red-intense-fg ansi-bold">---------------------------------------------------------------------------</span>
-<span class="ansi-red-intense-fg ansi-bold">ValueError</span>                                Traceback (most recent call last)
-<span class="ansi-green-intense-fg ansi-bold">&lt;ipython-input-430-b98766739151&gt;</span> in <span class="ansi-cyan-fg">&lt;module&gt;</span>
-<span class="ansi-green-fg">      1</span> fig = plot_gdfs(buildings_gdfs, main_title = &#34;Local Landmark Score&#34;, titles = places, column = &#39;lScore&#39;,
-<span class="ansi-green-intense-fg ansi-bold">----&gt; 2</span><span class="ansi-yellow-intense-fg ansi-bold">                 cmap = &#39;magma&#39;, scheme = &#39;Fisher_Jenks&#39;, legend = True)
-</span>
-<span class="ansi-green-intense-fg ansi-bold">&lt;ipython-input-409-5a1fb3838608&gt;</span> in <span class="ansi-cyan-fg">plot_gdfs</span><span class="ansi-blue-intense-fg ansi-bold">(list_gdfs, column, main_title, titles, black_background, fig_size, scheme, bins, classes, norm, cmap, color, alpha, legend, cbar, cbar_ticks, cbar_max_symbol, axis_frame, ms, ms_col, lw, lw_factor)</span>
-<span class="ansi-green-fg">    129</span>
-<span class="ansi-green-fg">    130</span>         single_plot(ax, gdf, column = column, scheme = scheme, bins = bins, classes = classes, norm = norm, cmap = cmap, color = color, alpha = alpha, legend = legend_ax,
-<span class="ansi-green-intense-fg ansi-bold">--&gt; 131</span><span class="ansi-yellow-intense-fg ansi-bold">                     axis_frame = axis_frame, ms = ms, ms_col = ms_col, lw = lw, lw_factor = lw_factor)
-</span><span class="ansi-green-fg">    132</span>
-<span class="ansi-green-fg">    133</span>         <span class="ansi-green-intense-fg ansi-bold">if</span> legend_fig<span class="ansi-yellow-intense-fg ansi-bold">:</span>
-
-<span class="ansi-green-intense-fg ansi-bold">&lt;ipython-input-409-5a1fb3838608&gt;</span> in <span class="ansi-cyan-fg">single_plot</span><span class="ansi-blue-intense-fg ansi-bold">(ax, gdf, column, scheme, bins, classes, norm, cmap, color, alpha, legend, axis_frame, ms, ms_col, lw, lw_factor)</span>
-<span class="ansi-green-fg">     59</span>
-<span class="ansi-green-fg">     60</span>     <span class="ansi-green-intense-fg ansi-bold">if</span> gdf<span class="ansi-yellow-intense-fg ansi-bold">.</span>iloc<span class="ansi-yellow-intense-fg ansi-bold">[</span><span class="ansi-cyan-intense-fg ansi-bold">0</span><span class="ansi-yellow-intense-fg ansi-bold">]</span><span class="ansi-yellow-intense-fg ansi-bold">.</span>geometry<span class="ansi-yellow-intense-fg ansi-bold">.</span>geom_type <span class="ansi-yellow-intense-fg ansi-bold">==</span> <span class="ansi-blue-intense-fg ansi-bold">&#39;Polygon&#39;</span><span class="ansi-yellow-intense-fg ansi-bold">:</span>
-<span class="ansi-green-intense-fg ansi-bold">---&gt; 61</span><span class="ansi-yellow-intense-fg ansi-bold">         </span>gdf<span class="ansi-yellow-intense-fg ansi-bold">.</span>plot<span class="ansi-yellow-intense-fg ansi-bold">(</span>ax <span class="ansi-yellow-intense-fg ansi-bold">=</span> ax<span class="ansi-yellow-intense-fg ansi-bold">,</span> column <span class="ansi-yellow-intense-fg ansi-bold">=</span> column<span class="ansi-yellow-intense-fg ansi-bold">,</span> categorical <span class="ansi-yellow-intense-fg ansi-bold">=</span> categorical<span class="ansi-yellow-intense-fg ansi-bold">,</span> color <span class="ansi-yellow-intense-fg ansi-bold">=</span> color<span class="ansi-yellow-intense-fg ansi-bold">,</span> scheme <span class="ansi-yellow-intense-fg ansi-bold">=</span> scheme<span class="ansi-yellow-intense-fg ansi-bold">,</span> edgecolor <span class="ansi-yellow-intense-fg ansi-bold">=</span> <span class="ansi-blue-intense-fg ansi-bold">&#39;none&#39;</span><span class="ansi-yellow-intense-fg ansi-bold">,</span> alpha <span class="ansi-yellow-intense-fg ansi-bold">=</span> alpha<span class="ansi-yellow-intense-fg ansi-bold">,</span> cmap <span class="ansi-yellow-intense-fg ansi-bold">=</span> cmap<span class="ansi-yellow-intense-fg ansi-bold">,</span> norm <span class="ansi-yellow-intense-fg ansi-bold">=</span> norm<span class="ansi-yellow-intense-fg ansi-bold">,</span> legend <span class="ansi-yellow-intense-fg ansi-bold">=</span> legend<span class="ansi-yellow-intense-fg ansi-bold">,</span> classification_kwds <span class="ansi-yellow-intense-fg ansi-bold">=</span> c_k<span class="ansi-yellow-intense-fg ansi-bold">)</span>
-<span class="ansi-green-fg">     62</span>
-<span class="ansi-green-fg">     63</span>
-
-<span class="ansi-green-intense-fg ansi-bold">~\AppData\Local\Continuum\miniconda3\envs\cityImage\lib\site-packages\geopandas\geodataframe.py</span> in <span class="ansi-cyan-fg">plot</span><span class="ansi-blue-intense-fg ansi-bold">(self, *args, **kwargs)</span>
-<span class="ansi-green-fg">    654</span>         <span class="ansi-green-intense-fg ansi-bold">from</span> there<span class="ansi-yellow-intense-fg ansi-bold">.</span>
-<span class="ansi-green-fg">    655</span>         &#34;&#34;&#34;
-<span class="ansi-green-intense-fg ansi-bold">--&gt; 656</span><span class="ansi-yellow-intense-fg ansi-bold">         </span><span class="ansi-green-intense-fg ansi-bold">return</span> plot_dataframe<span class="ansi-yellow-intense-fg ansi-bold">(</span>self<span class="ansi-yellow-intense-fg ansi-bold">,</span> <span class="ansi-yellow-intense-fg ansi-bold">*</span>args<span class="ansi-yellow-intense-fg ansi-bold">,</span> <span class="ansi-yellow-intense-fg ansi-bold">**</span>kwargs<span class="ansi-yellow-intense-fg ansi-bold">)</span>
-<span class="ansi-green-fg">    657</span>
-<span class="ansi-green-fg">    658</span>     plot<span class="ansi-yellow-intense-fg ansi-bold">.</span>__doc__ <span class="ansi-yellow-intense-fg ansi-bold">=</span> plot_dataframe<span class="ansi-yellow-intense-fg ansi-bold">.</span>__doc__
-
-<span class="ansi-green-intense-fg ansi-bold">~\AppData\Local\Continuum\miniconda3\envs\cityImage\lib\site-packages\geopandas\plotting.py</span> in <span class="ansi-cyan-fg">plot_dataframe</span><span class="ansi-blue-intense-fg ansi-bold">(df, column, cmap, color, ax, cax, categorical, legend, scheme, k, vmin, vmax, markersize, figsize, legend_kwds, classification_kwds, missing_kwds, **style_kwds)</span>
-<span class="ansi-green-fg">    579</span>             classification_kwds<span class="ansi-yellow-intense-fg ansi-bold">[</span><span class="ansi-blue-intense-fg ansi-bold">&#34;k&#34;</span><span class="ansi-yellow-intense-fg ansi-bold">]</span> <span class="ansi-yellow-intense-fg ansi-bold">=</span> k
-<span class="ansi-green-fg">    580</span>
-<span class="ansi-green-intense-fg ansi-bold">--&gt; 581</span><span class="ansi-yellow-intense-fg ansi-bold">         </span>binning <span class="ansi-yellow-intense-fg ansi-bold">=</span> _mapclassify_choro<span class="ansi-yellow-intense-fg ansi-bold">(</span>values<span class="ansi-yellow-intense-fg ansi-bold">[</span><span class="ansi-yellow-intense-fg ansi-bold">~</span>nan_idx<span class="ansi-yellow-intense-fg ansi-bold">]</span><span class="ansi-yellow-intense-fg ansi-bold">,</span> scheme<span class="ansi-yellow-intense-fg ansi-bold">,</span> <span class="ansi-yellow-intense-fg ansi-bold">**</span>classification_kwds<span class="ansi-yellow-intense-fg ansi-bold">)</span>
-<span class="ansi-green-fg">    582</span>         <span class="ansi-red-intense-fg ansi-bold"># set categorical to True for creating the legend</span>
-<span class="ansi-green-fg">    583</span>         categorical <span class="ansi-yellow-intense-fg ansi-bold">=</span> <span class="ansi-green-intense-fg ansi-bold">True</span>
-
-<span class="ansi-green-intense-fg ansi-bold">~\AppData\Local\Continuum\miniconda3\envs\cityImage\lib\site-packages\geopandas\plotting.py</span> in <span class="ansi-cyan-fg">_mapclassify_choro</span><span class="ansi-blue-intense-fg ansi-bold">(values, scheme, **classification_kwds)</span>
-<span class="ansi-green-fg">    812</span>             <span class="ansi-green-intense-fg ansi-bold">del</span> classification_kwds<span class="ansi-yellow-intense-fg ansi-bold">[</span><span class="ansi-blue-intense-fg ansi-bold">&#34;k&#34;</span><span class="ansi-yellow-intense-fg ansi-bold">]</span>
-<span class="ansi-green-fg">    813</span>     <span class="ansi-green-intense-fg ansi-bold">try</span><span class="ansi-yellow-intense-fg ansi-bold">:</span>
-<span class="ansi-green-intense-fg ansi-bold">--&gt; 814</span><span class="ansi-yellow-intense-fg ansi-bold">         </span>binning <span class="ansi-yellow-intense-fg ansi-bold">=</span> scheme_class<span class="ansi-yellow-intense-fg ansi-bold">(</span>values<span class="ansi-yellow-intense-fg ansi-bold">,</span> <span class="ansi-yellow-intense-fg ansi-bold">**</span>classification_kwds<span class="ansi-yellow-intense-fg ansi-bold">)</span>
-<span class="ansi-green-fg">    815</span>     <span class="ansi-green-intense-fg ansi-bold">except</span> TypeError<span class="ansi-yellow-intense-fg ansi-bold">:</span>
-<span class="ansi-green-fg">    816</span>         <span class="ansi-green-intense-fg ansi-bold">raise</span> TypeError<span class="ansi-yellow-intense-fg ansi-bold">(</span><span class="ansi-blue-intense-fg ansi-bold">&#34;Invalid keyword argument for %r &#34;</span> <span class="ansi-yellow-intense-fg ansi-bold">%</span> scheme<span class="ansi-yellow-intense-fg ansi-bold">)</span>
-
-<span class="ansi-green-intense-fg ansi-bold">~\AppData\Local\Continuum\miniconda3\envs\cityImage\lib\site-packages\mapclassify\classifiers.py</span> in <span class="ansi-cyan-fg">__init__</span><span class="ansi-blue-intense-fg ansi-bold">(self, y, k)</span>
-<span class="ansi-green-fg">   1795</span>         nu <span class="ansi-yellow-intense-fg ansi-bold">=</span> len<span class="ansi-yellow-intense-fg ansi-bold">(</span>np<span class="ansi-yellow-intense-fg ansi-bold">.</span>unique<span class="ansi-yellow-intense-fg ansi-bold">(</span>y<span class="ansi-yellow-intense-fg ansi-bold">)</span><span class="ansi-yellow-intense-fg ansi-bold">)</span>
-<span class="ansi-green-fg">   1796</span>         <span class="ansi-green-intense-fg ansi-bold">if</span> nu <span class="ansi-yellow-intense-fg ansi-bold">&lt;</span> k<span class="ansi-yellow-intense-fg ansi-bold">:</span>
-<span class="ansi-green-intense-fg ansi-bold">-&gt; 1797</span><span class="ansi-yellow-intense-fg ansi-bold">             </span><span class="ansi-green-intense-fg ansi-bold">raise</span> ValueError<span class="ansi-yellow-intense-fg ansi-bold">(</span><span class="ansi-blue-intense-fg ansi-bold">&#34;Fewer unique values than specified classes.&#34;</span><span class="ansi-yellow-intense-fg ansi-bold">)</span>
-<span class="ansi-green-fg">   1798</span>         self<span class="ansi-yellow-intense-fg ansi-bold">.</span>k <span class="ansi-yellow-intense-fg ansi-bold">=</span> k
-<span class="ansi-green-fg">   1799</span>         MapClassifier<span class="ansi-yellow-intense-fg ansi-bold">.</span>__init__<span class="ansi-yellow-intense-fg ansi-bold">(</span>self<span class="ansi-yellow-intense-fg ansi-bold">,</span> y<span class="ansi-yellow-intense-fg ansi-bold">)</span>
-
-<span class="ansi-red-intense-fg ansi-bold">ValueError</span>: Fewer unique values than specified classes.
-</pre></div></div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../_images/notebooks_Landmarks_fromOSM_23_1.png" src="../_images/notebooks_Landmarks_fromOSM_23_1.png" />
-</div>
-</div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[414]:
-</pre></div>
-</div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">plot_gdfs</span><span class="p">(</span><span class="n">buildings_gdfs</span><span class="p">,</span> <span class="n">main_title</span> <span class="o">=</span> <span class="s2">&quot;Global Landmark Score&quot;</span><span class="p">,</span> <span class="n">titles</span> <span class="o">=</span> <span class="n">places</span><span class="p">,</span> <span class="n">column</span> <span class="o">=</span> <span class="s1">&#39;gScore_sc&#39;</span><span class="p">,</span>
-                <span class="n">cmap</span> <span class="o">=</span> <span class="s1">&#39;magma&#39;</span><span class="p">,</span> <span class="n">scheme</span> <span class="o">=</span> <span class="s1">&#39;Lynch_Breaks&#39;</span><span class="p">,</span> <span class="n">legend</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">plot_grid_gdfs_column</span><span class="p">(</span><span class="n">buildings_gdfs</span><span class="p">,</span> <span class="n">main_title</span> <span class="o">=</span> <span class="s1">&#39;Local score&#39;</span><span class="p">,</span> <span class="n">titles</span> <span class="o">=</span> <span class="n">places</span><span class="p">,</span> <span class="n">classes</span> <span class="o">=</span> <span class="mi">7</span><span class="p">,</span> <span class="n">column</span> <span class="o">=</span> <span class="s1">&#39;lScore_sc&#39;</span><span class="p">,</span> <span class="n">nrows</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">ncols</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+                <span class="n">cmap</span> <span class="o">=</span> <span class="s1">&#39;magma&#39;</span><span class="p">,</span> <span class="n">legend</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">),</span> <span class="o">**</span><span class="n">scheme_dict</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">(</span><span class="n">pad</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">rect</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.90</span><span class="p">,</span> <span class="mf">1.05</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
@@ -724,12 +732,31 @@ Name: lScore_sc, Length: 1489, dtype: float64
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_Landmarks_fromOSM_24_0.png" src="../_images/notebooks_Landmarks_fromOSM_24_0.png" />
+<img alt="../_images/notebooks_Landmarks_fromOSM_30_0.png" src="../_images/notebooks_Landmarks_fromOSM_30_0.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[121]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">fig</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">plot_grid_gdfs_column</span><span class="p">(</span><span class="n">buildings_gdfs</span><span class="p">,</span> <span class="n">main_title</span> <span class="o">=</span> <span class="s1">&#39;Global score&#39;</span><span class="p">,</span> <span class="n">titles</span> <span class="o">=</span> <span class="n">places</span><span class="p">,</span>  <span class="n">column</span> <span class="o">=</span> <span class="s1">&#39;gScore_sc&#39;</span><span class="p">,</span> <span class="n">nrows</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">ncols</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+                <span class="n">cmap</span> <span class="o">=</span> <span class="s1">&#39;magma&#39;</span><span class="p">,</span> <span class="n">legend</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">),</span> <span class="o">**</span><span class="n">scheme_dict</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">(</span><span class="n">pad</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">rect</span><span class="o">=</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.90</span><span class="p">,</span> <span class="mf">1.05</span><span class="p">])</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Landmarks_fromOSM_31_0.png" src="../_images/notebooks_Landmarks_fromOSM_31_0.png" />
 </div>
 </div>
 <script type="application/vnd.jupyter.widget-state+json">
 {"state": {}, "version_major": 2, "version_minor": 0}
 </script></section>
+</section>
 
 
                 </article>
@@ -753,7 +780,6 @@ Name: lScore_sc, Length: 1489, dtype: float64
   </div>
   <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Landmarks (OSM Data)</a><ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Obtaining-the-Data">Obtaining the Data</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Structural,-Visual-and-Cultural-score-computations">Structural, Visual and Cultural score computations</a><ul class="visible nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Structural-Component">Structural Component</a></li>
@@ -761,12 +787,20 @@ Name: lScore_sc, Length: 1489, dtype: float64
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Visual-Component">Visual Component</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Cultural-Component">Cultural Component</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Pragmatic-Score">Pragmatic Score</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Pragmatic-Score">Pragmatic Score</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Land-use">Land use</a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Score-computation">Score computation</a></li>
 </ul>
 </li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#5---Final-scores">5 - Final scores</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Final-scores">Final scores</a><ul class="visible nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Weights-definition.">Weights definition.</a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#Weights-of-components-and-indexes-that-are-not-computed-due-to-data-availability-are-set-to-0">Weights of components and indexes that are not computed due to data availability are set to 0</a></li>
 </ul>
-
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Visualisation">Visualisation</a></li>
+</ul>
   </nav></div>
 
   <div class="sidebar-secondary-item">
@@ -812,7 +846,7 @@ Name: lScore_sc, Length: 1489, dtype: float64
         <div class="footer-item">
 
   <p class="sphinx-version">
-    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.5.
     <br/>
   </p>
 </div>

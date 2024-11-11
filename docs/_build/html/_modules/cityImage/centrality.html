@@ -1,0 +1,752 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>cityImage.centrality &#8212; cityImage 1.2 documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "light";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="../../_static/styles/bootstrap.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+
+  
+  <link href="../../_static/vendor/fontawesome/6.5.1/css/all.min.css?digest=8d27b9dea8ad943066ae" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.1/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.1/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.1/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=a746c00c" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
+  <script src="../../_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
+
+    <script src="../../_static/documentation_options.js?v=61243dd2"></script>
+    <script src="../../_static/doctools.js?v=9a2dae69"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/cityImage/centrality';</script>
+    <link rel="author" title="About these documents" href="../../about.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <a id="pst-skip-link" class="skip-link" href="#main-content">Skip to main content</a>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>
+    Back to top
+  </button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__primary"
+          id="__primary"/>
+  <label class="overlay overlay-primary" for="__primary"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          name="__secondary"
+          id="__secondary"/>
+  <label class="overlay overlay-secondary" for="__secondary"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar">
+<div class="bd-header__inner bd-page-width">
+  <label class="sidebar-toggle primary-toggle" for="__primary">
+    <span class="fa-solid fa-bars"></span>
+  </label>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">cityImage 1.2 documentation</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav class="navbar-nav">
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../index.html">
+                        Home
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../notebooks/userGuide.html">
+                        userGuide
+                      </a>
+                    </li>
+                
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/cityImage" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/gfilo" title="Twitter" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+ <script>
+ document.write(`
+   <button class="btn navbar-btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <div class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          <div class="navbar-item">
+<nav class="navbar-nav">
+  <ul class="bd-navbar-elements navbar-nav">
+    
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../index.html">
+                        Home
+                      </a>
+                    </li>
+                
+
+                    <li class="nav-item">
+                      <a class="nav-link nav-internal" href="../../notebooks/userGuide.html">
+                        userGuide
+                      </a>
+                    </li>
+                
+  </ul>
+</nav></div>
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm navbar-btn theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="theme-switch nav-link" data-mode="light"><i class="fa-solid fa-sun fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="dark"><i class="fa-solid fa-moon fa-lg"></i></span>
+    <span class="theme-switch nav-link" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg"></i></span>
+  </button>
+`);
+</script></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/cityImage" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/gfilo" title="Twitter" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+
+
+<nav aria-label="Breadcrumb">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page">cityImage.centrality</li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for cityImage.centrality</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">networkx</span> <span class="k">as</span> <span class="nn">nx</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">geopandas</span> <span class="k">as</span> <span class="nn">gpd</span>
+<span class="kn">import</span> <span class="nn">functools</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span> <span class="nn">igraph</span> <span class="k">as</span> <span class="nn">ig</span>
+
+<span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">sqrt</span>
+<span class="kn">from</span> <span class="nn">shapely.geometry</span> <span class="kn">import</span> <span class="n">Point</span> 
+<span class="n">pd</span><span class="o">.</span><span class="n">set_option</span><span class="p">(</span><span class="s2">&quot;display.precision&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">.utilities</span> <span class="kn">import</span> <span class="n">dict_to_df</span>
+
+<span class="k">def</span> <span class="nf">_nodes_dict</span><span class="p">(</span><span class="n">ig_graph</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a dictionary of node indices and their coordinates from igraph graph.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ig_graph : igraph.Graph</span>
+<span class="sd">        The igraph Graph object.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict</span>
+<span class="sd">        Dictionary with node indices as keys and tuples of (x, y) coordinates as values.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">{</span><span class="n">v</span><span class="o">.</span><span class="n">index</span><span class="p">:</span> <span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="n">v</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">])</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">ig_graph</span><span class="o">.</span><span class="n">vs</span><span class="p">}</span>
+    
+<span class="k">def</span> <span class="nf">_assign_attributes_from_nx_to_igraph</span><span class="p">(</span><span class="n">nx_graph</span><span class="p">,</span> <span class="n">ig_graph</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Assign attributes from a NetworkX graph to an iGraph graph.</span>
+
+<span class="sd">    This function transfers all node attributes from a NetworkX graph to the corresponding nodes in an iGraph graph. </span>
+<span class="sd">    It assumes that both graphs have the same set of nodes in the same order.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    nx_graph : networkx.Graph</span>
+<span class="sd">        The input NetworkX graph from which to copy attributes.</span>
+<span class="sd">    ig_graph : igraph.Graph</span>
+<span class="sd">        The target iGraph graph to which attributes will be copied.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">original_ids</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">nx_graph</span><span class="o">.</span><span class="n">nodes</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">node</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ig_graph</span><span class="o">.</span><span class="n">vs</span><span class="p">):</span>
+        <span class="n">nx_node_attrs</span> <span class="o">=</span> <span class="n">nx_graph</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">original_ids</span><span class="p">[</span><span class="n">idx</span><span class="p">]]</span>
+        <span class="k">for</span> <span class="n">attr</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">nx_node_attrs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">node</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>   
+     
+<span class="k">def</span> <span class="nf">_euclidean_distance</span><span class="p">(</span><span class="n">xs</span><span class="p">,</span> <span class="n">ys</span><span class="p">,</span> <span class="n">xt</span><span class="p">,</span> <span class="n">yt</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot; xs stands for x source and xt for x target &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">sqrt</span><span class="p">((</span><span class="n">xs</span> <span class="o">-</span> <span class="n">xt</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="p">(</span><span class="n">ys</span> <span class="o">-</span> <span class="n">yt</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>           
+            
+<div class="viewcode-block" id="calculate_centrality">
+<a class="viewcode-back" href="../../generated/cityImage.calculate_centrality.html#cityImage.calculate_centrality">[docs]</a>
+<span class="k">def</span> <span class="nf">calculate_centrality</span><span class="p">(</span><span class="n">nx_graph</span><span class="p">,</span> <span class="n">measure</span><span class="o">=</span><span class="s1">&#39;betweenness&#39;</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="s1">&#39;weight&#39;</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">attribute</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">normalized</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convert a NetworkX graph to an igraph graph and calculate centrality measures.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    graph: networkx.Graph</span>
+<span class="sd">        The input NetworkX graph.</span>
+<span class="sd">    measure: str</span>
+<span class="sd">        The type of centrality measure to calculate (&#39;betweenness&#39;, &#39;closeness&#39;, &#39;straightness&#39;, &#39;reach&#39;).</span>
+<span class="sd">    weight: str</span>
+<span class="sd">        The edge attribute to be used as weights for weighted centrality measures.</span>
+<span class="sd">    radius: float, optional</span>
+<span class="sd">        The radius for reach centrality.</span>
+<span class="sd">    attribute: str, optional</span>
+<span class="sd">        The node attribute for reach centrality.</span>
+<span class="sd">    normalized: boolean, optional</span>
+<span class="sd">        Normalize to the number of nodes-1 in the graph (straightness)</span>
+<span class="sd">        </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    centrality_dict: dict</span>
+<span class="sd">        A dictionary with the original NetworkX node IDs as keys and the centrality values as values.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Create a mapping from original NetworkX node IDs to indices</span>
+    <span class="n">original_ids</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">nx_graph</span><span class="o">.</span><span class="n">nodes</span><span class="p">)</span>
+    <span class="n">id_to_index</span> <span class="o">=</span> <span class="p">{</span><span class="n">original_id</span><span class="p">:</span> <span class="n">index</span> <span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">original_id</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">original_ids</span><span class="p">)}</span>
+    
+    <span class="c1"># Convert NetworkX graph to igraph graph</span>
+    <span class="n">edges</span> <span class="o">=</span> <span class="p">[(</span><span class="n">id_to_index</span><span class="p">[</span><span class="n">u</span><span class="p">],</span> <span class="n">id_to_index</span><span class="p">[</span><span class="n">v</span><span class="p">])</span> <span class="k">for</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">nx_graph</span><span class="o">.</span><span class="n">edges</span><span class="p">()]</span>
+    <span class="n">weights</span> <span class="o">=</span> <span class="p">[</span><span class="n">nx_graph</span><span class="p">[</span><span class="n">u</span><span class="p">][</span><span class="n">v</span><span class="p">][</span><span class="n">weight</span><span class="p">]</span> <span class="k">for</span> <span class="n">u</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">nx_graph</span><span class="o">.</span><span class="n">edges</span><span class="p">()]</span>
+
+    <span class="n">ig_graph</span> <span class="o">=</span> <span class="n">ig</span><span class="o">.</span><span class="n">Graph</span><span class="p">(</span><span class="n">edges</span><span class="o">=</span><span class="n">edges</span><span class="p">)</span>
+    <span class="n">ig_graph</span><span class="o">.</span><span class="n">es</span><span class="p">[</span><span class="s1">&#39;weight&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">weights</span>
+
+    <span class="c1"># Assign attributes to igraph vertices</span>
+    <span class="n">_assign_attributes_from_nx_to_igraph</span><span class="p">(</span><span class="n">nx_graph</span><span class="p">,</span> <span class="n">ig_graph</span><span class="p">)</span>
+
+    <span class="c1"># Calculate the specified centrality measure</span>
+    <span class="k">if</span> <span class="n">measure</span> <span class="o">==</span> <span class="s1">&#39;betweenness&#39;</span><span class="p">:</span>
+        <span class="n">centrality_values</span> <span class="o">=</span> <span class="n">ig_graph</span><span class="o">.</span><span class="n">betweenness</span><span class="p">(</span><span class="n">weights</span><span class="o">=</span><span class="s1">&#39;weight&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">measure</span> <span class="o">==</span> <span class="s1">&#39;closeness&#39;</span><span class="p">:</span>
+        <span class="n">centrality_values</span> <span class="o">=</span> <span class="n">ig_graph</span><span class="o">.</span><span class="n">closeness</span><span class="p">(</span><span class="n">weights</span><span class="o">=</span><span class="s1">&#39;weight&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">measure</span> <span class="o">==</span> <span class="s1">&#39;straightness&#39;</span><span class="p">:</span>
+        <span class="n">centrality_values</span> <span class="o">=</span> <span class="n">straightness_centrality</span><span class="p">(</span><span class="n">ig_graph</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="s1">&#39;weight&#39;</span><span class="p">,</span> <span class="n">normalized</span> <span class="o">=</span> <span class="n">normalized</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">measure</span> <span class="o">==</span> <span class="s1">&#39;reach&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">radius</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">attribute</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;For reach centrality, both radius and attribute parameters must be provided&quot;</span><span class="p">)</span>
+        <span class="n">centrality_values</span> <span class="o">=</span> <span class="n">reach_centrality</span><span class="p">(</span><span class="n">ig_graph</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="s1">&#39;weight&#39;</span><span class="p">,</span> <span class="n">radius</span><span class="o">=</span><span class="n">radius</span><span class="p">,</span> <span class="n">attribute</span><span class="o">=</span><span class="n">attribute</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported centrality type: </span><span class="si">{</span><span class="n">measure</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Map centrality values back to original NetworkX node IDs</span>
+    <span class="n">centrality_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">original_ids</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span> <span class="n">centrality_values</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">original_ids</span><span class="p">))}</span>
+
+    <span class="k">return</span> <span class="n">centrality_dict</span></div>
+
+
+<div class="viewcode-block" id="reach_centrality">
+<a class="viewcode-back" href="../../generated/cityImage.reach_centrality.html#cityImage.reach_centrality">[docs]</a>
+<span class="k">def</span> <span class="nf">reach_centrality</span><span class="p">(</span><span class="n">ig_graph</span><span class="p">,</span> <span class="n">weight</span><span class="p">,</span> <span class="n">radius</span><span class="p">,</span> <span class="n">attribute</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculates the reach centrality of each node in the graph G based on the attribute of the reachable nodes</span>
+<span class="sd">    within a given radius.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ig_graph: igraph Graph</span>
+<span class="sd">        The street network graph.</span>
+<span class="sd">    weight: str</span>
+<span class="sd">        The street segments&#39; weight (e.g. distance).</span>
+<span class="sd">    radius: float</span>
+<span class="sd">        Distance from node within looking for other reachable nodes</span>
+<span class="sd">    attribute: str</span>
+<span class="sd">        Node attribute used to compute reach centralily. It indicates the importance of the node </span>
+<span class="sd">        (e.g. number of services in 50mt buffer - name of a column in the nodes_gdf GeoDataFrame).</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    reach_centrality: dict</span>
+<span class="sd">        A dictionary where each item consists of a node (key) and the centrality value (value).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">n_nodes</span> <span class="o">=</span> <span class="n">ig_graph</span><span class="o">.</span><span class="n">vcount</span><span class="p">()</span>
+    <span class="n">reach_centrality</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="c1"># Compute all shortest paths from all nodes</span>
+    <span class="n">shortest_paths</span> <span class="o">=</span> <span class="n">ig_graph</span><span class="o">.</span><span class="n">distances</span><span class="p">(</span><span class="n">weights</span><span class="o">=</span><span class="n">weight</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_nodes</span><span class="p">):</span>
+        <span class="n">reach</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">sp</span> <span class="o">=</span> <span class="n">shortest_paths</span><span class="p">[</span><span class="n">node</span><span class="p">]</span>
+        <span class="c1"># Filter paths based on radius and compute reach centrality</span>
+        <span class="n">reach</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">ig_graph</span><span class="o">.</span><span class="n">vs</span><span class="p">[</span><span class="n">target</span><span class="p">][</span><span class="n">attribute</span><span class="p">]</span> <span class="k">for</span> <span class="n">target</span><span class="p">,</span> <span class="n">dist</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">sp</span><span class="p">)</span> <span class="k">if</span> <span class="n">dist</span> <span class="o">!=</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="n">dist</span> <span class="o">&lt;=</span> <span class="n">radius</span> <span class="ow">and</span> <span class="n">target</span> <span class="o">!=</span> <span class="n">node</span><span class="p">)</span>
+        <span class="n">reach_centrality</span><span class="p">[</span><span class="n">node</span><span class="p">]</span> <span class="o">=</span> <span class="n">reach</span>
+
+    <span class="k">return</span> <span class="n">reach_centrality</span></div>
+
+
+<div class="viewcode-block" id="straightness_centrality">
+<a class="viewcode-back" href="../../generated/cityImage.straightness_centrality.html#cityImage.straightness_centrality">[docs]</a>
+<span class="k">def</span> <span class="nf">straightness_centrality</span><span class="p">(</span><span class="n">ig_graph</span><span class="p">,</span> <span class="n">weight</span><span class="p">,</span> <span class="n">normalized</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Calculate the straightness centrality for each node in the graph.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ig_graph: igraph.Graph</span>
+<span class="sd">        The igraph Graph object.</span>
+<span class="sd">    weight: str</span>
+<span class="sd">        The edge attribute to be used as weight.</span>
+<span class="sd">    normalized: boolean, optional</span>
+<span class="sd">        Normalize to the number of nodes-1 in the graph (straightness)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict</span>
+<span class="sd">        Dictionary of node indices and their straightness centrality values.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">n_nodes</span> <span class="o">=</span> <span class="n">ig_graph</span><span class="o">.</span><span class="n">vcount</span><span class="p">()</span>
+    <span class="n">coord_nodes</span> <span class="o">=</span> <span class="n">_nodes_dict</span><span class="p">(</span><span class="n">ig_graph</span><span class="p">)</span>
+    <span class="n">straightness_centrality</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="c1"># Compute shortest paths for all pairs</span>
+    <span class="n">shortest_paths</span> <span class="o">=</span> <span class="n">ig_graph</span><span class="o">.</span><span class="n">distances</span><span class="p">(</span><span class="n">weights</span><span class="o">=</span><span class="n">weight</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_nodes</span><span class="p">):</span>
+        <span class="n">straightness</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">sp</span> <span class="o">=</span> <span class="n">shortest_paths</span><span class="p">[</span><span class="n">node</span><span class="p">]</span>
+        <span class="n">straightness</span> <span class="o">=</span> <span class="mi">0</span>
+        
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sp</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">n_nodes</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="c1"># Compute the sum of euclidean distances</span>
+
+            <span class="k">for</span> <span class="n">target</span><span class="p">,</span> <span class="n">network_dist</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">sp</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">node</span> <span class="o">!=</span> <span class="n">target</span> <span class="ow">and</span> <span class="n">network_dist</span> <span class="o">&lt;</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">):</span>
+                    <span class="n">euclidean_dist</span> <span class="o">=</span> <span class="n">_euclidean_distance</span><span class="p">(</span><span class="o">*</span><span class="n">coord_nodes</span><span class="p">[</span><span class="n">node</span><span class="p">],</span> <span class="o">*</span><span class="n">coord_nodes</span><span class="p">[</span><span class="n">target</span><span class="p">])</span>
+                    <span class="n">straightness</span> <span class="o">+=</span> <span class="n">euclidean_dist</span> <span class="o">/</span> <span class="n">network_dist</span>
+
+            <span class="n">straightness_centrality</span><span class="p">[</span><span class="n">node</span><span class="p">]</span> <span class="o">=</span> <span class="n">straightness</span> <span class="o">/</span> <span class="p">(</span><span class="n">n_nodes</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">normalized</span><span class="p">:</span>
+                <span class="n">reachable_nodes</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="mi">1</span> <span class="k">for</span> <span class="n">dist</span> <span class="ow">in</span> <span class="n">sp</span> <span class="k">if</span> <span class="n">dist</span> <span class="o">&lt;</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">))</span> <span class="o">-</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="n">reachable_nodes</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">s</span> <span class="o">=</span> <span class="p">(</span><span class="n">n_nodes</span> <span class="o">-</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">/</span> <span class="n">reachable_nodes</span>
+                    <span class="n">straightness_centrality</span><span class="p">[</span><span class="n">node</span><span class="p">]</span> <span class="o">*=</span> <span class="n">s</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">straightness_centrality</span><span class="p">[</span><span class="n">node</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">straightness_centrality</span><span class="p">[</span><span class="n">node</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+    <span class="k">return</span> <span class="n">straightness_centrality</span></div>
+
+    
+<div class="viewcode-block" id="weight_nodes">
+<a class="viewcode-back" href="../../generated/cityImage.weight_nodes.html#cityImage.weight_nodes">[docs]</a>
+<span class="k">def</span> <span class="nf">weight_nodes</span><span class="p">(</span><span class="n">nodes_gdf</span><span class="p">,</span> <span class="n">services_gdf</span><span class="p">,</span> <span class="n">nx_graph</span><span class="p">,</span> <span class="n">field_name</span><span class="p">,</span> <span class="n">radius</span> <span class="o">=</span> <span class="mi">400</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Given a nodes&#39; and a services/points&#39; GeoDataFrame, the function assigns an attribute to nodes in the graph G (prevously derived from </span>
+<span class="sd">    nodes_gdf) based on the amount of features in the services_gdf in a buffer around each node. </span>
+<span class="sd">    </span>
+<span class="sd">    The measure contemplates the assignment of attributes (e.g. number of activities, population, employees in an area) to nodes and</span>
+<span class="sd">    accounts for opportunities that are reachable along the actual street network as perceived by pedestrians’. The reach centrality of a</span>
+<span class="sd">    node j, indicates the number of other nodes reachable from i, at the shortest path distance of r, where nodes are rewarded with a</span>
+<span class="sd">    score (indicated by &quot;attribute&quot;) which indicates their importance. The function is readapted from: Sevtsuk, A. &amp; Mekonnen, M., 2012.</span>
+<span class="sd">    Urban Network Analysis: A New Toolbox For ArcGIS. Revue internationale de géomatique, 2, pp.287–305.</span>
+<span class="sd">    </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    nodes_gdf: Point GeoDataFrame</span>
+<span class="sd">        nodes (junctions) GeoDataFrame.</span>
+<span class="sd">    services_gdf: Point GeoDataFrame</span>
+<span class="sd">        </span>
+<span class="sd">    nx_graph: Networkx graph</span>
+<span class="sd">        The street network graph.</span>
+<span class="sd">    field_name: string</span>
+<span class="sd">        The name of the nodes&#39; attribute.</span>
+<span class="sd">    radius: float</span>
+<span class="sd">        Distance around the node within looking for point features (services).</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    nx_graph: Networkx graph</span>
+<span class="sd">        The updated street network graph.</span>
+<span class="sd">    </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="c1"># create a spatial index for services_gdf</span>
+    <span class="n">sindex</span> <span class="o">=</span> <span class="n">services_gdf</span><span class="o">.</span><span class="n">sindex</span>
+
+    <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">nodes_gdf</span><span class="o">.</span><span class="n">iterrows</span><span class="p">():</span>
+        <span class="c1"># get a buffer around the node</span>
+        <span class="n">buffer</span> <span class="o">=</span> <span class="n">node</span><span class="p">[</span><span class="s2">&quot;geometry&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">buffer</span><span class="p">(</span><span class="n">radius</span><span class="p">)</span>
+        <span class="c1"># get the possible matches from services_gdf using the spatial index</span>
+        <span class="n">possible_matches_index</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">sindex</span><span class="o">.</span><span class="n">intersection</span><span class="p">(</span><span class="n">buffer</span><span class="o">.</span><span class="n">bounds</span><span class="p">))</span>
+        <span class="n">possible_matches</span> <span class="o">=</span> <span class="n">services_gdf</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">possible_matches_index</span><span class="p">]</span>
+        <span class="c1"># get the precise matches using the buffer</span>
+        <span class="n">precise_matches</span> <span class="o">=</span> <span class="n">possible_matches</span><span class="p">[</span><span class="n">possible_matches</span><span class="o">.</span><span class="n">intersects</span><span class="p">(</span><span class="n">buffer</span><span class="p">)]</span>
+        <span class="n">weight</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">precise_matches</span><span class="p">)</span>
+        <span class="n">nodes_gdf</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">n</span><span class="p">,</span> <span class="n">field_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">weight</span>
+        <span class="n">nx_graph</span><span class="o">.</span><span class="n">nodes</span><span class="p">[</span><span class="n">n</span><span class="p">][</span><span class="n">field_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">weight</span>
+
+    <span class="k">return</span> <span class="n">nx_graph</span>    </div>
+
+    
+<div class="viewcode-block" id="append_edges_metrics">
+<a class="viewcode-back" href="../../generated/cityImage.append_edges_metrics.html#cityImage.append_edges_metrics">[docs]</a>
+<span class="k">def</span> <span class="nf">append_edges_metrics</span><span class="p">(</span><span class="n">edges_gdf</span><span class="p">,</span> <span class="n">G</span><span class="p">,</span> <span class="n">dicts</span><span class="p">,</span> <span class="n">column_names</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;&quot;</span>
+<span class="sd">    The function attaches edges centrality values at the edges_gdf GeoDataFrame.</span>
+<span class="sd">      </span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    edges_gdf: LineString GeoDataFrame</span>
+<span class="sd">        The street segments GeoDataFrame.</span>
+<span class="sd">    G: Networkx graph</span>
+<span class="sd">        The street network graph.</span>
+<span class="sd">    dicts: list</span>
+<span class="sd">        The list of dictionaries resulting from centrality measures.</span>
+<span class="sd">    column_names: list</span>
+<span class="sd">        The list of strings with the desired column names for the attributes to be attached.</span>
+<span class="sd">    </span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    edges_gdf: LineString GeoDataFrame</span>
+<span class="sd">        The updated street segments GeoDataFrame.</span>
+<span class="sd">    &quot;&quot;&quot;</span>    
+    <span class="n">edgesID</span> <span class="o">=</span> <span class="p">{(</span><span class="n">i</span><span class="p">,</span><span class="n">e</span><span class="p">):</span> <span class="n">G</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">e</span><span class="p">][</span><span class="s1">&#39;edgeID&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">G</span><span class="o">.</span><span class="n">edges</span><span class="p">()}</span>
+    <span class="n">missing_values</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">edges_gdf</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="k">if</span> <span class="n">item</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">edgesID</span><span class="o">.</span><span class="n">values</span><span class="p">())]</span>
+
+    <span class="n">dicts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">edgesID</span><span class="p">)</span>
+    <span class="n">column_names</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;edgeID&quot;</span><span class="p">)</span>
+
+    <span class="n">tmp</span> <span class="o">=</span> <span class="n">dict_to_df</span><span class="p">(</span><span class="n">dicts</span><span class="p">,</span> <span class="n">column_names</span><span class="p">)</span>
+    <span class="n">tmp</span><span class="o">.</span><span class="n">edgeID</span> <span class="o">=</span> <span class="n">tmp</span><span class="o">.</span><span class="n">edgeID</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+    <span class="n">edges_gdf</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">merge</span><span class="p">(</span><span class="n">edges_gdf</span><span class="p">,</span> <span class="n">tmp</span><span class="p">,</span> <span class="n">on</span> <span class="o">=</span> <span class="s1">&#39;edgeID&#39;</span><span class="p">,</span> <span class="n">how</span> <span class="o">=</span> <span class="s1">&#39;left&#39;</span><span class="p">)</span>
+    <span class="n">edges_gdf</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">edges_gdf</span><span class="o">.</span><span class="n">edgeID</span>
+    <span class="n">edges_gdf</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># handling possible missing values (happens with self-loops)</span>
+    <span class="k">for</span> <span class="n">metric</span> <span class="ow">in</span> <span class="n">column_names</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">metric</span> <span class="o">==</span> <span class="s2">&quot;edgeID&quot;</span><span class="p">:</span> 
+            <span class="k">continue</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">missing_values</span><span class="p">:</span> 
+            <span class="n">edges_gdf</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">metric</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.0</span>
+    
+    <span class="k">return</span> <span class="n">edges_gdf</span></div>
+
+    
+    
+<span class="k">class</span> <span class="nc">Error</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Base class for other exceptions&quot;&quot;&quot;</span>
+<span class="k">class</span> <span class="nc">columnError</span><span class="p">(</span><span class="n">Error</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when a column name is not provided&quot;&quot;&quot;</span>
+<span class="k">class</span> <span class="nc">nameError</span><span class="p">(</span><span class="n">Error</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Raised when a not supported or not existing centrality name is input&quot;&quot;&quot;</span>
+
+    
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae"></script>
+<script src="../../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright 2024, Gabriele Filomena.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.5.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.15.2.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

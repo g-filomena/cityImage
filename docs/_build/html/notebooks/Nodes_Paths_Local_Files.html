@@ -8,7 +8,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-    <title>Street Network Analysis: Nodes and Paths (Local Files) &#8212; cityImage 0.2 documentation</title>
+    <title>Street Network Analysis: Nodes and Paths (Local Files) &#8212; cityImage 1.2 documentation</title>
   
   
   
@@ -29,15 +29,15 @@
 <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.1/webfonts/fa-regular-400.woff2" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=a746c00c" />
-    <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css?v=2aa19091" />
+    <link rel="stylesheet" type="text/css" href="../_static/nbsphinx-code-cells.css" />
   
   <!-- Pre-loaded scripts that we'll load fully later -->
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=8d27b9dea8ad943066ae" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=8d27b9dea8ad943066ae" />
   <script src="../_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=8d27b9dea8ad943066ae"></script>
 
-    <script src="../_static/documentation_options.js?v=10f1778b"></script>
-    <script src="../_static/doctools.js?v=888ff710"></script>
+    <script src="../_static/documentation_options.js?v=61243dd2"></script>
+    <script src="../_static/doctools.js?v=9a2dae69"></script>
     <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@jupyter-widgets/html-manager@^1.0.1/dist/embed-amd.js"></script>
@@ -47,7 +47,7 @@
     <link rel="author" title="About these documents" href="../about.html" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Cleaning the graph" href="NetworkCleaning.html" />
+    <link rel="next" title="Districts" href="Districts.html" />
     <link rel="prev" title="Street Network Analysis: Nodes and Paths (OSM data)" href="Nodes_Paths_fromOSM.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -121,7 +121,7 @@
   
   
   
-    <p class="title logo__title">cityImage 0.2 documentation</p>
+    <p class="title logo__title">cityImage 1.2 documentation</p>
   
 </a></div>
     
@@ -144,7 +144,7 @@
 
                     <li class="nav-item current active">
                       <a class="nav-link nav-internal" href="userGuide.html">
-                        User Guide
+                        userGuide
                       </a>
                     </li>
                 
@@ -182,6 +182,34 @@ document.write(`
   </button>
 `);
 </script></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/cityImage" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/gfilo" title="Twitter" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
       
     </div>
     
@@ -239,7 +267,7 @@ document.write(`
 
                     <li class="nav-item current active">
                       <a class="nav-link nav-internal" href="userGuide.html">
-                        User Guide
+                        userGuide
                       </a>
                     </li>
                 
@@ -264,6 +292,34 @@ document.write(`
 `);
 </script></div>
         
+          <div class="navbar-item"><ul class="navbar-icon-links navbar-nav"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/cityImage" title="GitHub" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://twitter.com/gfilo" title="Twitter" class="nav-link" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><span><i class="fa-brands fa-square-twitter fa-lg" aria-hidden="true"></i></span>
+            <span class="sr-only">Twitter</span></a>
+        </li>
+</ul></div>
+        
       </div>
     
   </div>
@@ -276,10 +332,11 @@ document.write(`
   <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="Nodes_Paths_fromOSM.html">Nodes and Paths from OpenStreetMap Data</a></li>
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Nodes and Paths from Local Files</a></li>
-<li class="toctree-l1"><a class="reference internal" href="NetworkCleaning.html">Street Network Cleaning</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Districts.html">Districts</a></li>
-<li class="toctree-l1"><a class="reference internal" href="Landmarks_Local_Files.html">Landmarks from Local Files</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Barriers.html">Barriers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Landmarks_Local_Files.html">Landmarks from Local Files</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Landmarks_Local_Files.html">Landmarks from OpenStreetMap Data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="NetworkCleaning.html">Appendix: Street Network Cleaning</a></li>
 </ul>
 </div>
 </nav></div>
@@ -454,7 +511,7 @@ correct). It accounts for segments classified as bridges or tunnels in OSM.</p>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># betweenness centrality</span>
 <span class="n">Bc_Rd</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">calculate_centrality</span><span class="p">(</span><span class="n">nx_graph</span> <span class="o">=</span> <span class="n">graph</span><span class="p">,</span> <span class="n">measure</span><span class="o">=</span><span class="s1">&#39;betweenness&#39;</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="s1">&#39;length&#39;</span><span class="p">)</span>
 <span class="c1"># straightness centrality</span>
-<span class="n">Sc</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">calculate_centrality</span><span class="p">(</span><span class="n">nx_graph</span> <span class="o">=</span> <span class="n">graph</span><span class="p">,</span> <span class="n">measure</span><span class="o">=</span><span class="s1">&#39;straightness&#39;</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="s1">&#39;length&#39;</span><span class="p">)</span>
+<span class="n">Sc</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">calculate_centrality</span><span class="p">(</span><span class="n">nx_graph</span> <span class="o">=</span> <span class="n">graph</span><span class="p">,</span> <span class="n">measure</span><span class="o">=</span><span class="s1">&#39;straightness&#39;</span><span class="p">,</span> <span class="n">weight</span><span class="o">=</span><span class="s1">&#39;length&#39;</span><span class="p">,</span> <span class="n">normalized</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
@@ -494,7 +551,7 @@ correct). It accounts for segments classified as bridges or tunnels in OSM.</p>
 </div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1">## Appending the attributes to the geodataframe</span>
@@ -508,7 +565,7 @@ correct). It accounts for segments classified as bridges or tunnels in OSM.</p>
 <section id="Visualisation">
 <h3>Visualisation<a class="headerlink" href="#Visualisation" title="Link to this heading">#</a></h3>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">col</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Bc_Rd&#39;</span><span class="p">,</span> <span class="s1">&#39;Bc_Rw&#39;</span><span class="p">,</span> <span class="s1">&#39;Sc&#39;</span><span class="p">,</span> <span class="s1">&#39;Rc400&#39;</span><span class="p">,</span> <span class="s1">&#39;Rc600&#39;</span><span class="p">]</span>
@@ -576,74 +633,73 @@ correct). It accounts for segments classified as bridges or tunnels in OSM.</p>
 </ul>
 <p><code class="docutils literal notranslate"><span class="pre">nrows</span></code> x <code class="docutils literal notranslate"><span class="pre">ncols</span></code> must be equal (or +1) to the lenght of the gdfs or columns passed.</p>
 </section>
-<section id="Single-figure-visualisation">
-<h4>Single figure visualisation<a class="headerlink" href="#Single-figure-visualisation" title="Link to this heading">#</a></h4>
+<section id="Grid-visualisation">
+<h4>Grid visualisation<a class="headerlink" href="#Grid-visualisation" title="Link to this heading">#</a></h4>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
 </pre></div>
 </div>
-<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">column</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">columns</span><span class="p">):</span>
-
-    <span class="n">ci</span><span class="o">.</span><span class="n">plot_gdf</span><span class="p">(</span><span class="n">nodes_graph</span><span class="p">,</span> <span class="n">column</span> <span class="o">=</span> <span class="n">column</span><span class="p">,</span> <span class="n">title</span> <span class="o">=</span> <span class="n">titles</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="n">cmap</span> <span class="o">=</span> <span class="s1">&#39;magma&#39;</span><span class="p">,</span> <span class="n">classes</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span> <span class="n">scheme</span> <span class="o">=</span> <span class="s1">&#39;natural_breaks&#39;</span><span class="p">,</span>
-                <span class="n">geometry_size_factor</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="mi">7</span><span class="p">),</span> <span class="n">base_map_gdf</span> <span class="o">=</span> <span class="n">edges_graph</span><span class="p">,</span> <span class="n">base_map_zorder</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-                <span class="n">legend</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">cbar_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;cbar&#39;</span> <span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;cbar_min_max&#39;</span> <span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;cbar_shrink&#39;</span> <span class="p">:</span> <span class="mf">0.30</span><span class="p">}</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">plot_grid_gdf_columns</span><span class="p">(</span><span class="n">nodes_graph</span><span class="p">,</span> <span class="n">titles</span> <span class="o">=</span> <span class="n">titles</span><span class="p">,</span> <span class="n">columns</span> <span class="o">=</span> <span class="n">columns</span><span class="p">,</span> <span class="n">cmap</span> <span class="o">=</span> <span class="s1">&#39;magma&#39;</span><span class="p">,</span> <span class="n">scheme</span> <span class="o">=</span> <span class="s1">&#39;quantiles&#39;</span><span class="p">,</span> <span class="n">classes</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+                               <span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">20</span><span class="p">),</span> <span class="n">nrows</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">ncols</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>  <span class="n">geometry_size_factor</span> <span class="o">=</span> <span class="mf">3.5</span><span class="p">,</span> <span class="n">legend</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 </div>
-<div class="nboutput docutils container">
+<div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <img alt="../_images/notebooks_Nodes_Paths_Local_Files_23_0.png" src="../_images/notebooks_Nodes_Paths_Local_Files_23_0.png" />
 </div>
 </div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../_images/notebooks_Nodes_Paths_Local_Files_23_1.png" src="../_images/notebooks_Nodes_Paths_Local_Files_23_1.png" />
-</div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../_images/notebooks_Nodes_Paths_Local_Files_23_2.png" src="../_images/notebooks_Nodes_Paths_Local_Files_23_2.png" />
-</div>
-</div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<img alt="../_images/notebooks_Nodes_Paths_Local_Files_23_3.png" src="../_images/notebooks_Nodes_Paths_Local_Files_23_3.png" />
-</div>
-</div>
 </section>
-<section id="Grid-visualisation-with-Lynch-like-Breaks">
-<h4>Grid visualisation with Lynch-like Breaks<a class="headerlink" href="#Grid-visualisation-with-Lynch-like-Breaks" title="Link to this heading">#</a></h4>
+<section id="Single-figure-visualisation-with-Lynch-derived-breaks">
+<h4>Single figure visualisation with Lynch derived breaks<a class="headerlink" href="#Single-figure-visualisation-with-Lynch-derived-breaks" title="Link to this heading">#</a></h4>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="c1"># Lynch&#39;s bins - only for variables from 0 to 1</span>
 <span class="n">scheme_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;bins&#39;</span> <span class="p">:</span> <span class="p">[</span><span class="mf">0.125</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">,</span> <span class="mf">1.00</span><span class="p">],</span> <span class="s1">&#39;scheme&#39;</span> <span class="p">:</span> <span class="s1">&#39;User_Defined&#39;</span><span class="p">}</span>
-<span class="n">cbar_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;cbar&#39;</span> <span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;cbar_min_max&#39;</span> <span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s1">&#39;cbar_shrink&#39;</span> <span class="p">:</span> <span class="mf">0.30</span><span class="p">}</span>
 
 <span class="c1">#rescaling values for 0-1 visualisation</span>
 <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">column</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">columns</span><span class="p">):</span>
     <span class="n">nodes_graph</span><span class="p">[</span><span class="n">column</span><span class="o">+</span><span class="s1">&#39;_sc&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">scaling_columnDF</span><span class="p">(</span><span class="n">nodes_graph</span><span class="p">[</span><span class="n">column</span><span class="p">])</span>
-
 <span class="n">columns_rescaled</span> <span class="o">=</span> <span class="p">[</span><span class="n">column</span><span class="o">+</span><span class="s1">&#39;_sc&#39;</span> <span class="k">for</span> <span class="n">column</span> <span class="ow">in</span> <span class="n">columns</span><span class="p">]</span>
-<span class="n">fig</span> <span class="o">=</span> <span class="n">ci</span><span class="o">.</span><span class="n">plot_grid_gdf_columns</span><span class="p">(</span><span class="n">nodes_graph</span><span class="p">,</span> <span class="n">titles</span> <span class="o">=</span> <span class="n">titles</span><span class="p">,</span> <span class="n">columns</span> <span class="o">=</span> <span class="n">columns_rescaled</span><span class="p">,</span> <span class="n">cmap</span> <span class="o">=</span> <span class="s1">&#39;magma&#39;</span><span class="p">,</span> <span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">15</span><span class="p">,</span><span class="mi">20</span><span class="p">),</span>
-                    <span class="n">nrows</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">ncols</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>  <span class="n">geometry_size_factor</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="o">**</span><span class="n">cbar_dict</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">column</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">columns_rescaled</span><span class="p">):</span>
+    <span class="n">ci</span><span class="o">.</span><span class="n">plot_gdf</span><span class="p">(</span><span class="n">nodes_graph</span><span class="p">,</span> <span class="n">column</span> <span class="o">=</span> <span class="n">column</span><span class="p">,</span> <span class="n">title</span> <span class="o">=</span> <span class="n">titles</span><span class="p">[</span><span class="n">n</span><span class="p">],</span> <span class="n">cmap</span> <span class="o">=</span> <span class="s1">&#39;magma&#39;</span><span class="p">,</span>
+                <span class="n">geometry_size_factor</span> <span class="o">=</span> <span class="mf">5.5</span><span class="p">,</span> <span class="n">figsize</span> <span class="o">=</span> <span class="p">(</span><span class="mi">7</span><span class="p">,</span><span class="mi">7</span><span class="p">),</span> <span class="n">base_map_gdf</span> <span class="o">=</span> <span class="n">edges_graph</span><span class="p">,</span> <span class="n">base_map_zorder</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">base_map_alpha</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
+                <span class="n">legend</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">scheme_dict</span><span class="p">)</span>
 </pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Nodes_Paths_Local_Files_25_0.png" src="../_images/notebooks_Nodes_Paths_Local_Files_25_0.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Nodes_Paths_Local_Files_25_1.png" src="../_images/notebooks_Nodes_Paths_Local_Files_25_1.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/notebooks_Nodes_Paths_Local_Files_25_2.png" src="../_images/notebooks_Nodes_Paths_Local_Files_25_2.png" />
 </div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/notebooks_Nodes_Paths_Local_Files_25_0.png" src="../_images/notebooks_Nodes_Paths_Local_Files_25_0.png" />
+<img alt="../_images/notebooks_Nodes_Paths_Local_Files_25_3.png" src="../_images/notebooks_Nodes_Paths_Local_Files_25_3.png" />
 </div>
 </div>
 </section>
@@ -797,8 +853,8 @@ C:\Users\gfilo\AppData\Local\miniconda3\envs\cityImage\Lib\site-packages\cityIma
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#Node-centrality">Node centrality</a><ul class="visible nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#Visualisation">Visualisation</a><ul class="nav section-nav flex-column">
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#Parameters">Parameters</a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#Single-figure-visualisation">Single figure visualisation</a></li>
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#Grid-visualisation-with-Lynch-like-Breaks">Grid visualisation with Lynch-like Breaks</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#Grid-visualisation">Grid visualisation</a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#Single-figure-visualisation-with-Lynch-derived-breaks">Single figure visualisation with Lynch derived breaks</a></li>
 </ul>
 </li>
 </ul>
@@ -853,7 +909,7 @@ C:\Users\gfilo\AppData\Local\miniconda3\envs\cityImage\Lib\site-packages\cityIma
         <div class="footer-item">
 
   <p class="sphinx-version">
-    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.4.5.
     <br/>
   </p>
 </div>
