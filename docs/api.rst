@@ -1,5 +1,8 @@
 .. _api_ref:
+
 .. automodule:: cityImage
+   :members:
+   :undoc-members:
 .. currentmodule:: cityImage
 
 cityImage API reference
@@ -18,7 +21,7 @@ Barriers
 --------------
 .. autosummary::
    :toctree: api/
-
+   
    road_barriers
    water_barriers
    railway_barriers
@@ -46,7 +49,7 @@ clean
 -----
 .. autosummary::
    :toctree: api/
-
+   
    clean_network
    simplify_graph
    duplicate_nodes
@@ -175,3 +178,7 @@ visibility
    visibility_polygon2d
    compute_3d_sight_lines
    intervisibility
+
+.. toctree::
+   :maxdepth: 1
+   :hidden:
