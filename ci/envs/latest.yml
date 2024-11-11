@@ -2,8 +2,8 @@ name: test
 channels:
   - conda-forge
 dependencies:
+  - python=3.10  # or a specific compatible version
   - shapely
-  - python
   - geopandas
   - osmnx
   - networkx
@@ -14,4 +14,3 @@ dependencies:
   - pytest
   - pytest-cov
   - codecov
-
