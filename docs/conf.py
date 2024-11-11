@@ -22,7 +22,7 @@ extensions = [
     'nbsphinx',  # Adds support for Jupyter Notebooks (.ipynb files) in the documentation.
     'sphinx.ext.mathjax',  # Allows for rendering of mathematical notation using MathJax.
     'sphinx.ext.viewcode',  # Includes links to highlighted source code in the documentation.
-    'recommonmark',  # Enables support for Markdown files in Sphinx documentation.
+    'myst_parser',  # Replaces recommonmark for Markdown support
     'sphinx.ext.autodoc',  # Automatically generates documentation from docstrings in the code.
     'sphinx.ext.napoleon',  # Supports Google style and NumPy style docstrings for easier writing of documentation.
     'sphinx_autodoc_typehints',  # Adds type hints to the function signatures in the generated documentation.
@@ -48,7 +48,7 @@ html_theme_options = {
 
 html_theme_options.update({
     'navigation_depth': 4,
-    'show_prev_next': False,
+    'show_prev_next': True,
     'show_toc_level': 2,
     'page_sidebar_items': ['page-toc', 'edit-this-page', 'page-nav'],  # Adjust as needed
 })
@@ -61,6 +61,7 @@ html_static_path = ['_static']
 autosummary_generate = True  # Automatically generate summary pages and stub pages for items listed in autosummary directives.
 autosummary_imported_members = True  # Include members imported from other modules in the generated documentation.
 numpydoc_show_class_members = True  # Include class members (methods and attributes) in the generated documentation.
+class_members_toctree = True
 numpydoc_show_inherited_class_members = True  # Include inherited class members in the generated documentation.
 numpydoc_class_members_toctree = True  # Create a separate toctree (table of contents tree) for class members.
 numpydoc_use_plots = True  # Enable the generation of plots for examples in NumPy-style docstrings.
