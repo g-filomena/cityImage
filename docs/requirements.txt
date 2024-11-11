@@ -3,3 +3,4 @@ pydata-sphinx-theme
 nbsphinx
 sphinx-rtd-theme
 recommonmark
+sphinx-autodoc-typehints
