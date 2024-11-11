@@ -2,5 +2,5 @@ sphinx
 pydata-sphinx-theme
 nbsphinx
 sphinx-rtd-theme
-recommonmark
+myst-parser
 sphinx-autodoc-typehints
