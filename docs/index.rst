@@ -55,11 +55,4 @@ Documentation content
 
    Home <self>
    userGuide <notebooks/userGuide.rst>
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+   API reference <api>
