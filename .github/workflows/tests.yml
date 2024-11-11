@@ -26,6 +26,7 @@ jobs:
           auto-activate-base: false
           activate-environment: test
           environment-file: ${{ matrix.env }}
+          python-version: 3.10  # Explicitly specify Python version
           channel-priority: strict
 
       - name: Install cityImage
@@ -43,7 +44,6 @@ jobs:
         run: |
           pytest -v --color=yes --cov-config .coveragerc --cov=cityImage --cov-append --cov-report term-missing --cov-report xml tests
 
-
       - name: Upload coverage to Codecov
         if: success()
         uses: codecov/codecov-action@v2
@@ -52,15 +52,15 @@ jobs:
           file: coverage.xml
           flags: unittests
           name: codecov-python
-      
+
+      # Uncomment the following lines to test documentation or apply code formatting checks
       # - name: Test documentation
-        # shell: bash -l {0}
-        # if: contains(matrix.env, 'latest.yml') && contains(matrix.os, 'ubuntu')
-        # run: |
-          # ci/envs/test_documentation.sh
+      #   shell: bash -l {0}
+      #   if: contains(matrix.env, 'latest.yml') && contains(matrix.os, 'ubuntu')
+      #   run: |
+      #     ci/envs/test_documentation.sh
 
-#       - name: Black
-#         shell: bash -l {0}
-#         run: |
-#           black --check .
-
+      # - name: Black
+      #   shell: bash -l {0}
+      #   run: |
+      #     black --check .
