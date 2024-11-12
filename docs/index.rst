@@ -54,5 +54,5 @@ Documentation content
    :maxdepth: 1
 
    Home <self>
-   userGuide <notebooks/userGuide.rst>
+   User Guide <notebooks/userGuide.rst>
    API reference <api>
