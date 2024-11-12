@@ -2,28 +2,24 @@ name: cityImage
 channels:
   - defaults
 dependencies:
-  - pip
   - python=3.10.9
-  - setuptools
-  - wheel
-  - xz
-  - zlib
+  - pip
   - pip:
-    - attrs==22.2.0
-    - contourpy==1.0.7
-    - cycler==0.11.0
-    - fiona==1.8.22
-    - geopandas==0.12.2
-    - mapclassify==2.5.0
-    - matplotlib==3.6.3
-    - networkx==3.0
-    - numpy==1.24.1
-    - osmnx==1.9.1
-    - pandas==1.5.3
-    - pyproj==3.4.1
-    - python-dateutil==2.8.2
-    - python-louvain==0.16
-    - pyvista==0.43.2
-    - shapely==2.0.0
-    - igraph==0.11.6
-    - tqdm==4.65.0
+      - attrs==22.2.0
+      - contourpy==1.0.7
+      - cycler==0.11.0
+      - fiona==1.8.22
+      - geopandas==0.12.2
+      - mapclassify==2.5.0
+      - matplotlib==3.6.3
+      - networkx==3.0
+      - numpy==1.24.1
+      - osmnx==1.9.1
+      - pandas==1.5.3
+      - pyproj==3.4.1
+      - python-dateutil==2.8.2
+      - python-louvain==0.16
+      - pyvista==0.43.2
+      - shapely==2.0.0
+      - igraph==0.11.6
+      - tqdm==4.65.0
