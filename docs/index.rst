@@ -1,6 +1,11 @@
 cityImage's documentation
 =========================
 
+.. image:: static/logo.png
+   :align: center
+   :width: 30%
+   :class: only-light
+
 Introduction
 ------------
 
