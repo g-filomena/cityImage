@@ -1,7 +1,7 @@
 cityImage's documentation
 =========================
 
-.. image:: static/logo.png
+.. image:: _static/logo.png
    :align: center
    :width: 30%
    :class: only-light
