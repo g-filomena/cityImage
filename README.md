@@ -5,7 +5,7 @@
 [![Documentation Status](https://readthedocs.org/projects/cityimage/badge/?version=latest)](https://cityimage.readthedocs.io/en/latest/?badge=latest)
 
 
-<img src="docs/static/logo.png" alt="Logo" width="33%">
+<img src="docs/_static/logo.png" alt="Logo" width="33%">
 
 # cityImage
 
