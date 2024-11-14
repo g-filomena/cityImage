@@ -11,7 +11,6 @@ copyright = '2024, Gabriele Filomena'
 author = 'Gabriele Filomena'
 release = '1.21'
 html_title = ""
-html_static_path = ['static']
 
 import os
 import sys
@@ -45,12 +44,16 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # The theme to use for HTML and HTML Help pages.
 html_theme = 'pydata_sphinx_theme'
 
-html_logo = "static/logo.png"
-
 html_theme_options = {
     "github_url": "https://github.com/cityImage",
     "twitter_url": "https://twitter.com/gfilo",
+    "logo": {
+        "image_light": "logo.png",
+        "image_dark": "logo.png",
+    },
 }
+
+html_static_path = ["_static"]
 
 html_theme_options.update({
     'navigation_depth': 4,
