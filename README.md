@@ -4,6 +4,9 @@
 [![PyPI version](https://badge.fury.io/py/cityImage.svg)](https://badge.fury.io/py/cityImage)
 [![Documentation Status](https://readthedocs.org/projects/cityimage/badge/?version=latest)](https://cityimage.readthedocs.io/en/latest/?badge=latest)
 
+
+<img src="docs/static/logo.png" alt="Logo" width="33%">
+
 # cityImage
 
 **A tool for analysing urban legibility and extracting The Computational Image of the City**
