@@ -46,6 +46,10 @@ html_theme = 'pydata_sphinx_theme'
 html_theme_options = {
     "github_url": "https://github.com/cityImage",
     "twitter_url": "https://twitter.com/gfilo",
+    "logo": {
+        "image_light": "static/logo.png",  # Path to logo for light theme
+        "image_dark": "static/logo.png",   # Path to logo for dark theme
+    }
 }
 
 html_theme_options.update({
