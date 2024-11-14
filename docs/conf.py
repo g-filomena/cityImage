@@ -10,6 +10,8 @@ project = 'cityImage'
 copyright = '2024, Gabriele Filomena'
 author = 'Gabriele Filomena'
 release = '1.21'
+html_title = ""
+html_static_path = ['static']
 
 import os
 import sys
@@ -43,13 +45,11 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # The theme to use for HTML and HTML Help pages.
 html_theme = 'pydata_sphinx_theme'
 
+html_logo = "static/logo.png"
+
 html_theme_options = {
     "github_url": "https://github.com/cityImage",
     "twitter_url": "https://twitter.com/gfilo",
-    "logo": {
-        "image_light": "static/logo.png",  # Path to logo for light theme
-        "image_dark": "static/logo.png",   # Path to logo for dark theme
-    }
 }
 
 html_theme_options.update({
@@ -59,7 +59,7 @@ html_theme_options.update({
     'page_sidebar_items': ['page-toc', 'edit-this-page', 'page-nav'],  # Adjust as needed
 })
 
-html_static_path = ['_static']
+
 
 # -- Extension configuration -------------------------------------------------
 
