@@ -375,8 +375,7 @@ def gdf_from_geometries(geometries, crs):
     -------
     gdf: GeoDataFrame
         The resulting GeoDataFrame.
-    """
-    
+    """  
     df = pd.DataFrame({'geometry': geometries})
     gdf = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
     gdf['length'] = gdf['geometry'].length
@@ -543,7 +542,7 @@ def polygon_2d_to_3d(building_polygon, base, height):
         This function reorients the coordinates of a polygon if the polygon
         has counterclockwise orientation.
         
-        Args
+        Parameters
         ----------
         xy: list
             List of tuples, each representing a coordinate of the polygon
@@ -577,3 +576,63 @@ def polygon_2d_to_3d(building_polygon, base, height):
     # Extrude the 3D polygon to the specified height
     return polygon.extrude((0, 0, height - base), capping=True)
     
+    
+def aggregate_geometries(gdf, column_operations):
+    """
+    Aggregate overlapping geometries in a GeoDataFrame and perform specified operations on their attributes.
+
+    Parameters
+    ----------
+    gdf : GeoDataFrame
+        The input GeoDataFrame containing geometries and associated attributes to be aggregated.
+    column_operations : dict
+        A dictionary where keys are column names and values are aggregation functions (e.g., 'min', 'max', 'mean').
+
+    Returns
+    -------
+    GeoDataFrame
+        A new GeoDataFrame with aggregated geometries and updated attributes based on the specified operations.
+    """
+    necessary = True
+
+    while necessary:
+        # Create a spatial index for faster lookup
+        spatial_index = gdf.sindex
+        to_remove_geometries = []
+
+        # Loop through each geometry in the GeoDataFrame
+        for idx, row in gdf.iterrows():
+            # Find all geometries that contain the current geometry
+            possible_matches_index = list(spatial_index.intersection(row.geometry.bounds))
+            containing_geometries = gdf.iloc[possible_matches_index]
+            containing = containing_geometries[
+                (containing_geometries.geometry.contains(row.geometry)) &
+                (containing_geometries.index != idx) &
+                (~containing_geometries.index.isin(to_remove_geometries))
+            ]
+
+            if len(containing) > 0:  # If the current geometry is contained by others
+                # Get the container geometry (largest one by area)
+                ix_container = containing.geometry.area.idxmax()
+                row_container = gdf.loc[ix_container]
+
+                # Update attributes based on the user-defined operations
+                for column, operation in column_operations.items():
+                    if operation == 'max':
+                        gdf.loc[ix_container, column] = max(row[column], row_container[column])
+                    elif operation == 'min':
+                        gdf.loc[ix_container, column] = min(row[column], row_container[column])
+                    elif operation == 'mean':
+                        gdf.loc[ix_container, column] = (row[column] + row_container[column]) / 2
+
+                # Add the current geometry to the list for removal
+                to_remove_geometries.append(idx)
+
+        # Break if no geometries were removed (no changes made)
+        if len(to_remove_geometries) == 0:
+            break
+
+        # Remove aggregated geometries from the GeoDataFrame
+        gdf = gdf[~gdf.index.isin(to_remove_geometries)]
+
+    return gdf
