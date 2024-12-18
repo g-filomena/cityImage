@@ -3,14 +3,18 @@ import numpy as np
 import geopandas as gpd
 import pyvista as pv
 from tqdm import tqdm
+import os
+import multiprocessing
+from concurrent.futures import ThreadPoolExecutor
+
 
 from shapely.geometry import Point, LineString, Polygon, MultiPolygon, MultiLineString
 from shapely.ops import unary_union
 pd.set_option("display.precision", 3)
 
-import concurrent.futures
 from .utilities import polygon_2d_to_3d 
 from .angles import get_coord_angle
+from .graph import graph_fromGDF
 
 def visibility_polygon2d(building_geometry, obstructions_gdf, obstructions_sindex, max_expansion_distance = 600):
     """
@@ -24,7 +28,7 @@ def visibility_polygon2d(building_geometry, obstructions_gdf, obstructions_sinde
     building_geometry: Polygon
         The building geometry.
     obstructions_gdf: Polygon GeoDataFrame
-        Obstructions GeoDataFrame.
+        The Polygon GeoDataFrame contianing the footprints of the obstructions (buildings).
     obstructions_sindex: Spatial Index
         The spatial index of the obstructions GeoDataFrame.
     max_expansion_distance: float
@@ -72,50 +76,216 @@ def visibility_polygon2d(building_geometry, obstructions_gdf, obstructions_sinde
         poly_vis = poly.buffer(0).difference(building_geometry) 
     
     return poly_vis.area  
-    
-def compute_3d_sight_lines(nodes_gdf, buildings_gdf, distance_along = 200, distance_min_observer_target = 300, chunk_size = 1000):
+  
+ 
+def compute_3d_sight_lines(nodes_gdf, buildings_gdf, distance_along = 200, distance_min_observer_target = 300, chunk_size=500, consolidate = 
+                        False, edges_gdf = None, tolerance = 0.0):
     """
-    Computes the 3D sight lines between observer points in a Point GeoDataFrame and target buildings, based on a given distance along the buildings' exterior and a 
-    minimum distance between observer and target (e.g. lines will not be constructed for observer points and targets whose distance is lower 
-    than "distance_min_observer_target")
+    Computes the 3D sight lines between observer points in a Point GeoDataFrame (e.g. junction or nodes) and target buildings, based on a given distance along the buildings’ exterior and a minimum distance 
+    between the observer and target (e.g. lines will not be constructed for observer points and 
+    targets whose distance is lower than “distance_min_observer_target”). 
+    
+    The function performs 3d intervisibility checks in parallel by processing the set of sight lines in manageable chunks, based on the user cpu resources.
+    
+    Consolidation involves grouping spatially close observer nodes into clusters based on a specified tolerance. Nearby nodes are merged, with the derived cluster centroid 
+    serving as the representative node. This process ensures that, for example, only one sight line is built for nodes that are close together, reducing computation time and generation of geometries.
+    
+    Note: the height of the building needs to represent the elevation of the building from the ground. The elevation of the ground, where the footprints lie on, should be passed through the column "base".
     
     Parameters
     ----------
-    nodes_gdf: Point GeoDataFrame
-        A GeoDataFrame containing the observer nodes, with at least a Point geometry column.
-    buildings_gdf: Polygon GeoDataFrame
-        A GeoDataFrame containing the target buildings, with at least a Polygon geometry column.
-    distance_along: float 
-        The distance along the exterior of the buildings for selecting target points.
-    distance_min_observer_target: float 
-        The minimum distance between observer and target.
-    chunk_size: int
-        It Computes sight lines in chunks.
-    
-    Returns:
-    ----------
-    sight_lines: LineString GeoDataFrame
-        The visibile sight lines GeoDataFrame.
-    """
-    
-    nodes_gdf = nodes_gdf.copy()
-    buildings_gdf = buildings_gdf.copy()
+    nodes_gdf : GeoDataFrame
+        Point GeoDataFrame containing observer points (nodes) with 3D coordinates.
+    buildings_gdf : GeoDataFrame
+        GeoDataFrame containing building geometries, including attributes like base height and total height.
+    distance_along : float, optional
+        Distance interval for generating target points along building perimeters. Default is 200.
+    distance_min_observer_target : float, optional
+        Minimum distance required between observer and target points to create a sight line. Default is 300.
+    chunk_size : int, optional
+        Number of nodes to process in each chunk for parallel execution. Default is 500.
+    consolidate : bool, optional
+        Whether to consolidate nodes based on spatial proximity and tolerance. Default is False.
+    edges_gdf : GeoDataFrame, optional
+        GeoDataFrame representing edges between nodes, used for optional node consolidation. Default is None.
+    tolerance : float, optional
+        Tolerance for node consolidation, indicating the maximum allowable spatial distance for merging nodes. Default is 0.0.
 
-    # add a 'base' column to the buildings GeoDataFrame with a default value of 0.0, if not provided
+    Returns
+    -------
+    GeoDataFrame
+        A GeoDataFrame containing the visible 3D sight lines, with columns for observer node IDs, building IDs,
+        sight line geometry, and computed lengths.
+    """
+    if consolidate and edges_gdf is None:
+        raise ValueError("Consolidation requires `edges_gdf` to be provided.")
+        
+    tmp_nodes, buildings_gdf = _prepare_3d_sight_lines(nodes_gdf, buildings_gdf, distance_along = 200, consolidate = consolidate, edges_gdf = edges_gdf, tolerance = tolerance)
+    
+    buildings_sindex = buildings_gdf.sindex
+    sight_lines_chunks = []
+    # Divide nodes into manageable chunks
+    node_chunks = np.array_split(tmp_nodes, max(1, len(tmp_nodes) // chunk_size))
+    
+    
+    def _compute_distances_filter(row, min_distance):
+        """
+        Compute the distance between observer and target points and check if it's above the minimum distance.
+        """
+        observer = row.observer
+        target = row.target
+        distance = observer.distance(target)
+        return distance >= min_distance
+
+    for node_chunk in tqdm(node_chunks, desc="Processing node chunks"):
+        # Create a temporary cartesian product for the current node chunk
+        potential_sight_lines = pd.merge(node_chunk.assign(key=1), buildings_gdf.assign(key=1), on="key").drop("key", axis=1)
+
+        # Compute distances and filter
+        potential_sight_lines = potential_sight_lines[
+            potential_sight_lines.apply(
+                lambda row: _compute_distances_filter(row, distance_min_observer_target),
+                axis=1
+            )
+        ]
+
+        # If filtered potential sight lines are empty, skip processing
+        if potential_sight_lines.empty:
+            continue
+
+        potential_sight_lines['start'] = [[observer.x, observer.y, observer.z] for observer in potential_sight_lines.observer]
+        potential_sight_lines['stop'] =[[target.x, target.y, target.z] for target in potential_sight_lines.target]
+
+        # Perform parallelized intervisibility check
+        max_workers = max(1, multiprocessing.cpu_count() // 2)
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            tqdm.pandas(desc="Checking visibility (parallelized)")
+            potential_sight_lines["visible"] = list(
+                executor.map(
+                    lambda row: _intervisibility(row, buildings_gdf, buildings_sindex),
+                    potential_sight_lines.itertuples(index=False)
+                )
+            )
+
+        # Filter visible sight lines and append to the result
+        potential_sight_lines = potential_sight_lines[potential_sight_lines["visible"] == True]
+        sight_lines_chunks.append(potential_sight_lines)
+
+
+    # Combine all chunks into a single GeoDataFrame
+    sight_lines_tmp = pd.concat(sight_lines_chunks, ignore_index=True)
+    sight_lines_tmp.reset_index(drop=True, inplace=True)
+    
+    sight_lines_tmp = sight_lines_tmp.drop(['geometry_x', 'geometry_y', 'start', 'stop', 'visible', 'base', 
+                                    'height', 'building_3d', 'observer', 'z'], axis = 1)
+    sight_lines_exploded = sight_lines_tmp.explode(column='nodeIDs', ignore_index=True)
+
+    nodes_gdf['geometry'] = [Point(geometry.x, geometry.y, z) for geometry, z in zip(nodes_gdf['geometry'], nodes_gdf['z'])]
+    
+    # Merge with `nodes` GeoDataFrame to get the geometry of each nodeID
+    sight_lines_exploded = sight_lines_exploded.merge(
+        nodes_gdf[['nodeID', 'geometry']],
+        left_on='nodeIDs',
+        right_on='nodeID',
+        suffixes=('', '_node')
+    )
+    
+    # Step 3: Update the `observer` column with the merged geometry
+    sight_lines_exploded['geometry'] = [LineString([observer, target]) for observer, target in zip(sight_lines_exploded['geometry'], 
+                                                                                          sight_lines_exploded['target'])]
+    sight_lines = gpd.GeoDataFrame(sight_lines_exploded, geometry='geometry', crs = nodes_gdf.crs)
+    sight_lines['nodeID'] = sight_lines['nodeIDs']
+    sight_lines.drop(['target', 'nodeIDs', 'nodeID_node'], axis = 1, inplace = True)
+    sight_lines['length'] = sight_lines.geometry.length
+    sight_lines = sight_lines.sort_values(['buildingID', 'nodeID', 'length'], ascending=[False, False, False]).drop_duplicates(['buildingID', 'nodeID'], keep='first')
+    sight_lines.reset_index(inplace = True, drop = True)
+    
+    return sight_lines 
+    
+def _intervisibility(row, buildings_gdf, buildings_sindex):
+    """
+    Check if a 3D line of sight between two points is obstructed by any buildings.
+
+    Parameters
+    ----------
+    row : pd.Series
+        A row from the DataFrame containing observer and target points, along with their 3D coordinates.
+    buildings_gdf : GeoDataFrame
+        Polygon GeoDataFrame containing building geometries and associated attributes including base height and height from the base.
+    buildings_sindex : rtree.index.Index
+        Spatial index of the buildings GeoDataFrame for efficient spatial queries.
+
+    Returns
+    -------
+    bool
+        True if the line of sight is unobstructed (visible), False otherwise.
+    """
+    line2d = LineString([row.start, row.stop])
+    possible_matches_index = list(buildings_sindex.intersection(line2d.buffer(5).bounds))
+    possible_matches = buildings_gdf.iloc[possible_matches_index]
+    matches = possible_matches[possible_matches.intersects(line2d)]
+    matches = matches[matches.buildingID != row.buildingID]
+    if len(matches) == 0:
+        return True
+
+    for _, row_building in matches.iterrows():
+        building_3d = row_building.building_3d.extract_surface().triangulate()
+        points, intersections = building_3d.ray_trace(row.start, row.stop)
+        if len(intersections) > 0:
+            return False
+            
+    return True
+    
+def _prepare_3d_sight_lines(nodes_gdf, buildings_gdf, distance_along = 200, consolidate = False, edges_gdf = None, tolerance = 0.0):
+    """
+    Prepare 3D sight lines by processing nodes and buildings into usable formats for visibility calculations.
+    
+    Parameters
+    ----------
+    nodes_gdf : GeoDataFrame
+        Point GeoDataFrame containing observer points (nodes) with 3D coordinates.
+    buildings_gdf : GeoDataFrame
+        Polygon GeoDataFrame containing building geometries and associated attributes including base height and height from the base.
+    distance_along : float, optional
+        Distance interval for creating target points along building perimeters. Default is 200.
+    consolidate : bool, optional
+        Whether to consolidate nodes based on spatial proximity and tolerance. Default is False.
+    edges_gdf : GeoDataFrame, optional
+        GeoDataFrame representing edges between nodes, used for optional node consolidation. Default is None.
+    tolerance : float, optional
+        Tolerance for node consolidation, indicating the maximum allowable spatial distance for merging nodes. Default is 0.0.
+
+    Returns
+    -------
+    tuple
+        A tuple containing:
+        - consolidated_nodes (GeoDataFrame): GeoDataFrame of processed and optionally consolidated observer nodes.
+        - buildings_gdf (GeoDataFrame): GeoDataFrame with processed building geometries and target points.
+    """
+    nodes_gdf = nodes_gdf[['geometry', 'x', 'y', 'nodeID', 'z']].copy()
+    nodes_gdf['geometry'] = nodes_gdf.apply(lambda row: Point(row['x'], row['y'], row['z']), axis=1)
+    
+    buildings_gdf = buildings_gdf.copy()
+    buildings_gdf['geometry'] = buildings_gdf['geometry'].apply(
+        lambda geom: geom if isinstance(geom, Polygon) else geom.convex_hull if geom.is_valid else geom.buffer(0)
+    )
+
+    # add a 'base' column to the buildings GeoDataFrame with a default value of 1.0, if not provided
     if 'base' not in buildings_gdf.columns:
-        buildings_gdf["base"] = 0.0
+        buildings_gdf["base"] = 1.0
+    buildings_gdf['base'] = buildings_gdf['base'].where(buildings_gdf['base'] < 1.0, 1.0) # minimum base
+    
+    buildings_gdf = buildings_gdf[['geometry', 'buildingID', 'base', 'height']].copy()
 
     def add_height_to_line(exterior, base, height):
         # create a new list of Point objects with the z-coordinate set to (height - base)
-        coords = exterior.coords
-        new_coords = ((x, y, height - base) for x, y in coords)
-        return LineString(new_coords)
+        return LineString([(x, y, height + base) for x, y in exterior.coords])
 
     def process_geometry_to_linestring(geometry, base, height):
         if isinstance(geometry, Polygon):
             return add_height_to_line(geometry.exterior, base, height)
         elif isinstance(geometry, MultiPolygon):
-            return LineString((point for poly in geometry.geoms for point in add_height_to_line(poly.exterior, base, height).coords))
+            return LineString([point for poly in geometry.geoms for point in add_height_to_line(poly.exterior, base, height).coords])
 
     # create a Series with the height-extended LineString objects
     building_exteriors_roof = buildings_gdf.apply(lambda row: process_geometry_to_linestring(row.geometry, row.base, row.height), axis=1)
@@ -124,83 +294,131 @@ def compute_3d_sight_lines(nodes_gdf, buildings_gdf, distance_along = 200, dista
     
     # create a new column with the list of targets along the exterior LineString
     def interpolate_targets(exterior, num_intervals):
-        return (exterior.interpolate(min(exterior.length / 2, distance_along) * i) for i in range(num_intervals))
-    buildings_gdf['target'] = [list(interpolate_targets(exterior, intervals)) for exterior, intervals in zip(building_exteriors_roof, num_intervals)]
+        return [exterior.interpolate(min(exterior.length / 2, distance_along) * i) for i in range(num_intervals)]
+    
+    buildings_gdf['target'] = [interpolate_targets(exterior, intervals) for exterior, intervals in zip(building_exteriors_roof, num_intervals)]
 
-    # create a new column in the nodes GeoDataFrame with the Point objects representing the observer positions
-    nodes_gdf['observer'] = nodes_gdf.apply(lambda row: Point(row.geometry.x, row.geometry.y, row.z), axis=1)
+    if consolidate:
+        consolidated_nodes = _consolidate_nodes(nodes_gdf, edges_gdf, tolerance = tolerance)
+    else:
+        consolidated_nodes = nodes_gdf
+        consolidated_nodes['geometry'] = [Point(geom.x, geom.y, z) for geom, z in zip(consolidated_nodes.geometry, consolidated_nodes['z'])]
+
+    
+    consolidated_nodes['observer'] = consolidated_nodes['geometry']
     # create a temporary dataframe with building targets
-    tmp_buildings = buildings_gdf.explode('target')
-    tmp_nodes = nodes_gdf[['nodeID', 'observer']].copy()
-    tmp_buildings = tmp_buildings[['buildingID', 'target']]
+    buildings_gdf = buildings_gdf.explode('target')
+    consolidated_nodes = consolidated_nodes.drop(["x", "y"], axis = 1)
+    buildings_gdf = buildings_gdf[['buildingID', 'target', 'geometry', 'height', 'base']].copy()
 
     # create pyvista 3d objects for buildings
-    buildings_gdf['building_3d'] = [polygon_2d_to_3d(geo, base, height) for geo, base, height in zip(buildings_gdf['geometry'], buildings_gdf['base'], buildings_gdf['height'])]
-    buildings_sindex = buildings_gdf.sindex
+    buildings_gdf = buildings_gdf.copy()
+    buildings_gdf['building_3d'] = [polygon_2d_to_3d(geo, base, height) for geo, base, height in 
+                                    zip(buildings_gdf['geometry'], buildings_gdf['base'], buildings_gdf['height'])]
 
-    sight_lines_chunks = []
-    tmp_buildings_chunks = np.array_split(tmp_buildings, max(1, len(tmp_buildings) // chunk_size))
-    
-    for buildings_chunk in tqdm(tmp_buildings_chunks, desc="Processing buildings chunks"):
-        # obtain the sight_lines dataframe by means of a cartesian product between GeoDataFrames
-        sight_lines_chunk = pd.merge(tmp_nodes.assign(key=1), buildings_chunk.assign(key=1), on='key').drop('key', axis=1)
-        # calculate the distance between observer and target and filter
-        sight_lines_chunk['distance']= [p1.distance(p2) for p1, p2 in zip(sight_lines_chunk.observer, sight_lines_chunk.target)]
-        sight_lines_chunk = sight_lines_chunk[sight_lines_chunk['distance'] >= distance_min_observer_target]
-        # add geometry column with LineString connecting observer and target
-        sight_lines_chunk['geometry'] = [LineString([p1, p2]) for p1, p2 in zip(sight_lines_chunk.observer, sight_lines_chunk.target)]
+    return consolidated_nodes, buildings_gdf
 
-        # extract tuples for starting and target points of the sight lines
-        sight_lines_chunk['start'] = [[observer.x, observer.y, observer.z] for observer in sight_lines_chunk.observer]
-        sight_lines_chunk['stop'] =[[target.x, target.y, target.z] for target in sight_lines_chunk.target]
-
-        # check intervisibility and filter out sight_lines that are obstructed
-        sight_lines_chunk['visible'] = sight_lines_chunk.apply(lambda row: intervisibility(row.geometry, row.buildingID, row.start, row.stop, buildings_gdf, buildings_sindex), axis =1)
-        sight_lines_chunk = sight_lines_chunk[sight_lines_chunk['visible'] == True]
-        sight_lines_chunk.drop(['start', 'stop', 'observer', 'target', 'visible'], axis=1, inplace=True)
-        sight_lines_chunks.append(sight_lines_chunk)
-    
-    sight_lines = pd.concat(sight_lines_chunks, ignore_index=True)
-    sight_lines.reset_index(drop=True, inplace=True)
-    sight_lines = sight_lines.set_geometry('geometry').set_crs(buildings_gdf.crs)
-
-    return sight_lines
-   
-def intervisibility(line2d, buildingID, start, stop, obstructions_gdf, obstructions_sindex):
+def _consolidate_nodes(nodes_gdf, edges_gdf, tolerance = 40):
     """
-    Check if a 3d line of sight between two points is obstructed by any buildings.
-    
+    Consolidate nodes in a GeoDataFrame by clustering based on spatial proximity and resolving disconnected components.
+
     Parameters
     ----------
-    line2d: Shapely LineString
-        The 2D line of sight to check for obstruction.
-    buildingID: int
-        The buildingID of the building that the line of sight points at.
-    start: tuple
-        The starting point of the line of sight in the form of (x, y, z).
-    stop: tuple
-        The ending point of the line of sight in the form of (x, y, z).
-    
-    Returns:
-    ----------
-    bool: True 
-        When the line of sight is not obstructed, False otherwise.
+    nodes_gdf : GeoDataFrame
+        Point GeoDataFrame containing observer points (nodes) with 3D coordinates.
+    edges_gdf : GeoDataFrame
+        GeoDataFrame representing edges between nodes, used to identify connectivity within clusters.
+    tolerance : float, optional
+        Maximum allowable spatial distance for merging nodes into clusters. Default is 40.
+
+    Returns
+    -------
+    GeoDataFrame
+        A GeoDataFrame of consolidated nodes, with updated geometries and attributes reflecting the merged clusters.
     """
-    # first just check for 2d intersections and considers the ones that have a 2d intersection.
-    # if there is no 2d intersection, it is not necessary to check for the 3d one.
-    possible_matches_index = list(obstructions_sindex.intersection(line2d.buffer(5).bounds)) # looking for possible candidates in the external GDF
-    possible_matches = obstructions_gdf.iloc[possible_matches_index]
-    matches = possible_matches[possible_matches.intersects(line2d)]
-    matches = matches[matches.buildingID != buildingID]
-    if len(matches) == 0:
-        return True
+    nodes_gdf = nodes_gdf.copy()
+    nodes_gdf.drop(['x', 'y'], axis = 1, inplace = True)
+    nodes_gdf.index = nodes_gdf.nodeID
+    nodes_gdf.index.name = None
+
+    graph = graph_fromGDF(nodes_gdf, edges_gdf, nodeID = "nodeID")
     
-    # if there are 2d intersections, check for 3d ones
-    visible = True
-    for _, row_building in matches.iterrows():
-        building_3d = row_building.building_3d.extract_surface().triangulate()
-        points, intersections = building_3d.ray_trace(start, stop)
-        if len(intersections) > 0:
-            return False
-            
-    return visible
+    def _merge_nodes_geometries(nodes_gdf, tolerance):
+
+        # buffer nodes then merge overlapping geometries
+        merged = nodes_gdf.buffer(tolerance).unary_union
+
+        # extract the member geometries if it's a multi-geometry
+        merged = merged.geoms if hasattr(merged, "geoms") else merged
+        return gpd.GeoSeries(merged, crs= nodes_gdf.crs)
+    
+    
+    # STEP 1: Buffer nodes by tolerance, merge overlaps, and find centroids
+    clusters = gpd.GeoDataFrame(geometry = _merge_nodes_geometries(nodes_gdf, tolerance), crs = nodes_gdf.crs)
+    centroids = clusters.centroid
+    clusters["x"] = centroids.x
+    clusters["y"] = centroids.y
+
+    # STEP 2: Attach nodes to their clusters by spatial join
+    gdf = gpd.sjoin(nodes_gdf, clusters, how="left", predicate="within")
+    gdf = gdf.drop(columns="geometry").rename(columns={"index_right": "cluster"})
+    gdf["cluster"] = gdf["cluster"].astype(int)
+
+    # STEP 3
+    # if a cluster contains multiple components (i.e., it's not connected)
+    # move each component to its own cluster (otherwise you will connect
+    # nodes together that are not truly connected, e.g., nearby deadends or
+    # surface streets with bridge).
+
+    cluster_counter = gdf.cluster.max()+1
+    for cluster_label, nodes_subset in gdf.groupby("cluster"):
+        if len(nodes_subset) > 1:
+            # identify all the (weakly connected) component in cluster
+            wccs = list(nx.connected_components(graph.subgraph(nodes_subset.index)))
+            if len(wccs) > 1:
+                # if there are multiple components in this cluster
+                for  wcc in wccs:
+                    # set subcluster xy to the centroid of just these nodes
+                    idx = list(wcc)
+                    subcluster_centroid = nodes_gdf.loc[idx].unary_union.centroid
+                    
+                    gdf.loc[idx, "x"] = subcluster_centroid.x
+                    gdf.loc[idx, "y"] = subcluster_centroid.y
+                    # move to subcluster by appending suffix to cluster label
+                    gdf.loc[idx, "cluster"] = cluster_counter
+                    cluster_counter +=1
+
+    # Assign unique integer labels to each consolidated node cluster
+    gdf["cluster"] = gdf["cluster"].factorize()[0]
+
+    # STEP 4: Group and consolidate nodes by cluster, keeping memory of nodeID origins
+    consolidated_nodes = []
+
+    for cluster_label, nodes_subset in gdf.groupby("cluster"):
+        if len(nodes_subset) == 0:
+            continue
+        nodeIDs = nodes_subset.nodeID.to_list()
+    
+        # Calculate centroid of the geometries in nodes_subset
+        cluster_centroid = nodes_gdf.loc[nodeIDs].geometry.unary_union.centroid
+        z_mean = nodes_gdf.loc[nodeIDs].z.mean()
+        
+        consolidated_node = {
+            "nodeIDs": nodeIDs,
+            "x": cluster_centroid.x,
+            "y": cluster_centroid.y,
+            "z": z_mean,
+            "nodeID" : cluster_label
+        }
+        consolidated_nodes.append(consolidated_node)
+
+        consolidated_nodes_gdf = gpd.GeoDataFrame(
+            consolidated_nodes,
+            geometry = gpd.points_from_xy(
+                [row["x"] for row in consolidated_nodes],
+                [row["y"] for row in consolidated_nodes],
+                z = [row["z"] for row in consolidated_nodes],
+                crs= nodes_gdf.crs
+            ))
+    
+    return(consolidated_nodes_gdf)
