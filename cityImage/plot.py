@@ -488,7 +488,6 @@ def plotOn_ax(ax, gdf, column = None, scheme = None, bins = None, classes = 7, n
     zorder: int   
         Zorder of this layer; e.g. if 0, plots first, thus main GeoDataFrame on top; if 1, plots last, thus on top.
     """  
-    
     gdf = gdf.copy()
 
     categorical = not (norm is not None) | (scheme is not None)
@@ -589,7 +588,6 @@ def subplot(ax, n, multiPlot, gdf, column, titles, scheme, bins, classes, norm, 
     axes_frame: bool
         Flag indicating whether to draw axes frame or not.
     """  
-    
     ax.set_aspect("equal")
     set_axes_frame(axes_frame, ax, multiPlot.black_background, multiPlot.text_color)
     
@@ -671,7 +669,6 @@ def generate_legend_fig(ax, plot, gdf, unique_categories = [], cmap = None):
         Colormap to use for categorical data.
     
     """
-    
     leg = ax.get_legend()    
     
     if len(unique_categories) == 0:
@@ -761,7 +758,6 @@ def generate_colorbar(plot = None, cmap = None, norm = None, cbar_ticks = 5, cba
     cbar_shrink:
         Fraction by which to multiply the size of the colorbar. 
     """
-    
     if isinstance(plot, Plot):
         ax = plot.ax
     else:
