@@ -237,9 +237,6 @@ def visibility_score(buildings_gdf, sight_lines = pd.DataFrame({'a': []}), metho
     sight_lines['buildingID'] = sight_lines['buildingID'].astype(int)
 
     buildings_gdf["fac"] = buildings_gdf.apply(lambda row: facade_area(row["geometry"], row["height"]), axis = 1)
-    sight_lines["length"] = sight_lines["geometry"].length
-    sight_lines = sight_lines.sort_values(['buildingID', 'nodeID', 'length'],ascending=[False, False, False]).drop_duplicates(['buildingID', 'nodeID'], keep='first')
-    sight_lines.reset_index(inplace = True, drop = True)
 
     stats = sight_lines.groupby('buildingID').agg({'length': ['mean','max', 'count']}) 
     stats.columns = stats.columns.droplevel(0)
@@ -262,7 +259,7 @@ def visibility_score(buildings_gdf, sight_lines = pd.DataFrame({'a': []}), metho
     buildings_gdf = pd.merge(buildings_gdf, stats[["buildingID", "3dvis"]], on = "buildingID", how = "left") 
     buildings_gdf['3dvis'] = buildings_gdf['3dvis'].where(pd.notnull(buildings_gdf['3dvis']), 0.0)
     
-    return buildings_gdf, sight_lines
+    return buildings_gdf
 
 def facade_area(building_geometry, building_height):
     """
@@ -286,10 +283,10 @@ def facade_area(building_geometry, building_height):
     width = min(d)
     return width*building_height
  
-def get_historical_buildings_fromOSM(place, download_method, epsg = None, distance = 1000):
+def get_historic_buildings_fromOSM(place, download_method, epsg = None, distance = 1000):
     """    
     The function downloads and cleans building footprint geometries and create a buildings GeoDataFrames for the area of interest.
-    However, it only keeps the buildings that are considered historical buildings or heritage buildings in OSM. 
+    However, it only keeps the buildings that are considered historic buildings or heritage buildings in OSM. 
             
     Parameters
     ----------
@@ -311,7 +308,6 @@ def get_historical_buildings_fromOSM(place, download_method, epsg = None, distan
     historic_buildings: Polygon GeoDataFrame
         The historic buildings GeoDataFrame.
     """   
-    
     columns = ['geometry', 'historic']
     tags = {"building": True}
     historic_buildings = downloader(place = place, download_method = download_method, tags = tags, distance = distance)
@@ -337,34 +333,49 @@ def get_historical_buildings_fromOSM(place, download_method, epsg = None, distan
        
     return historic_buildings
  
-def cultural_score(buildings_gdf, historical_elements_gdf = pd.DataFrame({'a': []}), historical_score = None, from_OSM = False):
+def cultural_score(buildings_gdf, historic_elements_gdf = pd.DataFrame({'a': []}), score_column = None, from_OSM = False):
     """
-    The function computes the "Cultural Landmark Component" based on the number of features listed in historical/cultural landmarks datasets. It can be
+    The function computes the "Cultural Landmark Component" based on the number of features listed in historic/cultural landmarks datasets. It can be
     obtained either on the basis of a score given by the data-provider or on the number of features intersecting the buildings object 
     of analysis.
     
-    "historical_score" indicates the attribute field containing scores assigned to historical buildings, if existing.
+    "score_column" indicates the attribute field containing scores assigned to historic buildings, if existing.
     Alternatively, if the column has been already assigned to the buildings_gdf, one can use OSM historic categorisation (binbary).
      
     Parameters
     ----------
     buildings_gdf: Polygon GeoDataFrame
         Buildings GeoDataFrame - case study area.
-    historical_elements_gdf: Point or Polygon GeoDataFrame
-        The GeoDataFrame containing information about listed historical buildings or elements.
-    historical_score: str
-        The name of the column in the historical_elements_gdf that provides information on the classification of the historical listings.
+    historic_elements_gdf: Point or Polygon GeoDataFrame
+        The GeoDataFrame containing information about listed historic buildings or elements.
+    score_column: str
+        The name of the column in the historic_elements_gdf that provides information on the classification of the historic listings; this could be issued by governamental agencies, for example.
     from_OSM: boolean
-        If using the historic field from OSM. This column should be already in the buildings_gdf columns.
+        If using the historic field from OSM. NOTE: This column should be already in the buildings_gdf columns.
    
     Returns
     -------
     buildings_gdf: Polygon GeoDataFrame
         The updated buildings GeoDataFrame.
-    """  
+    """        
     buildings_gdf = buildings_gdf.copy()
-    buildings_gdf["cult"] = 0
-    # using OSM binary value
+    buildings_gdf["cult"] = 0.0
+    
+    def _cultural_score_building(building_geometry, historic_elements_gdf, historic_elements_gdf_sindex, score_column = None):
+
+        possible_matches_index = list(historic_elements_gdf_sindex.intersection(building_geometry.bounds)) # looking for possible candidates in the external GDF
+        possible_matches = historic_elements_gdf.iloc[possible_matches_index]
+        matches = possible_matches[possible_matches.intersects(building_geometry)]
+
+        if (score_column is None): 
+            cultural_score = len(matches) # score only based on number of intersecting elements
+        elif len(matches) == 0: 
+            cultural_score = 0
+        else: 
+            cultural_score = matches[score_column].sum() # otherwise sum the scores of the intersecting elements
+        return cultural_score
+    
+    # using OSM binary value - this means that the buildings dataset if from OSM
     if (from_OSM) & ("historic" in buildings_gdf.columns):
         # Set 'historic' column to 0 where it is currently null
         buildings_gdf.loc[buildings_gdf["historic"].isnull(), "historic"] = 0
@@ -373,43 +384,11 @@ def cultural_score(buildings_gdf, historical_elements_gdf = pd.DataFrame({'a': [
         buildings_gdf["cult"] = buildings_gdf["historic"]
         return buildings_gdf
     
-    def _cultural_score_building(building_geometry, historical_elements_gdf, historical_elements_gdf_sindex, score = None):
-        """
-        Compute the cultural score for a single building based on its intersection with historical elements.
-
-        Parameters
-        ----------
-        building_geometry: Polygon
-            The geometry of the building.
-        historical_elements_gdf: GeoDataFrame
-            The GeoDataFrame containing historical elements.
-        historical_elements_gdf_sindex: Spatial Index
-            The spatial index of the historical elements GeoDataFrame.
-        score: str
-            The name of the score column in the historical elements GeoDataFrame, by default None.
-
-        Returns
-        -------
-        float
-            The computed cultural score for the building.
-        """
-        possible_matches_index = list(historical_elements_gdf_sindex.intersection(building_geometry.bounds)) # looking for possible candidates in the external GDF
-        possible_matches = historical_elements_gdf.iloc[possible_matches_index]
-        matches = possible_matches[possible_matches.intersects(building_geometry)]
-
-        if (score is None):
-            cs = len(matches) # score only based on number of intersecting elements
-        elif len(matches) == 0: 
-            cs = 0
-        else: 
-            cs = matches[score].sum() # otherwise sum the scores of the intersecting elements
-        return cs
-
     # spatial index
-    sindex = historical_elements_gdf.sindex 
-    buildings_gdf["cult"] = buildings_gdf.geometry.apply(lambda row: _cultural_score_building(row, historical_elements_gdf, sindex, score = historical_score))
+    sindex = historic_elements_gdf.sindex 
+    buildings_gdf["cult"] = buildings_gdf.geometry.apply(lambda row: _cultural_score_building(row, historic_elements_gdf, sindex, score_column = score_column))
     return buildings_gdf
-
+    
 def pragmatic_score(buildings_gdf, research_radius = 200):
     """
     The function computes the "Pragmatic Landmark Component" based on the frequency, and therefore unexpectedness, of a land_use class in an area around a building.
@@ -426,7 +405,6 @@ def pragmatic_score(buildings_gdf, research_radius = 200):
     buildings_gdf: Polygon GeoDataFrame
         The updated buildings GeoDataFrame.
     """  
-    
     buildings_gdf = buildings_gdf.copy()   
     buildings_gdf["nr"] = 1 # to count
     sindex = buildings_gdf.sindex # spatial index
@@ -435,27 +413,7 @@ def pragmatic_score(buildings_gdf, research_radius = 200):
         buildings_gdf['land_use'] = buildings_gdf['land_use_raw']
         
     def _pragmatic_meaning_building(building_geometry, building_land_use, buildings_gdf, buildings_gdf_sindex, radius):
-        """
-        Compute the pragmatic score for a single building based on its proximity to buildings with the same land use.
 
-        Parameters
-        ----------
-        building_geometry: Polygon
-            The geometry of the building.
-        building_land_use: str
-            The land use category of the building.
-        buildings_gdf: Polygon GeoDataFrame
-            The buildings GeoDataFrame for the case study area.
-        buildings_gdf_sindex: Spatial Index
-            The spatial index of the buildings GeoDataFrame.
-        radius: float
-            The radius to consider for proximity calculation.
-
-        Returns
-        -------
-        float
-            The computed pragmatic score for the building.
-        """
         buffer = building_geometry.buffer(radius)
         possible_matches_index = list(buildings_gdf_sindex.intersection(buffer.bounds))
         possible_matches = buildings_gdf.iloc[possible_matches_index]
@@ -583,79 +541,6 @@ def compute_local_scores(buildings_gdf, local_indexes_weights, local_components_
     buildings_gdf["lScore"] = 0.0
     buildings_gdf["vScore_l"], buildings_gdf["sScore_l"] = 0.0, 0.0
     
-    def _building_local_score(building_geometry, buildingID, buildings_gdf, buildings_gdf_sindex, local_components_weights, local_indexes_weights, radius):
-        """
-        The function computes landmarkness at the local level for a single building. 
-        
-        Parameters
-        ----------
-        building_geometry  Polygon
-            The geometry of the building.
-        buildingID: int
-            The ID of the building.
-        buildings_gdf: Polygon GeoDataFrame
-            The GeoDataFrame containing the buildings.
-        buildings_gdf_sindex: Spatial Index
-            The spatial index of the buildings GeoDataFrame.
-        local_components_weights: dictionary
-            The weights assigned to local-level components.
-        local_indexes_weights: dictionary
-            The weights assigned to local-level indexes.
-        radius: float
-            The radius that regulates the area around the building within which the scores are recomputed.
-
-        Returns
-        -------
-        score : float
-            The computed local-level landmarkness score for the building.
-        """
-                                                 
-        col = ["3dvis", "fac", "height", "area","2dvis", "cult","prag"]
-        col_inverse = ["neigh", "road"]
-        
-        buffer = building_geometry.buffer(radius)
-        possible_matches_index = list(buildings_gdf_sindex.intersection(buffer.bounds))
-        possible_matches = buildings_gdf.iloc[possible_matches_index].copy()
-        matches = possible_matches[possible_matches.intersects(buffer)]
-                    
-        # rescaling the values 
-        for column in col + col_inverse: 
-            if matches[column].max() == 0.0: 
-                matches[column+"_sc"] = 0.0
-            else:
-                matches[column+"_sc"] = scaling_columnDF(matches[column], inverse = column in col_inverse)
-      
-        # recomputing scores
-        vScore_terms = [matches["fac_sc"] * local_indexes_weights["fac"],
-                        matches["height_sc"] * local_indexes_weights["height"],
-                        matches["3dvis"] * local_indexes_weights["3dvis"]]
-        matches["vScore_l"] = sum(vScore_terms)
-
-        sScore_terms = [matches["area_sc"] * local_indexes_weights["area"],
-                        matches["neigh_sc"] * local_indexes_weights["neigh"],
-                        matches["road_sc"] * local_indexes_weights["road"],
-                        matches["2dvis_sc"] * local_indexes_weights["fac"]]
-        matches["sScore_l"] = sum(sScore_terms)
-       
-        matches["cScore_l"] = matches["cult_sc"]
-        matches["pScore_l"] = matches["prag_sc"]
-        
-        for column in ["vScore_l", "sScore_l"]: 
-            if matches[column].max() == 0.0: 
-                matches[column+"_sc"] = 0.0
-            else:
-                matches[column+"_sc"] = scaling_columnDF(matches[column])
-        
-        lScore_terms = [matches["vScore_l_sc"]*local_components_weights["vScore"],
-                        matches["sScore_l_sc"]*local_components_weights["sScore"],
-                        matches["cScore_l"]*local_components_weights["cScore"], 
-                        matches["pScore_l"]*local_components_weights["pScore"]]
-        matches["lScore"] = sum(lScore_terms)
-        
-        local_score = float("{0:.3f}".format(matches.loc[buildingID, "lScore"]))
-        
-        return local_score
-    
     with concurrent.futures.ThreadPoolExecutor() as executor:
         future_scores = {executor.submit(_building_local_score, row["geometry"], row["buildingID"], buildings_gdf, sindex, local_components_weights, local_indexes_weights, 
                         rescaling_radius): row["buildingID"] for _, row in buildings_gdf.iterrows()}
@@ -670,3 +555,75 @@ def compute_local_scores(buildings_gdf, local_indexes_weights, local_components_
     buildings_gdf["lScore_sc"] = scaling_columnDF(buildings_gdf["lScore"])
     
     return buildings_gdf
+    
+def _building_local_score(building_geometry, buildingID, buildings_gdf, buildings_gdf_sindex, local_components_weights, local_indexes_weights, radius):
+    """
+    The function computes landmarkness at the local level for a single building. 
+    
+    Parameters
+    ----------
+    building_geometry  Polygon
+        The geometry of the building.
+    buildingID: int
+        The ID of the building.
+    buildings_gdf: Polygon GeoDataFrame
+        The GeoDataFrame containing the buildings.
+    buildings_gdf_sindex: Spatial Index
+        The spatial index of the buildings GeoDataFrame.
+    local_components_weights: dictionary
+        The weights assigned to local-level components.
+    local_indexes_weights: dictionary
+        The weights assigned to local-level indexes.
+    radius: float
+        The radius that regulates the area around the building within which the scores are recomputed.
+
+    Returns
+    -------
+    score : float
+        The computed local-level landmarkness score for the building.
+    """                                  
+    col = ["3dvis", "fac", "height", "area","2dvis", "cult","prag"]
+    col_inverse = ["neigh", "road"]
+    
+    buffer = building_geometry.buffer(radius)
+    possible_matches_index = list(buildings_gdf_sindex.intersection(buffer.bounds))
+    possible_matches = buildings_gdf.iloc[possible_matches_index].copy()
+    matches = possible_matches[possible_matches.intersects(buffer)]
+                
+    # rescaling the values 
+    for column in col + col_inverse: 
+        if matches[column].max() == 0.0: 
+            matches[column+"_sc"] = 0.0
+        else:
+            matches[column+"_sc"] = scaling_columnDF(matches[column], inverse = column in col_inverse)
+  
+    # recomputing scores
+    vScore_terms = [matches["fac_sc"] * local_indexes_weights["fac"],
+                    matches["height_sc"] * local_indexes_weights["height"],
+                    matches["3dvis"] * local_indexes_weights["3dvis"]]
+    matches["vScore_l"] = sum(vScore_terms)
+
+    sScore_terms = [matches["area_sc"] * local_indexes_weights["area"],
+                    matches["neigh_sc"] * local_indexes_weights["neigh"],
+                    matches["road_sc"] * local_indexes_weights["road"],
+                    matches["2dvis_sc"] * local_indexes_weights["fac"]]
+    matches["sScore_l"] = sum(sScore_terms)
+   
+    matches["cScore_l"] = matches["cult_sc"]
+    matches["pScore_l"] = matches["prag_sc"]
+    
+    for column in ["vScore_l", "sScore_l"]: 
+        if matches[column].max() == 0.0: 
+            matches[column+"_sc"] = 0.0
+        else:
+            matches[column+"_sc"] = scaling_columnDF(matches[column])
+    
+    lScore_terms = [matches["vScore_l_sc"]*local_components_weights["vScore"],
+                    matches["sScore_l_sc"]*local_components_weights["sScore"],
+                    matches["cScore_l"]*local_components_weights["cScore"], 
+                    matches["pScore_l"]*local_components_weights["pScore"]]
+    matches["lScore"] = sum(lScore_terms)
+    
+    local_score = float("{0:.3f}".format(matches.loc[buildingID, "lScore"]))
+    
+    return local_score
