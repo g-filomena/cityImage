@@ -180,11 +180,11 @@ def get_network_fromGDF(edges_gdf, epsg, dict_columns = {}, other_columns = []):
     
     # assign indexes
     edges_gdf.reset_index(inplace=True, drop=True)
-    edges_gdf["edgeID"] = edges_gdf.index.values.astype(int) 
+    edges_gdf["edgeID"] = edges_gdf.index.values.astype("int64")
     nodes_gdf = obtain_nodes_gdf(edges_gdf, crs)
     
     # linking on coordinates
-    nodes_gdf["nodeID"] = nodes_gdf.index.values.astype(int)
+    nodes_gdf["nodeID"] = nodes_gdf.index.values.astype("int64")
     nodes_gdf, edges_gdf = join_nodes_edges_by_coordinates(nodes_gdf, edges_gdf)
     edges_gdf["length"] = edges_gdf["geometry"].length # computing length
     
@@ -265,11 +265,11 @@ def reset_index_graph_gdfs(nodes_gdf, edges_gdf, nodeID = "nodeID", edgeID = "ed
         The junction and street segment GeoDataFrames.
     """
 
-    edges_gdf['u'], edges_gdf['v'] = edges_gdf['u'].astype(int), edges_gdf['v'].astype(int)
+    edges_gdf['u'], edges_gdf['v'] = edges_gdf['u'].astype("int64"), edges_gdf['v'].astype("int64")
     edges_gdf = edges_gdf.rename(columns = {"u":"old_u", "v":"old_v"})    
-    nodes_gdf["old_nodeID"] = nodes_gdf[nodeID].values.astype(int)
+    nodes_gdf["old_nodeID"] = nodes_gdf[nodeID].values.astype("int64")
     nodes_gdf = nodes_gdf.reset_index(drop = True)
-    nodes_gdf[nodeID] = nodes_gdf.index.values.astype(int)
+    nodes_gdf[nodeID] = nodes_gdf.index.values.astype("int64")
     
     edges_gdf = pd.merge(edges_gdf, nodes_gdf[["old_nodeID", nodeID]], how="left", left_on="old_u", right_on="old_nodeID")
     edges_gdf = edges_gdf.rename(columns = {nodeID:"u"})
@@ -279,7 +279,7 @@ def reset_index_graph_gdfs(nodes_gdf, edges_gdf, nodeID = "nodeID", edgeID = "ed
     edges_gdf.drop(["old_u", "old_nodeID_x", "old_nodeID_y", "old_v"], axis = 1, inplace = True)
     nodes_gdf.drop(["old_nodeID", "index"], axis = 1, inplace = True, errors = "ignore")
     edges_gdf = edges_gdf.reset_index(drop=True)
-    edges_gdf[edgeID] = edges_gdf.index.values.astype(int)
+    edges_gdf[edgeID] = edges_gdf.index.values.astype("int64")
         
     return nodes_gdf, edges_gdf
     
