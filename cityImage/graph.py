@@ -269,3 +269,43 @@ def nodes_degree(edges_gdf):
     """
     dd = edges_gdf[['u','v']].stack().value_counts().to_dict()
     return dd 
+    
+        
+ def from_nx_to_gdf(graph, crs):
+    """
+    Convert a NetworkX graph into GeoDataFrames for nodes and edges, copying all the attributes of the graph components into columns.
+
+    Parameters
+    ----------
+    graph : networkx.Graph
+        The input graph with node and edge attributes, including geometries.
+    crs : str or pyproj.CRS
+        Coordinate Reference System (CRS) for the resulting GeoDataFrames.
+
+    Returns
+    -------
+    tuple
+        - nodes_gdf : GeoDataFrame
+            A GeoDataFrame representing the graph's nodes, with columns for node attributes and geometry.
+        - edges_gdf : GeoDataFrame
+            A GeoDataFrame representing the graph's edges, with columns for edge attributes and geometry.
+    """   
+    # Nodes GeoDataFrame
+    nodes_gdf = gpd.GeoDataFrame(
+        [
+            {**data, "nodeID": node, "geometry": data["geometry"]} 
+            for node, data in graph.nodes(data=True)
+        ],
+        crs=crs
+    )
+    
+    # Edges GeoDataFrame
+    edges_gdf = gpd.GeoDataFrame(
+        [
+            {**data, "u": u, "v": v, "geometry": data["geometry"]} 
+            for u, v, data in graph.edges(data=True)
+        ],
+        crs=crs
+    )
+    
+    return nodes_gdf, edges_gdf
