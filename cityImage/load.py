@@ -45,9 +45,7 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
     nodes_gdf, edges_gdf: Tuple of GeoDataFrames
         the junction and street segments GeoDataFrames.
     """
-    if epsg is not None:
-        crs = 'EPSG:' + str(epsg)
-    
+   
     G = downloader(place = place, download_method = download_method, distance = distance, downloading_graph = True, network_type = network_type)
     
     # fix list of osmid assigned to same edges
@@ -67,6 +65,7 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
     nodes_gdf = nodes_gdf[["nodeID","x","y","geometry"]]
     
     to_keep = ["edgeID", "u", "v", "key", "geometry", "length", "name", "highway", "oneway"]
+    
     for column in ["lanes", "bridge", "tunnel"]:
         if column in edges_gdf.columns:
             to_keep.append(column)
@@ -74,24 +73,10 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
                 edges_gdf["oneway"] *= 1
     
     edges_gdf = edges_gdf[to_keep]
-    
-    # resolving lists 
-    for column in ["highway", "name", "oneway"]:
-        edges_gdf[column] = [x[0] if isinstance(x, list) else x for x in edges_gdf[column]]
-    for column in ["lanes", "bridge", "tunnel"]:
-        if column not in edges_gdf.columns:
-            continue
-        edges_gdf[column] = [max(x) if isinstance(x, list) else x for x in edges_gdf[column]]
-        if column in ["bridge", "tunnel"]:
-            edges_gdf[column] = edges_gdf[column].apply(lambda x: 0 if pd.isna(x) or x is False else 1)
+ 
+    _resolve_lists(edges_gdf)
+    _project_gdfs(nodes_gdf, edges_gdf, epsg)
 
-       
-    # finalising geodataframes
-    if epsg is None: 
-        nodes_gdf, edges_gdf = ox.projection.project_gdf(nodes_gdf), ox.projection.project_gdf(edges_gdf)
-    else: 
-        nodes_gdf, edges_gdf = nodes_gdf.to_crs(crs), edges_gdf.to_crs(crs)
-    
     nodes_gdf["x"], nodes_gdf["y"] = list(zip(*[(geometry.coords[0][0], geometry.coords[0][1]) for geometry in nodes_gdf.geometry]))
     
     if len(nodes_gdf.geometry.iloc[0].coords) > 2:
@@ -101,6 +86,105 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
     
     return nodes_gdf, edges_gdf
 
+
+def get_pedestrian_network_fromOSM(place, download_method, epsg = None, distance = 500.0):
+    """
+    The function downloads and creates a simplified OSMNx graph for a selected area's street network. Compare to get_network_fromOSM, 
+    this is more precise in terms of pedestrian paths and it includes the column "lit", and anything the refers to "sidewalk".
+    Afterwards, GeoDataFrames for nodes and edges are created, assigning new nodeID and edgeID identifiers.
+        
+    Parameters
+    ----------
+    place: str, tuple
+        Name of cities or areas in OSM: 
+        - when using "distance_from_point" please provide a (lat, lon) tuple to create the bounding box around it; 
+        - when using "distance_from_address" provide an existing OSM address; 
+        - when using "OSMplace" provide an OSM place name.  
+        - when using "OSMpolygon" please provide the name of a relation in OSM as an argument of place;
+    download_method: str, {"distance_from_address", "distance_from_point", "OSMpolygon", "OSMplace", "polygon"}
+        It indicates the method that should be used for downloading the data. When 'polygon' the shape to get network data within coordinates should be in
+        unprojected latitude-longitude degrees (EPSG:4326).
+    epsg: int
+        Epsg of the area considered; if None OSMNx is used for the projection.
+    distance: float
+        It is used only if download_method == "distance_from_address" or "distance_from_point".
+        
+    Returns
+    -------
+    nodes_gdf, edges_gdf: Tuple of GeoDataFrames
+        the junction and street segments GeoDataFrames.
+    """
+    
+    # Fetch all geometries with the "highway" tag
+    tags = {"highway": True}
+    
+    # Retrieve geometries
+    gdf = ox.geometries_from_place(place = place, download_method = download_method, distance = distance, tags=tags)
+    
+    # Make sure columns exist (otherwise you'll get a KeyError)
+    for col in ["area", "foot", "service", "sidewalk",
+                "sidewalk:both", "sidewalk:left", "sidewalk:right"]:
+        if col not in gdf.columns:
+            gdf[col] = np.nan
+    
+    exclude_list = [
+        "abandoned", "bus_guideway", "construction", "cycleway",
+        "motor", "no", "planned", "platform", "proposed", 
+        "raceway", "razed", "motorway_junction", "motorway", "trunk_link", 
+        'emergency_bay', 'bus_bay', "trunk", 'motorway_link', "busway",
+    ]
+    
+    exclude_sidewalk = {"separate", "no", "none"}
+    gdf = gdf[
+        (gdf["area"] != "yes") &
+        (~gdf["highway"].isin(exclude_list)) &
+        (gdf["foot"] != "no") &
+        (gdf["service"] != "private") &
+        (~gdf["sidewalk"].isin(exclude_sidewalk)) &
+        (gdf["sidewalk:both"] != "separate") &
+        (gdf["sidewalk:left"] != "separate") &
+        (gdf["sidewalk:right"] != "separate")
+    ]
+
+    gdf = gdf[gdf.geometry.type == 'LineString']
+    to_keep = ["geometry", "name", "highway", "lit", "foot"]
+    sidewalk_columns = [col for col in gdf.columns if col.startswith("sidewalk")]
+    to_keep += sidewalk_columns
+    
+    gdf = gdf[to_keep].copy()
+    gdf.reset_index(inplace = True)
+    gdf = gdf.drop(["element_type", "osmid"], axis = 1)
+    
+    nodes_gdf, edges_gdf = get_network_fromGDF(gdf, epsg, other_columns = ["name", "highway", "lit"])
+    _resolve_lists(edges_gdf)
+    
+    return nodes_gdf, edges_gdf
+
+def _resolve_lists(edges_gdf):
+
+    # resolving lists 
+        for column in ["highway", "name", "oneway"]:
+            edges_gdf[column] = [x[0] if isinstance(x, list) else x for x in edges_gdf[column]]
+        for column in ["lanes", "bridge", "tunnel"]:
+            if column not in edges_gdf.columns:
+                continue
+            edges_gdf[column] = [max(x) if isinstance(x, list) else x for x in edges_gdf[column]]
+            if column in ["bridge", "tunnel"]:
+                edges_gdf[column] = edges_gdf[column].apply(lambda x: 0 if pd.isna(x) or x is False else 1)
+
+    return edges_gdf
+
+def _project_gdfs(nodes_gdf, edges_gdf, epsg):
+    
+    # finalising geodataframes
+    if epsg is None: 
+        nodes_gdf, edges_gdf = ox.projection.project_gdf(nodes_gdf), ox.projection.project_gdf(edges_gdf)
+    else: 
+        crs = 'EPSG:' + str(epsg)
+        nodes_gdf, edges_gdf = nodes_gdf.to_crs(crs), edges_gdf.to_crs(crs)
+        
+    return nodes_gdf, edges_gdf;
+    
 def get_network_fromFile(path, epsg, dict_columns = {}, other_columns = []):
     """
     The function loads a vector lines from a specified directory, along with the epsg coordinate code.
@@ -175,7 +259,6 @@ def get_network_fromGDF(edges_gdf, epsg, dict_columns = {}, other_columns = []):
     standard_columns = ["geometry", "key"]
     edges_gdf = edges_gdf[standard_columns + new_columns + other_columns]
     
-    # edges_gdf["geometry"] = edges_gdf.apply(lambda row: LineString([coor for coor in [row["geometry"].coords[i][0:2] for i in range(0, len(row["geometry"].coords))]]), axis = 1)
     edges_gdf = fix_multiparts_LineString_gdf(edges_gdf)    
     
     # assign indexes
