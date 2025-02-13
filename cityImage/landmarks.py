@@ -308,6 +308,7 @@ def get_historic_buildings_fromOSM(place, download_method, epsg = None, distance
     historic_buildings: Polygon GeoDataFrame
         The historic buildings GeoDataFrame.
     """   
+    
     columns = ['geometry', 'historic']
     tags = {"building": True}
     historic_buildings = downloader(place = place, download_method = download_method, tags = tags, distance = distance)
@@ -357,7 +358,9 @@ def cultural_score(buildings_gdf, historic_elements_gdf = pd.DataFrame({'a': []}
     -------
     buildings_gdf: Polygon GeoDataFrame
         The updated buildings GeoDataFrame.
-    """        
+    """  
+    
+       
     buildings_gdf = buildings_gdf.copy()
     buildings_gdf["cult"] = 0.0
     
@@ -405,6 +408,7 @@ def pragmatic_score(buildings_gdf, research_radius = 200):
     buildings_gdf: Polygon GeoDataFrame
         The updated buildings GeoDataFrame.
     """  
+    
     buildings_gdf = buildings_gdf.copy()   
     buildings_gdf["nr"] = 1 # to count
     sindex = buildings_gdf.sindex # spatial index
@@ -455,54 +459,56 @@ def compute_global_scores(buildings_gdf, global_indexes_weights, global_componen
     >>> global_components_weights = {"vScore": 0.50, "sScore": 0.30, "cScore": 0.20, "pScore": 0.10}
     """  
     # scaling
-    col = ["3dvis", "fac", "height", "area","2dvis", "cult", "prag"]
-    col_inverse = ["neigh", "road"]
-
-    # keeping out visibility analysis if there is no information about buildings' elevation. Reassigning the weights to the other
-    # components if any was given to the visibility
-    if ("height" not in buildings_gdf.columns) or (("height" in buildings_gdf.columns) and (buildings_gdf.height.max() == 0.0)):
-        buildings_gdf[['height','3dvis', 'fac']]  = 0.0
-        if global_components_weights['vScore'] != 0.0:
-            to_add = global_components_weights['vScore']/3
-            global_components_weights['sScore'] += to_add
-            global_components_weights['cScore'] += to_add
-            global_components_weights['pScore'] += to_add
-            global_components_weights['vScore'] = 0.0
+    cols = {"direct": ["3dvis", "fac", "height", "area", "2dvis", "cult", "prag"], "inverse": ["neigh", "road"]}
+   
+    if not (abs(sum(global_components_weights.values()) - 1.0) < 1e-6):
+        raise ValueError("Global components weights must sum to 1.0")
+   
+    # Check if vScore should be computed
+    compute_vScore = (
+        "vScore" in local_components_weights and
+        "height" in matches.columns and
+        matches["height"].max() > 0.0
+    )
     
-    # rescaling values from 0 to 1
-    for column in col + col_inverse:
-        if buildings_gdf[column].max() == 0.0:
-            buildings_gdf[column+"_sc"] = 0.0
-        else:
-            buildings_gdf[column+"_sc"] = scaling_columnDF(buildings_gdf[column], inverse = column in col_inverse)
-  
-    # computing component scores   
-    vScore_terms = [buildings_gdf["fac_sc"] * global_indexes_weights["fac"],
-                    buildings_gdf["height_sc"] * global_indexes_weights["height"],
-                    buildings_gdf["3dvis_sc"] * global_indexes_weights["3dvis"]]
-    buildings_gdf["vScore"] = sum(vScore_terms)
+    # Rescale values if the column exists in buildings_gdf
+    for col in cols["direct"] + cols["inverse"]:
+        if col in buildings_gdf.columns:
+            buildings_gdf[col + "_sc"] = scaling_columnDF(buildings_gdf[col], inverse=(col in cols["inverse"]))
 
-    sScore_terms = [buildings_gdf["area_sc"] * global_indexes_weights["area"],
-                    buildings_gdf["neigh_sc"] * global_indexes_weights["neigh"],
-                    buildings_gdf["2dvis_sc"] * global_indexes_weights["2dvis"],
-                    buildings_gdf["road_sc"] * global_indexes_weights["road"]]    
-    buildings_gdf["sScore"] = sum(sScore_terms)
-    
-    # rescaling them
-    for column in ["vScore", "sScore"]: 
-        if buildings_gdf[column].max() == 0.0: 
-            buildings_gdf[column+"_sc"] = 0.0
-        else: 
-            buildings_gdf[column+"_sc"] = scaling_columnDF(buildings_gdf[column])
-    
-    buildings_gdf["cScore"] = buildings_gdf["cult_sc"]
-    buildings_gdf["pScore"] = buildings_gdf["prag_sc"]
-    # final global score
-    buildings_gdf["gScore"] = (buildings_gdf["vScore_sc"]*global_components_weights["vScore"] + buildings_gdf["sScore_sc"]*global_components_weights["sScore"] + 
-                               buildings_gdf["cScore"]*global_components_weights["cScore"] + buildings_gdf["pScore"]*global_components_weights["pScore"])
+    # Compute component scores
+    # Visual Score
+    if compute_vScore:
+        buildings_gdf["vScore"] = sum(
+            buildings_gdf[f"{col}_sc"] * global_indexes_weights[col]
+            for col in ["fac", "height", "3dvis"] if f"{col}_sc" in buildings_gdf
+        )
+        buildings_gdf["vScore_sc"] = scaling_columnDF(buildings_gdf["vScore"])
+        
+    # Structural Score
 
+    buildings_gdf["sScore"] = sum(
+        buildings_gdf[f"{col}_sc"] * global_indexes_weights[col]
+        for col in ["area", "neigh", "2dvis", "road"] if f"{col}_sc" in buildings_gdf
+    )
+    buildings_gdf["sScore_sc"] = scaling_columnDF(buildings_gdf["sScore"])
+    
+    buildings_gdf["cScore"], buildings_gdf["pScore"] = buildings_gdf["cult_sc"], buildings_gdf["prag_sc"]
+    
+    # Cultural and Pragmatic Scores
+    if "cult_sc" in buildings_gdf.columns:
+        buildings_gdf["cScore"] = buildings_gdf["cult_sc"]
+    if "prag_sc" in buildings_gdf.columns:
+        buildings_gdf["pScore"] = buildings_gdf["prag_sc"]
+    
+    # Final global score: Compute dynamically
+    buildings_gdf["gScore"] = sum(
+        buildings_gdf[f"{component}_sc"] * global_components_weights[component]
+        for component in global_components_weights
+        if f"{component}_sc" in buildings_gdf and (component != "vScore" or compute_vScore)
+    )
+    
     buildings_gdf["gScore_sc"] = scaling_columnDF(buildings_gdf["gScore"])
-    
     return buildings_gdf
 
 def compute_local_scores(buildings_gdf, local_indexes_weights, local_components_weights, rescaling_radius = 1500):
@@ -533,27 +539,49 @@ def compute_local_scores(buildings_gdf, local_indexes_weights, local_components_
     >>> # local landmarkness components weights
     >>> local_components_weights = {"vScore": 0.25, "sScore": 0.35, "cScore":0.10 , "pScore": 0.30} 
     """  
-    buildings_gdf = buildings_gdf.copy()
-    buildings_gdf.index = buildings_gdf.buildingID
-    buildings_gdf.index.name = None
     
+    buildings_gdf = buildings_gdf.set_index("buildingID").copy()
+    buildings_gdf.index.name = None
     sindex = buildings_gdf.sindex # spatial index
+    
+    # Validate that local_components_weights sum to 1.0
+    if not (abs(sum(local_components_weights.values()) - 1.0) < 1e-6):
+        raise ValueError("Local components weights must sum to 1.0")
+
+    # Initialize scores conditionally
+    compute_vScore = (
+        "vScore" in local_components_weights and
+        "height" in matches.columns and
+        matches["height"].max() > 0.0
+    )
+    if compute_vScore:
+        buildings_gdf["vScore_l"] = 0.0  # Initialize only if valid height data exists
+   
+    buildings_gdf["sScore_l"] = 0.0
     buildings_gdf["lScore"] = 0.0
-    buildings_gdf["vScore_l"], buildings_gdf["sScore_l"] = 0.0, 0.0
     
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        future_scores = {executor.submit(_building_local_score, row["geometry"], row["buildingID"], buildings_gdf, sindex, local_components_weights, local_indexes_weights, 
-                        rescaling_radius): row["buildingID"] for _, row in buildings_gdf.iterrows()}
+        future_scores = {
+            executor.submit(
+                _building_local_score,
+                row["geometry"],
+                idx,
+                buildings_gdf,
+                sindex,
+                local_components_weights,
+                local_indexes_weights,
+                rescaling_radius,
+            ): idx
+            for idx, row in buildings_gdf.iterrows()
+        }
         for future in concurrent.futures.as_completed(future_scores):
             buildingID = future_scores[future]
             try:
-                score = future.result()
-                buildings_gdf.loc[buildingID, "lScore"] = score
-            except Exception as exc:
-                print(f'{buildingID} generated an exception: {exc}')
+                buildings_gdf.loc[buildingID, "lScore"] = future.result()
+            except Exception:
+                buildings_gdf.loc[buildingID, "lScore"] = 0.0
     
     buildings_gdf["lScore_sc"] = scaling_columnDF(buildings_gdf["lScore"])
-    
     return buildings_gdf
     
 def _building_local_score(building_geometry, buildingID, buildings_gdf, buildings_gdf_sindex, local_components_weights, local_indexes_weights, radius):
@@ -581,49 +609,56 @@ def _building_local_score(building_geometry, buildingID, buildings_gdf, building
     -------
     score : float
         The computed local-level landmarkness score for the building.
-    """                                  
-    col = ["3dvis", "fac", "height", "area","2dvis", "cult","prag"]
-    col_inverse = ["neigh", "road"]
+    """
+                                             
+    cols = {"direct": ["3dvis", "fac", "height", "area", "2dvis", "cult", "prag"], "inverse": ["neigh", "road"]}
     
     buffer = building_geometry.buffer(radius)
     possible_matches_index = list(buildings_gdf_sindex.intersection(buffer.bounds))
-    possible_matches = buildings_gdf.iloc[possible_matches_index].copy()
-    matches = possible_matches[possible_matches.intersects(buffer)]
+    matches = buildings_gdf.iloc[list(sindex.intersection(buffer.bounds))].copy()
+    matches = matches[matches.intersects(buffer)]
                 
-    # rescaling the values 
-    for column in col + col_inverse: 
-        if matches[column].max() == 0.0: 
-            matches[column+"_sc"] = 0.0
-        else:
-            matches[column+"_sc"] = scaling_columnDF(matches[column], inverse = column in col_inverse)
+    # Rescale all values dynamically if the column exists in matches
+    for column in cols["direct"] + cols["inverse"]:
+        if column in matches.columns:
+            matches[column + "_sc"] = scaling_columnDF(matches[column], inverse=(column in cols["inverse"]))
   
-    # recomputing scores
-    vScore_terms = [matches["fac_sc"] * local_indexes_weights["fac"],
-                    matches["height_sc"] * local_indexes_weights["height"],
-                    matches["3dvis"] * local_indexes_weights["3dvis"]]
-    matches["vScore_l"] = sum(vScore_terms)
+    # Compute structural score (sScore)
+    if "sScore" in local_components_weights:
+        matches["sScore_l"] = sum(
+            matches[f"{col}_sc"] * local_indexes_weights[col] for col in ["area", "2dvis", "neigh", "road"] if f"{col}_sc" in matches
+        )
+  
+    # Recomputing visual scores only if "height" is valid
+    # Determine if vScore should be computed
+    compute_vScore = (
+        "vScore" in local_components_weights and
+        "height" in matches.columns and
+        matches["height"].max() > 0.0
+    )
+    
+    if compute_vScore:
+        matches["vScore_l"] = sum(
+            matches[f"{col}_sc"] * local_indexes_weights[col] for col in ["fac", "height", "3dvis"] if f"{col}_sc" in matches
+        )
+  
+    # Compute cultural and pragmatic scores if defined
+    if "cScore" in local_components_weights:
+        matches["cScore_l"] = matches["cult_sc"]
+    if "pScore" in local_components_weights:
+        matches["pScore_l"] = matches["prag_sc"]
+    
+    # Rescale component scores dynamically
+    for component in local_components_weights.keys():
+        if f"{component}_l" in matches and (component != "vScore" or compute_vScore):
+            matches[f"{component}_l_sc"] = scaling_columnDF(matches[f"{component}_l"])
 
-    sScore_terms = [matches["area_sc"] * local_indexes_weights["area"],
-                    matches["neigh_sc"] * local_indexes_weights["neigh"],
-                    matches["road_sc"] * local_indexes_weights["road"],
-                    matches["2dvis_sc"] * local_indexes_weights["fac"]]
-    matches["sScore_l"] = sum(sScore_terms)
-   
-    matches["cScore_l"] = matches["cult_sc"]
-    matches["pScore_l"] = matches["prag_sc"]
-    
-    for column in ["vScore_l", "sScore_l"]: 
-        if matches[column].max() == 0.0: 
-            matches[column+"_sc"] = 0.0
-        else:
-            matches[column+"_sc"] = scaling_columnDF(matches[column])
-    
-    lScore_terms = [matches["vScore_l_sc"]*local_components_weights["vScore"],
-                    matches["sScore_l_sc"]*local_components_weights["sScore"],
-                    matches["cScore_l"]*local_components_weights["cScore"], 
-                    matches["pScore_l"]*local_components_weights["pScore"]]
-    matches["lScore"] = sum(lScore_terms)
-    
-    local_score = float("{0:.3f}".format(matches.loc[buildingID, "lScore"]))
-    
-    return local_score
+    # Compute the final local score
+    matches["lScore"] = sum(
+        matches[f"{component}_l_sc"] * local_components_weights[component]
+        for component in local_components_weights
+        if f"{component}_l_sc" in matches and (component != "vScore" or compute_vScore)
+    )
+
+    # Return the local score for the specified building
+    return round(matches.loc[buildingID, "lScore"], 3)
