@@ -74,12 +74,12 @@ def downloader(place, download_method, tags = None, distance = 500.0, downloadin
         if download_func:
             if download_method in ['distance_from_address', 'distance_from_point']:
                 if downloading_graph:
-                    G = download_func(place, network_type = network_type, dist = distance, simplify = True)
+                    G = download_func(place, network_type = network_type, dist = distance, retain_all=True, simplify = True)
                 else:
                     geometries_gdf = download_func(place, tags = tags, dist = distance)
             else:
                 if downloading_graph:
-                    G = download_func(place, network_type = network_type, simplify = True)
+                    G = download_func(place, network_type = network_type, retain_all=True, simplify = True)
                 else:
                     geometries_gdf = download_func(place, tags = tags) 
                     
@@ -92,7 +92,7 @@ def downloader(place, download_method, tags = None, distance = 500.0, downloadin
         return G
     return geometries_gdf
     
-def scaling_columnDF(series, inverse = False):
+def scaling_columnDF(series, inverse=False):
     """
     Rescales the values in a dataframe's column from 0 to 1 or from 1 to 0.
 
@@ -108,10 +108,18 @@ def scaling_columnDF(series, inverse = False):
     pd.Series
         The rescaled pd.Series.
     """
-    scaled = pd.Series((series-series.min())/(series.max()-series.min()))
-    if inverse: 
-        scaled = 1-scaled
+    if series.max() == series.min():
+        # If all values are the same, return 0 for all (or 1 if inverse=True)
+        scaled = pd.Series(0.0, index=series.index)
+        if inverse:
+            scaled = pd.Series(1.0, index=series.index)
+    else:
+        # Normal scaling
+        scaled = (series - series.min()) / (series.max() - series.min())
+        if inverse:
+            scaled = 1 - scaled
     return scaled
+
         
     
 def dict_to_df(list_dict, list_col):
@@ -375,7 +383,8 @@ def gdf_from_geometries(geometries, crs):
     -------
     gdf: GeoDataFrame
         The resulting GeoDataFrame.
-    """  
+    """
+    
     df = pd.DataFrame({'geometry': geometries})
     gdf = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
     gdf['length'] = gdf['geometry'].length
@@ -583,16 +592,17 @@ def aggregate_geometries(gdf, column_operations):
 
     Parameters
     ----------
-    gdf : GeoDataFrame
-        The input GeoDataFrame containing geometries and associated attributes to be aggregated.
-    column_operations : dict
-        A dictionary where keys are column names and values are aggregation functions (e.g., 'min', 'max', 'mean').
+    gdf: GeoDataFrame
+        The input GeoDataFrame.
+    column_operations: dict
+        A dictionary where keys are column names and values are aggregation functions ('min', 'max', 'mean').
 
-    Returns
-    -------
-    GeoDataFrame
-        A new GeoDataFrame with aggregated geometries and updated attributes based on the specified operations.
+    Returns:
+    ----------
+    GeoDataFrame: 
+        A new GeoDataFrame with aggregated geometries and attributes.
     """
+    
     necessary = True
 
     while necessary:
