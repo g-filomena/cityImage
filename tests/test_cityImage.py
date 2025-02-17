@@ -102,6 +102,8 @@ def test_regions():
     global edges_gdf
     global epsg_susa
     
+    nodes_gdf, edges_gdf = ci.clean_network(nodes_gdf, edges_gdf, dead_ends = True, remove_islands = True, 
+                                                same_vertexes_edges = False, self_loops = False, fix_topology = False)
     graph_susa = ci.graph_fromGDF(nodes_gdf, edges_gdf, nodeID = 'nodeID')
     nodes_dual, edges_dual = ci.dual_gdf(nodes_gdf, edges_gdf, epsg = epsg_susa, oneway = False, angle = 'degree')
     dual_graph = ci.dual_graph_fromGDF(nodes_dual, edges_dual)
@@ -146,7 +148,7 @@ def test_landmarks():
     
     # weights
     global_indexes_weights = {'3dvis': 0.50, 'fac': 0.30, 'height': 0.20, 'area': 0.30, '2dvis':0.30, 'neigh': 0.20, 'road': 0.20}
-    global_components_weights = {'vScore': 0.50, 'sScore' : 0.30, 'cScore': 0.20, 'pScore': 0.10}   
+    global_components_weights = {'vScore': 0.50, 'sScore' : 0.30, 'cScore': 0.10, 'pScore': 0.10}   
 
     local_indexes_weights = {'3dvis': 0.50, 'fac': 0.30, 'height': 0.20, 'area': 0.40, '2dvis': 0.00, 'neigh': 0.30, 'road': 0.30}
     local_components_weights = {'vScore': 0.25, 'sScore' : 0.35, 'cScore':0.10, 'pScore': 0.30}
@@ -155,17 +157,17 @@ def test_landmarks():
     buildings_gdf['height'] = np.random.choice([10, 1, 50], buildings_gdf.shape[0]) 
     
     # testing with only 5 nodes, to avoid time issues
-    sight_lines = ci.compute_3d_sight_lines(nodes_gdf.iloc[:5], buildings_gdf, distance_along = 300,
+    sight_lines = ci.compute_3d_sight_lines(nodes_gdf.iloc[:7], buildings_gdf, distance_along = 300,
                                                          distance_min_observer_target = 300)
     # historical elements                                                    
-    historical = ci.get_historical_buildings_fromOSM(place, download_method = 'OSMplace', epsg = epsg_susa)
+    historic = ci.get_historic_buildings_fromOSM(place, download_method = 'OSMplace', epsg = epsg_susa)
     
     # scores    
     buildings_gdf = ci.structural_score(buildings_gdf, buildings_gdf, edges_gdf, advance_vis_expansion_distance = 100, neighbours_radius = 100)   
 
-    buildings_gdf = ci.cultural_score(buildings_gdf, historical_elements_gdf = historical, from_OSM = False)
+    buildings_gdf = ci.cultural_score(buildings_gdf, historic_elements_gdf = historic, from_OSM = False)
     buildings_gdf = ci.pragmatic_score(buildings_gdf, research_radius = 200)
-    buildings_gdf, _ = ci.visibility_score(buildings_gdf, sight_lines)
+    buildings_gdf = ci.visibility_score(buildings_gdf, sight_lines)
     
     buildings_gdf = ci.compute_global_scores(buildings_gdf, global_indexes_weights, global_components_weights)
     buildings_gdf = ci.compute_local_scores(buildings_gdf, local_indexes_weights, local_components_weights, rescaling_radius = 1500)
