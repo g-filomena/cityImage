@@ -132,6 +132,9 @@ def dual_gdf(nodes_gdf, edges_gdf, epsg, oneway = False, angle = None):
     nodes_gdf.set_index("nodeID", drop = False, inplace = True, append = False)
     nodes_gdf.index.name = None
     
+    edges_gdf.set_index("edgeID", drop = False, inplace = True, append = False)
+    edges_gdf.index.name = None
+    
     # computing centroids                                       
     centroids_gdf = edges_gdf.copy()
     centroids_gdf['centroid'] = centroids_gdf['geometry'].centroid
