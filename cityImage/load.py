@@ -74,8 +74,8 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
     
     edges_gdf = edges_gdf[to_keep]
  
-    _resolve_lists(edges_gdf)
-    _project_gdfs(nodes_gdf, edges_gdf, epsg)
+    edges_gdf = _resolve_lists(edges_gdf)
+    nodes_gdf, edges_gdf = _project_gdfs(nodes_gdf, edges_gdf, epsg)
 
     nodes_gdf["x"], nodes_gdf["y"] = list(zip(*[(geometry.coords[0][0], geometry.coords[0][1]) for geometry in nodes_gdf.geometry]))
     
@@ -84,6 +84,8 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
     else: 
         nodes_gdf['z'] = 2.0
     
+    nodes_gdf = nodes_gdf[nodes_gdf.nodeID.isin(np.unique(edges_gdf[['u', 'v']].values))]
+
     return nodes_gdf, edges_gdf
 
 
@@ -119,8 +121,8 @@ def get_pedestrian_network_fromOSM(place, download_method, epsg = None, distance
     tags = {"highway": True}
     
     # Retrieve geometries
-    gdf = ox.geometries_from_place(place = place, download_method = download_method, distance = distance, tags=tags)
-    
+    gdf = downloader(place = place, download_method = download_method, tags = tags, distance = distance)
+       
     # Make sure columns exist (otherwise you'll get a KeyError)
     for col in ["area", "foot", "service", "sidewalk",
                 "sidewalk:both", "sidewalk:left", "sidewalk:right"]:
@@ -156,22 +158,23 @@ def get_pedestrian_network_fromOSM(place, download_method, epsg = None, distance
     gdf = gdf.drop(["element_type", "osmid"], axis = 1)
     
     nodes_gdf, edges_gdf = get_network_fromGDF(gdf, epsg, other_columns = ["name", "highway", "lit"])
-    _resolve_lists(edges_gdf)
+    edges_gdf = _resolve_lists(edges_gdf)
     
     return nodes_gdf, edges_gdf
 
 def _resolve_lists(edges_gdf):
 
-    # resolving lists 
-        for column in ["highway", "name", "oneway"]:
+    # Resolving lists
+    for column in ["highway", "name", "oneway"]:
+        if column in edges_gdf.columns:
             edges_gdf[column] = [x[0] if isinstance(x, list) else x for x in edges_gdf[column]]
-        for column in ["lanes", "bridge", "tunnel"]:
-            if column not in edges_gdf.columns:
-                continue
+
+    for column in ["lanes", "bridge", "tunnel"]:
+        if column in edges_gdf.columns:
             edges_gdf[column] = [max(x) if isinstance(x, list) else x for x in edges_gdf[column]]
             if column in ["bridge", "tunnel"]:
                 edges_gdf[column] = edges_gdf[column].apply(lambda x: 0 if pd.isna(x) or x is False else 1)
-
+                
     return edges_gdf
 
 def _project_gdfs(nodes_gdf, edges_gdf, epsg):
@@ -183,7 +186,7 @@ def _project_gdfs(nodes_gdf, edges_gdf, epsg):
         crs = 'EPSG:' + str(epsg)
         nodes_gdf, edges_gdf = nodes_gdf.to_crs(crs), edges_gdf.to_crs(crs)
         
-    return nodes_gdf, edges_gdf;
+    return nodes_gdf, edges_gdf
     
 def get_network_fromFile(path, epsg, dict_columns = {}, other_columns = []):
     """
@@ -274,6 +277,8 @@ def get_network_fromGDF(edges_gdf, epsg, dict_columns = {}, other_columns = []):
     if 'z' not in nodes_gdf.columns:
         nodes_gdf['z'] = 2.0
     
+    nodes_gdf = nodes_gdf[nodes_gdf.nodeID.isin(np.unique(edges_gdf[['u', 'v']].values))]
+
     return nodes_gdf, edges_gdf      
 
 def obtain_nodes_gdf(edges_gdf, crs):
