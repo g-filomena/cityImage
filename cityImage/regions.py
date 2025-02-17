@@ -165,7 +165,7 @@ def _assign_district_to_node(node_geometry, edges_gdf, sindex, column):
         The district identifier.
     """   
     point = node_geometry
-    n = point.buffer(20)
+    n = point.buffer(100)
     possible_matches_index = list(sindex.intersection(n.bounds))
     pm = edges_gdf.iloc[possible_matches_index].copy()
     dist = min_distance_geometry_gdf(point, pm)
