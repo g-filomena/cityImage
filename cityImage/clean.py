@@ -28,34 +28,32 @@ def duplicate_nodes(nodes_gdf, edges_gdf, nodeID = 'nodeID'):
         The cleaned junctions and street segments GeoDataFrames.
     """
     
-    nodes_gdf = nodes_gdf.copy()
-    nodes_gdf.index = nodes_gdf[nodeID]
+    nodes_gdf = nodes_gdf.copy().set_index('nodeID', drop=False)
+    nodes_gdf.index.name = None
 
     # detecting duplicate geometries
-    nodes_gdf['wkt'] = nodes_gdf['geometry'].apply(lambda row: row.wkt)
-    if 'z' in nodes_gdf.columns:
-        new_nodes = nodes_gdf.drop_duplicates(subset = ['wkt', 'z']).copy()
-    else:
-        new_nodes = nodes_gdf.drop_duplicates(subset = ['wkt']).copy()
+    nodes_gdf['wkt'] = nodes_gdf['geometry'].apply(lambda geom: geom.wkt)
+    # Detect duplicates
+    subset_cols = ['wkt', 'z'] if 'z' in nodes_gdf.columns else ['wkt']
+    new_nodes = nodes_gdf.drop_duplicates(subset=subset_cols).copy()
 
     # assign univocal nodeID to edges which have 'u' or 'v' referring to duplicate nodes
-    to_edit = list(set(nodes_gdf.index.values.tolist()) - set((new_nodes.index.values.tolist())))
+    # Identify duplicate nodes
+    to_edit = set(nodes_gdf.index) - set(new_nodes.index)
     
-    if not to_edit: 
-        return(nodes_gdf, edges_gdf) 
+    if not to_edit:
+        return nodes_gdf.drop(columns='wkt'), edges_gdf  # No changes needed
     
+    # Map duplicates to their new nodeIDs
+    node_mapping = {
+        old_node: new_nodes[new_nodes['geometry'] == nodes_gdf.loc[old_node, 'geometry']].index[0]
+        for old_node in to_edit
+    }
+
     # readjusting edges' nodes too, accordingly
-    for node in to_edit:
-        geo = nodes_gdf.loc[node].geometry
-        tmp = new_nodes[new_nodes.geometry == geo]
-        index = tmp.iloc[0][nodeID]
-        
-        # assigning the unique index to edges
-        edges_gdf.loc[edges_gdf.u == node,'u'] = index
-        edges_gdf.loc[edges_gdf.v == node,'v'] = index
-    
-    nodes_gdf = new_nodes.drop('wkt', axis =1).copy()
-    return nodes_gdf, edges_gdf
+    edges_gdf[['u', 'v']] = edges_gdf[['u', 'v']].replace(node_mapping)
+
+    return new_nodes.drop(columns='wkt'), edges_gdf
 
 def fix_dead_ends(nodes_gdf, edges_gdf):
     """
@@ -74,19 +72,19 @@ def fix_dead_ends(nodes_gdf, edges_gdf):
         The cleaned junctions and street segments GeoDataFrames.
     """
     
-    nodes_gdf =  nodes_gdf.copy()
-    edges_gdf = edges_gdf.copy()
+    nodes_gdf, edges_gdf = nodes_gdf.copy(), edges_gdf.copy()
 
-    # find the nodes that are dead-ends
-    dead_end_nodes = [node for node, degree in nodes_degree(edges_gdf).items() if degree == 1]
+    # Find dead-end nodes
+    degree = nodes_degree(edges_gdf)
+    dead_end_nodes = [node for node, deg in degree.items() if deg == 1]
 
-    if not dead_end_nodes:  # if there are no dead-end nodes, return the original GeoDataFrames
+    if not dead_end_nodes:
         return nodes_gdf, edges_gdf
 
-    # drop the dead-end nodes and edges from the GeoDataFrames
-    nodes_gdf = nodes_gdf[~nodes_gdf.index.isin(dead_end_nodes)]
+    # Drop dead-end nodes and their edges
+    nodes_gdf = nodes_gdf.drop(dead_end_nodes)
     edges_gdf = edges_gdf[~edges_gdf['u'].isin(dead_end_nodes) & ~edges_gdf['v'].isin(dead_end_nodes)]
-
+    
     return nodes_gdf, edges_gdf
 
 def is_nodes_simplified(nodes_gdf, edges_gdf, nodes_to_keep_regardless = []):
@@ -100,21 +98,18 @@ def is_nodes_simplified(nodes_gdf, edges_gdf, nodes_to_keep_regardless = []):
    
     Returns
     -------
-    simplified: bool
+    bool
         Whether the nodes of the network are simplified or not.
     """
     
-    simplified = True
-    to_edit = {k: v for k, v in nodes_degree(edges_gdf).items() if v == 2}
-    if nodes_to_keep_regardless: 
-        to_edit_list = list(to_edit.keys())
-        tmp_nodes = nodes_gdf[(nodes_gdf.nodeID.isin(to_edit_list)) & (~nodes_gdf.nodeID.isin(nodes_to_keep_regardless))].copy()
-        to_edit = list(tmp_nodes.nodeID)
+    degree = nodes_degree(edges_gdf)
+    to_edit = [node for node, deg in degree.items() if deg == 2]
     
-    if len(to_edit) == 0: 
-        return simplified
-            
-    return False
+    # Exclude nodes to keep regardless
+    if nodes_to_keep_regardless:
+        to_edit = [node for node in to_edit if node not in nodes_to_keep_regardless]
+    
+    return len(to_edit) == 0
 
 def is_edges_simplified(edges_gdf, preserve_direction):
     """
@@ -130,16 +125,19 @@ def is_edges_simplified(edges_gdf, preserve_direction):
     simplified: bool
         Whether the edges of the network are simplified or not.
     """
+    
+    edges_gdf = edges_gdf.copy()
     if not preserve_direction:
-        edges_gdf["code"] = np.where(edges_gdf['v'] >= edges_gdf['u'], edges_gdf.u.astype(str)+"-"+edges_gdf.v.astype(str), edges_gdf.v.astype(str)+"-"+edges_gdf.u.astype(str))
+        edges_gdf['code'] = np.where(
+            edges_gdf['v'] >= edges_gdf['u'],
+            edges_gdf['u'].astype(str) + "-" + edges_gdf['v'].astype(str),
+            edges_gdf['v'].astype(str) + "-" + edges_gdf['u'].astype(str),
+        )
     else:
-        edges_gdf["code"] = edges_gdf.u.astype(str)+"-"+edges_gdf.v.astype(str)
-    if edges_gdf.duplicated('code').any():
-        max_lengths = edges_gdf.groupby("code").agg({'length': 'max'}).to_dict()['length']
-        for code, group in edges_gdf.groupby("code"):
-            if group[group.length < max_lengths[code] * 0.9].shape[0]>0:
-                return False
-    return True
+        edges_gdf['code'] = edges_gdf['u'].astype(str) + "-" + edges_gdf['v'].astype(str)
+
+    duplicates = edges_gdf.duplicated('code')
+    return not duplicates.any()
 
 def simplify_graph(nodes_gdf, edges_gdf, nodes_to_keep_regardless = []):
     """
@@ -273,12 +271,11 @@ def _prepare_dataframes(nodes_gdf, edges_gdf):
     edges_gdf = edges_gdf.copy().set_index('edgeID', drop=False)
     
     nodes_gdf.index.name, edges_gdf.index.name = None, None
-    nodes_gdf['x'], nodes_gdf['y'] = list(zip(*[(r.coords[0][0], r.coords[0][1]) for r in nodes_gdf.geometry]))
+    nodes_gdf['x'], nodes_gdf['y'] = nodes_gdf.geometry.x, nodes_gdf.geometry.y
     edges_gdf.sort_index(inplace = True)  
     
     if 'highway' in edges_gdf.columns:
-        to_remove = ['elevator']
-        edges_gdf = edges_gdf[~edges_gdf.highway.isin(to_remove)]
+        edges_gdf = edges_gdf[edges_gdf['highway'] != 'elevator']
     
     return nodes_gdf, edges_gdf    
     
@@ -325,7 +322,7 @@ def simplify_same_vertexes_edges(nodes_gdf, edges_gdf, preserve_direction):
         code = edges_gdf.loc[index]['code']
         geometryA = edges_gdf.loc[index].geometry
         geometryB = edges_gdf.query("code == @code").iloc[1].geometry
-        cl = center_line(geometryA, geometryB)
+        cl = center_line([geometryA, geometryB])
         edges_gdf.at[index, 'geometry'] = cl
         sub_group = edges_gdf.query("code == @code").copy()
              
@@ -728,3 +725,123 @@ def _update_line_geometry_coords(u, v, nodes_gdf, line_geometry):
     line_coords[-1] = (nodes_gdf.loc[v]['x'], nodes_gdf.loc[v]['y'])
     new_line_geometry = LineString([coor for coor in line_coords])
     return new_line_geometry
+
+def consolidate_nodes(nodes_gdf, edges_gdf, consolidate_edges_too = False, tolerance=20):
+    """
+    Consolidates nearby nodes within a given tolerance, preserving unclustered nodes.
+
+    Parameters:
+    - nodes_gdf (GeoDataFrame): Nodes with 'nodeID' and 'geometry'.
+    - edges_gdf (GeoDataFrame): Edges for connectivity checks.
+    - tolerance (float): Distance threshold for clustering.
+
+    Returns:
+    - GeoDataFrame: Consolidated nodes with preserved unclustered nodes.
+    """
+    
+    nodes_gdf = nodes_gdf.copy().set_index('nodeID', drop=False)
+    nodes_gdf.index.name = None
+    nodes_gdf.drop(columns=["x", "y"], inplace=True, errors="ignore")
+
+    graph = graph_fromGDF(nodes_gdf, edges_gdf, nodeID="nodeID")
+
+    # Step 1: Cluster nodes within tolerance
+    clusters = nodes_gdf.buffer(tolerance).unary_union
+    clusters = clusters.geoms if hasattr(clusters, "geoms") else [clusters]
+    clusters = gpd.GeoDataFrame(geometry=gpd.GeoSeries(clusters, crs=nodes_gdf.crs))
+    clusters["x"] = clusters.geometry.centroid.x
+    clusters["y"] = clusters.geometry.centroid.y
+
+    # Step 2: Assign nodes to clusters
+    gdf = gpd.sjoin(nodes_gdf, clusters, how="left", predicate="within").drop(columns="geometry")
+    gdf.rename(columns={"index_right": "new_nodeID"}, inplace=True)
+    new_nodeID = gdf.new_nodeID.max() + 1
+    
+    # Step 3: Split non-connected components in clusters
+    for cluster_label, nodes_subset in gdf.groupby("new_nodeID"):
+        if len(nodes_subset) > 1:  # Skip unclustered nodes
+            wccs = list(nx.connected_components(graph.subgraph(nodes_subset.index)))
+            if len(wccs) > 1:
+                for wcc in wccs:
+                    idx = list(wcc)
+                    subcluster_centroid = nodes_gdf.loc[idx].geometry.unary_union.centroid
+                    gdf.loc[idx, ["x", "y"]] = subcluster_centroid.x, subcluster_centroid.y
+                    gdf.loc[idx, "new_nodeID"] = new_nodeID
+                    new_nodeID += 1
+
+    # Step 4: Consolidate nodes, but preserve unclustered ones
+    consolidated_nodes = []
+    has_z = 'z' in nodes_gdf.columns
+
+    for new_nodeID, nodes_subset in gdf.groupby("new_nodeID"):
+        old_nodeIDs = nodes_subset.nodeID.to_list()
+        cluster_x, cluster_y = nodes_subset.iloc[0][["x", "y"]]
+
+        new_node = {
+            "old_nodeIDs": old_nodeIDs,
+            "x": cluster_x,
+            "y": cluster_y,
+            "nodeID": new_nodeID,
+        }
+
+        if has_z:
+            new_node["z"] = nodes_gdf.loc[old_nodeIDs, "z"].mean() if len(old_nodeIDs) > 1 else nodes_gdf.loc[old_nodeIDs[0], "z"]
+        
+        consolidated_nodes.append(new_node)
+
+    # Create final GeoDataFrame
+    consolidated_nodes_gdf = gpd.GeoDataFrame(
+        consolidated_nodes,
+        geometry=gpd.points_from_xy([row["x"] for row in consolidated_nodes],
+                                    [row["y"] for row in consolidated_nodes],
+                                    [row["z"] for row in consolidated_nodes] if "z" in consolidated_nodes.columns else None
+                                    ),
+        crs=nodes_gdf.crs
+    )
+
+    if consolidate_edges_too:
+        return consolidated_nodes_gdf, consolidate_edges(edges_gdf, consolidated_nodes_gdf), 
+        
+    return consolidated_nodes_gdf
+    
+def consolidate_edges(edges_gdf, consolidated_nodes_gdf):
+    """
+    Updates 'u' and 'v' in edges based on the consolidated nodes.
+    Replaces oldNodeIDs in 'u' and 'v' with the corresponding new nodeID from nodes_consolidated.
+    Also updates the geometry of edges by replacing the first and last coordinates with new node positions.
+    """
+    # Create a mapping from oldNodeIDs to their corresponding nodeID and geometry
+    nodes_mapping = (
+        consolidated_nodes_gdf.explode("oldNodeIDs")[["oldNodeIDs", "geometry", "nodeID"]]
+        .set_index("oldNodeIDs")
+    )
+
+    def update_edge(row):
+        """Update edge properties based on consolidated nodes."""
+        old_u, old_v, geom = row["u"], row["v"], row["geometry"]
+        
+        # Map old_u and old_v to their corresponding new nodeIDs
+        new_u_id = nodes_mapping.loc[old_u, "nodeID"]
+        new_v_id = nodes_mapping.loc[old_v, "nodeID"]
+
+        # Get the new geometries for u and v
+        new_u_geom = nodes_mapping.loc[old_u, "geometry"]
+        new_v_geom = nodes_mapping.loc[old_v, "geometry"]
+
+        # Update the geometry (replace first and last coordinates)
+        if isinstance(geom, LineString):
+            new_coords = [new_u_geom.coords[0]] + list(geom.coords[1:-1]) + [new_v_geom.coords[0]]
+            geom = LineString(new_coords)
+
+        return pd.Series({"u": new_u_id, "v": new_v_id, "geometry": geom})
+
+    # Apply updates to the edges
+    consolidated_edges = edges_gdf.copy()
+    consolidated_edges[["u", "v", "geometry"]] = consolidated_edges.apply(update_edge, axis=1)
+    consolidated_edges = consolidated_edges[consolidated_edges.u != consolidated_edges.v]
+    consolidated_edges.index = consolidated_edges['edgeID']
+    consolidated_edges.index.name = None
+    
+    return consolidated_edges
+    
+    
