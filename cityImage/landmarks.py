@@ -466,9 +466,9 @@ def compute_global_scores(buildings_gdf, global_indexes_weights, global_componen
    
     # Check if vScore should be computed
     compute_vScore = (
-        "vScore" in local_components_weights and
-        "height" in matches.columns and
-        matches["height"].max() > 0.0
+        "vScore" in global_components_weights and
+        "height" in buildings_gdf.columns and
+        buildings_gdf["height"].max() > 0.0
     )
     
     # Rescale values if the column exists in buildings_gdf
@@ -551,8 +551,8 @@ def compute_local_scores(buildings_gdf, local_indexes_weights, local_components_
     # Initialize scores conditionally
     compute_vScore = (
         "vScore" in local_components_weights and
-        "height" in matches.columns and
-        matches["height"].max() > 0.0
+        "height" in buildings_gdf.columns and
+        buildings_gdf["height"].max() > 0.0
     )
     if compute_vScore:
         buildings_gdf["vScore_l"] = 0.0  # Initialize only if valid height data exists
