@@ -144,44 +144,46 @@ def dict_to_df(list_dict, list_col):
     df.columns = list_col
     return df
      
-def center_line(line_geometryA, line_geometryB): 
+def center_line(line_geometries):
     """
-    Given two LineStrings, it derives the corresponding center line
-    
+    Computes the center line for a list of LineStrings by averaging their coordinates.
+
     Parameters
     ----------
-    line_geometryA: LineString 
-        The first line.
-    line_geometryB: LineString
-        The second line.
-    
-    Returns:
-    ----------
-    center_line: LineString
-        The resulting center line.
+    line_geometries : list of LineString
+        A list of LineStrings to compute the center line.
+
+    Returns
+    -------
+    LineString
+        The resulting center line as a LineString.
     """
-    line_coordsA = list(line_geometryA.coords)
-    line_coordsB = list(line_geometryB.coords)
-    # If not, reverse the coordinates of B
-    if line_coordsA[0] != line_coordsB[-1]:
-        line_coordsB = line_coordsB[::-1]
+    if len(line_geometries) < 2:
+        raise ValueError("At least two LineStrings are required to compute a center line.")
 
-    # Remove the middle point of the longer list until both lists have the same length
-    while len(line_coordsA) != len(line_coordsB):
-        if len(line_coordsA) > len(line_coordsB):
-            del line_coordsA[int(len(line_coordsA)/2)]
-        else:
-            del line_coordsB[int(len(line_coordsB)/2)]
+    # Extract coordinates from all LineStrings
+    all_coords = [list(line.coords) for line in line_geometries]
 
-    # Calculate the center line coordinates
-    center_line_coords = [[(a[0] + b[0])/2, (a[1] + b[1])/2] for a, b in zip(line_coordsA, line_coordsB)]
+    # Ensure all LineStrings have the same direction (align the first and last points)
+    for i in range(1, len(all_coords)):
+        if all_coords[i][0] != all_coords[i - 1][-1]:
+            all_coords[i] = all_coords[i][::-1]
 
-    # Assign the first and last point of the line A to the first and last point of the center line 
-    center_line_coords[0] = line_coordsA[0]
-    center_line_coords[-1] = line_coordsA[-1]
-    # Create a LineString object from the center line coordinates
-    center_line = LineString([coor for coor in center_line_coords])
-    return center_line
+    # Ensure all lists have the same length by trimming the longer ones
+    min_length = min(len(coords) for coords in all_coords)
+    all_coords = [coords[:min_length] for coords in all_coords]
+
+    # Compute the average of coordinates for each point across all LineStrings
+    center_line_coords = [
+        [
+            sum(coords[i][0] for coords in all_coords) / len(all_coords),
+            sum(coords[i][1] for coords in all_coords) / len(all_coords),
+        ]
+        for i in range(min_length)
+    ]
+
+    # Create and return the resulting LineString
+    return LineString(center_line_coords)
 
 def min_distance_geometry_gdf(geometry, gdf):
     """
@@ -646,3 +648,19 @@ def aggregate_geometries(gdf, column_operations):
         gdf = gdf[~gdf.index.isin(to_remove_geometries)]
 
     return gdf
+
+def convert_numeric_columns(df):
+    """
+    Converts DataFrame columns to appropriate numeric types:
+    - Object columns with integer values to `int64`
+    - Object columns with float values to `float64`
+    - Ensures existing numeric columns are standardized to `int64` or `float64`
+    """
+    for col in df.columns:
+        try:
+            df[col] = pd.to_numeric(df[col], errors='ignore')
+            if df[col].dtype == 'float64' and df[col].dropna().mod(1).eq(0).all():
+                df[col] = df[col].astype('int64')  # Convert floats that are actually ints
+        except ValueError:
+            pass  # Keeps non-convertible columns unchanged
+    return df
