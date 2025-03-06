@@ -10,7 +10,7 @@ from scipy.sparse import linalg
 pd.set_option("display.precision", 3)
 
 import concurrent.futures
-from .utilities import scaling_columnDF, polygon_2d_to_3d, downloader
+from .utilities import scaling_columnDF, polygon_2d_to_3d, downloader, gdf_multipolygon_to_polygon
 from .visibility import visibility_polygon2d, compute_3d_sight_lines, intervisibility
 from .angles import get_coord_angle
 
@@ -143,6 +143,133 @@ def get_buildings_fromOSM(place, download_method: str, epsg = None, distance = 1
     buildings_gdf['buildingID'] = buildings_gdf.index.values.astype('int')  
     
     return buildings_gdf
+
+# if case-study area and distance not defined
+
+def assign_building_heights(buildings_gdf, detailed_buildings_gdf, crs, min_overlap=0.4):
+    """
+    Assigns the highest 'height' and lowest 'base' from detailed_buildings to buildings.
+    - If a building fully contains a detailed one -> Assign min(base), max(height).
+    - If a detailed building intersects only one -> Assign min(base), max(height).
+    - If a detailed building intersects multiple buildings -> Assign to the one with the highest overlap (if ≥ min_overlap).
+
+    Parameters:
+    buildings_gdf (GeoDataFrame): The main set of building polygons.
+    detailed_buildings_gdf (GeoDataFrame): A more detailed building dataset with height/base attributes.
+    min_overlap (float): Minimum required percentage overlap (default: 40%).
+
+    Returns:
+    GeoDataFrame: Updated buildings with assigned height and base values.
+    """
+    # Ensure CRS matches
+    if (buildings_gdf.crs != crs) or (detailed_buildings_gdf.crs !=crs):
+        raise ValueError(f"CRS mismatch: buildings_gdf ({buildings_gdf.crs}) and detailed_buildings_gdf ({detailed_buildings_gdf.crs}) must have the same CRS.")
+
+    buildings_gdf = buildings_gdf.copy()
+    detailed_buildings_gdf = gdf_multipolygon_to_polygon(detailed_buildings_gdf)
+    
+    buildings_gdf["base"] = 9999.0 
+    buildings_gdf["height"] = -9999.0 
+        
+    # # **Step 1: Handle Full Containment (Buildings that contain detailed ones)**
+    # **Step 1: Identify buildings that contain detailed buildings**
+    containment = gpd.sjoin(buildings_gdf, detailed_buildings_gdf, predicate="contains", how="left")
+
+    # Compute min(base) and max(height) for each containing building
+    contained_bases = containment.groupby(containment.index)["base_right"].min()
+    contained_height = containment.groupby(containment.index)["height_right"].max()
+
+    # Apply updates for contained buildings
+    buildings_gdf["base"] = buildings_gdf["base"].combine(contained_bases, min)
+    buildings_gdf["height"] = buildings_gdf["height"].combine(contained_height, max)
+    buildings_gdf.index = buildings_gdf.index.astype(int)
+    
+    # **Step 2: Identify detailed buildings that contain buildings_gdf**
+    reverse_containment = gpd.sjoin(detailed_buildings_gdf, buildings_gdf, predicate="contains", how="left")
+    container_bases = reverse_containment.groupby("index_right")["base_left"].min()
+    container_height = reverse_containment.groupby("index_right")["height_left"].max()
+    
+    buildings_gdf["base"] = buildings_gdf["base"].combine(container_bases, min)
+    buildings_gdf["height"] = buildings_gdf["height"].combine(container_height, max)
+    buildings_gdf.index = buildings_gdf.index.astype(int)
+
+    # **Step 3: Handle Intersections (Buildings that partially overlap detailed ones)** 
+    buildings_gdf['geo_check'] = buildings_gdf.geometry
+    buildings_gdf['ix'] = buildings_gdf.index
+    
+    intersections = gpd.sjoin(detailed_buildings_gdf, buildings_gdf, predicate="intersects", how="left")
+    intersections = intersections[intersections.geo_check != None]
+    
+    # Compute intersection area
+    intersections["area_intersection"] = intersections.apply(lambda row: row["geometry"].intersection(row["geo_check"]).area, axis=1)
+
+    # Compute overlap ratio (intersection_area / detailed_building_area)
+    intersections["overlap_ratio"] = intersections["area_intersection"] / intersections["geometry"].area
+    # Keep only valid matches where the overlap is at least `min_overlap`
+    valid_matches = intersections[intersections["overlap_ratio"] >= min_overlap]
+
+    # Keep only the building in `buildings_gdf` that has the highest coverage for each detailed building
+    best_matches = valid_matches.loc[valid_matches.groupby(valid_matches.index)["overlap_ratio"].idxmax()]
+    best_matches = best_matches.set_index("ix")
+    best_matches.index = best_matches.index.astype(int)
+    
+    # Compute min(base) and max(height) for the selected matches
+    intersection_bases = best_matches.groupby(best_matches.index)["base_left"].min()
+    intersection_height = best_matches.groupby(best_matches.index)["height_left"].max()
+
+    # Apply updates efficiently
+    buildings_gdf["base"] = buildings_gdf["base"].combine(intersection_bases, min)
+    buildings_gdf["height"] = buildings_gdf["height"].combine(intersection_height, max)
+    buildings_gdf = buildings_gdf.drop(["geo_check", "ix"], axis = 1)
+    buildings_gdf.index = buildings_gdf.index.astype(int)
+    
+    # **Step 4: Handle Intersections in Reverse (Detailed buildings donate attributes to smaller ones)** ----------
+    detailed_buildings_gdf['geo_check'] = detailed_buildings_gdf.geometry
+    buildings_gdf['ix'] = buildings_gdf.index
+
+    # Perform spatial join: find detailed buildings that intersect with non-detailed ones
+    intersections = gpd.sjoin(buildings_gdf, detailed_buildings_gdf, predicate="intersects", how="left")
+    intersections = intersections[intersections.geo_check.notnull()]
+
+    # Compute intersection area
+    intersections["area_intersection"] = intersections.apply(lambda row: row["geometry"].intersection(row["geo_check"]).area, axis=1)
+
+    # Compute overlap ratio (intersection_area / non-detailed building area)
+    intersections["overlap_ratio"] = intersections["area_intersection"] / intersections["geometry"].area
+
+    # Keep only matches where the **smaller building's** overlap is at least threshold value
+    valid_matches = intersections[intersections["overlap_ratio"] >= min_overlap]
+
+    # For each **non-detailed building**, find the detailed one with the highest overlap
+    best_matches = valid_matches.loc[valid_matches.groupby(valid_matches.index)["overlap_ratio"].idxmax()]
+
+    # Compute min(base) and max(height) for the selected matches
+    intersection_bases = best_matches.groupby(best_matches.index)["base_right"].min()
+    intersection_height = best_matches.groupby(best_matches.index)["height_right"].max()
+
+    # Apply updates efficiently: non-detailed buildings take values from detailed ones
+    buildings_gdf["base"] = buildings_gdf["base"].combine(intersection_bases, min)
+    buildings_gdf["height"] = buildings_gdf["height"].combine(intersection_height, max)
+    buildings_gdf.index = buildings_gdf.index.astype(int)
+
+    # # Replace 9999.0 in "base" with NaN, and -9999.0 in "height" with NaN
+    buildings_gdf["base"] = buildings_gdf["base"].replace(9999.0, np.nan)
+    buildings_gdf["height"] = buildings_gdf["height"].replace(-9999.0, np.nan)
+    buildings_gdf = buildings_gdf.drop(["geo_check", "ix"], axis = 1, errors = 'ignore')
+    
+    return buildings_gdf
+
+
+def select_buildings_by_study_area(obstructions_gdf, method = 'polygon', polygon = None, distance = 1000):
+
+    if (method == 'distance'):
+        polygon = obstructions_gdf.geometry.unary_union.centroid.buffer(distance)
+    if polygon is not None:
+        buildings_gdf = obstructions_gdf[obstructions_gdf.geometry.within(polygon)]
+        return buildings_gdf
+        
+    return obstructions_gdf
+
 
 def structural_score(buildings_gdf, obstructions_gdf, edges_gdf, advance_vis_expansion_distance = 300, neighbours_radius = 150):
     """
