@@ -29,7 +29,7 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
         - when using "distance_from_point" please provide a (lat, lon) tuple to create the bounding box around it; 
         - when using "distance_from_address" provide an existing OSM address; 
         - when using "OSMplace" provide an OSM place name.  
-        - when using "OSMpolygon" please provide the name of a relation in OSM as an argument of place;
+        - when using "polygon" please provide the name of a relation in OSM as an argument of place;
     download_method: str, {"distance_from_address", "distance_from_point", "OSMpolygon", "OSMplace", "polygon"}
         It indicates the method that should be used for downloading the data. When 'polygon' the shape to get network data within coordinates should be in
         unprojected latitude-longitude degrees (EPSG:4326).
@@ -73,10 +73,8 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
                 edges_gdf["oneway"] *= 1
     
     edges_gdf = edges_gdf[to_keep]
- 
     edges_gdf = _resolve_lists(edges_gdf)
     nodes_gdf, edges_gdf = _project_gdfs(nodes_gdf, edges_gdf, epsg)
-
     nodes_gdf["x"], nodes_gdf["y"] = list(zip(*[(geometry.coords[0][0], geometry.coords[0][1]) for geometry in nodes_gdf.geometry]))
     
     if len(nodes_gdf.geometry.iloc[0].coords) > 2:
@@ -155,7 +153,7 @@ def get_pedestrian_network_fromOSM(place, download_method, epsg = None, distance
     
     gdf = gdf[to_keep].copy()
     gdf.reset_index(inplace = True)
-    gdf = gdf.drop(["element_type", "osmid"], axis = 1)
+    gdf = gdf.drop(["element_type", "osmid"], axis = 1, errors = 'ignore')
     
     nodes_gdf, edges_gdf = get_network_fromGDF(gdf, epsg, other_columns = ["name", "highway", "lit"])
     edges_gdf = _resolve_lists(edges_gdf)
