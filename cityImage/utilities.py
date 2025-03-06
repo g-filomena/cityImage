@@ -8,7 +8,7 @@ import networkx as nx
 
 from typing import List
 from math import sqrt
-from shapely.geometry import LineString, Point, Polygon, MultiPoint, mapping
+from shapely.geometry import LineString, Point, Polygon, MultiPoint, mapping, LinearRing, MultiPolygon
 from shapely.ops import unary_union, transform, nearest_points, split, linemerge
 from shapely.affinity import scale
 from shapely.geometry.base import BaseGeometry
@@ -664,3 +664,28 @@ def convert_numeric_columns(df):
         except ValueError:
             pass  # Keeps non-convertible columns unchanged
     return df
+    
+def gdf_multipolygon_to_polygon(gdf):
+    
+    def convert_multipolygon_to_polygon(geometry):
+        if isinstance(geometry, MultiPolygon) and len(geometry.geoms) == 1:
+            return geometry.geoms[0]  # Extract the single Polygon
+        return geometry  # Return unchanged if already Polygon or a true MultiPolygon
+
+    gdf["geometry"] = gdf["geometry"].apply(convert_multipolygon_to_polygon)
+
+    return gdf 
+
+def has_interior(poly):
+    """Returns True if the polygon has interior rings (holes), False otherwise."""
+    if poly.geom_type == "MultiPolygon":
+        return false
+    return len(poly.interiors) > 0
+
+def is_exterior_inside_another(poly, other_poly):
+    """Check if the exterior of one polygon is inside another polygon"""
+    if not has_interior(poly):
+        return False
+    coords = list(other_poly.exterior.coords)
+    coords.reverse()
+    return any(coords == list(ring.coords) for ring in poly.interiors)
