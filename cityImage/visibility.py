@@ -188,9 +188,9 @@ def process_chunk(node_chunk, buildings_gdf, buildings_sindex, distance_min_obse
     if potential_sight_lines.empty:
         return potential_sight_lines
 
-    # Convert observer-target pairs to coordinate lists using swifter
-    potential_sight_lines["start"] = potential_sight_lines["observer"].apply(lambda p: (p.x, p.y, p.z))
-    potential_sight_lines["stop"] = potential_sight_lines["target"].apply(lambda p: (p.x, p.y, p.z))
+    # Convert observer-target pairs to coordinate lists [x, y, z]
+    potential_sight_lines["start"] = potential_sight_lines["observer"].apply(lambda p: np.array([p.x, p.y, p.z])) 
+    potential_sight_lines["stop"] = potential_sight_lines["target"].apply(lambda p: np.array([p.x, p.y, p.z]))
 
     # Apply Swifter for automatic parallelization
     potential_sight_lines["visible"] = potential_sight_lines.swifter.apply(
@@ -275,9 +275,6 @@ def intervisibility(row, buildings_gdf, buildings_sindex):
         bool: True if the line is visible, False otherwise.
     """
 
-    start = np.array(row.start)  # [x, y, z]
-    stop = np.array(row.stop)    # [x, y, z]
-    
     # **Step 1: Get possible blocking buildings using bounding boxes**
     min_x, min_y, min_z = np.minimum(start, stop)
     max_x, max_y, max_z = np.maximum(start, stop)
