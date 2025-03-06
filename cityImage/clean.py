@@ -789,13 +789,17 @@ def consolidate_nodes(nodes_gdf, edges_gdf, consolidate_edges_too = False, toler
         
         consolidated_nodes.append(new_node)
 
+    # Convert list of dicts to DataFrame
+    consolidated_nodes_df = pd.DataFrame(consolidated_nodes)
+
     # Create final GeoDataFrame
     consolidated_nodes_gdf = gpd.GeoDataFrame(
-        consolidated_nodes,
-        geometry=gpd.points_from_xy([row["x"] for row in consolidated_nodes],
-                                    [row["y"] for row in consolidated_nodes],
-                                    [row["z"] for row in consolidated_nodes] if "z" in consolidated_nodes.columns else None
-                                    ),
+        consolidated_nodes_df,
+        geometry=gpd.points_from_xy(
+            consolidated_nodes_df["x"],
+            consolidated_nodes_df["y"],
+            consolidated_nodes_df["z"] if "z" in consolidated_nodes_df.columns else None
+        ),
         crs=nodes_gdf.crs
     )
 
@@ -807,13 +811,13 @@ def consolidate_nodes(nodes_gdf, edges_gdf, consolidate_edges_too = False, toler
 def consolidate_edges(edges_gdf, consolidated_nodes_gdf):
     """
     Updates 'u' and 'v' in edges based on the consolidated nodes.
-    Replaces oldNodeIDs in 'u' and 'v' with the corresponding new nodeID from nodes_consolidated.
+    Replaces old_nodeIDs in 'u' and 'v' with the corresponding new nodeID from nodes_consolidated.
     Also updates the geometry of edges by replacing the first and last coordinates with new node positions.
     """
-    # Create a mapping from oldNodeIDs to their corresponding nodeID and geometry
+    # Create a mapping from old_nodeIDs to their corresponding nodeID and geometry
     nodes_mapping = (
-        consolidated_nodes_gdf.explode("oldNodeIDs")[["oldNodeIDs", "geometry", "nodeID"]]
-        .set_index("oldNodeIDs")
+        consolidated_nodes_gdf.explode("old_nodeIDs")[["old_nodeIDs", "geometry", "nodeID"]]
+        .set_index("old_nodeIDs")
     )
 
     def update_edge(row):
