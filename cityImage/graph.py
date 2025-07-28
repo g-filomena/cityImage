@@ -63,7 +63,7 @@ def graph_fromGDF(nodes_gdf, edges_gdf, nodeID = "nodeID"):
     return G
 
 
-def multiGraph_fromGDF(nodes_gdf, edges_gdf, nodeIDcolumn):
+def multiGraph_fromGDF(nodes_gdf, edges_gdf, nodeID_column):
     """
     From two GeoDataFrames (nodes and edges), it creates a NetworkX.MultiGraph.
     
@@ -73,7 +73,7 @@ def multiGraph_fromGDF(nodes_gdf, edges_gdf, nodeIDcolumn):
         The nodes (junctions) GeoDataFrame.
     edges_gdf: LineString GeoDataFrame
         The street segments GeoDataFrame.
-    nodeIDcolumn: string
+    nodeID_column: string
         Column name that indicates the node identifier column.
     
     Returns
@@ -81,7 +81,7 @@ def multiGraph_fromGDF(nodes_gdf, edges_gdf, nodeIDcolumn):
     G: NetworkX.MultiGraph
         The street network graph.
     """
-    nodes_gdf.set_index(nodeIDcolumn, drop = False, inplace = True, append = False)
+    nodes_gdf.set_index(nodeID_column, drop = False, inplace = True, append = False)
     nodes_gdf.index.name = None
     
     Mg = nx.MultiGraph()   
@@ -102,7 +102,7 @@ def multiGraph_fromGDF(nodes_gdf, edges_gdf, nodeIDcolumn):
       
     return Mg
     
-def dual_gdf(nodes_gdf, edges_gdf, epsg, oneway = False, angle = None):
+def dual_gdf(nodes_gdf, edges_gdf, crs, oneway = False, angle = None):
     """
     It creates two dataframes that are later exploited to generate the dual graph of a street network. The nodes_dual gdf contains edges 
     centroids; the edges_dual gdf, instead, contains links between the street segment centroids. Those dual edges link real street segments 
@@ -115,8 +115,8 @@ def dual_gdf(nodes_gdf, edges_gdf, epsg, oneway = False, angle = None):
         The nodes (junctions) GeoDataFrame.
     edges_gdf: LineString GeoDataFrame
         The street segments GeoDataFrame.
-    epsg: int
-        Epsg of the area considered 
+    crs : str, or pyproj.CRS
+        Coordinate Reference System for the output GeoDataFrames. Can be a string (e.g. 'EPSG:32633'),  or a pyproj.CRS object.
     oneway: boolean
         When true, the function takes into account the direction and therefore it may ignore certain links whereby vehichular movement is not allowed in 
         a certain direction.
@@ -154,10 +154,6 @@ def dual_gdf(nodes_gdf, edges_gdf, epsg, oneway = False, angle = None):
     
     # creating vertexes representing street segments (centroids)
     centroids_data = centroids_gdf.drop(['geometry', 'centroid'], axis = 1)
-    if epsg is None: 
-        crs = nodes_gdf.crs
-    else: 
-        crs = 'EPSG:' + str(epsg)
     nodes_dual = gpd.GeoDataFrame(centroids_data, crs=crs, geometry=centroids_gdf['centroid'])
     nodes_dual['x'], nodes_dual['y'] = [x.coords.xy[0][0] for x in centroids_gdf['centroid']],[y.coords.xy[1][0] for y in centroids_gdf['centroid']]
     nodes_dual.index = nodes_dual.edgeID
@@ -232,7 +228,7 @@ def dual_graph_fromGDF(nodes_dual, edges_dual):
 
     return Dg
 
-def dual_id_dict(dict_values, G, node_attribute):
+def dual_id_dict(dict_values, graph, node_attribute):
     """
     It can be used when one deals with a dual graph and wants to link analyses conducted on this representation to 
     the primal graph. For instance, it takes the dictionary containing the betweennes-centrality values of the
@@ -242,7 +238,7 @@ def dual_id_dict(dict_values, G, node_attribute):
     ----------
     dict_values: dictionary 
         It should be in the form {nodeID: value} where values is a measure that has been computed on the graph, for example.
-    G: networkx graph
+    graph: networkx graph
         The graph that was used to compute or to assign values to nodes or edges.
     node_attribute: string
         The attribute of the node to link to the edges GeoDataFrame.
@@ -252,7 +248,7 @@ def dual_id_dict(dict_values, G, node_attribute):
     ed_dict: dictionary
         A dictionary where each item consists of a edgeID (key) and centrality values (for example) or other attributes (values).
     """
-    ed_list = [(G.nodes[node][node_attribute], value) for node, value in dict_values.items()]
+    ed_list = [(graph.nodes[node][node_attribute], value) for node, value in dict_values.items()]
     return dict(ed_list)
 
 def nodes_degree(edges_gdf):
@@ -273,8 +269,27 @@ def nodes_degree(edges_gdf):
     return dd 
 
 def from_nx_to_gdf(graph, crs):
-   
-   # Nodes GeoDataFrame
+    """
+    Converts a NetworkX graph with geometry attributes into two GeoDataFrames: one for nodes and one for edges.
+
+    Each node and edge in the input graph must have a 'geometry' attribute containing a valid shapely geometry
+    (e.g., Point for nodes, LineString for edges).
+
+    Parameters
+    ----------
+    graph : networkx.Graph or networkx.DiGraph
+        The input NetworkX graph. Each node and edge must have a 'geometry' key in its attribute dictionary.
+    crs : str, or pyproj.CRS
+        Coordinate Reference System for the output GeoDataFrames. Can be a string (e.g. 'EPSG:32633'), or a pyproj.CRS object.
+
+    Returns
+    -------
+    nodes_gdf : GeoDataFrame
+        GeoDataFrame of graph nodes
+    edges_gdf : GeoDataFrame
+        GeoDataFrame of graph edges
+    """
+    # Nodes GeoDataFrame
     nodes_gdf = gpd.GeoDataFrame(
         [
             {**data, "nodeID": node, "geometry": data["geometry"]} 
@@ -293,3 +308,4 @@ def from_nx_to_gdf(graph, crs):
     )
     
     return nodes_gdf, edges_gdf
+
