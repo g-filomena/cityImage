@@ -4,13 +4,15 @@
 # License: GNU General Public License v3.0, see full license in LICENSE.txt
 ################################################################################
 
-from .load import*
 from .angles import *
 from .barriers import *
-from .centrality import *
 from .colors import*
-from .clean import *
 from .graph import *
+from .graph_centrality import *
+from .graph_clean import *
+from .graph_load import *
+from .graph_consolidate import *
+from .graph_topology import *
 from .landmarks import *
 from .land_use import*
 from .plot import *
