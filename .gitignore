@@ -1,15 +1,12 @@
-/Outputs
-/Notebooks_tmp
-/.ipynb_checkpoints
-/__pycache__
-/tests/cache
-/docs/notebooks/cache
-/docs/otherExamples/cache
-/docs/data
-/docs/cache
-/docs/output
-/docs/notebooks/.ipynb_checkpoints
-/cache
+__pycache__/
+tests/cache/
+docs/notebooks/cache/
+docs/otherExamples/cache/
+docs/data/
+docs/cache/
+docs/output/
+docs/notebooks/.ipynb_checkpoints/
+cache/
 
 .temp
 .pytest_cache
