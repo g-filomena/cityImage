@@ -9,7 +9,7 @@ pd.set_option("display.precision", 3)
 
 from .graph import graph_fromGDF, nodes_degree
 from .load import obtain_nodes_gdf, join_nodes_edges_by_coordinates, reset_index_graph_gdfs
-from .utilities import center_line, split_line_at_MultiPoint
+from .utilities import center_line, split_line_at_MultiPoint, convert_numeric_columns
 
 def duplicate_nodes(nodes_gdf, edges_gdf, nodeID = 'nodeID'):
     """
@@ -405,6 +405,7 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_islands = True
     nodes_gdf, edges_gdf: tuple of GeoDataFrames
         The cleaned junctions and street segments GeoDataFrames.
     """
+    crs = nodes_gdf.crs
     nodes_gdf, edges_gdf = _prepare_dataframes(nodes_gdf, edges_gdf)  
     # removes fake self-loops wrongly coded by the data source
     nodes_gdf, edges_gdf = fix_self_loops(nodes_gdf, edges_gdf)  
@@ -461,6 +462,11 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_islands = True
     
     nodes_gdf.index.name = None
     edges_gdf.index.name = None
+    
+    nodes_gdf = convert_numeric_columns(nodes_gdf)
+    edges_gdf = convert_numeric_columns(edges_gdf)
+    nodes_gdf.crs = crs
+    edges_gdf.crs = crs
     
     return nodes_gdf, edges_gdf
 
