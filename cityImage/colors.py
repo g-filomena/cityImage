@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.colors as mc
-from matplotlib.colors import LinearSegmentedColormap, TwoSlopeNorm
+from matplotlib.colors import LinearSegmentedColormap
 import colorsys
 
 def random_colors_list(nlabels, vmin = 0.8, vmax = 1.0, hsv = False):
