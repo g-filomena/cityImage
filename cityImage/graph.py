@@ -1,24 +1,23 @@
-import warnings
-warnings.simplefilter(action="ignore", category=FutureWarning)
-
-
 import osmnx as ox
 import pandas as pd
 import numpy as np
 import geopandas as gpd
 import networkx as nx
-
 import math
-from math import sqrt
 import ast
 import functools
 
+from math import sqrt
 from collections import Counter
 from shapely.geometry import Point, LineString
-pd.set_option("display.precision", 3)
-pd.options.mode.chained_assignment = None
+import warnings
 
 from .angles import angle_line_geometries
+
+pd.set_option("display.precision", 3)
+pd.options.mode.chained_assignment = None
+warnings.simplefilter(action="ignore", category=FutureWarning)
+
 
 def graph_fromGDF(nodes_gdf, edges_gdf, nodeID = "nodeID"):
     """
