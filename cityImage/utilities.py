@@ -12,7 +12,7 @@ from shapely.geometry import LineString, Point, Polygon, MultiPoint, mapping, Li
 from shapely.ops import unary_union, transform, nearest_points, split, linemerge
 from shapely.affinity import scale
 from shapely.geometry.base import BaseGeometry
-import pyvista as pv
+
 pd.set_option("display.precision", 3)
 
 class Error(Exception):
@@ -119,9 +119,7 @@ def scaling_columnDF(series, inverse=False):
         if inverse:
             scaled = 1 - scaled
     return scaled
-
-        
-    
+   
 def dict_to_df(list_dict, list_col):
     """
     It takes a list of dictionaries and creates from them a pandas DataFrame. Each dictionary becomes a Series, where keys are rows,
@@ -259,52 +257,6 @@ def split_line_at_MultiPoint(line_geometry, intersections, z = 0.0):
         lineZ = [LineString([(coords[0], coords[1], z) for coords in line.coords]) for line in lines_list]
     # return the list of resulting line segments
     return lines_list
-
-def merge_line_geometries(line_geometries):
-    """
-    Given a list of LineString geometries, this function reorders the geometries in the correct sequence based on their starting and ending points,
-    and returns a merged LineString feature.
-    
-    Parameters:
-    ----------
-    line_geometries: List of LineString
-        A list of LineString geometries to be merged.
-        
-    Returns:
-    ----------
-    LineString: 
-        The merged LineString feature.
-    """
-    if not all(isinstance(line, LineString) for line in line_geometries):
-        raise ValueError("Input must be a list of LineString geometries")
-    if not all(isinstance(line, BaseGeometry) for line in line_geometries):
-        raise ValueError("Input must be a list of valid geometries")
-    if len(line_geometries) < 2:
-        raise ValueError("At least 2 LineStrings are required to merge")
-    
-    # create a dictionary to store the "from" and "to" vertexes of each LineString as keys
-    lines = {(line.coords[0], line.coords[-1]): line for line in line_geometries}
-    # sort the line geometries based on their starting and ending coordinates
-    line_geometries = sorted(line_geometries, key=lambda line: (line.coords[0], line.coords[-1]))
-    # initialize an empty list to store the merged line geometries
-    merged = []
-    # rmove and store the first line geometry from the line_geometries list
-    first_line = line_geometries.pop(0)
-    # add the first line geometry to the merged list
-    merged.append(first_line)
-
-    # iterate over the remaining line geometries
-    for line in line_geometries:
-        # check if the last coordinate of the previously merged line is the same as the first coordinate of the current line
-        if merged[-1].coords[-1] == line.coords[0]:
-            # if so, add the current line to the merged list
-            merged.append(line)
-        # check if the last coordinate of the previously merged line is the same as the last coordinate of the current line
-        elif merged[-1].coords[-1] == line.coords[-1]:
-            # if so, add the reversed version of the current line to the merged list
-            merged.append(LineString(list(reversed(line.coords))))
-    
-    return LineString(list(merged))
             
 def envelope_wgs(gdf):
     """
@@ -319,7 +271,7 @@ def envelope_wgs(gdf):
     envelope_wgs: Polygon
         The resulting envelope.
     """
-    envelope = gdf.unary_union.envelope.buffer(100)
+    envelope = gdf.union_all().envelope.buffer(100)
     
     # Define a transformer for projecting from the GeoDataFrame's CRS to WGS84
     transformer = pyproj.Transformer.from_crs(gdf.crs, 'epsg:4326', always_xy=True)
@@ -340,7 +292,7 @@ def convex_hull_wgs(gdf):
         The resulting hexagon.
     """
     # Compute the convex hull without buffering
-    convex_hull = gdf.unary_union.convex_hull
+    convex_hull = gdf.union_all().convex_hull
 
     # Define a transformer for projecting from the GeoDataFrame's CRS to WGS84
     transformer = pyproj.Transformer.from_crs(gdf.crs, 'epsg:4326', always_xy=True)
@@ -392,63 +344,6 @@ def gdf_from_geometries(geometries, crs):
     gdf['length'] = gdf['geometry'].length
     return gdf
     
-def line_at_centroid(line_geometry, offset):
-    """
-    Given a LineString, it creates a perpendicular LineString that intersects the given geometry at its centroid.
-    The offset determines the distance from the original line.
-    This fictional line can be used to count precisely the number of trajectories/features intersecting a segment.
-    This function should be executed per row by means of the df.apply(lambda row : ..) function. 
-    
-    Parameters
-    ----------
-    line_geometry: LineString
-        A street segment geometry.
-    offset: float
-        The offset from the geometry.
-    
-    Returns
-    -------
-    LineString
-        The perpendicular line intersecting the given one.
-    """
-    left = line_geometry.parallel_offset(offset, 'left')
-    right =  line_geometry.parallel_offset(offset, 'right')
-    
-    if left.geom_type == 'MultiLineString': 
-        left = merge_disconnected_lines(left)
-    if right.geom_type == 'MultiLineString': 
-        right = merge_disconnected_lines(right)   
-    
-    if (left.is_empty) & (not right.is_empty): 
-        left = line_geometry
-    if (right.is_empty) & (not left.is_empty): 
-        right = line_geometry
-    
-    left_centroid = left.interpolate(0.5, normalized = True)
-    right_centroid = right.interpolate(0.5, normalized = True)
-   
-    return LineString([left_centroid, right_centroid])
-    
-def sum_at_centroid(line_geometry, lines_gdf, column):
-    """
-    Given a LineString geometry, it sums the column values of all the features in a LineString GeoDataFrame intersecting the line.
-    This function should be executed per row by means of the df.apply(lambda row : ..) function.
-        
-    Parameters
-    ----------
-    line_geometry: LineString
-        A street segment geometry.
-    lines_gdf: LineString GeoDataFrame
-        The GeoDataFrame.
-    column: string
-        The name of the column.
-    
-    Returns
-    -------
-    int
-    """
-    return lines_gdf[lines_gdf.geometry.intersects(line_geometry)][column].sum()
-
 def polygons_gdf_multiparts_to_singleparts(polygons_gdf):
     """    
     The function extracts the individual parts of the multi-part geometries and creates a new GeoDataFrame with single part geometries.
@@ -464,7 +359,7 @@ def polygons_gdf_multiparts_to_singleparts(polygons_gdf):
         The new GeoDataFrame with simplified single part building footprint geometries.
     """  
     polygons_gdf = polygons_gdf.copy()
-    single_parts = gpd.geoseries.GeoSeries([geom for geom in polygons_gdf.unary_union.geoms])
+    single_parts = gpd.geoseries.GeoSeries([geom for geom in polygons_gdf.union_all().geoms])
     single_parts_gdf = gpd.GeoDataFrame(geometry=single_parts, crs = polygons_gdf.crs)
     
     return single_parts_gdf
@@ -525,129 +420,6 @@ def remove_lists_columns(df):
         df[column] = df[column].apply(lambda x: x[0] if isinstance(x, list) and len(x) > 0 else x)
         
     return df
-  
-def polygon_2d_to_3d(building_polygon, base, height):
-    """
-    Convert a 2D polygon to a 3D polygon. This function takes a 2D polygon (building_polygon) and extrudes it into 3D space, creating a pv.PolyData,
-    creating a 3D polygon with a base and a height elevation.
-    
-    Parameters
-    ----------
-    building_polygon (shapely.geometry.Polygon): 
-        2D polygon to be extruded.
-    base (float): 
-        Base height of the 3D polygon.
-    height (float): 
-        Height of the 3D polygon.
-    
-    Returns:
-    ----------
-    pv.PolyData: 
-        A 3D polygon.
-    """
-    
-    def reorient_coords(xy):
-        """
-        Reorient the coordinates of the polygon
-        
-        This function reorients the coordinates of a polygon if the polygon
-        has counterclockwise orientation.
-        
-        Parameters
-        ----------
-        xy: list
-            List of tuples, each representing a coordinate of the polygon
-        
-        Returns
-        ----------
-        list: 
-            Reoriented list of tuples representing the polygon's coordinates
-        """
-        value = 0
-        for i in range(len(xy)):
-            x1, y1 = xy[i]
-            x2, y2 = xy[(i+1)%len(xy)]
-            value += (x2-x1)*(y2+y1)
-        if value > 0:
-            return xy
-        else:
-            return xy[::-1]
-    
-    poly_points = building_polygon.exterior.coords
-       
-    # Reorient the coordinates of the polygon
-    xy = reorient_coords(poly_points)
-    # Create 3D coordinates with the base height
-    xyz_base = [(x,y,base) for x,y in xy]
-    # Create faces of the polygon
-    faces = [len(xyz_base), *range(len(xyz_base))]
-    # Create the 3D polygon using pyvista
-    polygon = pv.PolyData(xyz_base, faces=faces)
-    
-    # Extrude the 3D polygon to the specified height
-    return polygon.extrude((0, 0, height - base), capping=True)
-    
-    
-def aggregate_geometries(gdf, column_operations):
-    """
-    Aggregate overlapping geometries in a GeoDataFrame and perform specified operations on their attributes.
-
-    Parameters
-    ----------
-    gdf: GeoDataFrame
-        The input GeoDataFrame.
-    column_operations: dict
-        A dictionary where keys are column names and values are aggregation functions ('min', 'max', 'mean').
-
-    Returns:
-    ----------
-    GeoDataFrame: 
-        A new GeoDataFrame with aggregated geometries and attributes.
-    """
-    
-    necessary = True
-
-    while necessary:
-        # Create a spatial index for faster lookup
-        spatial_index = gdf.sindex
-        to_remove_geometries = []
-
-        # Loop through each geometry in the GeoDataFrame
-        for idx, row in gdf.iterrows():
-            # Find all geometries that contain the current geometry
-            possible_matches_index = list(spatial_index.intersection(row.geometry.bounds))
-            containing_geometries = gdf.iloc[possible_matches_index]
-            containing = containing_geometries[
-                (containing_geometries.geometry.contains(row.geometry)) &
-                (containing_geometries.index != idx) &
-                (~containing_geometries.index.isin(to_remove_geometries))
-            ]
-
-            if len(containing) > 0:  # If the current geometry is contained by others
-                # Get the container geometry (largest one by area)
-                ix_container = containing.geometry.area.idxmax()
-                row_container = gdf.loc[ix_container]
-
-                # Update attributes based on the user-defined operations
-                for column, operation in column_operations.items():
-                    if operation == 'max':
-                        gdf.loc[ix_container, column] = max(row[column], row_container[column])
-                    elif operation == 'min':
-                        gdf.loc[ix_container, column] = min(row[column], row_container[column])
-                    elif operation == 'mean':
-                        gdf.loc[ix_container, column] = (row[column] + row_container[column]) / 2
-
-                # Add the current geometry to the list for removal
-                to_remove_geometries.append(idx)
-
-        # Break if no geometries were removed (no changes made)
-        if len(to_remove_geometries) == 0:
-            break
-
-        # Remove aggregated geometries from the GeoDataFrame
-        gdf = gdf[~gdf.index.isin(to_remove_geometries)]
-
-    return gdf
 
 def convert_numeric_columns(df):
     """
@@ -657,15 +429,32 @@ def convert_numeric_columns(df):
     - Ensures existing numeric columns are standardized to `int64` or `float64`
     """
     for col in df.columns:
-        try:
-            df[col] = pd.to_numeric(df[col], errors='ignore')
-            if df[col].dtype == 'float64' and df[col].dropna().mod(1).eq(0).all():
-                df[col] = df[col].astype('int64')  # Convert floats that are actually ints
-        except ValueError:
-            pass  # Keeps non-convertible columns unchanged
+        if df[col].dtype == np.int64:
+            df[col] = df[col].astype(int)  # Convert to Python `int`
+        elif df[col].dtype == np.float64:
+            df[col] = df[col].astype(float)  # Convert to Python `float`
+        elif df[col].dtype == 'object':
+            df[col] = df[col].astype(str)  # Convert to string (if needed)
+        
     return df
     
 def gdf_multipolygon_to_polygon(gdf):
+    """
+    Converts any MultiPolygon geometries with a single polygon into a Polygon in a GeoDataFrame.
+    
+    This function checks if a geometry is a MultiPolygon and contains only one polygon. 
+    If so, it converts it into a simple Polygon geometry. Otherwise, it leaves the geometry unchanged.
+
+    Parameters
+    ----------
+    gdf : GeoDataFrame
+        A GeoDataFrame where the 'geometry' column contains geometries of type MultiPolygon or Polygon.
+
+    Returns
+    -------
+    GeoDataFrame
+        The original GeoDataFrame with MultiPolygons containing a single geometry converted to Polygon.
+    """
     
     def convert_multipolygon_to_polygon(geometry):
         if isinstance(geometry, MultiPolygon) and len(geometry.geoms) == 1:
@@ -675,17 +464,3 @@ def gdf_multipolygon_to_polygon(gdf):
     gdf["geometry"] = gdf["geometry"].apply(convert_multipolygon_to_polygon)
 
     return gdf 
-
-def has_interior(poly):
-    """Returns True if the polygon has interior rings (holes), False otherwise."""
-    if poly.geom_type == "MultiPolygon":
-        return false
-    return len(poly.interiors) > 0
-
-def is_exterior_inside_another(poly, other_poly):
-    """Check if the exterior of one polygon is inside another polygon"""
-    if not has_interior(poly):
-        return False
-    coords = list(other_poly.exterior.coords)
-    coords.reverse()
-    return any(coords == list(ring.coords) for ring in poly.interiors)
