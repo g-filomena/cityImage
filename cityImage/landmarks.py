@@ -14,38 +14,55 @@ from .utilities import scaling_columnDF, downloader
 from .visibility import visibility_polygon2d, compute_3d_sight_lines
 from .angles import get_coord_angle
 
-def get_buildings_fromFile(path, epsg, case_study_area = None, distance_from_center = 1000, height_field = None, base_field = None, 
+def get_buildings_fromFile(input_path, crs, case_study_area = None, distance_from_center = 1000, min_area = 200, min_height = 5, height_field = None, base_field = None, 
     land_use_field = None):
-    """    
-    The function take a building footprint .shp or .gpkg, returns two GDFs of buildings: the case-study area, plus a larger area containing other 
-    buildings, called "obstructions" (for analyses which include adjacent buildings). Otherise, the user can provide a "distance from center" 
-    value; in this case, the buildings_gdf are extracted by selecting buildings within a buffer from the center, with a radius equal to the 
-    distance_from_center value. If none are passed, the buildings_gdf and the obstructions_gdf will be the same. 
-    Additionally, provide the fields containing height, base elevation, and land use information.
-            
+    """
+    Reads building footprints from a file and returns two GeoDataFrames: 
+    1) buildings within the case-study area, and 
+    2) a larger area containing adjacent buildings ("obstructions").
+
+    The case-study area can be specified either by providing a polygon (`case_study_area`)
+    or a distance buffer from the centroid of the loaded buildings. 
+    If neither is provided, all buildings are included in both outputs.
+
+    Height, base elevation, and land use fields from the source can be mapped to standard columns.
+
     Parameters
     ----------
-    path: str
-        Path where the file is stored.
-    epsg: int
-        Epsg of the area considered; if None OSMNx is used for the projection.
-    case_study_area: Polygon
-        The Polygon to be use for clipping and identifying the case-study area, within the input .shp. If not available, use "distance_from_center".
-    distance_from_center: float
-        So to identify the case-study area on the basis of distance from the center of the input .shp.
-    height_field, base_field: str 
-        Height and base elevation fields name in the original data-source.
-    land_use_field: str 
-        Field that describes the land use of the buildings.
-    
+    input_path : str
+        Path to the building footprint file (.shp or .gpkg).
+    crs : str, or pyproj.CRS
+        Coordinate Reference System for the study area. Can be a string (e.g. 'EPSG:32633'), or a pyproj.CRS object.
+    case_study_area : shapely Polygon or None, optional
+        Polygon defining the area of interest (case-study). If None, uses `distance_from_center`.
+    distance_from_center : float or None, optional
+        If `case_study_area` is None, a circular buffer of this radius (in CRS units) around the centroid of all buildings defines the case-study area.
+        Default is 1000.
+    min_area : float, optional
+        Minimum area threshold (in CRS units, e.g. square meters) for a building to be included. Default is 200.
+    min_height : float, optional
+        Minimum building height threshold for inclusion. Default is 5.
+    height_field : str or None, optional
+        Name of the field containing building heights in the input data.
+    base_field : str or None, optional
+        Name of the field containing building base elevations in the input data. If None, base is set to 0.0.
+    land_use_field : str or None, optional
+        Name of the field containing land use information in the input data.
+
     Returns
     -------
-    buildings_gdf, obstructions_gdf: tuple of GeoDataFrames
-        The buildings and the obstructions GeoDataFrames.
-    """   
-    # trying reading buildings footprints shapefile from directory
-    crs = 'EPSG:'+str(epsg)
-    obstructions_gdf = gpd.read_file(path).to_crs(crs)  
+    buildings_gdf : GeoDataFrame
+        GeoDataFrame of buildings in the case-study area.
+    obstructions_gdf : GeoDataFrame
+        GeoDataFrame of all valid buildings (including the case-study area and adjacent "obstructions").
+
+    Notes
+    -----
+    - Buildings with area < `min_area` or height < `min_height` are dropped.
+    - Output columns: 'height', 'base', 'geometry', 'area', 'land_use_raw', 'buildingID'.
+    """
+    
+    obstructions_gdf = gpd.read_file(input_path).to_crs(crs)  
     
     # computing area, reassigning columns
     obstructions_gdf["area"] = obstructions_gdf["geometry"].area
@@ -62,7 +79,7 @@ def get_buildings_fromFile(path, epsg, case_study_area = None, distance_from_cen
         obstructions_gdf["land_use_raw"] = None
 
     # dropping small buildings and buildings with null height
-    obstructions_gdf = obstructions_gdf[(obstructions_gdf["area"] >= 50) & (obstructions_gdf["height"] >= 1)]
+    obstructions_gdf = obstructions_gdf[(obstructions_gdf["area"] >= min_area) & (obstructions_gdf["height"] >= min_height)]
     obstructions_gdf = obstructions_gdf[["height", "base","geometry", "area", "land_use_raw"]]
     # assigning ID
     obstructions_gdf["buildingID"] = obstructions_gdf.index.values.astype(int)
@@ -77,7 +94,7 @@ def get_buildings_fromFile(path, epsg, case_study_area = None, distance_from_cen
 
     return buildings_gdf, obstructions_gdf
     
-def get_buildings_fromOSM(place, download_method: str, epsg = None, distance = 1000):
+def get_buildings_fromOSM(OSMplace, download_method: str, crs = None, distance = 1000):
     """    
     The function downloads and cleans building footprint geometries and create a buildings GeoDataFrames for the area of interest.
     The function exploits OSMNx functions for downloading the data as well as for projecting it.
@@ -85,7 +102,7 @@ def get_buildings_fromOSM(place, download_method: str, epsg = None, distance = 1
             
     Parameters
     ----------
-    place: str, tuple, Shapely Polygon
+    OSMplace: str, tuple, Shapely Polygon
         Name of cities or areas in OSM: 
         - when using "distance_from_point" please provide a (lat, lon) tuple to create the bounding box around it; 
         - when using "distance_from_address" provide an existing OSM address; 
@@ -93,8 +110,8 @@ def get_buildings_fromOSM(place, download_method: str, epsg = None, distance = 1
         - when using "polygon" please provide a Shapely Polygon in unprojected latitude-longitude degrees (EPSG:4326) CRS;
     download_method: str, {"distance_from_address", "distance_from_point", "OSMplace", "polygon"}
         It indicates the method that should be used for downloading the data.
-    epsg: int
-        Epsg of the area considered; if None OSMNx is used for the projection.
+    crs : str, or pyproj.CRS
+        Coordinate Reference System for the study area. Can be a string (e.g. 'EPSG:32633'), or a pyproj.CRS object.
     distance: float
         Used when download_method == "distance from address" or == "distance from point".
     
@@ -105,12 +122,11 @@ def get_buildings_fromOSM(place, download_method: str, epsg = None, distance = 1
     """   
     columns_to_keep = ['amenity', 'building', 'geometry', 'historic', 'land_use_raw']
     tags = {"building": True}
-    buildings_gdf = downloader(place = place, download_method = download_method, tags = tags, distance = distance)
+    buildings_gdf = downloader(place = OSMplace, download_method = download_method, tags = tags, distance = distance)
     
-    if epsg is None:
+    if crs is None:
         buildings_gdf = ox.projection.project_gdf(buildings_gdf)
     else:
-        crs = 'EPSG:'+str(epsg)
         buildings_gdf = buildings_gdf.to_crs(crs)
 
     buildings_gdf['land_use_raw'] = None
@@ -144,23 +160,41 @@ def get_buildings_fromOSM(place, download_method: str, epsg = None, distance = 1
     
     return buildings_gdf
 
-# if case-study area and distance not defined
-
-def assign_building_heights(buildings_gdf, detailed_buildings_gdf, crs, min_overlap=0.4):
+def assign_building_heights_from_other_gdf(buildings_gdf, detailed_buildings_gdf, crs, min_overlap=0.4):
     """
-    Assigns the highest 'height' and lowest 'base' from detailed_buildings to buildings.
-    - If a building fully contains a detailed one -> Assign min(base), max(height).
-    - If a detailed building intersects only one -> Assign min(base), max(height).
-    - If a detailed building intersects multiple buildings -> Assign to the one with the highest overlap (if ≥ min_overlap).
+    Assigns 'base' and 'height' attributes to each building in `buildings_gdf` by extracting
+    information from a more detailed building GeoDataFrame (`detailed_buildings_gdf`).
 
-    Parameters:
-    buildings_gdf (GeoDataFrame): The main set of building polygons.
-    detailed_buildings_gdf (GeoDataFrame): A more detailed building dataset with height/base attributes.
-    min_overlap (float): Minimum required percentage overlap (default: 40%).
+    The assignment logic is as follows:
+    - If a building fully contains a detailed building, assign the lowest 'base' and highest 'height' among contained buildings.
+    - If a detailed building contains a main building, assign the lowest 'base' and highest 'height' among containers.
+    - If a detailed building intersects only one main building, assign its values to that building.
+    - If a detailed building intersects multiple main buildings, assign its values to the one with the highest overlap (if overlap ≥ `min_overlap`).
+    - The overlap ratio is defined as (intersection_area / detailed_building_area).
+    - The reverse intersection is also considered: if a main building overlaps multiple detailed buildings, attributes are borrowed from the one with the highest overlap ratio (if overlap ≥ `min_overlap`).
 
-    Returns:
-    GeoDataFrame: Updated buildings with assigned height and base values.
+    Parameters
+    ----------
+    buildings_gdf : GeoDataFrame
+        GeoDataFrame of main building polygons (to be assigned base/height).
+    detailed_buildings_gdf : GeoDataFrame
+        More detailed building dataset with valid 'base' and 'height' attributes.
+    crs : str, or pyproj.CRS
+        Coordinate Reference System for the output GeoDataFrame. Can be a string (e.g. 'EPSG:32633'), or a pyproj.CRS object.
+    min_overlap : float, optional
+        Minimum required overlap ratio (as a fraction, default 0.4).
+
+    Returns
+    -------
+    GeoDataFrame
+        Copy of `buildings_gdf` with updated 'base' and 'height' columns.
+
+    Raises
+    ------
+    ValueError
+        If CRS of the input GeoDataFrames does not match the provided CRS.
     """
+    
     # Ensure CRS matches
     if (buildings_gdf.crs != crs) or (detailed_buildings_gdf.crs !=crs):
         raise ValueError(f"CRS mismatch: buildings_gdf ({buildings_gdf.crs}) and detailed_buildings_gdf ({detailed_buildings_gdf.crs}) must have the same CRS.")
@@ -259,18 +293,47 @@ def assign_building_heights(buildings_gdf, detailed_buildings_gdf, crs, min_over
     
     return buildings_gdf
 
+def select_buildings_by_study_area(larger_buildings_gdf, method='polygon', polygon=None, distance=1000):
+    """
+    Selects buildings from a GeoDataFrame that fall within a defined study area.
 
-def select_buildings_by_study_area(obstructions_gdf, method = 'polygon', polygon = None, distance = 1000):
+    Parameters
+    ----------
+    larger_buildings_gdf : GeoDataFrame
+        GeoDataFrame containing building polygons to filter.
+    method : {'polygon', 'distance'}, optional
+        Method to define the study area:
+        - 'polygon': use the provided `polygon` argument (default).
+        - 'distance': use the centroid of all buildings, buffered by `distance`.
+    polygon : shapely Polygon or MultiPolygon, optional
+        Study area polygon. Required if method is 'polygon'.
+    distance : float, optional
+        Buffer distance (in CRS units) if method is 'distance'. Default is 1000.
 
-    if (method == 'distance'):
-        polygon = obstructions_gdf.geometry.unary_union.centroid.buffer(distance)
-    if polygon is not None:
-        buildings_gdf = obstructions_gdf[obstructions_gdf.geometry.within(polygon)]
+    Returns
+    -------
+    GeoDataFrame
+        GeoDataFrame of buildings within the study area. If no area is provided, returns empty GeoDataFrame.
+    """
+    # Validate input GeoDataFrame
+    if larger_buildings_gdf.empty:
+        return gpd.GeoDataFrame(columns=larger_buildings_gdf.columns)
+
+    # Define study area
+    if method == 'distance':
+        study_area = larger_buildings_gdf.geometry.unary_union.centroid.buffer(distance)
+    elif method == 'polygon':
+        study_area = polygon
+    else:
+        raise ValueError("Method must be either 'polygon' or 'distance'.")
+
+    # Filter buildings within the study area
+    if study_area is not None:
+        buildings_gdf = larger_buildings_gdf[larger_buildings_gdf.geometry.within(study_area)]
         return buildings_gdf
+    else:
+        return gpd.GeoDataFrame(columns=larger_buildings_gdf.columns)
         
-    return obstructions_gdf
-
-
 def structural_score(buildings_gdf, obstructions_gdf, edges_gdf, advance_vis_expansion_distance = 300, neighbours_radius = 150):
     """
     The function computes the "Structural Landmark Component" sub-scores of each building.
@@ -298,6 +361,11 @@ def structural_score(buildings_gdf, obstructions_gdf, edges_gdf, advance_vis_exp
         The updated buildings GeoDataFrame.
     """  
     buildings_gdf = buildings_gdf.copy()
+    
+    # remove z coordinates if they are there already - issue with 2dvis
+    if len(buildings_gdf.geometry.iloc[0].exterior.coords[0]) == 3: 
+        buildings_gdf['geometry'] = buildings_gdf['geometry'].apply(lambda g: type(g)([(x, y) for x, y, *_ in g.exterior.coords]))
+   
     obstructions_gdf = buildings_gdf if obstructions_gdf is None else obstructions_gdf
     sindex = obstructions_gdf.sindex
     street_network = edges_gdf.geometry.unary_union
@@ -305,11 +373,11 @@ def structural_score(buildings_gdf, obstructions_gdf, edges_gdf, advance_vis_exp
     buildings_gdf["road"] = buildings_gdf.geometry.distance(street_network)
     buildings_gdf["2dvis"] = buildings_gdf.geometry.apply(lambda row: visibility_polygon2d(row, obstructions_gdf, sindex, max_expansion_distance=
                                     advance_vis_expansion_distance))
-    buildings_gdf["neigh"] = buildings_gdf.geometry.apply(lambda row: number_neighbours(row, obstructions_gdf, sindex, radius=neighbours_radius))
+    buildings_gdf["neigh"] = buildings_gdf.geometry.apply(lambda row: _number_neighbours(row, obstructions_gdf, sindex, radius=neighbours_radius))
 
     return buildings_gdf
     
-def number_neighbours(geometry, obstructions_gdf, obstructions_sindex, radius):
+def _number_neighbours(geometry, obstructions_gdf, obstructions_sindex, radius):
     """
     The function counts the number of neighbours, in a GeoDataFrame, around a given geometry, within a
     research radius.
@@ -363,7 +431,7 @@ def visibility_score(buildings_gdf, sight_lines = pd.DataFrame({'a': []}), metho
     sight_lines['nodeID'] = sight_lines['nodeID'].astype(int)
     sight_lines['buildingID'] = sight_lines['buildingID'].astype(int)
 
-    buildings_gdf["fac"] = buildings_gdf.apply(lambda row: facade_area(row["geometry"], row["height"]), axis = 1)
+    buildings_gdf["fac"] = buildings_gdf.apply(lambda row: _facade_area(row["geometry"], row["height"]), axis = 1)
 
     stats = sight_lines.groupby('buildingID').agg({'length': ['mean','max', 'count']}) 
     stats.columns = stats.columns.droplevel(0)
@@ -388,7 +456,7 @@ def visibility_score(buildings_gdf, sight_lines = pd.DataFrame({'a': []}), metho
     
     return buildings_gdf
 
-def facade_area(building_geometry, building_height):
+def _facade_area(building_geometry, building_height):
     """
     Compute the approximate facade area of a building given its geometry and height.
 
@@ -410,14 +478,14 @@ def facade_area(building_geometry, building_height):
     width = min(d)
     return width*building_height
  
-def get_historic_buildings_fromOSM(place, download_method, epsg = None, distance = 1000):
+def get_historic_buildings_fromOSM(OSMplace, download_method, crs = None, distance = 1000):
     """    
     The function downloads and cleans building footprint geometries and create a buildings GeoDataFrames for the area of interest.
     However, it only keeps the buildings that are considered historic buildings or heritage buildings in OSM. 
             
     Parameters
     ----------
-    place: str, tuple, Shapely Polygon
+    OSMplace: str, tuple, Shapely Polygon
         Name of cities or areas in OSM: 
         - when using "distance_from_point" please provide a (lat, lon) tuple to create the bounding box around it; 
         - when using "distance_from_address" provide an existing OSM address; 
@@ -425,8 +493,8 @@ def get_historic_buildings_fromOSM(place, download_method, epsg = None, distance
         - when using "polygon" please provide a Shapely Polygon in unprojected latitude-longitude degrees (EPSG:4326) CRS;
     download_method: str, {"distance_from_address", "distance_from_point", "OSMplace", "polygon"}
         It indicates the method that should be used for downloading the data.
-    epsg: int
-        Epsg of the area considered; if None OSMNx is used for the projection.
+    crs : str, or pyproj.CRS
+        Coordinate Reference System for the study area. Can be a string (e.g. 'EPSG:32633'), or a pyproj.CRS object.
     distance: float
         Used when download_method == "distance from address" or == "distance from point".
     
@@ -438,7 +506,7 @@ def get_historic_buildings_fromOSM(place, download_method, epsg = None, distance
     
     columns = ['geometry', 'historic']
     tags = {"building": True}
-    historic_buildings = downloader(place = place, download_method = download_method, tags = tags, distance = distance)
+    historic_buildings = downloader(place = OSMplace, download_method = download_method, tags = tags, distance = distance)
     
     if 'heritage' in historic_buildings:
         columns.append('heritage')
@@ -449,10 +517,9 @@ def get_historic_buildings_fromOSM(place, download_method, epsg = None, distance
     else:
         historic_buildings = historic_buildings[~historic_buildings.historic.isnull()]
     
-    if epsg is None:
+    if crs is None:
         historic_buildings = ox.projection.project_gdf(historic_buildings)
     else:
-        crs = 'EPSG:'+str(epsg)
         historic_buildings = historic_buildings.to_crs(crs)
 
     historic_buildings.loc[historic_buildings["historic"] != 0, "historic"] = 1
@@ -487,7 +554,6 @@ def cultural_score(buildings_gdf, historic_elements_gdf = pd.DataFrame({'a': []}
         The updated buildings GeoDataFrame.
     """  
     
-       
     buildings_gdf = buildings_gdf.copy()
     buildings_gdf["cult"] = 0.0
     
