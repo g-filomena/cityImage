@@ -153,6 +153,8 @@ def _prepare_dataframes(nodes_gdf, edges_gdf, nodeID_column = 'nodeID', edgeID_c
         nodes (junctions) GeoDataFrame.
     edges_gdf: LineString GeoDataFrame
         The street segments GeoDataFrame.
+    crs : str, or pyproj.CRS
+        Coordinate Reference System for the output GeoDataFrames. Can be a string (e.g. 'EPSG:32633'), or a pyproj.CRS object.
     nodeID_column : str, optional
         Column name for node unique identifiers in `nodes_gdf`. Default is 'nodeID'.
     edgeID_column : str, optional
