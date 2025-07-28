@@ -8,7 +8,7 @@ from shapely.ops import linemerge, polygonize, polygonize_full, unary_union, nea
 from .utilities import gdf_from_geometries, downloader
 pd.set_option("display.precision", 3)
 
-def road_barriers(place, download_method, distance = 500.0, epsg = None, include_primary = False, include_secondary = False):
+def road_barriers(OSMplace, download_method, distance = 500.0, epsg = None, include_primary = False, include_secondary = False):
     """
     The function downloads major roads from OSM. These can be considered to be barrier to pedestrian movement or, at least, to structure people's cognitive Image of 
     the City. If 'include_primary' is true, the function considers also primary roads, beyond motorway and trunk roads.
@@ -17,7 +17,7 @@ def road_barriers(place, download_method, distance = 500.0, epsg = None, include
         
     Parameters
     ----------
-    place: str, tuple, Shapely Polygon
+    OSMplace: str, tuple, Shapely Polygon
         Name of cities or areas in OSM: 
         - when using "distance_from_point" please provide a (lat, lon) tuple to create the bounding box around it; 
         - when using "distance_from_address" provide an existing OSM address; 
@@ -48,7 +48,7 @@ def road_barriers(place, download_method, distance = 500.0, epsg = None, include
             to_keep.append('secondary')
 
     tags = {'highway': True}
-    roads = downloader(place = place, download_method = download_method, tags = tags, distance = distance).to_crs(crs)
+    roads = downloader(OSMplace = OSMplace, download_method = download_method, tags = tags, distance = distance).to_crs(crs)
     roads = roads[roads.highway.isin(to_keep)]
     # exclude tunnels
     if "tunnel" in roads.columns:
@@ -62,13 +62,13 @@ def road_barriers(place, download_method, distance = 500.0, epsg = None, include
        
     return road_barriers
     
-def water_barriers(place, download_method, distance = 500.0, lakes_area = 1000, epsg = None):
+def water_barriers(OSMplace, download_method, distance = 500.0, lakes_area = 1000, epsg = None):
     """
     The function downloads water bodies from OSM. Lakes, rivers and see coastlines can be considered structuring barriers.
         
     Parameters
     ----------
-    place: str, tuple, Shapely Polygon
+    OSMplace: str, tuple, Shapely Polygon
         Name of cities or areas in OSM: 
         - when using "distance_from_point" please provide a (lat, lon) tuple to create the bounding box around it; 
         - when using "distance_from_address" provide an existing OSM address; 
@@ -80,20 +80,18 @@ def water_barriers(place, download_method, distance = 500.0, lakes_area = 1000, 
         Used when download_method == "distance from address" or == "distance from point".
     lakes_area = float
         Minimum area for lakes to be considered.    
-    epsg: int
-        Epsg of the area considered; if None OSMNx is used for the projection.
+    crs : str, or pyproj.CRS
+        Coordinate Reference System for the study area. Can be a string (e.g. 'EPSG:32633'), or a pyproj.CRS object.
         
     Returns
     -------
     water_barriers: LineString GeoDataFrame
         The water barriers GeoDataFrame.
     """
-    
-    crs = 'EPSG:' + str(epsg)
-    
+      
     # rivers
     tags = {"waterway":True}  
-    rivers = downloader(place = place, download_method = download_method, tags = tags, distance = distance).to_crs(crs)
+    rivers = downloader(OSMplace = OSMplace, download_method = download_method, tags = tags, distance = distance).to_crs(crs)
     rivers = rivers[(rivers.waterway == 'river') | (rivers.waterway == 'canal')]
     rivers = rivers.union_all()
     rivers = _simplify_barrier(rivers)
@@ -101,7 +99,7 @@ def water_barriers(place, download_method, distance = 500.0, lakes_area = 1000, 
     
     # lakes   
     tags = {"natural":"water"}
-    lakes = downloader(place = place, download_method = download_method, tags = tags, distance = distance).to_crs(crs)
+    lakes = downloader(OSMplace = OSMplace, download_method = download_method, tags = tags, distance = distance).to_crs(crs)
     to_remove = ['river', 'stream', 'canal', 'riverbank', 'reflecting_pool', 'reservoir', 'bay']
     lakes = lakes[~lakes.water.isin(to_remove)]
     lakes['area'] = lakes.geometry.area
@@ -127,14 +125,14 @@ def water_barriers(place, download_method, distance = 500.0, lakes_area = 1000, 
 
     return water_barriers
     
-def railway_barriers(place, download_method, distance = 500.0, epsg = None, keep_light_rail = False):
+def railway_barriers(OSMplace, download_method, distance = 500.0, crs = None, keep_light_rail = False):
     """
     The function downloads overground railway structures from OSM. Such structures can be considered barriers which shape the Image of the City and obstruct sight and 
     movement.
         
     Parameters
     ----------
-    place: str, tuple, Shapely Polygon
+    OSMplace: str, tuple, Shapely Polygon
         Name of cities or areas in OSM: 
         - when using "distance_from_point" please provide a (lat, lon) tuple to create the bounding box around it; 
         - when using "distance_from_address" provide an existing OSM address; 
@@ -144,8 +142,8 @@ def railway_barriers(place, download_method, distance = 500.0, epsg = None, keep
         It indicates the method that should be used for downloading the data.
     distance: float
         Used when download_method == "distance from address" or == "distance from point".
-    epsg: int
-        Epsg of the area considered; if None OSMNx is used for the projection.
+    crs : str, or pyproj.CRS
+        Coordinate Reference System for the study area. Can be a string (e.g. 'EPSG:32633'), or a pyproj.CRS object.
     keep_light_rail: boolean
         Includes light rail, like tramway.
         
@@ -155,9 +153,8 @@ def railway_barriers(place, download_method, distance = 500.0, epsg = None, keep
         The railway barriers GeoDataFrame.
     """    
     
-    crs = 'EPSG:' + str(epsg)
     tags = {"railway":"rail"}
-    railways = downloader(place = place, download_method = download_method, tags = tags, distance = distance).to_crs(crs)
+    railways = downloader(OSMplace = OSMplace, download_method = download_method, tags = tags, distance = distance).to_crs(crs)
     # removing light_rail, in case
     if not keep_light_rail:
         railways = railways[railways.railway != 'light_rail']
@@ -175,14 +172,14 @@ def railway_barriers(place, download_method, distance = 500.0, epsg = None, keep
     
     return railway_barriers
     
-def park_barriers(place, download_method, distance = 500.0, epsg = None, min_area = 100000):
+def park_barriers(OSMplace, download_method, distance = 500.0, crs = None, min_area = 100000):
     """
     The function downloads parks areas with a certain extent and converts them to LineString features. Parks may break continuity in the urban structure, 
     besides being attractive areas for pedestrians.
         
     Parameters
     ----------
-    place: str, tuple, Shapely Polygon
+    OSMplace: str, tuple, Shapely Polygon
         Name of cities or areas in OSM: 
         - when using "distance_from_point" please provide a (lat, lon) tuple to create the bounding box around it; 
         - when using "distance_from_address" provide an existing OSM address; 
@@ -192,8 +189,8 @@ def park_barriers(place, download_method, distance = 500.0, epsg = None, min_are
         It indicates the method that should be used for downloading the data.
     distance: float
         Used when download_method == "distance from address" or == "distance from point".
-    epsg: int
-        Epsg of the area considered; if None OSMNx is used for the projection.
+    crs : str, or pyproj.CRS
+        Coordinate Reference System for the study area. Can be a string (e.g. 'EPSG:32633'), or a pyproj.CRS object.
     min_area: double
         Parks with an extension smaller that this parameter are disregarded.
       
@@ -202,10 +199,9 @@ def park_barriers(place, download_method, distance = 500.0, epsg = None, min_are
     park_barriers: LineString GeoDataFrame
         The park barriers GeoDataFrame.
     """
-
-    crs = 'EPSG:' + str(epsg)
+    
     tags = {"leisure": True}
-    parks_poly = downloader(place = place, download_method = download_method, tags = tags, distance = distance).to_crs(crs)
+    parks_poly = downloader(OSMplace = OSMplace, download_method = download_method, tags = tags, distance = distance).to_crs(crs)
     parks_poly = parks_poly[parks_poly.leisure == 'park']
     parks_poly = parks_poly[~parks_poly['geometry'].is_empty] 
     parks_poly['area'] = parks_poly.geometry.area
@@ -402,36 +398,45 @@ def _crossing_barriers(line_geometry, barriers_gdf):
     adjacent_barriers = list(intersecting_barriers.barrierID)
     return adjacent_barriers
     
-def get_barriers(place, download_method, distance = 500.0, epsg = None, parks_min_area = 100000): 
+def get_barriers(OSMplace, download_method, distance=500.0, crs=None, parks_min_area=100000):
     """
-    The function returns all the barriers (water, park, railways, major roads) within a certain urban area.
-    Certain parameter are set by default. For manipulating, use the barrier-type specific functions (see above).
-    
+    Returns all major barriers (water, parks, railways, and major roads) within a specified urban area using OpenStreetMap data.
+
+    The method used to define the area of interest depends on `download_method`:
+      - For "distance_from_point", provide a (lat, lon) tuple for `OSMplace` to define a buffer around that point.
+      - For "distance_from_address", provide a geocodable address string for `OSMplace`.
+      - For "OSMplace", provide a place name with defined boundaries in OSM.
+      - For "polygon", provide the name of an OSM relation.
+
+    Default parameter values are provided for convenience, but barrier-specific extraction can also be done using dedicated functions (see above).
+
     Parameters
     ----------
-    place: str, tuple
-        Name of cities or areas in OSM: 
-        - when using "distance_from_point" please provide a (lat, lon) tuple to create the bounding box around it; 
-        - when using "distance_from_address" provide an existing OSM address; 
-        - when using "OSMplace" provide an OSM place name. The query must be geocodable and OSM must have polygon boundaries for the geocode result.  
-        - when using "polygon" please provide the name of a relation in OSM as an argument of place;
-    download_method: str, {"distance_from_address", "distance_from_point", "OSMplace", "polygon"}
-        It indicates the method that should be used for downloading the data.
-    distance: float
-        Used when download_method == "distance from address" or == "distance from point".
-    epsg: int
-        Epsg of the area considered; if None OSMNx is used for the projection.
-        
+    OSMplace : str or tuple
+        Definition of the study area, format depends on `download_method`:
+        - (lat, lon) tuple for point-based methods
+        - Address string for address-based method
+        - OSM place name or relation for named/polygon-based methods
+    download_method : str
+        Method for querying OSM data. Must be one of:
+            {"distance_from_address", "distance_from_point", "OSMplace", "polygon"}
+    distance : float, optional
+        Buffer distance (in meters) used for "distance_from_point" or "distance_from_address" methods. Default is 500.
+    crs : str, or pyproj.CRS
+        Coordinate Reference System for the study area. Can be a string (e.g. 'EPSG:32633'), or a pyproj.CRS object.
+    parks_min_area : float, optional
+        Minimum area (in square meters) for parks to be included as barriers. Default is 100000.
+
     Returns
     -------
-    barriers_gdf: LineString GeoDataFrame
-        The barriers GeoDataFrame.
+    barriers_gdf : GeoDataFrame
+        GeoDataFrame (LineString and/or Polygon) containing all extracted barriers with a unique 'barrierID' column.
     """
     
-    rb = road_barriers(place, download_method, distance, epsg = epsg, include_primary = True)
-    wb = water_barriers(place, download_method, distance, epsg = epsg)
-    ryb = railway_barriers(place,download_method, distance, epsg = epsg)
-    pb = park_barriers(place,download_method, distance, epsg = epsg, min_area = parks_min_area)
+    rb = road_barriers(OSMplace, download_method, distance, crs = crs, include_primary = True)
+    wb = water_barriers(OSMplace, download_method, distance, crs = crs)
+    ryb = railway_barriers(OSMplace,download_method, distance, crs = crs)
+    pb = park_barriers(OSMplace,download_method, distance, crs = crs, min_area = parks_min_area)
     barriers_gdf = pd.concat([rb, wb, ryb, pb])
     barriers_gdf.reset_index(inplace = True, drop = True)
     barriers_gdf['barrierID'] = barriers_gdf.index.astype(int)
