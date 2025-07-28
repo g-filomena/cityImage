@@ -19,7 +19,7 @@ pd.options.mode.chained_assignment = None
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
 
-def graph_fromGDF(nodes_gdf, edges_gdf, nodeID = "nodeID"):
+def graph_fromGDF(nodes_gdf, edges_gdf, nodeID_column = "nodeID"):
     """
     From two GeoDataFrames (nodes and edges), it creates a NetworkX undirected Graph.
        
@@ -29,15 +29,15 @@ def graph_fromGDF(nodes_gdf, edges_gdf, nodeID = "nodeID"):
         The nodes (junctions) GeoDataFrame.
     edges_gdf: LineString GeoDataFrame
         The street segments GeoDataFrame.
-    nodeID: str
-        Column name that indicates the node identifier column (if different from "nodeID").
+    nodeID_column : str, optional
+        Column name for node unique identifiers in `nodes_gdf`. Default is 'nodeID'.
         
     Returns
     -------
     G: NetworkX.Graph
         The undirected street network graph.
     """
-    nodes_gdf.set_index(nodeID, drop = False, inplace = True, append = False)
+    nodes_gdf.set_index(nodeID_column, drop = False, inplace = True, append = False)
     nodes_gdf.index.name = None
     G = nx.Graph()   
     G.add_nodes_from(nodes_gdf.index)
@@ -73,8 +73,8 @@ def multiGraph_fromGDF(nodes_gdf, edges_gdf, nodeID_column):
         The nodes (junctions) GeoDataFrame.
     edges_gdf: LineString GeoDataFrame
         The street segments GeoDataFrame.
-    nodeID_column: string
-        Column name that indicates the node identifier column.
+    nodeID_column : str, optional
+        Column name for node unique identifiers in `nodes_gdf`. Default is 'nodeID'.
     
     Returns
     -------
