@@ -10,8 +10,8 @@ from scipy.sparse import linalg
 pd.set_option("display.precision", 3)
 
 import concurrent.futures
-from .utilities import scaling_columnDF, polygon_2d_to_3d, downloader, gdf_multipolygon_to_polygon
-from .visibility import visibility_polygon2d, compute_3d_sight_lines, intervisibility
+from .utilities import scaling_columnDF, downloader
+from .visibility import visibility_polygon2d, compute_3d_sight_lines
 from .angles import get_coord_angle
 
 def get_buildings_fromFile(path, epsg, case_study_area = None, distance_from_center = 1000, height_field = None, base_field = None, 
