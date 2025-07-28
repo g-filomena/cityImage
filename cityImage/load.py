@@ -85,8 +85,7 @@ def get_network_fromOSM(place, download_method, network_type = "all", epsg = Non
     nodes_gdf = nodes_gdf[nodes_gdf.nodeID.isin(np.unique(edges_gdf[['u', 'v']].values))]
 
     return nodes_gdf, edges_gdf
-
-
+    
 def get_pedestrian_network_fromOSM(place, download_method, epsg = None, distance = 500.0):
     """
     The function downloads and creates a simplified OSMNx graph for a selected area's street network. Compare to get_network_fromOSM, 
@@ -128,22 +127,24 @@ def get_pedestrian_network_fromOSM(place, download_method, epsg = None, distance
             gdf[col] = np.nan
     
     exclude_list = [
-        "abandoned", "bus_guideway", "construction", "cycleway",
+        "abandoned", "bus_guideway", "construction",
         "motor", "no", "planned", "platform", "proposed", 
         "raceway", "razed", "motorway_junction", "motorway", "trunk_link", 
-        'emergency_bay', 'bus_bay', "trunk", 'motorway_link', "busway",
+        'emergency_bay', 'bus_bay', "trunk", 'motorway_link', "busway", "cycleway",
     ]
     
-    exclude_sidewalk = {"separate", "no", "none"}
+    exclude_sidewalk = ["no", "none"]
+    exclude_footway = ['sidewalk','traffic_island']
     gdf = gdf[
         (gdf["area"] != "yes") &
         (~gdf["highway"].isin(exclude_list)) &
         (gdf["foot"] != "no") &
+        (~gdf["footway"].isin(exclude_footway)) &
         (gdf["service"] != "private") &
-        (~gdf["sidewalk"].isin(exclude_sidewalk)) &
-        (gdf["sidewalk:both"] != "separate") &
-        (gdf["sidewalk:left"] != "separate") &
-        (gdf["sidewalk:right"] != "separate")
+        (
+            (~gdf["sidewalk"].isin(exclude_sidewalk)) |
+            (gdf["highway"] == "residential")
+        )
     ]
 
     gdf = gdf[gdf.geometry.type == 'LineString']
