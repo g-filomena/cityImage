@@ -21,14 +21,14 @@ class Error(Exception):
 class downloadError(Error):
     """Raised when a wrong download method is provided""" 
     
-def downloader(place, download_method, tags = None, distance = 500.0, downloading_graph = False, network_type = None):
+def downloader(OSMplace, download_method, tags = None, distance = 500.0, downloading_graph = False, network_type = None):
     """
     The function downloads certain geometries from OSM, by means of OSMNX functions.
     It returns a GeoDataFrame, that could be empty when no geometries are found, with the provided tags.
     
     Parameters
     ----------
-    place: str, tuple, Shapely Polygon
+    OSMplace: str, tuple, Shapely Polygon
         Name of cities or areas in OSM: 
         - when using "distance_from_point" please provide a (lat, lon) tuple to create the bounding box around it; 
         - when using "distance_from_address" provide an existing OSM address; 
@@ -74,14 +74,14 @@ def downloader(place, download_method, tags = None, distance = 500.0, downloadin
         if download_func:
             if download_method in ['distance_from_address', 'distance_from_point']:
                 if downloading_graph:
-                    G = download_func(place, network_type = network_type, dist = distance, retain_all=True, simplify = True)
+                    G = download_func(OSMplace, network_type = network_type, dist = distance, retain_all=True, simplify = True)
                 else:
-                    geometries_gdf = download_func(place, tags = tags, dist = distance)
+                    geometries_gdf = download_func(OSMplace, tags = tags, dist = distance)
             else:
                 if downloading_graph:
-                    G = download_func(place, network_type = network_type, retain_all=True, simplify = True)
+                    G = download_func(OSMplace, network_type = network_type, retain_all=True, simplify = True)
                 else:
-                    geometries_gdf = download_func(place, tags = tags) 
+                    geometries_gdf = download_func(OSMplace, tags = tags) 
                     
     except ox._errors.InsufficientResponseError:
         # Handle the InsufficientResponseError error by returning an empty GeoDataFrame
@@ -326,24 +326,25 @@ def rescale_ranges(n, range1, range2):
                          
 def gdf_from_geometries(geometries, crs):
     """
-    The function creates a GeoDataFrame from a list of geometries.
-    
+    Creates a GeoDataFrame from a list of shapely geometries.
+
     Parameters
     ----------
-    geometries: list of LineString, Polygon or Points
-        The geometries to be included in the GeoDataFrame.
+    geometries : list of shapely.geometry.BaseGeometry
+        List of shapely geometries (LineString, Polygon, or Point) to be included in the GeoDataFrame.
+    crs : str or pyproj.CRS. Coordinate Reference System for the GeoDataFrame. Pass as a string (e.g., 'EPSG:4326', 'EPSG:32633') or a pyproj.CRS object.
         
     Returns
     -------
-    gdf: GeoDataFrame
-        The resulting GeoDataFrame.
+    gdf : GeoDataFrame
+        Resulting GeoDataFrame
     """
-    
+
     df = pd.DataFrame({'geometry': geometries})
-    gdf = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
+    gdf = gpd.GeoDataFrame(df, geometry=df['geometry'], crs=crs)
     gdf['length'] = gdf['geometry'].length
     return gdf
-    
+
 def polygons_gdf_multiparts_to_singleparts(polygons_gdf):
     """    
     The function extracts the individual parts of the multi-part geometries and creates a new GeoDataFrame with single part geometries.
