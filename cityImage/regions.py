@@ -10,7 +10,7 @@ import warnings
 
 from shapely.ops import polygonize_full, polygonize, unary_union
 from shapely.geometry import Point, LineString, Polygon, MultiPolygon, mapping, MultiLineString
-from shapely.ops import cascaded_union, linemerge, nearest_points
+from shapely.ops import linemerge, nearest_points
 pd.set_option("display.precision", 3)
 
 from .graph import graph_fromGDF, dual_id_dict
@@ -104,7 +104,7 @@ def polygonise_partitions(edges_gdf, column, convex_hull = True, buffer = 30):
 
     partitions = edges_gdf[column].unique()
     for i in partitions:
-        polygon =  polygonize_full(edges_gdf[edges_gdf[column] == i].geometry.unary_union)
+        polygon = polygonize_full(edges_gdf[edges_gdf[column] == i].geometry.union_all())
         polygon = unary_union(polygon).buffer(buffer)
         if convex_hull:
             polygons.append(polygon.convex_hull)
