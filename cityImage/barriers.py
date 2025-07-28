@@ -4,7 +4,7 @@ import numpy as np
 import geopandas as gpd
 
 from shapely.geometry import Point, LineString, Polygon, MultiPolygon, MultiLineString, GeometryCollection
-from shapely.ops import cascaded_union, linemerge, polygonize, polygonize_full, unary_union, nearest_points
+from shapely.ops import linemerge, polygonize, polygonize_full, unary_union, nearest_points
 from .utilities import gdf_from_geometries, downloader
 pd.set_option("display.precision", 3)
 
@@ -55,7 +55,7 @@ def road_barriers(place, download_method, distance = 500.0, epsg = None, include
         roads['tunnel'] = roads['tunnel'].fillna(0)
         roads = roads[roads.tunnel == 0]
         
-    roads = roads.unary_union
+    roads = roads.union_all()
     roads = _simplify_barrier(roads)
     df = pd.DataFrame({'geometry': roads, 'barrier_type': ['road'] * len(roads)})
     road_barriers = gpd.GeoDataFrame(df, geometry = df['geometry'], crs = crs)
@@ -95,7 +95,7 @@ def water_barriers(place, download_method, distance = 500.0, lakes_area = 1000, 
     tags = {"waterway":True}  
     rivers = downloader(place = place, download_method = download_method, tags = tags, distance = distance).to_crs(crs)
     rivers = rivers[(rivers.waterway == 'river') | (rivers.waterway == 'canal')]
-    rivers = rivers.unary_union
+    rivers = rivers.union_all()
     rivers = _simplify_barrier(rivers)
     rivers = gdf_from_geometries(rivers, crs)
     
@@ -106,7 +106,7 @@ def water_barriers(place, download_method, distance = 500.0, lakes_area = 1000, 
     lakes = lakes[~lakes.water.isin(to_remove)]
     lakes['area'] = lakes.geometry.area
     lakes = lakes[lakes.area > lakes_area]
-    lakes = lakes.unary_union
+    lakes = lakes.union_all()
     lakes = _simplify_barrier(lakes) 
     lakes = gdf_from_geometries(lakes, crs)
     lakes = lakes[lakes['length'] >=500]
@@ -114,12 +114,12 @@ def water_barriers(place, download_method, distance = 500.0, lakes_area = 1000, 
     # sea   
     tags = {"natural":"coastline"}
     sea = downloader(place = place, download_method = download_method, tags = tags, distance = distance).to_crs(crs)
-    sea = sea.unary_union      
+    sea = sea.union_all()      
     sea = _simplify_barrier(sea)
     sea = gdf_from_geometries(sea, crs)
     
     water = pd.concat([rivers, lakes, sea])
-    water = water.unary_union
+    water = water.union_all()
     water = _simplify_barrier(water)
         
     df = pd.DataFrame({'geometry': water, 'barrier_type': ['water'] * len(water)})
@@ -165,7 +165,7 @@ def railway_barriers(place, download_method, distance = 500.0, epsg = None, keep
         railways['tunnel'] = railways['tunnel'].fillna(0)
         railways = railways[railways.tunnel == 0]
         
-    r = railways.unary_union
+    r = railways.union_all()
     p = polygonize_full(r)
     railways = unary_union(p).buffer(10).boundary # to simpify a bit
     railways = _simplify_barrier(railways)
@@ -211,7 +211,7 @@ def park_barriers(place, download_method, distance = 500.0, epsg = None, min_are
     parks_poly['area'] = parks_poly.geometry.area
     parks_poly = parks_poly[parks_poly.area >= min_area]
  
-    pp = parks_poly['geometry'].unary_union  
+    pp = parks_poly['geometry'].union_all()  
     pp = polygonize_full(pp)
     parks = unary_union(pp).buffer(10).boundary # to simpify a bit
     parks = _simplify_barrier(parks)
