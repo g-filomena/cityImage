@@ -47,7 +47,7 @@ def consolidate_nodes(nodes_gdf, edges_gdf, nodeID_column = 'nodeID', consolidat
     nodes_gdf = nodes_gdf.copy().set_index(nodeID_column, drop=False)
     nodes_gdf.index.name = None
     nodes_gdf.drop(columns=["x", "y"], inplace=True, errors="ignore")
-    graph = graph_fromGDF(nodes_gdf, edges_gdf, nodeID_colum = nodeID_column)
+    graph = graph_fromGDF(nodes_gdf, edges_gdf, nodeID_column = nodeID_column)
 
     # Step 1: Cluster nodes within tolerance
     clusters = nodes_gdf.buffer(tolerance).unary_union
@@ -78,7 +78,7 @@ def consolidate_nodes(nodes_gdf, edges_gdf, nodeID_column = 'nodeID', consolidat
     has_z = 'z' in nodes_gdf.columns
 
     for new_nodeID, nodes_subset in gdf.groupby("new_nodeID"):
-        old_nodeIDs = nodes_subset[nodeID_colum].to_list()
+        old_nodeIDs = nodes_subset[nodeID_column].to_list()
         cluster_x, cluster_y = nodes_subset.iloc[0][["x", "y"]]
 
         new_node = {
@@ -112,7 +112,7 @@ def consolidate_nodes(nodes_gdf, edges_gdf, nodeID_column = 'nodeID', consolidat
         
     return consolidated_nodes_gdf
     
-def consolidate_edges(edges_gdf, consolidated_nodes_gdf, nodeID_colum):
+def consolidate_edges(edges_gdf, consolidated_nodes_gdf, nodeID_column):
     """
     Reassigns edge endpoints ('u', 'v') and updates geometries to match consolidated nodes.
 
@@ -140,10 +140,10 @@ def consolidate_edges(edges_gdf, consolidated_nodes_gdf, nodeID_colum):
         Self-loop edges (where u == v) are removed. The index is set to 'edgeID'.
     """
     
-    oldIDs_column = "old_"+nodeID_colum
+    oldIDs_column = "old_"+nodeID_column
     # Create a mapping from old_nodeIDs to their corresponding nodeID and geometry
     nodes_mapping = (
-        consolidated_nodes_gdf.explode(oldIDs_column)[[oldIDs_column, "geometry", nodeID_colum]]
+        consolidated_nodes_gdf.explode(oldIDs_column)[[oldIDs_column, "geometry", nodeID_column]]
         .set_index(oldIDs_column)
     )
 
@@ -152,8 +152,8 @@ def consolidate_edges(edges_gdf, consolidated_nodes_gdf, nodeID_colum):
         old_u, old_v, geom = row["u"], row["v"], row["geometry"]
         
         # Map old_u and old_v to their corresponding new nodeIDs
-        new_u_id = nodes_mapping.loc[old_u, nodeID_colum]
-        new_v_id = nodes_mapping.loc[old_v, nodeID_colum]
+        new_u_id = nodes_mapping.loc[old_u, nodeID_column]
+        new_v_id = nodes_mapping.loc[old_v, nodeID_column]
 
         # Get the new geometries for u and v
         new_u_geom = nodes_mapping.loc[old_u, "geometry"]
