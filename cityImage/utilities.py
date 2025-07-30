@@ -439,29 +439,42 @@ def convert_numeric_columns(df):
         
     return df
     
+from shapely.geometry import MultiPolygon
+
 def gdf_multipolygon_to_polygon(gdf):
     """
-    Converts any MultiPolygon geometries with a single polygon into a Polygon in a GeoDataFrame.
-    
-    This function checks if a geometry is a MultiPolygon and contains only one polygon. 
-    If so, it converts it into a simple Polygon geometry. Otherwise, it leaves the geometry unchanged.
+    Convert MultiPolygon geometries to Polygon where possible, and explode 
+    remaining MultiPolygons into individual Polygons. Recomputes the 'area' column.
 
     Parameters
     ----------
     gdf : GeoDataFrame
-        A GeoDataFrame where the 'geometry' column contains geometries of type MultiPolygon or Polygon.
+        A GeoDataFrame where the 'geometry' column contains geometries of type 
+        MultiPolygon or Polygon.
 
     Returns
     -------
     GeoDataFrame
-        The original GeoDataFrame with MultiPolygons containing a single geometry converted to Polygon.
+        Updated GeoDataFrame with:
+        - MultiPolygons containing a single geometry converted to Polygons.
+        - Remaining MultiPolygons exploded into individual Polygons.
+        - Recomputed 'area' column for all geometries.
     """
-    
-    def convert_multipolygon_to_polygon(geometry):
-        if isinstance(geometry, MultiPolygon) and len(geometry.geoms) == 1:
-            return geometry.geoms[0]  # Extract the single Polygon
-        return geometry  # Return unchanged if already Polygon or a true MultiPolygon
 
+    def convert_multipolygon_to_polygon(geometry):
+        # Convert MultiPolygon with a single part into Polygon
+        if isinstance(geometry, MultiPolygon) and len(geometry.geoms) == 1:
+            return geometry.geoms[0]
+        return geometry
+
+    gdf = gdf.copy()
     gdf["geometry"] = gdf["geometry"].apply(convert_multipolygon_to_polygon)
 
-    return gdf 
+    # If any MultiPolygons remain, explode them
+    if any(gdf["geometry"].apply(lambda geom: isinstance(geom, MultiPolygon))):
+        gdf = gdf.explode(index_parts=False)
+
+    # Recompute area for all geometries
+    gdf["area"] = gdf.geometry.area
+
+    return gdf
