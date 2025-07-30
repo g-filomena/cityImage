@@ -23,7 +23,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 # Project modules
 from .angles import get_coord_angle
-from .clean import consolidate_nodes
+from .graph_consolidate import consolidate_nodes
 from .utilities import gdf_multipolygon_to_polygon
 
 pd.set_option("display.precision", 3)
@@ -94,7 +94,60 @@ def compute_3d_sight_lines(nodes_gdf: gpd.GeoDataFrame, target_buildings_gdf: gp
                            distance_along: float = 200, min_observer_target_distance: float = 300, sight_lines_chunk_size: int = 500000, 
                            consolidate: bool = False, consolidate_tolerance: float = 0.0, 
                            with_pyvista = False, num_workers: int = 20):
+    """
+    Computes 3D sight lines between observer nodes and target buildings, accounting for 2D and 3D obstructions.
 
+    The computation is performed in memory-efficient chunks. For each chunk:
+    1. Filters potential sight lines by minimum distance.
+    2. Restricts obstruction checks to those near each target.
+    3. Checks for 2D (planimetric) obstructions.
+    4. Optionally refines visibility with full 3D intersection analysis.
+    5. Outputs are merged and saved to disk per chunk, then concatenated and finalized.
+
+    Optionally, PyVista is used for the 3D step, and both observer/target coordinates and obstruction matches are exported.
+
+    Parameters
+    ----------
+    nodes_gdf : GeoDataFrame
+        Observer locations (usually points) with 3D coordinates and unique node IDs.
+    target_buildings_gdf : GeoDataFrame
+        Target building polygons (must have 3D geometry).
+    obstructions_buildings_gdf : GeoDataFrame
+        All buildings considered as potential obstructions (must have 3D geometry).
+    simplified_target_buildings : GeoDataFrame
+        Simplified versions of target buildings (used for finalization and snapping).
+    edges_gdf : GeoDataFrame
+        Edge geometries for network structure (used for consolidation).
+    city_name : str
+        Name prefix for exported chunk files.
+    distance_along : float, optional
+        Sampling step along building edges (default: 200).
+    min_observer_target_distance : float, optional
+        Minimum allowed observer-to-target distance (default: 300).
+    sight_lines_chunk_size : int, optional
+        Maximum number of sight lines to process per chunk (default: 500000).
+    consolidate : bool, optional
+        Whether to spatially consolidate observer nodes and targets (default: False).
+    consolidate_tolerance : float, optional
+        Tolerance for consolidation (default: 0.0).
+    with_pyvista : bool, optional
+        If True, performs 3D obstruction checking using PyVista for extra accuracy (default: False).
+    num_workers : int, optional
+        Number of parallel workers to use for chunked and obstruction operations (default: 20).
+
+    Returns
+    -------
+    sight_lines : GeoDataFrame
+        Finalized GeoDataFrame of visible sight lines (3D LineString), with relevant attributes. If no lines are visible, returns empty GeoDataFrame.
+
+    Notes
+    -----
+    - The function splits the computation into manageable chunks for memory efficiency.
+    - Intermediate chunk files are written to disk and merged at the end.
+    - Columns such as 'matchesIDs', 'observer_coords', and 'target_coords' are added temporarily and dropped in the final result.
+    - If `with_pyvista` is False, a final 3D obstruction check is performed on all results.
+    """
+    
     # Step 0: Prepare data
     observers, targets, obstructions_gdf = _prepare_3d_sight_lines(nodes_gdf, target_buildings_gdf, obstructions_buildings_gdf,
                                                                distance_along = distance_along,
@@ -187,6 +240,44 @@ def compute_3d_sight_lines(nodes_gdf: gpd.GeoDataFrame, target_buildings_gdf: gp
 ## Preparation ###########################
 def _prepare_3d_sight_lines(nodes_gdf, target_buildings_gdf, obstructions_gdf, distance_along = 200, simplified_buildings = gpd.GeoDataFrame, 
         consolidate = False, consolidate_tolerance = 0.0, edges_gdf = None):
+    """
+    Prepares observer points, target points, and obstruction geometries for 3D sight line analysis.
+
+    This function processes the input node and building GeoDataFrames to:
+        - Set up observer points with 3D coordinates,
+        - Prepare target building roof points at regular intervals,
+        - Optionally apply simplified building outlines and spatial consolidation,
+        - Annotate each target with nearby building IDs for efficient obstruction queries,
+        - Create 3D representations for all obstruction polygons.
+
+    Parameters
+    ----------
+    nodes_gdf : GeoDataFrame
+        Observer locations with columns ['geometry', 'x', 'y', 'nodeID', 'z'].
+    target_buildings_gdf : GeoDataFrame
+        Target building polygons with 'height' and 'base' attributes.
+    obstructions_gdf : GeoDataFrame
+        Building polygons considered as obstructions (must have 'height' and 'base').
+    distance_along : float, optional
+        Interval in CRS units for sampling target building roofs (default: 200).
+    simplified_buildings : GeoDataFrame, optional
+        Simplified building outlines, used if not empty (default: empty).
+    consolidate : bool, optional
+        If True, spatially merges close observer points (default: False).
+    consolidate_tolerance : float, optional
+        Distance tolerance for observer consolidation (default: 0.0).
+    edges_gdf : GeoDataFrame, optional
+        Network edges for observer consolidation.
+
+    Returns
+    -------
+    observer_points_gdf : GeoDataFrame
+        GeoDataFrame of observer points with 3D geometry.
+    target_points : GeoDataFrame
+        Points along target building roofs with associated nearby building IDs.
+    obstructions_gdf : GeoDataFrame
+        Obstructions as 3D polygons with updated geometry.
+    """
 
     nodes_gdf = nodes_gdf[['geometry', 'x', 'y', 'nodeID', 'z']].copy()
     nodes_gdf['geometry'] = nodes_gdf.apply(lambda row: Point(row['x'], row['y'], row['z']), axis=1)
@@ -196,8 +287,8 @@ def _prepare_3d_sight_lines(nodes_gdf, target_buildings_gdf, obstructions_gdf, d
     target_buildings_gdf = target_buildings_gdf[target_buildings_gdf.height > 5.0]
     target_points = _prepare_targets(target_buildings_gdf, distance_along)
 
-    if not simplified_buildings.empty:
-       target_points, obstructions_gdf = _use_simplified_buildings(target_points, obstructions_gdf, simplified_buildings)
+    if simplified_buildings is not None and not simplified_buildings.empty:
+        target_points, obstructions_gdf = _use_simplified_buildings(target_points, obstructions_gdf, simplified_buildings)
   
     if consolidate:
         observer_points_gdf = consolidate_nodes(nodes_gdf, edges_gdf, consolidate_edges_too = False, tolerance = consolidate_tolerance)
@@ -227,7 +318,19 @@ def _prepare_3d_sight_lines(nodes_gdf, target_buildings_gdf, obstructions_gdf, d
     return observer_points_gdf, target_points, obstructions_gdf
 
 def _prepare_buildings_gdf(buildings_gdf):
-    
+    """
+    Converts MultiPolygons to Polygons, sets minimum base elevation, filters invalid heights, and standardizes columns.
+
+    Parameters
+    ----------
+    buildings_gdf : GeoDataFrame
+        Building footprints with 'geometry', 'buildingID', 'height', and (optionally) 'base' columns.
+
+    Returns
+    -------
+    buildings_gdf : GeoDataFrame
+        Cleaned building GeoDataFrame, indexed by 'buildingID', with non-null height and base >= 1.0.
+    """   
     buildings_gdf = gdf_multipolygon_to_polygon(buildings_gdf)
     # add a 'base' column to the buildings GeoDataFrame with a default value of 1.0, if not provided
     if 'base' not in buildings_gdf.columns:
@@ -241,6 +344,21 @@ def _prepare_buildings_gdf(buildings_gdf):
     return buildings_gdf
     
 def _prepare_targets(target_buildings_gdf, distance_along):
+    """
+    Generates 3D target points along the roof perimeter of each building at specified intervals.
+
+    Parameters
+    ----------
+    target_buildings_gdf : GeoDataFrame
+        Target building polygons with 'geometry', 'height', and 'base' columns.
+    distance_along : float
+        Interval in CRS units for placing points along the roof edge.
+
+    Returns
+    -------
+    target_points : GeoDataFrame
+        Exploded GeoDataFrame with 3D points along each building's roof edge.
+    """
 
     target_buildings = target_buildings_gdf.copy()
     target_buildings['geometry'] = target_buildings_gdf['geometry'].apply(
@@ -271,6 +389,26 @@ def _prepare_targets(target_buildings_gdf, distance_along):
     return target_points
     
 def _use_simplified_buildings(target_points, obstructions_gdf, simplified_buildings):
+    """
+    Associates each target point and obstruction polygon with a simplified building outline,
+    then computes aggregated attributes for each simplified building.
+
+    Parameters
+    ----------
+    target_points : GeoDataFrame
+        3D points representing target locations on building roofs.
+    obstructions_gdf : GeoDataFrame
+        Building polygons considered as obstructions.
+    simplified_buildings : GeoDataFrame
+        Simplified building outlines.
+
+    Returns
+    -------
+    simplified_target_points : GeoDataFrame
+        Simplified buildings with aggregated target information and 3D centroid points.
+    simplified_obstructions : GeoDataFrame
+        Simplified buildings with aggregated obstruction attributes.
+    """
 
     simplified_buildings = gdf_multipolygon_to_polygon(simplified_buildings)
     # Create a spatial index for the simplified buildings
@@ -335,6 +473,20 @@ def _use_simplified_buildings(target_points, obstructions_gdf, simplified_buildi
     return simplified_target_points, simplified_obstructions
     
 def merge_gpkg_chunks_to_gdf(out_files):
+    """
+    Reads multiple GeoPackage chunk files and merges them into a single GeoDataFrame.
+
+    Parameters
+    ----------
+    out_files : list of str
+        List of file paths to the .gpkg files (one per chunk).
+
+    Returns
+    -------
+    final_gdf : GeoDataFrame
+        Combined GeoDataFrame containing all features from the input files.
+    """
+
     # Read each chunk one at a time and append to a list, then concat all together
     gdfs = []
     for f in out_files:
@@ -345,8 +497,24 @@ def merge_gpkg_chunks_to_gdf(out_files):
 ## Step 0 ###########################
 def filter_distance(chunk, targets, min_observer_target_distance):
     """
-    Parallel processing of chunks with efficient filtering
+    Filters potential observer-target pairs by minimum distance and generates sight line geometries.
+
+    Parameters
+    ----------
+    chunk : GeoDataFrame
+        Observer points (usually a subset/chunk of all observers).
+    targets : GeoDataFrame
+        Target points to be paired with observers.
+    min_observer_target_distance : float
+        Minimum allowed 2D distance between observer and target (in CRS units).
+
+    Returns
+    -------
+    potential_lines : GeoDataFrame
+        GeoDataFrame of observer-target pairs meeting the distance threshold,
+        with new 'geometry' (LineString) and coordinate columns.
     """
+
     # Prepare data
     potential_lines = _prepare_chunk_data(chunk, targets)
     # Assign 2D coordinates to new columns directly
@@ -372,8 +540,21 @@ def filter_distance(chunk, targets, min_observer_target_distance):
     
 def _prepare_chunk_data(chunk: gpd.GeoDataFrame, targets: gpd.GeoDataFrame):
     """
-    Prepare cartesian product of observers and targets efficiently
+    Computes the cartesian product of observers and targets for a chunk, omitting geometry columns for efficiency.
+
+    Parameters
+    ----------
+    chunk : GeoDataFrame
+        Observer points (one chunk of all observers).
+    targets : GeoDataFrame
+        Target points.
+
+    Returns
+    -------
+    potential_lines : DataFrame
+        DataFrame of all observer-target pairs (cartesian product) with all non-geometry attributes.
     """
+
     # Drop geometry column early to reduce memory usage
     chunk_data = chunk.drop('geometry', axis=1).assign(key=1)
     targets_data = targets.assign(key=1)
@@ -384,7 +565,29 @@ def _prepare_chunk_data(chunk: gpd.GeoDataFrame, targets: gpd.GeoDataFrame):
     return potential_lines
 
 ## Step 1 ###########################    
-def obstructions_around_target(potential_sight_lines, targets, obstructions_gdf, num_workers = 20):
+def obstructions_around_target(potential_sight_lines, targets, obstructions_gdf, num_workers=20):
+    """
+    Identifies potential sight lines that may be obstructed by nearby buildings using parallel 2D checks.
+
+    For each batch of potential sight lines, checks for intersections with nearby (aroundIDs) obstructions.
+    Performs a follow-up 3D obstruction check for any initially obstructed lines.
+
+    Parameters
+    ----------
+    potential_sight_lines : GeoDataFrame
+        Candidate sight lines with 'aroundIDs' referencing nearby obstructions.
+    targets : GeoDataFrame
+        Target points (not used directly, included for interface consistency).
+    obstructions_gdf : GeoDataFrame
+        Building polygons used as obstructions.
+    num_workers : int, optional
+        Number of parallel threads for chunked 2D obstruction checks (default: 20).
+
+    Returns
+    -------
+    potentially_visible : GeoDataFrame
+        Filtered sight lines that are not obstructed in 2D/3D or are cleared after a 3D check.
+    """
 
     # Create LineString geometries directly using vectorized coordinates
     sub_chunks = _define_batches(potential_sight_lines)
@@ -405,13 +608,29 @@ def obstructions_around_target(potential_sight_lines, targets, obstructions_gdf,
 
 def _define_batches(potential_sight_lines, min_size=50, max_size=2000, mem_fraction=0.1, row_weight_kb=10_000):
     """
-    Splits potential_sight_lines into batches based on available memory.
+    Splits a GeoDataFrame of sight lines into memory-aware batches for efficient parallel processing.
+
+    Batch size is based on available system memory and estimated row weight.
+
+    Parameters
+    ----------
+    potential_sight_lines : GeoDataFrame
+        Data to be divided into batches.
+    min_size : int, optional
+        Minimum number of rows per batch (default: 50).
+    max_size : int, optional
+        Maximum number of rows per batch (default: 2000).
+    mem_fraction : float, optional
+        Fraction of available system memory to use for each batch (default: 0.1).
+    row_weight_kb : int, optional
+        Estimated memory usage per row, in kilobytes (default: 10,000).
 
     Yields
     ------
     GeoDataFrame
-        Next batch of rows.
+        The next batch of rows.
     """
+
     available_mem = psutil.virtual_memory().available
     rows_per_batch = int(available_mem * mem_fraction / row_weight_kb)
     rows_per_batch = max(min_size, min(rows_per_batch, max_size))
@@ -420,7 +639,33 @@ def _define_batches(potential_sight_lines, min_size=50, max_size=2000, mem_fract
         yield potential_sight_lines.iloc[start: start + rows_per_batch]
         
 ## Step 2 ###########################  
-def obstructions_2d(potential_sight_lines, targets, obstructions_gdf, num_workers = 20):
+def obstructions_2d(potential_sight_lines, targets, obstructions_gdf, num_workers=20):
+    """
+    Identifies 2D (planimetric) obstructions between each observer-target sight line and surrounding buildings.
+
+    Uses spatial batch processing and parallel computation to:
+      1. Find which obstructions could intersect each sight line (via spatial index).
+      2. Check actual intersections and compute obstruction locations for each line.
+      3. Split results into visible and potentially obstructed sight lines.
+
+    Parameters
+    ----------
+    potential_sight_lines : GeoDataFrame
+        Candidate sight lines (with geometry) between observers and targets.
+    targets : GeoDataFrame
+        Target points (not used directly in this function).
+    obstructions_gdf : GeoDataFrame
+        Building polygons (must include 'buildingID', 'geometry', 'height', and 'base').
+    num_workers : int, optional
+        Number of parallel threads for batch computation (default: 20).
+
+    Returns
+    -------
+    visible : GeoDataFrame
+        Sight lines with no 2D obstructions.
+    potentially_obstructed : GeoDataFrame
+        Sight lines that intersect at least one obstruction in 2D.
+    """
 
     sub_chunks = _define_batches(potential_sight_lines)
     tasks = [_find_potential_obstructions_2d(sub_chunk, obstructions_gdf) for sub_chunk in sub_chunks]
@@ -438,6 +683,21 @@ def obstructions_2d(potential_sight_lines, targets, obstructions_gdf, num_worker
 
 @delayed
 def _find_potential_obstructions_2d(sub_chunk, obstructions_gdf):
+    """
+    For a batch of sight lines, finds all nearby obstructions using a spatial index.
+
+    Parameters
+    ----------
+    sub_chunk : GeoDataFrame
+        Subset of potential sight lines.
+    obstructions_gdf : GeoDataFrame
+        Obstruction geometries (must include 'buildingID').
+
+    Returns
+    -------
+    sub_chunk : GeoDataFrame
+        Same as input, with an added 'matchesIDs' column listing nearby building IDs for each line.
+    """
 
     obstruction_geoms = [(geom, idx) for idx, geom in zip(obstructions_gdf.buildingID, obstructions_gdf.geometry)]
     
@@ -459,6 +719,25 @@ def _find_potential_obstructions_2d(sub_chunk, obstructions_gdf):
     
 @delayed
 def _find_obstructions_2d(sub_chunk, obstructions_gdf, columnIDs):
+    """
+    For each sight line in the batch, checks for actual 2D intersections with obstructions.
+
+    Parameters
+    ----------
+    sub_chunk : GeoDataFrame
+        Batch of candidate sight lines (with column given by `columnIDs` containing building IDs).
+    obstructions_gdf : GeoDataFrame
+        Obstruction polygons with 'buildingID', 'geometry', 'height', and 'base'.
+    columnIDs : str
+        Column name in `sub_chunk` listing potential obstruction building IDs.
+
+    Returns
+    -------
+    visible : GeoDataFrame
+        Sub-chunk of sight lines without any 2D obstruction.
+    obstructed : GeoDataFrame
+        Sub-chunk of sight lines obstructed in 2D, with obstruction coordinates/z-values.
+    """
   
     # Build a dictionary for fast lookup of obstructions by buildingID
     buildingID_to_geom = obstructions_gdf.set_index('buildingID')['geometry'].to_dict()
@@ -470,15 +749,24 @@ def _find_obstructions_2d(sub_chunk, obstructions_gdf, columnIDs):
     for idx, row in sub_chunk.iterrows():
         # Get the list of intersecting buildingIDs
         potential_obstructionIDs = row[columnIDs]
-        sight_line_geometry = row['geometry']
-
+        buildingID = row.buildingID
+        
+        # Remove the current buildingID from the list of potential obstructions
+        potential_obstructionIDs = [bid for bid in potential_obstructionIDs if bid != buildingID]
+        if not potential_obstructionIDs:
+            obstructions_xy.append([])
+            obstructions_z.append([])
+            continue
+            
         # Fast check if intersections exist for this sightline
+        sight_line_geometry = row['geometry']
         intersecting_buildings = [
             buildingID for buildingID in potential_obstructionIDs
             if sight_line_geometry.intersects(buildingID_to_geom[buildingID])
         ]
         
         flat_coords, z_intersections = [], []
+        
         # If there are intersections, compute the intersections
         if intersecting_buildings:
             flat_coords = []
@@ -511,8 +799,25 @@ def _find_obstructions_2d(sub_chunk, obstructions_gdf, columnIDs):
     return visible, obstructed  
         
 ## Step 3 ###########################
-def obstructions_3d(potential_sight_lines, num_workers = 20):
-    
+def obstructions_3d(potential_sight_lines, num_workers=20):
+    """
+    Checks 3D visibility for potentially obstructed sight lines, using batched and parallelized processing.
+
+    Each sight line is tested against obstruction heights along its path; only lines unobstructed in 3D are returned.
+
+    Parameters
+    ----------
+    potential_sight_lines : GeoDataFrame
+        Candidate sight lines to check in 3D (should already be filtered by 2D checks).
+    num_workers : int, optional
+        Number of parallel workers (default: 20).
+
+    Returns
+    -------
+    visible : GeoDataFrame
+        GeoDataFrame of sight lines unobstructed in 3D.
+    """
+   
     sub_chunks = _define_batches(potential_sight_lines)
     tasks = [_find_obstructions_3d(sub_chunk) for sub_chunk in sub_chunks]
     results = dask.compute(*tasks, scheduler="threads", num_workers= num_workers)
@@ -520,7 +825,35 @@ def obstructions_3d(potential_sight_lines, num_workers = 20):
     return visible
     
 def obstructions_3d_with_pyvista(potential_sight_lines, obstructions_gdf, potential_obstructions_column, num_workers):
+    """
+    Checks 3D visibility of each sight line using detailed ray tracing with PyVista.
 
+    Each sight line is tested for intersection with potential obstructions (buildings) using mesh ray tracing.
+    Parallelized for speed using ThreadPoolExecutor.
+
+    Parameters
+    ----------
+    potential_sight_lines : GeoDataFrame
+        Candidate sight lines with observer/target coordinates and a column listing potential obstruction IDs.
+    obstructions_gdf : GeoDataFrame
+        Buildings with 'building_3d' mesh geometry.
+    potential_obstructions_column : str
+        Name of the column in `potential_sight_lines` with a list of candidate obstruction building IDs.
+    num_workers : int
+        Number of parallel threads to use for the visibility checks.
+
+    Returns
+    -------
+    GeoDataFrame
+        Only sight lines which are unobstructed in 3D, as determined by PyVista ray tracing.
+    """
+    
+     # Remove the current buildingID from the list of potential obstructions for each sight line
+    potential_sight_lines[potential_obstructions_column] = [
+        [bid for bid in bids if bid != row.buildingID]
+        for bids, row in zip(potential_sight_lines[potential_obstructions_column], potential_sight_lines.itertuples())
+    ]
+    
     # Perform parallelized intervisibility check
     with ThreadPoolExecutor(max_workers=num_workers) as executor:
         results = list(tqdm(
@@ -537,6 +870,23 @@ def obstructions_3d_with_pyvista(potential_sight_lines, obstructions_gdf, potent
 
 @delayed
 def _find_obstructions_3d(sub_chunk):
+    """
+    Performs fast 3D line-of-sight visibility checks for a batch of sight lines against obstruction heights.
+
+    Interpolates the Z coordinate along each sight line and compares to the Z values of all obstruction points;
+    returns only those sight lines that are unobstructed in 3D.
+
+    Parameters
+    ----------
+    sub_chunk : GeoDataFrame
+        Batch of potentially obstructed sight lines, with columns for observer/target coordinates,
+        obstruction XY coordinates, and obstruction Z values.
+
+    Returns
+    -------
+    GeoDataFrame
+        Only sight lines in this batch which are visible in 3D.
+    """
 
     # Build arrays for observer and target coordinates
     # Create columns for 2D coordinates
@@ -592,20 +942,21 @@ def _find_obstructions_3d(sub_chunk):
 @njit(parallel=True)
 def _intervisibility(z_intersections, z_array):
     """
-    Checks visibility by comparing interpolated Z values (z_intersections) with the corresponding obstruction Z values (z_array).
-    This function assumes that the arrays are padded with NaNs to have the same length.
-    
+    Vectorized visibility check for many sight lines in parallel, comparing interpolated Z values
+    along each line to the Z (height) values of intersected obstructions.
+
     Parameters
     ----------
     z_intersections : np.ndarray
-        Interpolated Z values for each point in the sight line. Shape: (n_rows, max_len_obstructions)
+        Interpolated Z values for each sight line and obstruction intersection.
+        Shape: (n_lines, max_num_obstructions)
     z_array : np.ndarray
-        The Z values of the obstructions. Shape: (n_rows, max_len_obstructions)
-    
+        Obstruction Z (height) values, same shape as z_intersections.
+
     Returns
     -------
     np.ndarray
-        A boolean array indicating visibility for each row, True if all z_intersections > obstructions_z for each corresponding point.
+        Boolean array (n_lines,) indicating which sight lines are visible (True = visible).
     """
     n_rows = z_intersections.shape[0]
     is_visible = np.zeros(n_rows, dtype=np.bool_)
@@ -625,18 +976,22 @@ def _intervisibility(z_intersections, z_array):
     
 def _intervisibility_with_pyvista(row, obstructions_gdf, potential_obstructions_column):
     """
-    Check if a 3D line of sight between two points is obstructed by any buildings.
+    Checks if a 3D line of sight is unobstructed by any 3D building mesh, using PyVista ray tracing.
 
-    Parameters:
-        row: 
-            Row of the DataFrame containing observer and target points.
-        buildings_gdf: 
-            GeoDataFrame of buildings.
-        buildings_sindex: 
-            Spatial index of buildings GeoDataFrame.
+    Parameters
+    ----------
+    row : pandas.Series or namedtuple
+        A single row from the potential sight lines DataFrame, containing observer and target coordinates,
+        and the list of potential obstruction building IDs.
+    obstructions_gdf : GeoDataFrame
+        Building geometries, with 'building_3d' as a PyVista-compatible mesh.
+    potential_obstructions_column : str
+        Name of the column in `row` containing candidate obstruction building IDs.
 
-    Returns:
-        bool: True if the line is visible, False otherwise.
+    Returns
+    -------
+    bool
+        True if no intersections are found (line is visible), False if any obstruction blocks the line.
     """
     
     potential_obstruction_ids = getattr(row, potential_obstructions_column)
@@ -649,7 +1004,30 @@ def _intervisibility_with_pyvista(row, obstructions_gdf, potential_obstructions_
 
 def _finalize_sight_lines(sight_lines_tmp, nodes_gdf, consolidate, simplified_buildings):
     """
-    Final cleanup and merging of sight lines.
+    Finalizes, cleans, and merges sight lines after visibility analysis.
+
+    This function handles the final step in sight line construction by:
+      - Exploding node pairs if node consolidation was performed.
+      - (If using simplified buildings) Exploding all building-target pairs from simplified outlines.
+      - Rebuilding correct LineString geometries for each observer-target pair.
+      - Dropping intermediate columns used in previous steps.
+      - Sorting and deduplicating the result so each (buildingID, nodeID) pair appears only once, keeping the longest line.
+
+    Parameters
+    ----------
+    sight_lines_tmp : DataFrame or GeoDataFrame
+        Temporary results table with observer/target columns, node/building references, and possibly intermediate attributes.
+    nodes_gdf : GeoDataFrame
+        Reference nodes with 3D coordinates, including 'nodeID', 'geometry', and (optionally) 'z'.
+    consolidate : bool
+        Whether node consolidation (merging/clustered nodes) was performed.
+    simplified_buildings : GeoDataFrame
+        If non-empty, provides simplified outlines for additional sight line explosion and assignment.
+
+    Returns
+    -------
+    sight_lines : GeoDataFrame
+        Cleaned, deduplicated GeoDataFrame of final sight lines, with correct geometry, observer and target references, and length.
     """
     nodes_gdf['geometry'] = [Point(geometry.x, geometry.y, z) for geometry, z in zip(nodes_gdf['geometry'], nodes_gdf['z'])]     
 
@@ -659,7 +1037,7 @@ def _finalize_sight_lines(sight_lines_tmp, nodes_gdf, consolidate, simplified_bu
         geom_map = nodes_gdf.set_index('nodeID')['geometry']
         sight_lines_tmp['observer_geo'] = sight_lines_tmp['nodeID'].map(geom_map)
 
-    if not simplified_buildings.empty:
+    if simplified_buildings is not None and not simplified_buildings.empty:
         sight_lines_tmp['pair'] = sight_lines_tmp.apply(
             lambda row: list(zip(row['buildingIDs'], row['target_GEOs'])), axis=1
         )
