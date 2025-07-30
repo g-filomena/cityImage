@@ -92,7 +92,7 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_islands = True
             nodes_gdf, edges_gdf = clean_same_vertexes_edges(nodes_gdf, edges_gdf,nodeID_column, edgeID_column, preserve_direction)
   
         # simplify the graph                           
-        nodes_gdf, edges_gdf = simplify_graph(nodes_gdf, edges_gdf, nodeID_column, edgeID_column, nodes_to_keep_regardless):
+        nodes_gdf, edges_gdf = simplify_graph(nodes_gdf, edges_gdf, nodeID_column, edgeID_column, nodes_to_keep_regardless)
         
         # repreat eliminate loops
         if self_loops: 
@@ -143,7 +143,7 @@ def _prepare_dataframes(nodes_gdf, edges_gdf, nodeID_column = 'nodeID', edgeID_c
     
     return nodes_gdf, edges_gdf 
  
- def _finalize_dataframes(nodes_gdf, edges_gdf, crs, nodeID_column = 'nodeID', edgeID_column = 'edgeID_column'):
+def _finalize_dataframes(nodes_gdf, edges_gdf, crs, nodeID_column = 'nodeID', edgeID_column = 'edgeID_column'):
     """
     Final steps to output clean dataframes.
     
@@ -179,7 +179,7 @@ def _prepare_dataframes(nodes_gdf, edges_gdf, nodeID_column = 'nodeID', edgeID_c
     edges_gdf.crs = crs
     return nodes_gdf, edges_gdf
  
- def _are_nodes_simplified(nodes_gdf, edges_gdf, nodes_to_keep_regardless = []):
+def _are_nodes_simplified(nodes_gdf, edges_gdf, nodes_to_keep_regardless = []):
     """
     The function checks the presence of pseudo-junctions, by using the edges_gdf GeoDataFrame.
      
@@ -462,7 +462,7 @@ def clean_same_vertexes_edges(nodes_gdf, edges_gdf, nodeID_column = 'nodeID', ed
     groups = groups.drop(list(to_drop), axis = 0)
     groups_filtered = groups.groupby('code').filter(lambda x: len(x) > 1)[['code','length', edgeID_column]].sort_values(by=['code','length'])
     first_indexes = list(groups_filtered.groupby("code")[[edgeID_column]].first()[edgeID_column])
-    others = set(groups_filtered[edgeID_column]to_list())- set(first_indexes)
+    others = set(groups_filtered[edgeID_column].to_list())- set(first_indexes)
     to_drop.update(others)
 
      # Update the geometry of the first edge in each group to the center line of the edge to update
