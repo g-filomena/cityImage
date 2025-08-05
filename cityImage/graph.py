@@ -159,25 +159,33 @@ def dual_gdf(nodes_gdf, edges_gdf, crs, oneway = False, angle = None):
     nodes_dual.index = nodes_dual.edgeID
     nodes_dual.index.name = None
         
-    # creating fictious links between centroids
-    edges_dual = pd.DataFrame(columns=['u','v', 'geometry', 'length'])
-
-    # connecting nodes which represent street segments share a linked in the actual street network   
+    new_edges = []
     processed = set()
-    
-    for row in nodes_dual.itertuples():                                           
-        # intersecting segments:  # i is the edgeID                                      
+
+    for row in nodes_dual.itertuples():
         for intersecting in getattr(row, 'intersecting'):
-            if ((row.Index == intersecting) | ((row.Index, intersecting) in processed) | ((intersecting, row.Index) in processed)): 
-                    continue
+            if (
+                row.Index == intersecting or
+                (row.Index, intersecting) in processed or
+                (intersecting, row.Index) in processed
+            ):
+                continue
             length_intersecting = getattr(nodes_dual.loc[intersecting], 'length')
             distance = (getattr(row, 'length') + length_intersecting) / 2
-            # from the first centroid to the centroid intersecting segment 
-            ls = LineString([getattr(row, 'geometry'), getattr(nodes_dual.loc[intersecting], 'geometry')])
-            new_row = pd.DataFrame({'u': row.Index, 'v': intersecting, 'geometry': ls, 'length': distance}, index=[0])
-            edges_dual = pd.concat([edges_dual, new_row], ignore_index=True)
+            ls = LineString([
+                getattr(row, 'geometry'),
+                getattr(nodes_dual.loc[intersecting], 'geometry')
+            ])
+            new_edges.append({
+                'u': row.Index,
+                'v': intersecting,
+                'geometry': ls,
+                'length': distance
+            })
             processed.add((row.Index, intersecting))
-            
+
+    edges_dual = pd.DataFrame(new_edges, columns=['u', 'v', 'geometry', 'length'])
+
     edges_dual = edges_dual.sort_index(axis=0)
     edges_dual = gpd.GeoDataFrame(edges_dual[['u', 'v', 'length']], crs=crs, geometry=edges_dual['geometry'])
     
