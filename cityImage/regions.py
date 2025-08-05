@@ -8,9 +8,8 @@ import array
 import numbers
 import warnings
 
-from shapely.ops import polygonize_full, polygonize, unary_union
+from shapely.ops import polygonize_full, unary_union, nearest_points
 from shapely.geometry import Point, LineString, Polygon, MultiPolygon, mapping, MultiLineString
-from shapely.ops import linemerge, nearest_points
 pd.set_option("display.precision", 3)
 
 from .graph import graph_fromGDF, dual_id_dict
