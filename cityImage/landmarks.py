@@ -6,7 +6,6 @@ import pyvista as pv
 
 from shapely.geometry import Point, LineString, Polygon, MultiPolygon, mapping, MultiLineString
 from shapely.ops import linemerge, unary_union
-from scipy.sparse import linalg
 pd.set_option("display.precision", 3)
 
 import concurrent.futures
