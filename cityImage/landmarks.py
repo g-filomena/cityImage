@@ -10,7 +10,7 @@ from scipy.sparse import linalg
 pd.set_option("display.precision", 3)
 
 import concurrent.futures
-from .utilities import scaling_columnDF, downloader
+from .utilities import scaling_columnDF, downloader, gdf_multipolygon_to_polygon
 from .visibility import visibility_polygon2d, compute_3d_sight_lines
 from .angles import get_coord_angle
 
@@ -79,22 +79,28 @@ def get_buildings_fromFile(input_path, crs, case_study_area = None, distance_fro
         obstructions_gdf["land_use_raw"] = None
 
     # dropping small buildings and buildings with null height
-    obstructions_gdf = obstructions_gdf[(obstructions_gdf["area"] >= min_area) & (obstructions_gdf["height"] >= min_height)]
+    obstructions_gdf = obstructions_gdf[obstructions_gdf["area"] >= min_area]
+    if "height" in obstructions_gdf.columns:
+        mean_height = obstructions_gdf["height"].mean()
+    if mean_height > 5:
+        obstructions_gdf = obstructions_gdf[obstructions_gdf["height"] >= min_height]
+
     obstructions_gdf = obstructions_gdf[["height", "base","geometry", "area", "land_use_raw"]]
     # assigning ID
     obstructions_gdf["buildingID"] = obstructions_gdf.index.values.astype(int)
+    obstructions_gdf = gdf_multipolygon_to_polygon(obstructions_gdf, columnID="buildingID")
     
     # if case-study area and distance not defined
     if (case_study_area is None) and (distance_from_center is None or distance_from_center == 0):
         buildings_gdf = obstructions_gdf.copy()
         return buildings_gdf, obstructions_gdf
     if (case_study_area is None):     # define a case study area
-        case_study_area = obstructions_gdf.geometry.unary_union.centroid.buffer(distance_from_center)
+        case_study_area = obstructions_gdf.geometry.union_all().centroid.buffer(distance_from_center)
     buildings_gdf = obstructions_gdf[obstructions_gdf.geometry.within(case_study_area)]
 
     return buildings_gdf, obstructions_gdf
     
-def get_buildings_fromOSM(OSMplace, download_method: str, crs = None, distance = 1000):
+def get_buildings_fromOSM(OSMplace, download_method: str, crs = None, distance = 1000, min_area = 200, min_height = 5):
     """    
     The function downloads and cleans building footprint geometries and create a buildings GeoDataFrames for the area of interest.
     The function exploits OSMNx functions for downloading the data as well as for projecting it.
@@ -114,6 +120,10 @@ def get_buildings_fromOSM(OSMplace, download_method: str, crs = None, distance =
         Coordinate Reference System for the study area. Can be a string (e.g. 'EPSG:32633'), or a pyproj.CRS object.
     distance: float
         Used when download_method == "distance from address" or == "distance from point".
+    min_area : float, optional
+        Minimum area threshold (in CRS units, e.g. square meters) for a building to be included. Default is 200.
+    min_height : float, optional
+        Minimum building height threshold for inclusion. Default is 5.
     
     Returns
     -------
@@ -122,7 +132,7 @@ def get_buildings_fromOSM(OSMplace, download_method: str, crs = None, distance =
     """   
     columns_to_keep = ['amenity', 'building', 'geometry', 'historic', 'land_use_raw']
     tags = {"building": True}
-    buildings_gdf = downloader(place = OSMplace, download_method = download_method, tags = tags, distance = distance)
+    buildings_gdf = downloader(OSMplace = OSMplace, download_method = download_method, tags = tags, distance = distance)
     
     if crs is None:
         buildings_gdf = ox.projection.project_gdf(buildings_gdf)
@@ -152,12 +162,12 @@ def get_buildings_fromOSM(OSMplace, download_method: str, crs = None, distance =
 
     buildings_gdf = buildings_gdf[['geometry', 'historic', 'land_use_raw']]
     buildings_gdf['area'] = buildings_gdf.geometry.area
-    buildings_gdf = buildings_gdf[buildings_gdf['area'] >= 50] 
     
     # reset index
+    buildings_gdf = buildings_gdf[buildings_gdf["area"] >= min_area]
     buildings_gdf = buildings_gdf.reset_index(drop = True)
-    buildings_gdf['buildingID'] = buildings_gdf.index.values.astype('int')  
-    
+    buildings_gdf['buildingID'] = buildings_gdf.index.values.astype('int') 
+    buildings_gdf = gdf_multipolygon_to_polygon(buildings_gdf, columnID="buildingID")
     return buildings_gdf
 
 def assign_building_heights_from_other_gdf(buildings_gdf, detailed_buildings_gdf, crs, min_overlap=0.4):
@@ -353,7 +363,7 @@ def structural_score(buildings_gdf, obstructions_gdf, edges_gdf, advance_vis_exp
     advance_vis_expansion_distance: float
         2d advance visibility - it indicates up to which distance from the building boundaries the 2dvisibility polygon can expand.
     neighbours_radius: float
-        Neighbours - research radius for other adjacent buildings.
+        Neighbours - search radius for other adjacent buildings.
         
     Returns
     -------
@@ -368,7 +378,7 @@ def structural_score(buildings_gdf, obstructions_gdf, edges_gdf, advance_vis_exp
    
     obstructions_gdf = buildings_gdf if obstructions_gdf is None else obstructions_gdf
     sindex = obstructions_gdf.sindex
-    street_network = edges_gdf.geometry.unary_union
+    street_network = edges_gdf.geometry.union_all()
 
     buildings_gdf["road"] = buildings_gdf.geometry.distance(street_network)
     buildings_gdf["2dvis"] = buildings_gdf.geometry.apply(lambda row: visibility_polygon2d(row, obstructions_gdf, sindex, max_expansion_distance=
@@ -380,7 +390,7 @@ def structural_score(buildings_gdf, obstructions_gdf, edges_gdf, advance_vis_exp
 def _number_neighbours(geometry, obstructions_gdf, obstructions_sindex, radius):
     """
     The function counts the number of neighbours, in a GeoDataFrame, around a given geometry, within a
-    research radius.
+    search radius.
      
     Parameters
     ----------
@@ -391,7 +401,7 @@ def _number_neighbours(geometry, obstructions_gdf, obstructions_sindex, radius):
     obstructions_sindex: Spatial Index
         The spatial index of the obstructions GeoDataFrame.
     radius: float
-        The research radius for neighboring buildings.
+        The search radius for neighboring buildings.
 
     Returns
     -------
@@ -430,16 +440,17 @@ def visibility_score(buildings_gdf, sight_lines = pd.DataFrame({'a': []}), metho
 
     sight_lines['nodeID'] = sight_lines['nodeID'].astype(int)
     sight_lines['buildingID'] = sight_lines['buildingID'].astype(int)
-
+    sight_lines['length'] = sight_lines.geometry.length
+    
     buildings_gdf["fac"] = buildings_gdf.apply(lambda row: _facade_area(row["geometry"], row["height"]), axis = 1)
 
     stats = sight_lines.groupby('buildingID').agg({'length': ['mean','max', 'count']}) 
     stats.columns = stats.columns.droplevel(0)
     stats.rename(columns = {"count": "nr_lines"}, inplace = True)
 
-    stats["max"].fillna((stats["max"].min()), inplace = True)
-    stats["mean"].fillna((stats["mean"].min()), inplace = True)
-    stats["nr_lines"].fillna((stats["nr_lines"].min()), inplace = True)
+    stats["max"] = stats["max"].fillna(stats["max"].min())
+    stats["mean"] = stats["mean"].fillna(stats["mean"].min())
+    stats["nr_lines"] = stats["nr_lines"].fillna(stats["nr_lines"].min())
     stats.reset_index(inplace = True)
     columns = ["max", "mean", "nr_lines"]
 
@@ -506,7 +517,7 @@ def get_historic_buildings_fromOSM(OSMplace, download_method, crs = None, distan
     
     columns = ['geometry', 'historic']
     tags = {"building": True}
-    historic_buildings = downloader(place = OSMplace, download_method = download_method, tags = tags, distance = distance)
+    historic_buildings = downloader(OSMplace = OSMplace, download_method = download_method, tags = tags, distance = distance)
     
     if 'heritage' in historic_buildings:
         columns.append('heritage')
@@ -584,47 +595,89 @@ def cultural_score(buildings_gdf, historic_elements_gdf = pd.DataFrame({'a': []}
     sindex = historic_elements_gdf.sindex 
     buildings_gdf["cult"] = buildings_gdf.geometry.apply(lambda row: _cultural_score_building(row, historic_elements_gdf, sindex, score_column = score_column))
     return buildings_gdf
-    
-def pragmatic_score(buildings_gdf, research_radius = 200):
+ 
+def pragmatic_score(buildings_gdf, search_radius=200, default_land_use="residential"):
     """
-    The function computes the "Pragmatic Landmark Component" based on the frequency, and therefore unexpectedness, of a land_use class in an area around a building.
-    The area is defined by the parameter "research_radius".
-     
+    Compute the "Pragmatic Landmark Component" for each building,
+    handling multi-use buildings by splitting and taking the maximum unexpectedness.
+
+    If a building has multiple land uses (stored as a list), it is exploded into
+    multiple rows (one per land use) for the calculation. The final score for
+    the building is the highest unexpectedness among its land uses.
+
+    Buildings with an empty land_use list or missing values are assigned
+    [default_land_use] by default.
+
     Parameters
     ----------
-    buildings_gdf: Polygon GeoDataFrame
-        Buildings GeoDataFrame - case study area.
-    research_radius: float
-        The radius to be used around the given building to identify neighbours.
+    buildings_gdf : GeoDataFrame (Polygon)
+        GeoDataFrame containing the building geometries and their land use.
+        - 'land_use' may be either a string, a list of strings, or an empty list.
+
+    search_radius : float, default=200
+        Radius (in map units) used to buffer each building when searching 
+        for neighboring buildings.
+    
+    default_land_use : str, default="residential"
+        Default land use assigned when land_use is empty or missing.
+
     Returns
     -------
-    buildings_gdf: Polygon GeoDataFrame
-        The updated buildings GeoDataFrame.
-    """  
+    buildings_gdf : GeoDataFrame
+        Original input GeoDataFrame with an additional column:
+        - 'prag' : float
+    """
     
-    buildings_gdf = buildings_gdf.copy()   
-    buildings_gdf["nr"] = 1 # to count
-    sindex = buildings_gdf.sindex # spatial index
-    
-    if 'land_use' not in buildings_gdf.columns:
-        buildings_gdf['land_use'] = buildings_gdf['land_use_raw']
-        
-    def _pragmatic_meaning_building(building_geometry, building_land_use, buildings_gdf, buildings_gdf_sindex, radius):
+    gdf = buildings_gdf.copy()
 
+    # fallback for land_use_raw if needed
+    if 'land_use' not in gdf.columns:
+        if 'land_use_raw' not in gdf.columns:
+            raise ValueError("GeoDataFrame must contain 'land_use' or 'land_use_raw'.")
+        gdf['land_use'] = gdf['land_use_raw']
+
+    # Normalize land_use: ensure lists and replace empty lists with [default_land_use]
+    def normalize_land_use(val):
+        if isinstance(val, list):
+            return val if val else [default_land_use]  # empty list → default
+        elif pd.isna(val):
+            return [default_land_use]
+        else:
+            return [val]
+
+    gdf['land_use'] = gdf['land_use'].apply(normalize_land_use)
+
+    # Explode rows (one row per land use)
+    gdf_exploded = gdf.explode('land_use', ignore_index=False)
+
+    # Spatial index
+    sindex = gdf_exploded.sindex
+
+    def _pragmatic_meaning_building(building_geometry, building_land_use, gdf_exploded, sindex, radius):
         buffer = building_geometry.buffer(radius)
-        possible_matches_index = list(buildings_gdf_sindex.intersection(buffer.bounds))
-        possible_matches = buildings_gdf.iloc[possible_matches_index]
+        possible_matches_idx = list(sindex.intersection(buffer.bounds))
+        possible_matches = gdf_exploded.iloc[possible_matches_idx]
         matches = possible_matches[possible_matches.intersects(buffer)]
-        neigh = matches.groupby(["land_use"], as_index = True)["nr"].sum() 
 
-        Nj = neigh.loc[building_land_use] # nr of neighbours with same land_use
-        Pj = 1-(Nj/matches["nr"].sum()) # inverting the value # Pj = Nj/N
-        return Pj    
-        
-    buildings_gdf["prag"] = buildings_gdf.apply(lambda row: _pragmatic_meaning_building(row.geometry, row.land_use, buildings_gdf, 
-                                        sindex, radius = research_radius), axis = 1)
-    buildings_gdf.drop('nr', axis = 1, inplace = True)
-    return buildings_gdf
+        neigh_counts = matches.groupby("land_use").size()
+        Nj = neigh_counts.get(building_land_use, 0)
+        total = len(matches)
+
+        return 1 - (Nj / total) if total > 0 else 0
+
+    # Compute pragmatic score for each exploded row
+    gdf_exploded["prag_temp"] = gdf_exploded.apply(
+        lambda row: _pragmatic_meaning_building(row.geometry, row.land_use, gdf_exploded, sindex, search_radius),
+        axis=1
+    )
+
+    # Collapse back to original buildings: take the max pragmatic score
+    prag_scores = gdf_exploded.groupby(gdf_exploded.index)["prag_temp"].max()
+
+    # Assign final scores back to original GeoDataFrame
+    gdf['prag'] = prag_scores
+
+    return gdf
     
 def compute_global_scores(buildings_gdf, global_indexes_weights, global_components_weights):
     """
