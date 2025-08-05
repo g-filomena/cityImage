@@ -5,146 +5,132 @@ import geopandas as gpd
 from shapely.geometry import Point, Polygon
 pd.set_option("display.precision", 3)
 
-def classify_land_use(buildings_gdf, new_land_use_field, land_use_field, categories, strings):
+def classify_land_use(buildings_gdf, raw_land_use_column, new_land_use_column, categories, strings):
     """
-    The function reclassifies land-use descriptors in a land-use field according to the categorisation presented below. 
-    (Not exhaustive)
-     
+    Reclassifies land-use descriptors in a land-use field according to 
+    the provided categories. Handles both single values and lists of values.
+
     Parameters
     ----------
-    buildings_gdf: Polygon GeoDataFrame
-		The buildings GeoDataFrame.
-    land_use: string
-		The land use field in the buildings_gdf.
-   
+    buildings_gdf : GeoDataFrame (Polygon)
+        The buildings GeoDataFrame.
+    raw_land_use_column : str
+        Column in buildings_gdf containing land use values 
+        (can be strings or lists of strings).
+    new_land_use_column : str
+        Name of the new column to store the reclassified land use.
+    categories : list of lists
+        Each sublist contains the original land use values that should 
+        be grouped together into a category.
+    strings : list of str
+        The new land use category names corresponding to `categories`.
+
     Returns
     -------
-    buildings_gdf: Polygon GeoDataFrame
-        The updated buildings' GeoDataFrame.
+    buildings_gdf : GeoDataFrame
+        Updated GeoDataFrame with a new column `new_land_use_column` containing 
+        reclassified land uses (lists if multiple values, single values otherwise).
     """
-    
+
     buildings_gdf = buildings_gdf.copy()
-    
-    # Create a new column with the same values as the land_use_field column
-    buildings_gdf[new_land_use_field] = buildings_gdf[land_use_field].copy()
-    # reclassifying: replacing original values with relative categories
-    buildings_gdf[new_land_use_field] = buildings_gdf[land_use_field]
-    
-    for n, category in enumerate(categories):
-        buildings_gdf[new_land_use_field] = buildings_gdf[new_land_use_field].map(lambda x: strings[n] if x in category else x)
-    
+
+    # Helper: reclassify a single value
+    def reclassify_single(value):
+        for idx, category in enumerate(categories):
+            if value in category:
+                return strings[idx]
+        return value
+
+    # Helper: reclassify a single value or list of values
+    def reclassify_value(value):
+        if isinstance(value, list):
+            reclassified = [reclassify_single(v) for v in value]
+            # Remove duplicates (order not preserved)
+            return list(set(reclassified))
+        else:
+            return reclassify_single(value)
+
+    # Apply reclassification to each row
+    buildings_gdf[new_land_use_column] = buildings_gdf[raw_land_use_column].apply(reclassify_value)
+
     return buildings_gdf
 
-
-def land_use_from_other_gdf(buildings_gdf, other_gdf, new_land_use_field, land_use_field):
+def land_use_from_other_gdf(buildings_gdf, other_gdf, new_land_use_column, other_land_use_column, min_overlap_threshold = 0.30):
     """
-    It assigns land-use attributes to buildings in a buildings GeoDataFrame, looking for possible matches in "other_gdf", a Polygon or Point GeoDataFrame
-    Polygon: Possible matches here means the buildings in "other_gdf" whose area of interesection with the examined building (y), covers at least
-    60% of the building's (y) area. The best match is chosen. 
-    
-    Point: Possible matches are identified when points lie within the buildings_gdf polygons. The most represented category is chosen when more than one points
-    lies inside a building footprint.
+    Assign land-use attributes to buildings in a buildings GeoDataFrame, 
+    matching against polygons or points from another GeoDataFrame.
+
+    - Polygon mode: Possible matches are polygons in "other_gdf" where 
+      the area of intersection with the building covers at least 60% of the building area. 
+      All qualifying land_use values are collected into a list. 
+      If no match, returns an empty list.
+
+    - Point mode: Possible matches are points lying inside the building polygon. 
+      All distinct land_use categories found are returned as a list. 
+      If no match, returns an empty list.
      
     Parameters
     ----------
-    buildings_gdf: Polygon GeoDataFrame
-		The buildings GeoDataFrame.
-	other_gdf: Point or Polygon GeoDataFrame
-		The GeoDataFrame wherein looking for land_use attributes.
-    new_land_use_field: str
-		Name of the column in buildings_gdf to which assign the land_use descriptor.
-    land_use_field: str 
-        Name of the column in other_gdf wherein the land_use attribute is stored.
-   
+    buildings_gdf : Polygon GeoDataFrame
+        Buildings' GeoDataFrame.
+    other_gdf : Point or Polygon GeoDataFrame
+        GeoDataFrame to search for land_use attributes.
+    new_land_use_column : str
+        Name of the column to create/overwrite in buildings_gdf for assigned land_use(s).
+    other_land_use_column : str
+        Column name in other_gdf where land_use attribute(s) are stored.
+    min_overlap_threshold : float
+        Minimum required overlap between geometries, expressed as a fraction between 0.01 and 1.00. This threshold defines the minimum proportion of a building's area that must 
+        intersect with another polygon for it to be considered a match.
+
     Returns
     -------
-    buildings_gdf: Polygon GeoDataFrame
-        The updated buildings' GeoDataFrame.
+    buildings_gdf : Polygon GeoDataFrame
+        Updated buildings GeoDataFrame with `new_land_use_column` populated 
+        with a list of values (empty list if no matches).
     """
-        
-    buildings_gdf = buildings_gdf.copy()    
-    buildings_gdf[new_land_use_field] = None
     
-    if (other_gdf.iloc[0].geometry.geom_type == 'Point'):
-        other_gdf["nr"] = 1
-    
-    # spatial index
+    if buildings_gdf.crs != other_gdf.crs:
+        raise ValueError("CRS mismatch: buildings_gdf and other_gdf must have the same CRS")
+
+    buildings_gdf = buildings_gdf.copy()
+    buildings_gdf[new_land_use_column] = [[] for _ in range(len(buildings_gdf))]
+
+    geom_type = other_gdf.iloc[0].geometry.geom_type
     sindex = other_gdf.sindex
-        
-    if (other_gdf.iloc[0].geometry.geom_type == 'Point'):
-        buildings_gdf[new_land_use_field] = buildings_gdf.geometry.apply(lambda row: _land_use_from_points(row, other_gdf,
-                                                                                         sindex, land_use_field))
-    else:
-        buildings_gdf[new_land_use_field] = buildings_gdf.geometry.apply(lambda row: _land_use_from_polygons(row, other_gdf,
-                                                                                              sindex, land_use_field))
+
+    if geom_type == 'Point':
+        def _land_use_from_points_list(building_geometry, other_gdf, sindex, other_land_use_column):
+            possible_matches_idx = list(sindex.intersection(building_geometry.bounds))
+            possible_matches = other_gdf.iloc[possible_matches_idx]
+            matches = possible_matches[possible_matches.intersects(building_geometry)]
+            if matches.empty:
+                return []
+            return list(matches[other_land_use_column].unique())
+
+        buildings_gdf[new_land_use_column] = buildings_gdf.geometry.apply(
+            lambda row: _land_use_from_points_list(row, other_gdf, sindex, other_land_use_column)
+        )
+
+    else:  # Polygon
+        def _land_use_from_polygons_list(building_geometry, other_gdf, sindex, other_land_use_column):
+            possible_matches_idx = list(sindex.intersection(building_geometry.bounds))
+            possible_matches = other_gdf.iloc[possible_matches_idx]
+            matches = possible_matches[possible_matches.intersects(building_geometry)]
+            if matches.empty:
+                return []
+
+            selected = []
+            for _, match in matches.iterrows():
+                intersection_area = building_geometry.intersection(match.geometry).area
+                if intersection_area >= min_overlap_threshold * building_geometry.area:
+                    selected.append(match[other_land_use_column])
+
+            return list(set(selected)) if selected else []
+
+        buildings_gdf[new_land_use_column] = buildings_gdf.geometry.apply(
+            lambda row: _land_use_from_polygons_list(row, other_gdf, sindex, other_land_use_column)
+        )
+
     return buildings_gdf
-    
-def _land_use_from_polygons(building_geometry, other_gdf, other_gdf_sindex, land_use_field):
-    """
-    It assigns land-use attributes to a building, looking for possible matches in a"other_gdf", a Polygon GeoDataFrame.
-     
-    Parameters
-    ----------
-    buildings_gdf: Polygon GeoDataFrame
-		The buildings GeoDataFrame.
-	other_gdf: Polygon GeoDataFrame
-		The GeoDataFrame wherein looking for land_use attributes
-    other_gdf_sindex: Spatial Index
-        The Spatial Index on the other GeoDataFrame.
-    land_use_field: str
-        name of the column in other_gdf wherein the land_use attribute is stored.
-   
-    Returns
-    -------
-    Object
-        The assigned land-use attribute or None if no match is found.
-    """
-    # Find the possible matches
-    possible_matches_index = list(other_gdf_sindex.intersection(building_geometry.bounds))
-    possible_matches = other_gdf.iloc[possible_matches_index]
-    # Keep only the polygons that intersect with the building
-    pm = possible_matches[possible_matches.intersects(building_geometry)]
-    if len(pm) == 0: 
-        return None # no intersecting features in the other_gdf
-    
-    # calculate area of intersection between building and each possible match
-    pm["area_int"] = pm.loc[pm.intersects(building_geometry), 'geometry'].apply(lambda row: row.intersection(building_geometry).area)
-    # sort the matches based on the extent of the area of intersection
-    pm = pm.sort_values(by="area_int", ascending=False)
-    # Assign the match land-use category if the area of intersection covers at least 60% of the building's area
-    if pm["area_int"].iloc[0] >= (building_geometry.area * 0.60): 
-        return pm[land_use_field].iloc[0]
-    
-    return None
 
-def _land_use_from_points(building_geometry, other_gdf, other_source_gdf_sindex, land_use_field):
-    """
-    It assigns land-use attributes to a building, looking for possible matches in a "other_gdf", a Point GeoDataFrame.
-     
-    Parameters
-    ----------
-    building_geometry: Polygon
-        A building's geometry.
-    other_gdf: Point GeoDataFrame
-        The GeoDataFrame wherein looking for land_use attributes.
-    other_gdf_sindex: Spatial Index
-        The Spatial Index on the other GeoDataFrame.
-    land_use_field: str
-        name of the column in other_gdf wherein the land_use attribute is stored.
-   
-    Returns
-    -------
-    Object
-        The assigned land-use attribute or None if no match is found.
-    """
-
-    possible_matches_index = list(other_source_gdf_sindex.intersection(building_geometry.bounds))
-    possible_matches = other_source_gdf.iloc[possible_matches_index]
-    pm = possible_matches[possible_matches.intersects(building_geometry)]
-    
-    if (len(pm)==0): 
-        return None # no intersecting features in the other_source_gdf
-    
-    # counting nr of features and using the most represented one
-    pm.groupby([land_use_field],as_index=False)["nr"].sum().sort_values(by="nr", ascending=False).reset_index()
-    return pm[land_use_field].iloc[0]
