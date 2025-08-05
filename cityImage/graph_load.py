@@ -17,7 +17,7 @@ from .utilities import fix_multiparts_LineString_gdf, downloader
 pd.set_option("display.precision", 3)
 pd.options.mode.chained_assignment = None
    
-def get_network_fromOSM(place, download_method, network_type = "all", crs = None, distance = 500.0): 
+def get_network_fromOSM(OSMplace, download_method, network_type = "all", crs = None, distance = 500.0): 
     """
     The function downloads and creates a simplified OSMNx graph for a selected area's street network.
     Afterwards, GeoDataFrames for nodes and edges are created, assigning new nodeID and edgeID identifiers.
@@ -72,7 +72,7 @@ def get_network_fromOSM(place, download_method, network_type = "all", crs = None
                 edges_gdf["oneway"] *= 1
     
     edges_gdf = edges_gdf[to_keep]
-    edges_gdf = _resolve_lists(edges_gdf)
+    edges_gdf = _resolve_list_edges_gdf(edges_gdf)
     nodes_gdf, edges_gdf = _project_gdfs(nodes_gdf, edges_gdf, crs)
     nodes_gdf["x"], nodes_gdf["y"] = list(zip(*[(geometry.coords[0][0], geometry.coords[0][1]) for geometry in nodes_gdf.geometry]))
     
@@ -156,11 +156,11 @@ def get_pedestrian_network_fromOSM(OSMplace, download_method, crs = None, distan
     gdf = gdf.drop(["element_type", "osmid"], axis = 1, errors = 'ignore')
     
     nodes_gdf, edges_gdf = get_network_fromGDF(gdf, epsg, other_columns = ["name", "highway", "lit"])
-    edges_gdf = _resolve_list_columns(edges_gdf)
+    edges_gdf = _resolve_list_edges_gdf(edges_gdf)
     
     return nodes_gdf, edges_gdf
 
-def _resolve_list_columns(edges_gdf):
+def _resolve_list_edges_gdf(edges_gdf):
 
     """
     Resolves list-type values in specified columns of an edge GeoDataFrame.
