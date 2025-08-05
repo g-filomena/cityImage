@@ -2,10 +2,10 @@ name: test
 channels:
   - conda-forge
 dependencies:
-  - python=3.10  # or a specific compatible version
+  - python=3.10
   - osmnx
   - python-louvain
-  - igraph
+  - python-igraph
   - dask
   - numba
   - pyvista
