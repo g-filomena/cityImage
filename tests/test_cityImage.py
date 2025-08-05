@@ -247,7 +247,7 @@ def test_landuse():
     crs = "EPSG:25832"
     input_path = 'tests/input/Muenster_buildings.shp'
     buildings_shp, _ = ci.get_buildings_fromFile(input_path, crs = crs, height_field = 'height', base_field = 'base', land_use_field = 'land_use')
-    attributes_gdf = gpd.read_file('input/Muenster_buildings_attributes.shp').to_crs(crs)
+    attributes_gdf = gpd.read_file('tests/input/Muenster_buildings_attributes.shp').to_crs(crs)
 
     adult_entertainment = ['brothel','casino', 'swingerclub', 'stripclub', 'nightclub', 'gambling'] 
     agriculture = ['shed', 'silo', 'greenhouse', 'stable', 'agricultural and forestry', 'greenhouse (botany)', 'building in the botanical garden']
