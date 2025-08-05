@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import geopandas as gpd
 
-from shapely.geometry import Point, LineString, Polygon, MultiPolygon, MultiLineString, MultiPoint
+from shapely.geometry import Point, LineString, Polygon, MultiPolygon, MultiLineString, MultiPoint, GeometryCollection
 from shapely.ops import unary_union
 from shapely.strtree import STRtree
 
@@ -181,7 +181,7 @@ def compute_3d_sight_lines(nodes_gdf: gpd.GeoDataFrame, target_buildings_gdf: gp
             continue
 
         print(" 02 - Only checking obstructions around target building")
-        potentially_visible = obstructions_around_target(potential_sight_lines, targets, obstructions_gdf, num_workers = num_workers)
+        return obstructions_around_target(potential_sight_lines, targets, obstructions_gdf, num_workers = num_workers)
         if potentially_visible.empty:
             continue
 
@@ -289,27 +289,31 @@ def _prepare_3d_sight_lines(nodes_gdf, target_buildings_gdf, obstructions_gdf, d
 
     if simplified_buildings is not None and not simplified_buildings.empty:
         target_points, obstructions_gdf = _use_simplified_buildings(target_points, obstructions_gdf, simplified_buildings)
+    else:
+        target_points.drop('geometry', axis = 1, inplace = True)
   
     if consolidate:
         observer_points_gdf = consolidate_nodes(nodes_gdf, edges_gdf, consolidate_edges_too = False, tolerance = consolidate_tolerance)
     else:
         observer_points_gdf = nodes_gdf.copy()
-    
+
+    target_points.set_geometry('target_geo', inplace = True, crs = nodes_gdf.crs)
     observer_points_gdf['observer_geo'] = observer_points_gdf['geometry']
     observer_points_gdf = observer_points_gdf.drop(["x", "y", "z"], axis = 1)
     obstructions_gdf['building_3d'] = [polygon_2d_to_3d(geometry, base, height) for geometry, base, height in 
                                        zip(obstructions_gdf['geometry'], obstructions_gdf['base'], obstructions_gdf['height'])]
 
-    def add_nearby_building_ids(target_points, buffer=50):
+    def add_nearby_building_ids(buffer=50):
         tbuff = target_points.copy()
         tbuff['geometry'] = tbuff['target_geo'].buffer(buffer)
+        tbuff.set_geometry('geometry', inplace = True, crs = nodes_gdf.crs)
         join = gpd.sjoin(tbuff[['buildingID', 'geometry']], obstructions_gdf[['buildingID', 'geometry']],
                          how='left', predicate='intersects')
         join = join[join['buildingID_left'] != join['buildingID_right']]
         nearby = join.groupby('buildingID_left')['buildingID_right'].agg(list).rename('aroundIDs')
         return target_points.join(nearby, on='buildingID')
-
-    target_points = add_nearby_building_ids(target_points, buffer=50)    
+        
+    target_points = add_nearby_building_ids(buffer=50)    
     
     # Replace NaN or empty lists in 'aroundIDs' column with an empty list; may include target's buildingID (dealt with later)  
     target_points['aroundIDs'] = target_points['aroundIDs'].apply(lambda x: [] if not isinstance(x, (list, np.ndarray)) else x)
@@ -561,7 +565,7 @@ def _prepare_chunk_data(chunk: gpd.GeoDataFrame, targets: gpd.GeoDataFrame):
     
     # Compute cartesian product efficiently
     potential_lines = pd.merge(chunk_data, targets_data, on="key").drop("key", axis=1)
-    print("num potential line", len(potential_lines), "num lines in chunk ", len(chunk_data), "num target", len(targets_data))
+    print("Num potential lines is", len(potential_lines), "; Nodes in chunk:", len(chunk_data), "Num Targets", len(targets_data))
     return potential_lines
 
 ## Step 1 ###########################    
@@ -598,7 +602,7 @@ def obstructions_around_target(potential_sight_lines, targets, obstructions_gdf,
     obstructeds = [r[1] for r in results]
     potentially_visible = pd.concat(potentially_visibles, ignore_index=True)
     obstructed = pd.concat(obstructeds, ignore_index=True)
-    
+    return obstructed
     if not obstructed.empty:
         tmp = obstructions_3d(obstructed, num_workers = num_workers)
         if not tmp.empty:
@@ -765,22 +769,31 @@ def _find_obstructions_2d(sub_chunk, obstructions_gdf, columnIDs):
             if sight_line_geometry.intersects(buildingID_to_geom[buildingID])
         ]
         
+        def extract_coords(geom):
+            """Recursively extracts all (x, y) coordinates from any Shapely geometry."""
+            if geom.is_empty:
+                return []
+            if isinstance(geom, Point):
+                return [(geom.x, geom.y)]
+            elif isinstance(geom, (LineString, MultiLineString)):
+                return list(geom.coords)
+            elif isinstance(geom, (MultiPoint, GeometryCollection)):
+                coords = []
+                for part in geom.geoms:
+                    coords.extend(extract_coords(part))
+                return coords
+            else:
+                return []
+                
         flat_coords, z_intersections = [], []
-        
         # If there are intersections, compute the intersections
-        if intersecting_buildings:
-            flat_coords = []
-            z_intersections = []
-            for buildingID in intersecting_buildings:
-                intersection_geom = sight_line_geometry.intersection(buildingID_to_geom[buildingID])
-                for pt in (
-                    intersection_geom.geoms if isinstance(intersection_geom, MultiPoint)
-                    else intersection_geom.coords if isinstance(intersection_geom, (LineString, MultiLineString))
-                    else [intersection_geom] if isinstance(intersection_geom, Point)
-                    else []
-                ):
-                    flat_coords.append((pt.x, pt.y))  # Coordinates
-                    z_intersections.append(obstructions_gdf.loc[buildingID, 'height'] + obstructions_gdf.loc[buildingID, 'base'])  # Z values
+        for buildingID in intersecting_buildings:
+            intersection_geom = sight_line_geometry.intersection(buildingID_to_geom[buildingID])
+            for x, y in extract_coords(intersection_geom):
+                flat_coords.append((x, y))
+                z_intersections.append(
+                    obstructions_gdf.loc[buildingID, 'height'] + obstructions_gdf.loc[buildingID, 'base'] # Z values
+                )
 
         obstructions_xy.append(flat_coords)
         obstructions_z.append(z_intersections)
