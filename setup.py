@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 with open("README.md", "r", encoding='utf-8') as readme_file:
     readme = readme_file.read()
 
-requirements = ["osmnx>=1.9.1", "python-louvain>=0.16", "pyvista>=0.43.2", "mapclassify>=2.5.0", "igraph>=0.11.6", "tqdm>=4.65.0"]
+requirements = ["dask>=2025.7.0",  "igraph>=0.11.9", "numba>=0.61.2", "osmnx>=2.0.5", "python-louvain>=0.16", "pyvista>=0.45.3", "tqdm>=4.65.0"]
     
 setup(
     name="cityImage",
@@ -11,7 +11,7 @@ setup(
     long_description = readme,
     long_description_content_type="text/markdown",
     packages=find_packages(),
-    version="1.21",
+    version="1.2.2",
     author="Gabriele Filomena",
     author_email="gabriele.filomena@liverpool.ac.uk",
     install_requires=requirements,
