@@ -15,8 +15,8 @@ from matplotlib.colors import LinearSegmentedColormap
 
 place = "Susa, Italy"
 download_method = 'OSMplace'
-epsg_york = 2019
-epsg_susa = 3003
+crs_york = "EPSG:2019"
+crs_susa = "EPSG:3003"
 OSMPolygon = 'Susa (44287)'
 address = 'Susa, Corso Francia'
 distance = 1500
@@ -31,21 +31,21 @@ graph = None
 def test_loadOSM():
     global nodes_gdf
     global edges_gdf
-    global epsg_susa
+    global crs_susa
     
-    nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", epsg = epsg_susa)
+    nodes_gdf, edges_gdf = ci.get_network_fromOSM(place, 'OSMplace', network_type = "all", crs = crs_susa)
     polygon = ci.convex_hull_wgs(edges_gdf)
-    _, _ = ci.get_network_fromOSM(polygon, 'polygon', network_type = "all", epsg = epsg_susa)
-    _, _ = ci.get_network_fromOSM(address, 'distance_from_address', network_type = "all", epsg = epsg_susa, distance = distance)
+    _, _ = ci.get_network_fromOSM(polygon, 'polygon', network_type = "all", crs = crs_susa)
+    _, _ = ci.get_network_fromOSM(address, 'distance_from_address', network_type = "all", crs = crs_susa, distance = distance)
     
 def test_loadFile_clean():  
     global nodes_gdf_y
     global edges_gdf_y
-    global epsg_york
+    global crs_york
     input_path = 'tests/input/York_street_network.shp'
     dict_columns = {"highway": "type", "oneway": "oneway", "lanes" :None, 
                 "maxspeed": "maxspeed", "name": "name"}    
-    nodes_gdf_y, edges_gdf_y = ci.get_network_fromFile(input_path, epsg_york, dict_columns = dict_columns, other_columns = [])
+    nodes_gdf_y, edges_gdf_y = ci.get_network_fromFile(input_path, crs_york, dict_columns = dict_columns, other_columns = [])
     nodes_gdf_y, edges_gdf_y = ci.clean_network(nodes_gdf_y, edges_gdf_y, dead_ends = True, remove_islands = True, 
                                                 same_vertexes_edges = True, self_loops = True, fix_topology = True)
     
@@ -53,11 +53,11 @@ def test_graph():
     global nodes_gdf
     global edges_gdf
     global graph
-    global epsg_susa
+    global crs_susa
     
-    graph = ci.graph_fromGDF(nodes_gdf, edges_gdf, nodeID = 'nodeID')
+    graph = ci.graph_fromGDF(nodes_gdf, edges_gdf, nodeID_column ='nodeID')
     multi_graph_fromGDF = ci.multiGraph_fromGDF(nodes_gdf, edges_gdf, 'nodeID')
-    nodes_dual, edges_dual = ci.dual_gdf(nodes_gdf, edges_gdf, epsg = epsg_susa, oneway = False, angle = 'degree')
+    nodes_dual, edges_dual = ci.dual_gdf(nodes_gdf, edges_gdf, crs = crs_susa, oneway = False, angle = 'degree')
     dual_graph = ci.dual_graph_fromGDF(nodes_dual, edges_dual)
 
 def test_angles():
@@ -76,10 +76,10 @@ def test_centrality():
     global graph
     global nodes_gdf
     global edges_gdf
-    global epsg_susa
+    global crs_susa
    
     weight = 'length'
-    services = ox.features_from_address(address, tags = {'amenity':True}, dist = distance).to_crs(epsg=epsg_susa)
+    services = ox.features_from_address(address, tags = {'amenity':True}, dist = distance).to_crs(crs_susa)
     services = services[services['geometry'].geom_type == 'Point']
     graph = ci.weight_nodes(nodes_gdf, services, graph, field_name = 'services', radius = 50)
     
@@ -100,12 +100,12 @@ def test_centrality():
 def test_regions():
     global nodes_gdf
     global edges_gdf
-    global epsg_susa
+    global crs_susa
     
     nodes_gdf, edges_gdf = ci.clean_network(nodes_gdf, edges_gdf, dead_ends = True, remove_islands = True, 
                                                 same_vertexes_edges = False, self_loops = False, fix_topology = False)
-    graph_susa = ci.graph_fromGDF(nodes_gdf, edges_gdf, nodeID = 'nodeID')
-    nodes_dual, edges_dual = ci.dual_gdf(nodes_gdf, edges_gdf, epsg = epsg_susa, oneway = False, angle = 'degree')
+    graph_susa = ci.graph_fromGDF(nodes_gdf, edges_gdf, nodeID_column ='nodeID')
+    nodes_dual, edges_dual = ci.dual_gdf(nodes_gdf, edges_gdf, crs = crs_susa, oneway = False, angle = 'degree')
     dual_graph = ci.dual_graph_fromGDF(nodes_dual, edges_dual)
     
     dual_regions = ci.identify_regions(dual_graph, edges_gdf, weight = None)
@@ -125,9 +125,9 @@ def test_barriers():
     global edges_gdf
     global barriers_gdf
     global place
-    global epsg_susa
+    global crs_susa
     
-    barriers_gdf = ci.get_barriers(place, download_method, epsg = epsg_susa, parks_min_area = 200)
+    barriers_gdf = ci.get_barriers(place, download_method, crs = crs_susa, parks_min_area = 200)
     # assign barriers to street network
     edges_gdf_updated = ci.along_within_parks(edges_gdf, barriers_gdf)
     edges_gdf_updated = ci.along_water(edges_gdf_updated, barriers_gdf)
@@ -136,15 +136,15 @@ def test_barriers():
  
 def test_landmarks():
     
-    global epsg_susa
+    global crs_susa
     global address
     global location
     global nodes_gdf
     global edges_gdf
     global buildings_gdf
     
-    _ = ci.get_buildings_fromOSM(address, download_method = 'distance_from_address', epsg = epsg_susa, distance = 1000)
-    _ = ci.get_buildings_fromOSM(location, download_method = 'distance_from_point', epsg = epsg_susa, distance = 1000)
+    _ = ci.get_buildings_fromOSM(address, download_method = 'distance_from_address', crs = crs_susa, distance = 1000)
+    _ = ci.get_buildings_fromOSM(location, download_method = 'distance_from_point', crs = crs_susa, distance = 1000)
     
     # weights
     global_indexes_weights = {'3dvis': 0.50, 'fac': 0.30, 'height': 0.20, 'area': 0.30, '2dvis':0.30, 'neigh': 0.20, 'road': 0.20}
@@ -153,20 +153,26 @@ def test_landmarks():
     local_indexes_weights = {'3dvis': 0.50, 'fac': 0.30, 'height': 0.20, 'area': 0.40, '2dvis': 0.00, 'neigh': 0.30, 'road': 0.30}
     local_components_weights = {'vScore': 0.25, 'sScore' : 0.35, 'cScore':0.10, 'pScore': 0.30}
     
-    buildings_gdf = ci.get_buildings_fromOSM(place, download_method = 'OSMplace', epsg = epsg_susa)
+    buildings_gdf = ci.get_buildings_fromOSM(place, download_method = 'OSMplace', crs = crs_susa)
     buildings_gdf['height'] = np.random.choice([10, 1, 50], buildings_gdf.shape[0]) 
     
     # testing with only 5 nodes, to avoid time issues
-    sight_lines = ci.compute_3d_sight_lines(nodes_gdf.iloc[:7], buildings_gdf, distance_along = 300,
-                                                         distance_min_observer_target = 300)
-    # historical elements                                                    
-    historic = ci.get_historic_buildings_fromOSM(place, download_method = 'OSMplace', epsg = epsg_susa)
-    
+    sight_lines_pars = {"distance_along" : 300, "min_observer_target_distance" : 400}
+    simplification_pars = {"simplified_target_buildings" : gpd.GeoDataFrame, "consolidate" : True, "consolidate_tolerance" : 15}
+    processing_pars = {"sight_lines_chunk_size" : 1000000, "num_workers" : 1, "with_pyvista" : False}
+        
+    sight_lines = ci.compute_3d_sight_lines(nodes_gdf = nodes_gdf.iloc[:7], target_buildings_gdf = buildings_gdf, obstructions_buildings_gdf = buildings_gdf, 
+                                        edges_gdf = edges_gdf, city_name = 'York', **sight_lines_pars, **simplification_pars, **processing_pars)
+    processing_pars = {"sight_lines_chunk_size" : 1000000, "num_workers" : 1, "with_pyvista" : True}
+    sight_lines = ci.compute_3d_sight_lines(nodes_gdf = nodes_gdf.iloc[:7], target_buildings_gdf = buildings_gdf, obstructions_buildings_gdf = buildings_gdf, edges_gdf = edges_gdf,
+                                            city_name = 'York', **sight_lines_pars, **simplification_pars, **processing_pars)
+        # historical elements                                                    
+    historic = ci.get_historic_buildings_fromOSM(place, download_method = 'OSMplace', crs = crs_susa)
     # scores    
     buildings_gdf = ci.structural_score(buildings_gdf, buildings_gdf, edges_gdf, advance_vis_expansion_distance = 100, neighbours_radius = 100)   
 
     buildings_gdf = ci.cultural_score(buildings_gdf, historic_elements_gdf = historic, from_OSM = False)
-    buildings_gdf = ci.pragmatic_score(buildings_gdf, research_radius = 200)
+    buildings_gdf = ci.pragmatic_score(buildings_gdf, search_radius = 200)
     buildings_gdf = ci.visibility_score(buildings_gdf, sight_lines)
     
     buildings_gdf = ci.compute_global_scores(buildings_gdf, global_indexes_weights, global_components_weights)
@@ -232,17 +238,17 @@ def test_plot():
                     black_background = True, cmap = cmap, figsize = (15, 5), title = 'Barriers',
                     **base_map_dict)                        
      
-    cmap = ci.rand_cmap(nlabels = len(buildings_gdf.land_use.unique()))
-    plot_buildings = ci.plot_gdf(buildings_gdf, column = 'land_use', black_background = True, legend = True, 
+    cmap = ci.rand_cmap(nlabels = len(buildings_gdf.land_use_raw.unique()))
+    plot_buildings = ci.plot_gdf(buildings_gdf, column = 'land_use_raw', black_background = True, legend = True, 
                              figsize = (25,10))
 
 def test_landuse():
 
-    epsg = 25832
+    crs = "EPSG:25832"
     input_path = 'tests/input/Muenster_buildings.shp'
-    buildings_shp, _ = ci.get_buildings_fromFile(input_path, epsg = epsg, height_field = 'height', base_field = 'base', land_use_field = 'land_use')
-    attributes_gdf = gpd.read_file('tests/input/Muenster_buildings_attributes.shp').to_crs('EPSG:'+str(epsg))  
-    
+    buildings_shp, _ = ci.get_buildings_fromFile(input_path, crs = crs, height_field = 'height', base_field = 'base', land_use_field = 'land_use')
+    attributes_gdf = gpd.read_file('input/Muenster_buildings_attributes.shp').to_crs(crs)
+
     adult_entertainment = ['brothel','casino', 'swingerclub', 'stripclub', 'nightclub', 'gambling'] 
     agriculture = ['shed', 'silo', 'greenhouse', 'stable', 'agricultural and forestry', 'greenhouse (botany)', 'building in the botanical garden']
     attractions = ['attractions', 'attraction','aquarium', 'monument', 'gatehouse', 'terrace', 'tower', 'attraction and Leisure',
@@ -298,11 +304,9 @@ def test_landuse():
                 'education_research', 'emergency_service', 'general_education', 'hospitality', 'industrial', 'medical_care', 
                 'military_detainment', 'other', 'public', 'religious', 'residential', 'social', 'sport', 'transport', 'utilities']
      
-    attributes_gdf = ci.classify_land_use(attributes_gdf, new_land_use_field = 'land_use', land_use_field = 'lu_eng', categories= categories, strings = strings)   
-    attributes_gdf['land_use'] = attributes_gdf['land_use'] .str.lower()   
-    buildings_gdf = ci.land_use_from_other_gdf(buildings_shp, other_gdf =  attributes_gdf, new_land_use_field = 'land_use', land_use_field = 'land_use')
-    _ = ci.polygons_gdf_multiparts_to_singleparts(attributes_gdf)
-    
-    
+    attributes_gdf = ci.classify_land_use(attributes_gdf, raw_land_use_column = 'lu_eng', new_land_use_column = 'land_use', categories= categories, 
+                                          strings = strings)   
+    attributes_gdf['land_use'] = attributes_gdf['land_use'] .str.lower()
+    _ = ci.polygons_gdf_multiparts_to_singleparts(attributes_gdf)    
 
 
