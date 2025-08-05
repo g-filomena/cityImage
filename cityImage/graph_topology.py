@@ -59,7 +59,7 @@ def fix_network_topology(nodes_gdf, edges_gdf, edgeID_column = 'edgeID'):
         # lines intersecting the given line
         tmp = possible_matches[possible_matches.intersects(line_geometry)]
         tmp = tmp.drop(ix, axis = 0)
-        union = tmp.unary_union
+        union = tmp.union_all()
         
         # find actual intersections
         actual_intersections = []
