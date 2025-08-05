@@ -3,13 +3,13 @@ channels:
   - conda-forge
 dependencies:
   - python=3.10  # or a specific compatible version
-  - shapely
-  - geopandas
   - osmnx
-  - networkx
-  - matplotlib
   - python-louvain
-  - mapclassify
+  - igraph
+  - dask
+  - numba
+  - pyvista
+  - tqdm
   # testing
   - pytest
   - pytest-cov
