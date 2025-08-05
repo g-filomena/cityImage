@@ -402,7 +402,7 @@ def fix_multiparts_LineString_gdf(gdf):
 
     return gdf
  
-def remove_lists_columns(df):
+def resolve_lists_columns(df):
     """
     For each cell in the DataFrame, if the cell contains a list, update it to keep only the first element of the list.
 
@@ -441,28 +441,37 @@ def convert_numeric_columns(df):
     
 from shapely.geometry import MultiPolygon
 
-def gdf_multipolygon_to_polygon(gdf):
+def gdf_multipolygon_to_polygon(gdf, columnID="buildingID"):
     """
-    Convert MultiPolygon geometries to Polygon where possible, and explode 
-    remaining MultiPolygons into individual Polygons. Recomputes the 'area' column.
+    Processes a GeoDataFrame to ensure that all geometries are simple Polygons and that the specified ID column contains unique values.
+
+    Workflow:
+    - Converts all MultiPolygons with only one part to a Polygon.
+    - Explodes any remaining MultiPolygons into separate Polygon features.
+    - Resets the DataFrame index, then assigns the new unique index values to the specified columnID, guaranteeing uniqueness.
+    - Recomputes and updates the 'area' column for each geometry.
 
     Parameters
     ----------
     gdf : GeoDataFrame
-        A GeoDataFrame where the 'geometry' column contains geometries of type 
-        MultiPolygon or Polygon.
+        Input GeoDataFrame containing Polygon and/or MultiPolygon geometries.
+    columnID : str, default 'buildingID'
+        The name of the column to be overwritten with new unique integer IDs after explode/reset.
 
     Returns
     -------
     GeoDataFrame
-        Updated GeoDataFrame with:
-        - MultiPolygons containing a single geometry converted to Polygons.
-        - Remaining MultiPolygons exploded into individual Polygons.
-        - Recomputed 'area' column for all geometries.
-    """
+        GeoDataFrame with:
+        - Only Polygon geometries (no MultiPolygons).
+        - The specified columnID overwritten as unique, sequential integer IDs.
+        - The 'area' column updated for all geometries.
 
+    Notes
+    -----
+    The original values in the specified columnID will be overwritten. If you want to preserve them,
+    create a copy before calling this function.
+    """
     def convert_multipolygon_to_polygon(geometry):
-        # Convert MultiPolygon with a single part into Polygon
         if isinstance(geometry, MultiPolygon) and len(geometry.geoms) == 1:
             return geometry.geoms[0]
         return geometry
@@ -470,10 +479,14 @@ def gdf_multipolygon_to_polygon(gdf):
     gdf = gdf.copy()
     gdf["geometry"] = gdf["geometry"].apply(convert_multipolygon_to_polygon)
 
-    # If any MultiPolygons remain, explode them
+    # Explode any remaining MultiPolygons into individual Polygons
     if any(gdf["geometry"].apply(lambda geom: isinstance(geom, MultiPolygon))):
-        gdf = gdf.explode(index_parts=False)
+        gdf = gdf.explode(index_parts=False, ignore_index=True)
 
+    # Reset index and assign unique IDs to the specified column
+    gdf = gdf.reset_index(drop=True)
+    if columnID in gdf.columns:
+        gdf[columnID] = gdf.index
     # Recompute area for all geometries
     gdf["area"] = gdf.geometry.area
 
