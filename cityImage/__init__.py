@@ -20,4 +20,4 @@ from .regions import *
 from .utilities import *
 from .visibility import *
 
-__version__ = '1.21'
+__version__ = '1.2.2'
