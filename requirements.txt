@@ -1,8 +1,9 @@
-mapclassify>=2.5.0
-osmnx>=1.9.1
+dask>=2025.7.0
+igraph>=0.11.9
+numba>=0.61.2
+osmnx>=2.0.5
 python-louvain>=0.16
-pyvista>=0.43
-igraph>=0.11.6
+pyvista>=0.45.3
 tqdm>=4.65.0
 
 
