@@ -8,7 +8,7 @@ from shapely.ops import linemerge, polygonize, polygonize_full, unary_union, nea
 from .utilities import gdf_from_geometries, downloader
 pd.set_option("display.precision", 3)
 
-def road_barriers(OSMplace, download_method, distance = 500.0, epsg = None, include_primary = False, include_secondary = False):
+def road_barriers(OSMplace, download_method, distance = 500.0, crs = None, include_primary = False, include_secondary = False):
     """
     The function downloads major roads from OSM. These can be considered to be barrier to pedestrian movement or, at least, to structure people's cognitive Image of 
     the City. If 'include_primary' is true, the function considers also primary roads, beyond motorway and trunk roads.
@@ -27,8 +27,8 @@ def road_barriers(OSMplace, download_method, distance = 500.0, epsg = None, incl
         It indicates the method that should be used for downloading the data.
     distance: float
         Used when download_method == "distance from address" or == "distance from point".
-    epsg: int
-        Epsg of the area considered; if None OSMNx is used for the projection.
+    crs : str, or pyproj.CRS
+        Coordinate Reference System for the study area. Can be a string (e.g. 'EPSG:32633'), or a pyproj.CRS object.
     include_primary: boolean
         When true, it includes primary roads as barriers.
     include_secondary: boolean
@@ -40,7 +40,6 @@ def road_barriers(OSMplace, download_method, distance = 500.0, epsg = None, incl
         The road barriers.
     """
     
-    crs = 'EPSG:' + str(epsg)
     to_keep = ['trunk', 'motorway']
     if include_primary:
         to_keep.append('primary')
@@ -62,7 +61,7 @@ def road_barriers(OSMplace, download_method, distance = 500.0, epsg = None, incl
        
     return road_barriers
     
-def water_barriers(OSMplace, download_method, distance = 500.0, lakes_area = 1000, epsg = None):
+def water_barriers(OSMplace, download_method, distance = 500.0, lakes_area = 1000, crs = None):
     """
     The function downloads water bodies from OSM. Lakes, rivers and see coastlines can be considered structuring barriers.
         
@@ -111,7 +110,7 @@ def water_barriers(OSMplace, download_method, distance = 500.0, lakes_area = 100
     
     # sea   
     tags = {"natural":"coastline"}
-    sea = downloader(place = place, download_method = download_method, tags = tags, distance = distance).to_crs(crs)
+    sea = downloader(OSMplace = OSMplace, download_method = download_method, tags = tags, distance = distance).to_crs(crs)
     sea = sea.union_all()      
     sea = _simplify_barrier(sea)
     sea = gdf_from_geometries(sea, crs)
