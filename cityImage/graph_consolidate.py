@@ -50,7 +50,7 @@ def consolidate_nodes(nodes_gdf, edges_gdf, nodeID_column = 'nodeID', consolidat
     graph = graph_fromGDF(nodes_gdf, edges_gdf, nodeID_column = nodeID_column)
 
     # Step 1: Cluster nodes within tolerance
-    clusters = nodes_gdf.buffer(tolerance).unary_union
+    clusters = nodes_gdf.buffer(tolerance).union_all()
     clusters = clusters.geoms if hasattr(clusters, "geoms") else [clusters]
     clusters = gpd.GeoDataFrame(geometry=gpd.GeoSeries(clusters, crs=nodes_gdf.crs))
     clusters["x"] = clusters.geometry.centroid.x
