@@ -175,8 +175,8 @@ def _finalize_dataframes(nodes_gdf, edges_gdf, crs, nodeID_column = 'nodeID', ed
     edges_gdf.index.name = None
     nodes_gdf = convert_numeric_columns(nodes_gdf)
     edges_gdf = convert_numeric_columns(edges_gdf)
-    nodes_gdf.crs = crs
-    edges_gdf.crs = crs
+    nodes_gdf.set_crs(crs, inplace = True)
+    edges_gdf.set_crs(crs, inplace = True)
     return nodes_gdf, edges_gdf
  
 def _are_nodes_simplified(nodes_gdf, edges_gdf, nodes_to_keep_regardless = []):
@@ -372,7 +372,7 @@ def simplify_graph(nodes_gdf, edges_gdf, nodeID_column = 'nodeID', edgeID_column
         
         # pseudo junction identified
         first_edge, second_edge = tmp.iloc[0], tmp.iloc[1]
-        nodes_gdf, edges_gdf = _merge_pair_pseudo_edges(first_edge, second_edge, nodeID, nodes_gdf, edges_gdf)
+        nodes_gdf, edges_gdf = _merge_pair_pseudo_edges(first_edge, second_edge, nodes_gdf, edges_gdf, nodeID)
         
     edges_gdf = edges_gdf[edges_gdf['u'] != edges_gdf['v']] #eliminate node-lines
 
