@@ -76,7 +76,7 @@ def get_buildings_fromFile(input_path, crs, case_study_area = None, distance_fro
         obstructions_gdf["land_use_raw"] = obstructions_gdf[land_use_field]
     else:
         obstructions_gdf["land_use_raw"] = None
-
+    
     # dropping small buildings and buildings with null height
     obstructions_gdf = obstructions_gdf[obstructions_gdf["area"] >= min_area]
     if "height" in obstructions_gdf.columns:
@@ -144,6 +144,7 @@ def get_buildings_fromOSM(OSMplace, download_method: str, crs = None, distance =
 
     # remove the empty geometries
     buildings_gdf = buildings_gdf[~buildings_gdf['geometry'].is_empty]
+    buildings_gdf = gdf_multipolygon_to_polygon(buildings_gdf)
     # replace 'yes' with NaN in 'building' column
     buildings_gdf['building'] = buildings_gdf['building'].replace('yes', np.nan)
     # fill missing values in 'building' column with 'amenity' values
@@ -370,6 +371,7 @@ def structural_score(buildings_gdf, obstructions_gdf, edges_gdf, advance_vis_exp
         The updated buildings GeoDataFrame.
     """  
     buildings_gdf = buildings_gdf.copy()
+    assert_all_polygons(buildings_gdf)
     
     # remove z coordinates if they are there already - issue with 2dvis
     if len(buildings_gdf.geometry.iloc[0].exterior.coords[0]) == 3: 
@@ -785,8 +787,6 @@ def compute_local_scores(buildings_gdf, local_indexes_weights, local_components_
     >>> local_components_weights = {"vScore": 0.25, "sScore": 0.35, "cScore":0.10 , "pScore": 0.30} 
     """  
     
-    buildings_gdf = buildings_gdf.set_index("buildingID").copy()
-    buildings_gdf.index.name = None
     sindex = buildings_gdf.sindex # spatial index
     
     # Validate that local_components_weights sum to 1.0
@@ -860,7 +860,7 @@ def _building_local_score(building_geometry, buildingID, buildings_gdf, building
     
     buffer = building_geometry.buffer(radius)
     possible_matches_index = list(buildings_gdf_sindex.intersection(buffer.bounds))
-    matches = buildings_gdf.iloc[list(sindex.intersection(buffer.bounds))].copy()
+    matches = buildings_gdf.iloc[list(buildings_gdf_sindex.intersection(buffer.bounds))].copy()
     matches = matches[matches.intersects(buffer)]
                 
     # Rescale all values dynamically if the column exists in matches
@@ -907,3 +907,9 @@ def _building_local_score(building_geometry, buildingID, buildings_gdf, building
 
     # Return the local score for the specified building
     return round(matches.loc[buildingID, "lScore"], 3)
+
+def assert_all_polygons(gdf: gpd.GeoDataFrame):
+    
+    invalid = gdf[~gdf.geometry.apply(lambda g: isinstance(g, (Polygon)))]
+    if not invalid.empty:
+        raise TypeError(f"Found non-polygon geometries: {invalid.geometry.geom_type.unique().tolist()}") 
