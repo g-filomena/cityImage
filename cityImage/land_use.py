@@ -51,6 +51,7 @@ def classify_land_use(buildings_gdf, raw_land_use_column, new_land_use_column, c
             return reclassify_single(value)
 
     # Apply reclassification to each row
+    buildings_gdf[new_land_use_column] = None
     buildings_gdf[new_land_use_column] = buildings_gdf[raw_land_use_column].apply(reclassify_value)
 
     return buildings_gdf
