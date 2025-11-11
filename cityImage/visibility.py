@@ -230,7 +230,9 @@ def compute_3d_sight_lines(nodes_gdf: gpd.GeoDataFrame, target_buildings_gdf: gp
     if consolidate:
         print(" 04 - Final check")
         sight_lines = _last_check(tmp_sight_lines, obstructions_gdf, obstructions_sindex, meshes, nodes_gdf, num_workers = num_workers)
-    
+    else:
+        sight_lines = tmp_sight_lines
+        
     return sight_lines
 
 ## Preparation ###########################
