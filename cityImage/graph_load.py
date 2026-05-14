@@ -129,7 +129,7 @@ def get_pedestrian_network_fromOSM(OSMplace, download_method, crs = None, distan
         "abandoned", "bus_guideway", "construction",
         "motor", "no", "planned", "platform", "proposed", 
         "raceway", "razed", "motorway_junction", "motorway", "trunk_link", 
-        'emergency_bay', 'bus_bay', "trunk", 'motorway_link', "busway", "cycleway",
+        'emergency_bay', 'bus_bay', "trunk", 'motorway_link', "busway",
     ]
     
     exclude_sidewalk = ["no", "none"]
@@ -143,6 +143,10 @@ def get_pedestrian_network_fromOSM(OSMplace, download_method, crs = None, distan
         (
             (~gdf["sidewalk"].isin(exclude_sidewalk)) |
             (gdf["highway"] == "residential")
+        ) &
+        ~(
+            (gdf["highway"] == "cycleway") &
+            ((gdf["foot"].isna()) | (gdf["foot"] == "no"))
         )
     ]
 
@@ -155,7 +159,7 @@ def get_pedestrian_network_fromOSM(OSMplace, download_method, crs = None, distan
     gdf.reset_index(inplace = True)
     gdf = gdf.drop(["element_type", "osmid"], axis = 1, errors = 'ignore')
     
-    nodes_gdf, edges_gdf = get_network_fromGDF(gdf, epsg, other_columns = ["name", "highway", "lit"])
+    nodes_gdf, edges_gdf = get_network_fromGDF(gdf, crs, other_columns = ["name", "highway", "lit"])
     edges_gdf = _resolve_list_edges_gdf(edges_gdf)
     
     return nodes_gdf, edges_gdf
