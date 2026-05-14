@@ -9,7 +9,7 @@ pd.set_option("display.precision", 3)
 
 from .graph import graph_fromGDF
 
-def consolidate_nodes(nodes_gdf, edges_gdf, nodeID_column = 'nodeID', consolidate_edges_too = False, tolerance=20):
+def consolidate_nodes(nodes_gdf, edges_gdf, nodeID_column = 'nodeID', consolidate_edges_too = False, tolerance = 20):
     """
     Consolidates nodes in a spatial network that are within a given distance (tolerance), preserving topology and unclustered nodes.
 
@@ -76,13 +76,14 @@ def consolidate_nodes(nodes_gdf, edges_gdf, nodeID_column = 'nodeID', consolidat
     # Step 4: Consolidate nodes, but preserve unclustered ones
     consolidated_nodes = []
     has_z = 'z' in nodes_gdf.columns
-
+    oldIDs_column = "old_"+nodeID_column
+    
     for new_nodeID, nodes_subset in gdf.groupby("new_nodeID"):
         old_nodeIDs = nodes_subset[nodeID_column].to_list()
         cluster_x, cluster_y = nodes_subset.iloc[0][["x", "y"]]
 
         new_node = {
-            "old_nodeIDs": old_nodeIDs,
+            oldIDs_column: old_nodeIDs,
             "x": cluster_x,
             "y": cluster_y,
             nodeID_column: new_nodeID,
@@ -108,7 +109,7 @@ def consolidate_nodes(nodes_gdf, edges_gdf, nodeID_column = 'nodeID', consolidat
     )
 
     if consolidate_edges_too:
-        return consolidated_nodes_gdf, consolidate_edges(edges_gdf, consolidated_nodes_gdf)
+        return consolidated_nodes_gdf, consolidate_edges(edges_gdf, consolidated_nodes_gdf, nodeID_column)
         
     return consolidated_nodes_gdf
     
