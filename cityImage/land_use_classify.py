@@ -374,3 +374,61 @@ def classify_land_uses_intoDMAs(
     dims_series = gdf[land_uses_column].apply(_dims_from_macros)
     gdf['DMA'] = dims_series.apply(_dims_to_dma_label)
     return gdf
+
+def classify_land_use(
+    buildings_gdf,
+    raw_land_use_column: str,
+    new_land_use_column: str,
+    categories: list[list[object]],
+    strings: list[str],
+):
+    """Backward-compatible wrapper for the legacy land-use classifier.
+
+    Parameters match the historical public API used by notebooks/tests:
+    `categories[i]` contains raw values and `strings[i]` is the target class.
+
+    The function supports scalar cells and list-like cells. Unmatched values are
+    preserved as-is, which avoids silent data loss in older workflows.
+    """
+    if len(categories) != len(strings):
+        raise ValueError("categories and strings must have the same length")
+
+    gdf = buildings_gdf.copy()
+
+    lookup = {}
+    for raw_values, target in zip(categories, strings):
+        for raw_value in raw_values:
+            lookup[raw_value] = target
+            if raw_value is not None:
+                lookup[str(raw_value).strip().lower()] = target
+
+    def _classify_one(value):
+        if value is None:
+            return None
+        try:
+            if pd.isna(value):
+                return None
+        except Exception:
+            pass
+        return lookup.get(value, lookup.get(str(value).strip().lower(), value))
+
+    def _classify_cell(value):
+        values = _to_list(value)
+        if not values:
+            return None
+        if len(values) == 1:
+            return _classify_one(values[0])
+
+        out = []
+        seen = set()
+        for item in values:
+            classified = _classify_one(item)
+            if classified is None:
+                continue
+            if classified not in seen:
+                seen.add(classified)
+                out.append(classified)
+        return out
+
+    gdf[new_land_use_column] = gdf[raw_land_use_column].apply(_classify_cell)
+    return gdf
