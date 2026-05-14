@@ -13,11 +13,17 @@ from .graph_clean import *
 from .graph_load import *
 from .graph_consolidate import *
 from .graph_topology import *
-from .landmarks import *
-from .land_use import*
+from .buildings_height import *
+from .buildings_landmarks import *
+from .buildings_load import*
+from .buildings_visibility import *
+from .land_use_assign import*
+from .land_use_classify import*
+from .land_use_derive import*
+from .land_use_tags import*
+from .land_use_utils import*
 from .plot import *
 from .regions import *
 from .utilities import *
-from .visibility import *
 
 __version__ = '1.2.2'
