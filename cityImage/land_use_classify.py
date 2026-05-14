@@ -382,13 +382,14 @@ def classify_land_use(
     categories: list[list[object]],
     strings: list[str],
 ):
-    """Backward-compatible wrapper for the legacy land-use classifier.
+    """Classify sparse attribute values using explicit category lists.
 
-    Parameters match the historical public API used by notebooks/tests:
+    This wrapper is kept because older examples/tests call `classify_land_use`.
+    New code should prefer `classify_sparse_land_uses` for non-OSM sparse
+    land-use attributes.
+
     `categories[i]` contains raw values and `strings[i]` is the target class.
-
-    The function supports scalar cells and list-like cells. Unmatched values are
-    preserved as-is, which avoids silent data loss in older workflows.
+    Scalar and list-like cells are supported. Unmatched values are preserved.
     """
     if len(categories) != len(strings):
         raise ValueError("categories and strings must have the same length")
