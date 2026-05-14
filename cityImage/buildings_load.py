@@ -9,6 +9,7 @@ pd.set_option("display.precision", 3)
 
 from .utilities import downloader, gdf_multipolygon_to_polygon
 from .land_use_derive import derive_land_uses_raw_fromOSM
+from .land_use_classify import classify_land_uses_raws_into_OSMgroups
 
 def get_buildings_fromFile(input_path, crs, case_study_area = None, distance_from_center = 1000, min_area = 200, min_height = 5, height_field = None, base_field = None, 
     land_use_field = None):
@@ -97,75 +98,42 @@ def get_buildings_fromFile(input_path, crs, case_study_area = None, distance_fro
     return buildings_gdf, obstructions_gdf
  
 def get_buildings_fromOSM(OSMplace, download_method: str, crs=None, distance=1000, min_area=200):
-    """    
-    Download and clean building footprints from OSM and return a buildings GeoDataFrame
-    for the area of interest. Uses OSMnx for download/projection and derive_land_use_raw
-    to build a land_use_raw list per building.
-            
-    Parameters
-    ----------
-    OSMplace : str, tuple, Shapely Polygon
-        Name of cities or areas in OSM: 
-        - when using "distance_from_point" provide a (lat, lon) tuple;
-        - when using "distance_from_address" provide an existing OSM address;
-        - when using "OSMplace" provide an OSM place name with polygon boundaries;
-        - when using "polygon" provide a Shapely Polygon in EPSG:4326.
-    download_method : str, {"distance_from_address", "distance_from_point", "OSMplace", "polygon"}
-        Method used to download the data.
-    crs : str or pyproj.CRS, optional
-        Target CRS for the study area (e.g. 'EPSG:32633'). If None, use OSMnx projection.
-    distance : float, optional
-        Used when download_method == "distance_from_address" or "distance_from_point".
-    min_area : float, optional
-        Minimum area threshold (in CRS units, e.g. square meters) for a building
-        to be included. Default is 200.
-    
-    Returns
-    -------
-    buildings_gdf : GeoDataFrame
-        Polygon GeoDataFrame containing building footprints with:
-        - geometry
-        - historic (if present, else NA)
-        - land_use_raw (list of land-use descriptors)
-        - buildingID (int)
-    """   
-
-    # 1) Download only building features
+    """Download, clean and classify OSM building footprints."""
     tags = {"building": True}
+
     buildings_gdf = downloader(
         OSMplace=OSMplace,
         download_method=download_method,
         tags=tags,
-        distance=distance
+        distance=distance,
     )
 
-    # 2) CRS handling
     if crs is None:
         buildings_gdf = ox.projection.project_gdf(buildings_gdf)
     else:
         buildings_gdf = buildings_gdf.to_crs(crs)
 
-    # 3) Remove empty geometries
     buildings_gdf = buildings_gdf[~buildings_gdf["geometry"].is_empty]
 
-    # 4) Derive land_use_raw as list using building:use:*, amenity, shop, etc.
-    buildings_gdf = derive_land_uses_raw_fromOSM(
+    buildings_gdf = derive_land_uses_raw_fromOSM(buildings_gdf, default="residential")
+    buildings_gdf = classify_land_uses_raws_into_OSMgroups(
         buildings_gdf,
-        default="residential"
+        land_uses_raw_column="land_uses_raw",
+        new_group_column="land_uses",
     )
-    
-    # 7) Keep only final columns for output
-    buildings_gdf = buildings_gdf[["geometry", "land_uses_raw"]]
 
-    # 8) Explode multipolygons and assign buildingID
+    buildings_gdf = buildings_gdf[["geometry", "land_uses_raw", "land_uses"]]
+
     buildings_gdf = gdf_multipolygon_to_polygon(buildings_gdf)
+
     buildings_gdf["area"] = buildings_gdf.geometry.area
     buildings_gdf = buildings_gdf[buildings_gdf["area"] >= min_area]
+
     buildings_gdf = buildings_gdf.reset_index(drop=True)
     buildings_gdf["buildingID"] = buildings_gdf.index.values.astype(int)
-    
+
     return buildings_gdf
- 
+
 def select_buildings_by_study_area(larger_buildings_gdf, method='polygon', polygon=None, distance=1000):
     """
     Selects buildings from a GeoDataFrame that fall within a defined study area.
