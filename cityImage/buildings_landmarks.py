@@ -4,11 +4,7 @@ import osmnx as ox
 import pandas as pd
 import numpy as np
 import geopandas as gpd
-import pyvista as pv
-
 from typing import Any
-import numpy as np
-import pandas as pd
 
 from shapely.geometry import Point, Polygon, mapping
 from shapely.ops import linemerge, unary_union
@@ -171,7 +167,7 @@ def _facade_area(building_geometry, building_height):
     width = min(d)
     return width*building_height
     
-def _is_historicoricoric(value: Any) -> bool:
+def _is_historic(value: Any) -> bool:
     if value is None:
         return False
     try:
@@ -217,7 +213,7 @@ def get_historic_buildings_fromOSM(
     historic_gdf = historic_gdf[["geometry", "historic", "heritage"]].copy()
     historic_gdf = historic_gdf[historic_gdf.geometry.notna()].copy()
 
-    mask = historic_gdf["historic"].apply(_is_historicoric) | historic_gdf["heritage"].apply(_is_historicoric)
+    mask = historic_gdf["historic"].apply(_is_historic) | historic_gdf["heritage"].apply(_is_historic)
     historic_gdf = historic_gdf.loc[mask].copy()
 
     if len(historic_gdf) == 0:
@@ -255,7 +251,7 @@ def cultural_score(
     if from_OSM:
         if "historic" not in buildings_gdf.columns:
             raise ValueError("from_OSM=True requires buildings_gdf to contain a 'historic' column")
-        buildings_gdf["cult"] = buildings_gdf["historic"].apply(_is_historicoric).astype("int8").astype(float)
+        buildings_gdf["cult"] = buildings_gdf["historic"].apply(_is_historic).astype("int8").astype(float)
         return buildings_gdf
 
     if historic_elements_gdf is None or len(historic_elements_gdf) == 0:
