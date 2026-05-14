@@ -16,6 +16,7 @@ pd.set_option("display.precision", 3)
 
 import concurrent.futures
 from .utilities import scaling_columnDF
+from .land_use_utils import _to_list
 from .buildings_visibility import visibility_polygon2d, compute_3d_sight_lines
     
 def structural_score(buildings_gdf, obstructions_gdf, edges_gdf, advance_vis_expansion_distance = 300, neighbours_radius = 150):
@@ -89,57 +90,63 @@ def _number_neighbours(geometry, obstructions_gdf, obstructions_sindex, radius):
     precise_neigh = possible_neigh[possible_neigh.intersects(buffer)]
     return len(precise_neigh)
   
-def visibility_score(buildings_gdf, sight_lines = pd.DataFrame({'a': []}), method = 'longest'):
+def visibility_score(buildings_gdf, sight_lines=pd.DataFrame({"a": []}), method="longest"):
+    """Calculate visibility landmark sub-scores.
+
+    Adds:
+    - fac: approximate facade area;
+    - 3dvis: 3D visibility score, derived from sight-line lengths.
+
+    The function always returns a GeoDataFrame. Older code returned a tuple in
+    the empty/no-height branch, which broke downstream callers.
     """
-    The function calculates the sub-scores of the "Visibility Landmark Component".
-    - 3d visibility;
-    - facade area;
-    - (height).
-     
-    Parameters
-    ----------
-    buildings_gdf: Polygon GeoDataFrame
-        Buildings GeoDataFrame - case study area.
-    sight_lines: LineString GeoDataFrame
-        The Sight Lines GeoDataFrame.
-        
-    Returns
-    -------
-    buildings_gdf: Polygon GeoDataFrame
-        The updated buildings GeoDataFrame.
-    """  
     buildings_gdf = buildings_gdf.copy()
     buildings_gdf["fac"] = 0.0
-    if ("height" not in buildings_gdf.columns) | (sight_lines.empty): 
-        return buildings_gdf, sight_lines
 
-    sight_lines['nodeID'] = sight_lines['nodeID'].astype(int)
-    sight_lines['buildingID'] = sight_lines['buildingID'].astype(int)
-    sight_lines['length'] = sight_lines.geometry.length
-    
-    buildings_gdf["fac"] = buildings_gdf.apply(lambda row: _facade_area(row["geometry"], row["height"]), axis = 1)
+    if "height" not in buildings_gdf.columns or sight_lines.empty:
+        buildings_gdf["3dvis"] = 0.0
+        return buildings_gdf
 
-    stats = sight_lines.groupby('buildingID').agg({'length': ['mean','max', 'count']}) 
+    sight_lines = sight_lines.copy()
+    sight_lines["nodeID"] = sight_lines["nodeID"].astype(int)
+    sight_lines["buildingID"] = sight_lines["buildingID"].astype(int)
+    sight_lines["length"] = sight_lines.geometry.length
+
+    buildings_gdf["fac"] = buildings_gdf.apply(
+        lambda row: _facade_area(row["geometry"], row["height"]),
+        axis=1,
+    )
+
+    stats = sight_lines.groupby("buildingID").agg({"length": ["mean", "max", "count"]})
     stats.columns = stats.columns.droplevel(0)
-    stats.rename(columns = {"count": "nr_lines"}, inplace = True)
+    stats.rename(columns={"count": "nr_lines"}, inplace=True)
 
-    stats["max"] = stats["max"].fillna(stats["max"].min())
-    stats["mean"] = stats["mean"].fillna(stats["mean"].min())
-    stats["nr_lines"] = stats["nr_lines"].fillna(stats["nr_lines"].min())
-    stats.reset_index(inplace = True)
-    columns = ["max", "mean", "nr_lines"]
+    for column in ["max", "mean", "nr_lines"]:
+        stats[column] = stats[column].fillna(stats[column].min())
+        stats[column + "_sc"] = scaling_columnDF(stats[column])
 
-    for column in columns:
-        stats[column+"_sc"] = scaling_columnDF(stats[column])
-
-    if method == 'longest':
+    if method == "longest":
         stats["3dvis"] = stats["max_sc"]
-    elif method == 'combined':
-        stats["3dvis"] = stats["max_sc"]*0.5+stats["mean_sc"]*0.25+stats["nr_lines_sc"]*0.25
+    elif method == "combined":
+        stats["3dvis"] = (
+            stats["max_sc"] * 0.5
+            + stats["mean_sc"] * 0.25
+            + stats["nr_lines_sc"] * 0.25
+        )
+    else:
+        raise ValueError("method must be either 'longest' or 'combined'")
 
-    buildings_gdf = pd.merge(buildings_gdf, stats[["buildingID", "3dvis"]], on = "buildingID", how = "left") 
-    buildings_gdf['3dvis'] = buildings_gdf['3dvis'].where(pd.notnull(buildings_gdf['3dvis']), 0.0)
-    
+    stats.reset_index(inplace=True)
+    buildings_gdf = pd.merge(
+        buildings_gdf,
+        stats[["buildingID", "3dvis"]],
+        on="buildingID",
+        how="left",
+    )
+    buildings_gdf["3dvis"] = buildings_gdf["3dvis"].where(
+        pd.notnull(buildings_gdf["3dvis"]),
+        0.0,
+    )
     return buildings_gdf
 
 def _facade_area(building_geometry, building_height):
@@ -164,7 +171,7 @@ def _facade_area(building_geometry, building_height):
     width = min(d)
     return width*building_height
     
-def _is_historic(value: Any) -> bool:
+def _is_historicoricoric(value: Any) -> bool:
     if value is None:
         return False
     try:
@@ -180,43 +187,9 @@ def get_historic_buildings_fromOSM(
     crs: str | Any | None = None,
     distance: float = 1000,
 ):
-    """
-    Download OSM building footprints and keep only those that are tagged as
-    historic and/or heritage in OSM.
-
-    Definition of "historic building" used here
-    ------------------------------------------
-    A building is kept if it has at least one of:
-      - historic=*
-      - heritage=*
-    where the tag value is not missing and not an explicit "falsey" value
-    (0/no/false).
-
-    Parameters
-    ----------
-    OSMplace : str | tuple | shapely.geometry.Polygon
-        Passed through to `downloader` (your wrapper).
-    download_method : str
-        Passed through to `downloader`.
-    crs : str | pyproj.CRS | None, default None
-        If None, uses `ox.projection.project_gdf` (UTM-like projected CRS).
-        If provided, reprojects to this CRS.
-    distance : float, default 1000
-        Passed through to `downloader` when using distance-based methods.
-
-    Returns
-    -------
-    GeoDataFrame
-        Columns:
-          - geometry
-          - historic : int8 (0/1)
-          - area     : float (in CRS units^2)
-
-        Note: if no historic/heritage buildings are found, returns an empty GeoDataFrame
-        with the same columns.
-    """
-    
+    """Download OSM building footprints tagged as historic/heritage."""
     tags = {"building": True, "historic": True, "heritage": True}
+
     historic_gdf = downloader(
         OSMplace=OSMplace,
         download_method=download_method,
@@ -224,11 +197,18 @@ def get_historic_buildings_fromOSM(
         distance=distance,
     )
 
-    if historic_gdf is None or len(historic_gdf) == 0:
-        # return empty with expected schema (best effort)
-        return gpd.GeoDataFrame({"geometry": [], "historic": pd.Series(dtype="int8"), "area": pd.Series(dtype="float64")})
+    empty = gpd.GeoDataFrame(
+        {
+            "geometry": [],
+            "historic": pd.Series(dtype="int8"),
+            "area": pd.Series(dtype="float64"),
+        },
+        geometry="geometry",
+    )
 
-    # Ensure expected columns exist (avoid KeyError on subset)
+    if historic_gdf is None or len(historic_gdf) == 0:
+        return empty
+
     if "historic" not in historic_gdf.columns:
         historic_gdf["historic"] = pd.NA
     if "heritage" not in historic_gdf.columns:
@@ -237,26 +217,29 @@ def get_historic_buildings_fromOSM(
     historic_gdf = historic_gdf[["geometry", "historic", "heritage"]].copy()
     historic_gdf = historic_gdf[historic_gdf.geometry.notna()].copy()
 
-    # Keep only historic/heritage-tagged buildings
-    mask = historic_gdf["historic"].apply(_is_historic) | historic_gdf["heritage"].apply(_is_historic)
+    mask = historic_gdf["historic"].apply(_is_historicoric) | historic_gdf["heritage"].apply(_is_historicoric)
     historic_gdf = historic_gdf.loc[mask].copy()
 
     if len(historic_gdf) == 0:
-        return gpd.GeoDataFrame({"geometry": [], "historic": pd.Series(dtype="int8"), "area": pd.Series(dtype="float64")}, crs=gdf.crs)
+        return gpd.GeoDataFrame(
+            {
+                "geometry": [],
+                "historic": pd.Series(dtype="int8"),
+                "area": pd.Series(dtype="float64"),
+            },
+            geometry="geometry",
+            crs=historic_gdf.crs,
+        )
 
-    # Project
     if crs is None:
         historic_gdf = ox.projection.project_gdf(historic_gdf)
     else:
         historic_gdf = historic_gdf.to_crs(crs)
 
-    # Binary flag
     historic_gdf["historic"] = 1
     historic_gdf["historic"] = historic_gdf["historic"].astype("int8")
-
     historic_gdf = historic_gdf[["geometry", "historic"]].copy()
     historic_gdf["area"] = historic_gdf.geometry.area.astype("float64")
-
     return historic_gdf
 
 def cultural_score(
@@ -265,60 +248,16 @@ def cultural_score(
     score_column: str | None = None,
     from_OSM: bool = False,
 ):
-    """
-    Compute a "Cultural Landmark Component" per building.
-
-    Modes
-    -----
-    1) from_OSM=True
-       Uses buildings_gdf["historic"] (OSM tag already on buildings) and converts to 0/1.
-
-    2) from_OSM=False
-       Uses spatial intersections between building polygons and `historic_elements_gdf`
-       (points or polygons):
-         - score_column is None -> count of intersecting elements per building
-         - score_column provided -> sum(score_column) over intersecting elements per building
-
-    Parameters
-    ----------
-    buildings_gdf : GeoDataFrame
-        Target building polygons. Must have a CRS.
-    historic_elements_gdf : GeoDataFrame | None
-        Source points/polygons of cultural/historic elements. Must have a CRS matching buildings_gdf.
-        If None or empty and from_OSM=False -> returns buildings with cult = 0.
-    score_column : str | None
-        Name of numeric scoring column in historic_elements_gdf. If non-numeric, values are coerced
-        with errors='coerce' and NaN treated as 0.
-    from_OSM : bool, default False
-        If True, uses buildings_gdf["historic"] only (no external GDF needed).
-
-    Returns
-    -------
-    GeoDataFrame
-        Copy of buildings_gdf with an added float column 'cult'.
-
-    Notes
-    -----
-    - Uses sjoin(..., how="inner") and aggregates by the LEFT index, so it does NOT depend on
-      GeoPandas' version-specific 'index_right' column naming.
-    """
-
+    """Compute a cultural landmark component per building."""
     buildings_gdf = buildings_gdf.copy()
     buildings_gdf["cult"] = 0.0
 
-    # -------------------------
-    # Mode 1: use OSM historic
-    # -------------------------
     if from_OSM:
         if "historic" not in buildings_gdf.columns:
             raise ValueError("from_OSM=True requires buildings_gdf to contain a 'historic' column")
-            
-        buildings_gdf["cult"] = buildings_gdf["historic"].apply(_is_hist).astype("int8").astype(float)
+        buildings_gdf["cult"] = buildings_gdf["historic"].apply(_is_historicoric).astype("int8").astype(float)
         return buildings_gdf
 
-    # -------------------------
-    # Mode 2: spatial match
-    # -------------------------
     if historic_elements_gdf is None or len(historic_elements_gdf) == 0:
         return buildings_gdf
 
@@ -335,13 +274,12 @@ def cultural_score(
 
     right = historic_elements_gdf[right_cols].copy()
 
-    # drop missing geometries defensively
     left = left[left.geometry.notna()].copy()
     right = right[right.geometry.notna()].copy()
+
     if left.empty or right.empty:
         return buildings_gdf
 
-    # predicate name differs across GeoPandas versions (predicate vs op)
     try:
         joined = gpd.sjoin(left, right, how="inner", predicate="intersects")
     except TypeError:
@@ -359,7 +297,7 @@ def cultural_score(
     sums = vals.groupby(joined.index).sum().astype(float)
     buildings_gdf["cult"] = sums.reindex(buildings_gdf.index, fill_value=0.0)
     return buildings_gdf
- 
+
 def pragmatic_score(
     buildings_gdf,
     land_uses_column: str = "land_uses",
@@ -367,96 +305,22 @@ def pragmatic_score(
     search_radius: float = 200,
     default_land_use: str = "residential",
 ):
-   """
-    Compute a "Pragmatic Landmark Component" (unexpectedness) for each building based on
-    the composition of nearby land-use labels.
+    """Compute a pragmatic landmark component from normalised land-use labels.
 
-    Concept
-    -------
-    For a building with label L, the pragmatic component is:
-
-        prag(L) = 1 - ( mass_of_L_in_neighborhood / total_label_mass_in_neighborhood )
-
-    where neighborhood mass is measured within a buffer of radius `search_radius`
-    around the building geometry.
-
-    Multi-use + weighting policy
-    ----------------------------
-    - Buildings may have multiple land-use labels in `land_uses_column` (list[str]).
-    - Neighbor contributions are WEIGHTED using `overlaps_column` (list[float]):
-
-        * each neighbor building contributes total weight 1.0
-        * its weight is split across its labels according to overlaps
-        * overlaps are normalized to sum to 1 per neighbor building
-
-      Example:
-        land_uses = ["shop", "office"]
-        overlaps  = [0.7, 0.3]
-      contributes 0.7 mass to "shop" and 0.3 mass to "office" in the neighborhood.
-
-    - If overlaps are missing, misaligned, or invalid for a building, equal weights
-      are used for its labels.
-
-    Building-level output for multi-use targets
-    -------------------------------------------
-    The score is computed for each (building, label) pair after exploding multi-use labels.
-    The final per-building score is the MAX across the building's own labels:
-
-        prag(building) = max_L prag(L)
-
-    Missing / empty labels
-    ----------------------
-    - If a building has missing or empty `land_uses_column`, it is assigned
-      [default_land_use] with weight 1.0.
-
-    Parameters
-    ----------
-    buildings_gdf : GeoDataFrame
-        GeoDataFrame of building polygons. Geometry must be valid and in a projected CRS
-        compatible with `search_radius` units (e.g., meters).
-    land_uses_column : str, default "land_uses"
-        Column containing a string label or list[str] of labels per building.
-    overlaps_column : str, default "land_uses_overlap"
-        Column containing list[float] overlaps aligned 1:1 with `land_uses_column`.
-        Used only to weight neighbor label mass (not used to weight the final max collapse).
-    search_radius : float, default 200
-        Buffer radius used to define the neighborhood around each building.
-    default_land_use : str, default "residential"
-        Label assigned when `land_uses_column` is missing/empty.
-
-    Returns
-    -------
-    GeoDataFrame
-        Copy of `buildings_gdf` with an additional column:
-          - "prag": float
-        One value per original building row.
-
-    Raises
-    ------
-    ValueError
-        If `land_uses_column` or `overlaps_column` is missing from the GeoDataFrame.
-
-    Notes
-    -----
-    - Neighborhood selection uses a spatial index for a bbox prefilter, then an exact
-      intersects() test against the buffered geometry.
-    - The building itself is excluded from its neighborhood using the original index.
-    - This implementation explodes buildings to one row per label for scoring.
-      For large datasets, this can be computationally heavy.
-
-    Assumptions
-    -----------
-    - `overlaps_column` values are non-negative and intended to represent relative
-      label importance within the building (e.g., overlap fractions). They are normalized
-      internally to sum to 1 per building.
+    The function expects an explicit normalised land-use column. Use the OSM
+    route to derive `land_uses` from OSM tags, or the sparse/non-OSM route in
+    `land_use_sparse.py` to derive/attach `land_uses` from external data.
     """
-    
     gdf = buildings_gdf.copy()
 
     if land_uses_column not in gdf.columns:
-        raise ValueError(f"GeoDataFrame must contain '{land_uses_column}'")
+        raise ValueError(
+            f"GeoDataFrame must contain '{land_uses_column}'. "
+            "Use the OSM land-use route or classify/attach sparse land uses first."
+        )
+
     if overlaps_column not in gdf.columns:
-        raise ValueError(f"GeoDataFrame must contain '{overlaps_column}'")
+        gdf[overlaps_column] = [[] for _ in range(len(gdf))]
 
     def _as_list(v):
         if isinstance(v, list):
@@ -470,15 +334,12 @@ def pragmatic_score(
             pass
         return [v]
 
-    # normalize labels
     gdf[land_uses_column] = gdf[land_uses_column].apply(lambda v: _as_list(v) or [default_land_use])
 
-    # normalize overlaps -> weights sum to 1 per building
     def _weights_for_row(row):
         labels = row[land_uses_column]
         w = _as_list(row[overlaps_column])
 
-        # fallback: equal weights
         if len(labels) == 0 or len(w) != len(labels):
             return [1.0 / len(labels)] * len(labels)
 
@@ -494,30 +355,28 @@ def pragmatic_score(
         return [x / s for x in w]
 
     gdf["_w_list"] = gdf.apply(_weights_for_row, axis=1)
-
-    # zip (label, weight) into a single list column and explode once
     gdf["_lu_w"] = gdf.apply(lambda r: list(zip(r[land_uses_column], r["_w_list"])), axis=1)
+
     gdf_exploded = gdf.explode("_lu_w", ignore_index=False)
+    gdf_exploded[land_uses_column] = gdf_exploded["_lu_w"].apply(
+        lambda x: x[0] if isinstance(x, tuple) else x
+    )
+    gdf_exploded["_w"] = gdf_exploded["_lu_w"].apply(
+        lambda x: float(x[1]) if isinstance(x, tuple) else 1.0
+    )
 
-    # split back
-    gdf_exploded[land_uses_column] = gdf_exploded["_lu_w"].apply(lambda x: x[0] if isinstance(x, tuple) else x)
-    gdf_exploded["_w"] = gdf_exploded["_lu_w"].apply(lambda x: float(x[1]) if isinstance(x, tuple) else 1.0)
-
-    # spatial index on exploded geometries
     sindex = gdf_exploded.sindex
 
     def _unexpectedness(building_index, building_geometry, building_label):
         buf = building_geometry.buffer(search_radius)
-
         candidate_idx = list(sindex.intersection(buf.bounds))
         if not candidate_idx:
             return 0.0
 
         possible = gdf_exploded.iloc[candidate_idx]
         matches = possible[possible.intersects(buf)]
-
-        # exclude same building (all exploded rows share original index)
         matches = matches[matches.index != building_index]
+
         if matches.empty:
             return 0.0
 
@@ -533,86 +392,62 @@ def pragmatic_score(
         axis=1,
     )
 
-    # collapse per building: max across own labels
     gdf["prag"] = gdf_exploded.groupby(gdf_exploded.index)["prag_temp"].max()
-
     return gdf.drop(columns=["_w_list", "_lu_w"], errors="ignore")
-    
+
 def compute_global_scores(buildings_gdf, global_indexes_weights, global_components_weights):
-    """
-    Computes the component and global scores for a buildings GeoDataFrame, rescaling values when necessary and assigning weights to the different properties measured.
+    """Compute component and global landmarkness scores."""
+    buildings_gdf = buildings_gdf.copy()
 
-    Parameters
-    ----------
-    buildings_gdf: Polygon GeoDataFrame
-        The input GeoDataFrame containing buildings information.
-    global_indexes_weights: dict
-        Dictionary with index names (string) as keys and weights as values.
-    global_components_weights: dict
-        Dictionary with component names (string) as keys and weights as values.
+    cols = {
+        "direct": ["3dvis", "fac", "height", "area", "2dvis", "cult", "prag"],
+        "inverse": ["neigh", "road"],
+    }
 
-    Returns
-    -------
-    buildings_gdf: Polygon GeoDataFrame
-        The updated buildings GeoDataFrame with computed scores.
-    
-    Examples
-    --------
-    # Example 1: Computing global scores for a buildings GeoDataFrame
-    >>> buildings_gdf = gpd.GeoDataFrame(...)
-    >>> global_indexes_weights = {"3dvis": 0.50, "fac": 0.30, "height": 0.20, "area": 0.30, "2dvis": 0.30, "neigh": 0.20, "road": 0.20}
-    >>> global_components_weights = {"vScore": 0.50, "sScore": 0.30, "cScore": 0.20, "pScore": 0.10}
-    """  
-    # scaling
-    cols = {"direct": ["3dvis", "fac", "height", "area", "2dvis", "cult", "prag"], "inverse": ["neigh", "road"]}
-   
     if not (abs(sum(global_components_weights.values()) - 1.0) < 1e-6):
         raise ValueError("Global components weights must sum to 1.0")
-   
-    # Check if vScore should be computed
+
     compute_vScore = (
-        "vScore" in global_components_weights and
-        "height" in buildings_gdf.columns and
-        buildings_gdf["height"].max() > 0.0
+        "vScore" in global_components_weights
+        and "height" in buildings_gdf.columns
+        and buildings_gdf["height"].max() > 0.0
     )
-    
-    # Rescale values if the column exists in buildings_gdf
+
     for col in cols["direct"] + cols["inverse"]:
         if col in buildings_gdf.columns:
-            buildings_gdf[col + "_sc"] = scaling_columnDF(buildings_gdf[col], inverse=(col in cols["inverse"]))
+            buildings_gdf[col + "_sc"] = scaling_columnDF(
+                buildings_gdf[col],
+                inverse=(col in cols["inverse"]),
+            )
 
-    # Compute component scores
-    # Visual Score
     if compute_vScore:
         buildings_gdf["vScore"] = sum(
             buildings_gdf[f"{col}_sc"] * global_indexes_weights[col]
-            for col in ["fac", "height", "3dvis"] if f"{col}_sc" in buildings_gdf
+            for col in ["fac", "height", "3dvis"]
+            if f"{col}_sc" in buildings_gdf
         )
         buildings_gdf["vScore_sc"] = scaling_columnDF(buildings_gdf["vScore"])
-        
-    # Structural Score
 
     buildings_gdf["sScore"] = sum(
         buildings_gdf[f"{col}_sc"] * global_indexes_weights[col]
-        for col in ["area", "neigh", "2dvis", "road"] if f"{col}_sc" in buildings_gdf
+        for col in ["area", "neigh", "2dvis", "road"]
+        if f"{col}_sc" in buildings_gdf
     )
     buildings_gdf["sScore_sc"] = scaling_columnDF(buildings_gdf["sScore"])
-    
-    buildings_gdf["cScore"], buildings_gdf["pScore"] = buildings_gdf["cult_sc"], buildings_gdf["prag_sc"]
-    
-    # Cultural and Pragmatic Scores
+
+    buildings_gdf["cScore"] = buildings_gdf["cult_sc"] if "cult_sc" in buildings_gdf.columns else 0.0
+    buildings_gdf["pScore"] = buildings_gdf["prag_sc"] if "prag_sc" in buildings_gdf.columns else 0.0
+
     if "cult_sc" in buildings_gdf.columns:
-        buildings_gdf["cScore"] = buildings_gdf["cult_sc"]
+        buildings_gdf["cScore_sc"] = buildings_gdf["cult_sc"]
     if "prag_sc" in buildings_gdf.columns:
-        buildings_gdf["pScore"] = buildings_gdf["prag_sc"]
-    
-    # Final global score: Compute dynamically
+        buildings_gdf["pScore_sc"] = buildings_gdf["prag_sc"]
+
     buildings_gdf["gScore"] = sum(
         buildings_gdf[f"{component}_sc"] * global_components_weights[component]
         for component in global_components_weights
         if f"{component}_sc" in buildings_gdf and (component != "vScore" or compute_vScore)
     )
-    
     buildings_gdf["gScore_sc"] = scaling_columnDF(buildings_gdf["gScore"])
     return buildings_gdf
 
@@ -770,4 +605,4 @@ def assert_all_polygons(gdf: gpd.GeoDataFrame):
     
     invalid = gdf[~gdf.geometry.apply(lambda g: isinstance(g, (Polygon)))]
     if not invalid.empty:
-        raise TypeError(f"Found non-polygon geometries: {invalid.geometry.geom_type.unique().tolist()}") 
+        raise TypeError(f"Found non-polygon geometries: {invalid.geometry.geom_type.unique().tolist()}")
