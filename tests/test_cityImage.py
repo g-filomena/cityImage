@@ -10,6 +10,10 @@ pytestmark = pytest.mark.network
 import geopandas as gpd
 
 from shapely.geometry import LineString, MultiLineString, MultiPoint, MultiPolygon, Point, Polygon
+import matplotlib
+
+matplotlib.use("Agg")
+
 import cityImage as ci
 from matplotlib.colors import LinearSegmentedColormap
 
@@ -29,6 +33,84 @@ nodes_gdf, edges_gdf = None, None
 nodes_gdf_y, edges_gdf_y = None, None
 barriers_gdf = None
 graph = None 
+
+
+def _ensure_osm_network():
+    """Initialise the live OSM network once per module if tests run out of order."""
+    global nodes_gdf
+    global edges_gdf
+
+    if nodes_gdf is None or edges_gdf is None:
+        nodes_gdf, edges_gdf = ci.get_network_fromOSM(
+            place,
+            'OSMplace',
+            network_type="all",
+            crs=crs_susa,
+        )
+
+
+def _ensure_graph():
+    """Initialise the primal graph if tests run out of order."""
+    global graph
+
+    _ensure_osm_network()
+    if graph is None:
+        graph = ci.graph_fromGDF(nodes_gdf, edges_gdf, nodeID_column='nodeID')
+
+
+def _ensure_centrality_metrics():
+    """Ensure centrality columns used by plotting smoke tests exist."""
+    global graph
+    global nodes_gdf
+    global edges_gdf
+
+    _ensure_graph()
+    required_node_columns = {"Bc", "Sc", "Rc", "Cc"}
+    if required_node_columns.issubset(nodes_gdf.columns) and "Eb" in edges_gdf.columns:
+        return
+
+    weight = 'length'
+    services = ox.features_from_address(
+        address,
+        tags={'amenity': True},
+        dist=distance,
+    ).to_crs(crs_susa)
+    services = services[services['geometry'].geom_type == 'Point']
+
+    graph = ci.weight_nodes(nodes_gdf, services, graph, field_name='services', radius=50)
+
+    Rc = ci.calculate_centrality(graph, measure='reach', weight=weight, radius=400, attribute='services')
+    Bc = ci.calculate_centrality(graph, measure='betweenness', weight=weight)
+    Sc = ci.calculate_centrality(graph, measure='straightness', weight=weight)
+    Cc = ci.calculate_centrality(graph, measure='closeness', weight=weight)
+
+    for metric, column in zip([Bc, Sc, Rc, Cc], ['Bc', 'Sc', 'Rc', 'Cc']):
+        nodes_gdf[column] = nodes_gdf.nodeID.map(metric)
+
+    Eb = nx.edge_betweenness_centrality(graph, weight=weight, normalized=False)
+    edges_gdf = ci.append_edges_metrics(edges_gdf, graph, [Eb], ['Eb'])
+
+
+def _ensure_barriers():
+    """Ensure barrier data used by plotting smoke tests exists."""
+    global barriers_gdf
+
+    _ensure_osm_network()
+    if barriers_gdf is None:
+        barriers_gdf = ci.get_barriers(place, download_method, crs=crs_susa, parks_min_area=200)
+
+
+def _land_use_label(value):
+    """Return a stable scalar label from list-like land-use cells."""
+    if isinstance(value, (list, tuple, set)):
+        labels = [str(item) for item in value if item is not None]
+        return ";".join(labels) if labels else "unknown"
+    try:
+        if pd.isna(value):
+            return "unknown"
+    except Exception:
+        pass
+    return str(value)
 
 def test_loadOSM():
     global nodes_gdf
@@ -52,6 +134,7 @@ def test_loadFile_clean():
                                                 same_vertexes_edges = True, self_loops = True, fix_topology = True)
     
 def test_graph():
+    _ensure_osm_network()
     global nodes_gdf
     global edges_gdf
     global graph
@@ -63,6 +146,7 @@ def test_graph():
     dual_graph = ci.dual_graph_fromGDF(nodes_dual, edges_dual)
 
 def test_angles():
+    _ensure_osm_network()
     global edges_gdf
 
     nodeID = edges_gdf.iloc[0].u
@@ -75,31 +159,10 @@ def test_angles():
     angle_angular = ci.angle_line_geometries(line_geometryA, line_geometryB, degree = True, calculation_type = 'angular_change')
     
 def test_centrality():
-    global graph
-    global nodes_gdf
-    global edges_gdf
-    global crs_susa
-   
-    weight = 'length'
-    services = ox.features_from_address(address, tags = {'amenity':True}, dist = distance).to_crs(crs_susa)
-    services = services[services['geometry'].geom_type == 'Point']
-    graph = ci.weight_nodes(nodes_gdf, services, graph, field_name = 'services', radius = 50)
-    
-    Rc = ci.calculate_centrality(graph, measure='reach', weight = weight, radius=400, attribute = 'services')
-    Bc = ci.calculate_centrality(graph, measure='betweenness', weight = weight)
-    Sc = ci.calculate_centrality(graph, measure='straightness', weight = weight)
-    Cc = ci.calculate_centrality(graph, measure='closeness', weight = weight)
-    
-    # Appending the attributes to the geodataframe
-    dicts = [Bc, Sc, Rc, Cc]
-    columns = ['Bc', 'Sc', 'Rc', 'Cc']
-    for n, c in enumerate(dicts): 
-        nodes_gdf[columns[n]] = nodes_gdf.nodeID.map(c)
-        
-    Eb = nx.edge_betweenness_centrality(graph, weight = weight, normalized = False)
-    edges_gdf = ci.append_edges_metrics(edges_gdf, graph, [Eb], ['Eb'])
-    
+    _ensure_centrality_metrics()
+
 def test_regions():
+    _ensure_osm_network()
     global nodes_gdf
     global edges_gdf
     global crs_susa
@@ -124,6 +187,7 @@ def test_regions():
     nodes_gdf = ci.find_gateways(nodes_gdf, edges_gdf, 'p_topo')
    
 def test_barriers(): 
+    _ensure_osm_network()
     global edges_gdf
     global barriers_gdf
     global place
@@ -137,6 +201,7 @@ def test_barriers():
     edges_gdf_updated = ci.assign_structuring_barriers(edges_gdf_updated, barriers_gdf)
  
 def test_landmarks():
+    _ensure_osm_network()
     
     global crs_susa
     global address
@@ -156,7 +221,8 @@ def test_landmarks():
     local_components_weights = {'vScore': 0.25, 'sScore' : 0.35, 'cScore':0.10, 'pScore': 0.30}
     
     buildings_gdf = ci.get_buildings_fromOSM(place, download_method = 'OSMplace', crs = crs_susa)
-    buildings_gdf['height'] = np.random.choice([10, 1, 50], buildings_gdf.shape[0]) 
+    rng = np.random.default_rng(seed=42)
+    buildings_gdf['height'] = rng.choice([10, 1, 50], buildings_gdf.shape[0]) 
     
     # testing with only 5 nodes, to avoid time issues
     sight_lines_pars = {"distance_along" : 300, "min_observer_target_distance" : 400}
@@ -185,6 +251,11 @@ def test_plot():
     global edges_gdf
     global barriers_gdf
     global buildings_gdf
+
+    _ensure_centrality_metrics()
+    _ensure_barriers()
+    if buildings_gdf is None:
+        test_landmarks()
     
     tmp_nodes = nodes_gdf.copy()
     base_map_dict = {'base_map_gdf': edges_gdf, 'base_map_alpha' : 0.4, 'base_map_geometry_size' : 1.1, 'base_map_zorder' : 0}
@@ -240,9 +311,24 @@ def test_plot():
                     black_background = True, cmap = cmap, figsize = (15, 5), title = 'Barriers',
                     **base_map_dict)                        
      
-    cmap = ci.rand_cmap(nlabels = len(buildings_gdf.land_use_raw.unique()))
-    plot_buildings = ci.plot_gdf(buildings_gdf, column = 'land_use_raw', black_background = True, legend = True, 
-                             figsize = (25,10))
+    buildings_for_plot = buildings_gdf.copy()
+    if "land_uses" in buildings_for_plot.columns:
+        buildings_for_plot["land_use_label"] = buildings_for_plot["land_uses"].apply(_land_use_label)
+    elif "land_uses_raw" in buildings_for_plot.columns:
+        buildings_for_plot["land_use_label"] = buildings_for_plot["land_uses_raw"].apply(_land_use_label)
+    elif "land_use_raw" in buildings_for_plot.columns:
+        buildings_for_plot["land_use_label"] = buildings_for_plot["land_use_raw"].apply(_land_use_label)
+    else:
+        buildings_for_plot["land_use_label"] = "unknown"
+
+    cmap = ci.rand_cmap(nlabels=len(buildings_for_plot["land_use_label"].unique()))
+    plot_buildings = ci.plot_gdf(
+        buildings_for_plot,
+        column="land_use_label",
+        black_background=True,
+        legend=True,
+        figsize=(25, 10),
+    )
 
 def test_landuse():
 
