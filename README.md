@@ -4,25 +4,32 @@
 [![PyPI version](https://badge.fury.io/py/cityImage.svg)](https://badge.fury.io/py/cityImage)
 [![Documentation Status](https://readthedocs.org/projects/cityimage/badge/?version=latest)](https://cityimage.readthedocs.io/en/latest/?badge=latest)
 
-
 <img src="docs/_static/logo.png" alt="Logo" width="33%">
 
 # cityImage
 
 **A tool for analysing urban legibility and extracting The Computational Image of the City**
+
 For full documentation and examples see [the user manual](https://cityimage.readthedocs.io/en/latest/).
 
 This repository provides a set of functions to extract salient urban features in line with the definitions laid down by Kevin Lynch in [The Image of The City](https://mitpress.mit.edu/books/image-city) using open and freely available geospatial datasets.
 The methods are fully documented in *A Computational approach to The Image of the City* by Filomena, Verstegen, and Manley, published in [Cities](https://doi.org/10.1016/j.cities.2019.01.006).
 
-The tools are written in Python and requires:
+The library is written in Python and built on:
 
 * [OSMNx](https://osmnx.readthedocs.io/en/stable/).
-* [PyVista](https://docs.pyvista.org/version/stable/).
 * [python-louvain](https://github.com/taynaud/python-louvain).
-* [mapclassify](https://github.com/pysal/mapclassify).
+* [GeoPandas](https://github.com/geopandas/geopandas), 
+* [NetworkX](https://github.com/networkx/networkx), 
+* [Shapely](https://github.com/shapely/shapely).
 
-It is built on [GeoPandas](https://github.com/geopandas/geopandas), [NetworkX](https://github.com/networkx/networkx), and [Shapely](https://github.com/shapely/shapely).
+It also requires:
+
+* [dask](https://github.com/dask/dask).
+* [numba](https://github.com/numba/numba)
+* [PyVista](https://docs.pyvista.org/version/stable/).
+
+for creating 3d sight lines.
 
 ## How to install *cityImage*
 
