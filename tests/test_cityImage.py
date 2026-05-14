@@ -5,6 +5,8 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 import pytest
+
+pytestmark = pytest.mark.network
 import geopandas as gpd
 
 from shapely.geometry import LineString, MultiLineString, MultiPoint, MultiPolygon, Point, Polygon
@@ -307,6 +309,4 @@ def test_landuse():
     attributes_gdf = ci.classify_land_use(attributes_gdf, raw_land_use_column = 'lu_eng', new_land_use_column = 'land_use', categories= categories, 
                                           strings = strings)   
     attributes_gdf['land_use'] = attributes_gdf['land_use'] .str.lower()
-    _ = ci.polygons_gdf_multiparts_to_singleparts(attributes_gdf)    
-
-
+    _ = ci.polygons_gdf_multiparts_to_singleparts(attributes_gdf)
