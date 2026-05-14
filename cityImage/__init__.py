@@ -26,4 +26,5 @@ from .plot import *
 from .regions import *
 from .utilities import *
 
-__version__ = '1.2.2'
+from .land_use_sparse import*
+__version__ = '1.2.3'
