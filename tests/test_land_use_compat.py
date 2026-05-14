@@ -5,6 +5,7 @@ import cityImage as ci
 
 
 def test_classify_land_use_sparse_attribute_wrapper_scalar_values():
+    """The wrapper maps sparse attribute values without using OSM tags."""
     gdf = gpd.GeoDataFrame(
         {"lu_eng": ["church", "bank", "unknown"]},
         geometry=[Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])] * 3,
