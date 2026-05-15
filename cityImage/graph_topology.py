@@ -1,14 +1,13 @@
 import networkx as nx
 import pandas as pd
-import numpy as np
+from shapely.geometry import Point
 
-from shapely.geometry import Point, LineString
-from shapely.ops import unary_union
 pd.set_option("display.precision", 3)
 
 from .graph import graph_fromGDF
-from .graph_load import obtain_nodes_gdf, join_nodes_edges_by_coordinates
-from .utilities import split_line_at_MultiPoint 
+from .graph_load import join_nodes_edges_by_coordinates, obtain_nodes_gdf
+from .utilities import split_line_at_MultiPoint
+
 
 def fix_network_topology(nodes_gdf, edges_gdf, edgeID_column = 'edgeID'):
     """
@@ -93,10 +92,10 @@ def fix_network_topology(nodes_gdf, edges_gdf, edgeID_column = 'edgeID'):
     # verify which street segment needs to be fixed
     edges_gdf['to_fix'] = edges_gdf.apply(lambda row: find_intersections(row.name, row.geometry, row.coords), axis=1)
     # verify which street segment needs to be fixed
-    edges_gdf['fixing'] = [True if len(to_fix) > 0 else False for to_fix in edges_gdf['to_fix']]
+    edges_gdf["fixing"] = [len(to_fix) > 0 for to_fix in edges_gdf["to_fix"]]
     
-    to_fix = edges_gdf[edges_gdf['fixing'] == True].copy()
-    edges_gdf = edges_gdf[edges_gdf['fixing'] == False]   
+    to_fix = edges_gdf[edges_gdf['fixing']].copy()
+    edges_gdf = edges_gdf[~edges_gdf["fixing"]]
     if len(to_fix) == 0:
         return edges_gdf    
     return _add_fixed_edges(edges_gdf, to_fix, edgeID_column)
@@ -129,7 +128,7 @@ def fix_fake_self_loops(nodes_gdf, edges_gdf, edgeID_column = 'edgeID'):
     x = list(nodes_gdf['x'])
     y = list(nodes_gdf['y'])
     # create a set of all coordinates in nodes. This essentially correspond to the from and to nodes of the edges currently in the edges_gdf
-    nodes_set = set(zip(x, y))
+    nodes_set = set(zip(x, y, strict=False))
 
     to_fix = []
     # loop through the coordinates in edges_gdf.coords and check if they are in the nodes_set. This means that one of the edges coords (not from and to),
@@ -143,9 +142,9 @@ def fix_fake_self_loops(nodes_gdf, edges_gdf, edgeID_column = 'edgeID'):
 
     # assign the results to self_loops['to_fix']
     edges_gdf['to_fix'] = to_fix
-    edges_gdf['fixing'] = [True if len(to_fix) > 0 else False for to_fix in edges_gdf['to_fix']]
-    to_fix = edges_gdf[edges_gdf['fixing'] == True].copy()
-    edges_gdf = edges_gdf[edges_gdf['fixing'] == False]
+    edges_gdf["fixing"] = [len(to_fix) > 0 for to_fix in edges_gdf["to_fix"]]
+    to_fix = edges_gdf[edges_gdf['fixing']].copy()
+    edges_gdf = edges_gdf[~edges_gdf["fixing"]]
     if len(to_fix) == 0:
         return nodes_gdf, edges_gdf
     return _add_fixed_edges(edges_gdf, to_fix, edgeID_column)    
