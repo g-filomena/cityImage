@@ -1,16 +1,17 @@
-import pandas as pd
-import numpy as np
-import geopandas as gpd
-import math
-import pyproj
-import osmnx as ox
-import networkx as nx
 
-from typing import List
-from math import sqrt
-from shapely.geometry import LineString, Point, Polygon, MultiPoint, mapping, LinearRing, MultiPolygon
-from shapely.ops import unary_union, transform, nearest_points, split, linemerge
-from shapely.affinity import scale
+import geopandas as gpd
+import networkx as nx
+import numpy as np
+import osmnx as ox
+import pandas as pd
+import pyproj
+from shapely.geometry import (
+    LineString,
+    MultiPoint,
+    MultiPolygon,
+    Point,
+)
+from shapely.ops import linemerge, split, transform
 
 pd.set_option("display.precision", 3)
 
@@ -51,7 +52,7 @@ def downloader(OSMplace, download_method, tags = None, distance = 500.0, downloa
     """    
     download_options = {"distance_from_address", "distance_from_point", "OSMplace", "polygon"}
     if download_method not in download_options:
-        raise downloadError('Provide a download method amongst {}'.format(download_options))
+        raise downloadError(f'Provide a download method amongst {download_options}')
 
     download_method_dict = {
         'distance_from_address': ox.features_from_address,
@@ -137,7 +138,7 @@ def dict_to_df(list_dict, list_col):
         The resulting DataFrame.
     """
     df = pd.DataFrame(list_dict).T
-    df.columns = ["d{}".format(i) for i, col in enumerate(df, 1)]
+    df.columns = [f"d{i}" for i, col in enumerate(df, 1)]
     df.columns = list_col
     return df
      
@@ -439,6 +440,7 @@ def convert_numeric_columns(df):
     return df
     
 from shapely.geometry import MultiPolygon
+
 
 def gdf_multipolygon_to_polygon(gdf, columnID="buildingID"):
     """
