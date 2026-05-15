@@ -24,10 +24,10 @@ It only:
 
 from __future__ import annotations
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
-from .land_use_utils import _to_list, _deduplicate_preserving_order
+from .land_use_utils import _deduplicate_preserving_order, _to_list
 
 # =============================================================================
 # Public API
@@ -359,9 +359,9 @@ def land_use_from_polygons(
 
         # Re-order by NORMALIZED overlap desc, then label asc (requested semantics).
         if labels:
-            tmp = list(zip(labels, overlaps))
+            tmp = list(zip(labels, overlaps, strict=False))
             tmp.sort(key=lambda x: (-x[1], x[0]))
-            labels, overlaps = zip(*tmp)
+            labels, overlaps = zip(*tmp, strict=False)
             return list(labels), list(overlaps)
 
         return [], []
