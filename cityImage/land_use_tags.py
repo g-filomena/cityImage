@@ -1,5 +1,5 @@
 from collections import defaultdict
-from collections.abc import Mapping, Iterable
+from collections.abc import Iterable, Mapping
 
 EXCLUDE_AMENITIES = {
     # Money / vending / automatons
@@ -78,7 +78,6 @@ EXCLUDE_AMENITIES = {
     "internet_cafe",  # sometimes room-level not building-level
     "smoking_area",
     "mailroom",
-    "parcel_locker",
 
     # Religious micro-POIs (not the building)
     "bible_box",
@@ -97,8 +96,6 @@ EXCLUDE_AMENITIES = {
 
     # Waste / disposal
     "waste_transfer_station",
-    "waste_disposal",
-    "waste_basket",
     "waste_packaging",
     "waste_dump",
     "waste_container",
