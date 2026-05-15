@@ -1,13 +1,12 @@
-import pandas as pd
-import numpy as np
 import geopandas as gpd
 import networkx as nx
+import pandas as pd
+from shapely.geometry import LineString
 
-from shapely.geometry import Point, LineString
-from shapely.ops import unary_union
 pd.set_option("display.precision", 3)
 
 from .graph import graph_fromGDF
+
 
 def consolidate_nodes(nodes_gdf, edges_gdf, nodeID_column = 'nodeID', consolidate_edges_too = False, tolerance = 20):
     """
