@@ -134,7 +134,10 @@ def classify_sparse_land_uses(
     return gdf
 
 
-def _normalise_weight_dict(weights: dict[str, float], default_land_use: str) -> tuple[list[str], list[float]]:
+def _normalise_weight_dict(
+    weights: dict[str, float],
+    default_land_use: str,
+) -> tuple[list[str], list[float]]:
     """Return stable labels and normalised weights from a group -> mass dict."""
     clean_weights = {
         group: float(weight)
@@ -176,8 +179,18 @@ def attach_sparse_land_uses(
 
     buildings = buildings_gdf.copy()
     buildings["_ci_sparse_row"] = range(len(buildings))
-    buildings[target_column] = [[default_land_use] for _ in range(len(buildings))]
-    buildings[overlaps_column] = [[1.0] for _ in range(len(buildings))]
+
+    # Force object dtype so nested lists are stored as scalar cell values.
+    buildings[target_column] = pd.Series(
+        [[default_land_use] for _ in range(len(buildings))],
+        index=buildings.index,
+        dtype="object",
+    )
+    buildings[overlaps_column] = pd.Series(
+        [[1.0] for _ in range(len(buildings))],
+        index=buildings.index,
+        dtype="object",
+    )
 
     if buildings.empty or land_uses_gdf.empty:
         return buildings.drop(columns=["_ci_sparse_row"], errors="ignore")
@@ -248,7 +261,16 @@ def attach_sparse_land_uses(
 
     for row_id, weights in grouped_weights.items():
         labels, overlaps = _normalise_weight_dict(weights, default_land_use)
-        buildings.loc[buildings["_ci_sparse_row"] == row_id, target_column] = [labels]
-        buildings.loc[buildings["_ci_sparse_row"] == row_id, overlaps_column] = [overlaps]
+
+        matched_index = buildings.index[buildings["_ci_sparse_row"] == row_id]
+        if len(matched_index) == 0:
+            continue
+
+        # Use scalar .at assignment. Do not use:
+        # buildings.loc[mask, column] = [labels]
+        # because pandas may treat the nested list as a broadcastable ndarray.
+        idx = matched_index[0]
+        buildings.at[idx, target_column] = labels
+        buildings.at[idx, overlaps_column] = overlaps
 
     return buildings.drop(columns=["_ci_sparse_row"], errors="ignore")
