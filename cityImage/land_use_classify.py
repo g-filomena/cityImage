@@ -80,11 +80,12 @@ Given triplets in original row order, Stage 2 applies:
 """
 from __future__ import annotations
 
-import pandas as pd
 from typing import Any
 
-from .land_use_utils import _to_list
+import pandas as pd
+
 from .land_use_tags import OSM_DOMAIN_GROUPS
+from .land_use_utils import _to_list
 
 UNCLASSIFIED = "UNCLASSIFIED"
 
@@ -397,7 +398,7 @@ def classify_land_use(
     gdf = buildings_gdf.copy()
 
     lookup = {}
-    for raw_values, target in zip(categories, strings):
+    for raw_values, target in zip(categories, strings, strict=False):
         for raw_value in raw_values:
             lookup[raw_value] = target
             if raw_value is not None:
