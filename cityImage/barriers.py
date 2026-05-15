@@ -1,11 +1,16 @@
-import osmnx as ox
-import pandas as pd
-import numpy as np
 import geopandas as gpd
+import pandas as pd
+from shapely.geometry import (
+    GeometryCollection,
+    LineString,
+    MultiLineString,
+    MultiPolygon,
+    Polygon,
+)
+from shapely.ops import nearest_points, polygonize_full, unary_union
 
-from shapely.geometry import Point, LineString, Polygon, MultiPolygon, MultiLineString, GeometryCollection
-from shapely.ops import linemerge, polygonize, polygonize_full, unary_union, nearest_points
-from .utilities import gdf_from_geometries, downloader
+from .utilities import downloader, gdf_from_geometries
+
 pd.set_option("display.precision", 3)
 
 def road_barriers(OSMplace, download_method, distance = 500.0, crs = None, include_primary = False, include_secondary = False):
@@ -238,7 +243,7 @@ def along_water(edges_gdf, barriers_gdf):
     tmp = barriers_gdf[barriers_gdf['barrier_type'].isin(['water'])]
     edges_gdf['ac_rivers'] = edges_gdf.apply(lambda row: barriers_along(row['edgeID'], edges_gdf, tmp, sindex, offset = 200), axis = 1)
     edges_gdf['c_rivers'] = edges_gdf.apply(lambda row: _crossing_barriers(row['geometry'], tmp), axis = 1)
-    edges_gdf['bridge'] = edges_gdf.apply(lambda row: True if len(row['c_rivers']) > 0 else False, axis = 1)
+    edges_gdf["bridge"] = edges_gdf.apply(lambda row: len(row["c_rivers"]) > 0, axis=1)
     # excluding bridges
     edges_gdf['a_rivers'] = edges_gdf.apply(lambda row: list(set(row['ac_rivers'])-set(row['c_rivers'])), axis = 1)
     edges_gdf['a_rivers'] = edges_gdf.apply(lambda row: row['ac_rivers'] if not row['bridge'] else [], axis = 1)
@@ -366,7 +371,7 @@ def assign_structuring_barriers(edges_gdf, barriers_gdf):
     tmp = barriers_gdf[~barriers_gdf['barrier_type'].isin(exlcude)].copy() 
     
     edges_gdf['c_barr'] = edges_gdf.apply(lambda row: _crossing_barriers(row['geometry'], tmp ), axis = 1)
-    edges_gdf['sep_barr'] = edges_gdf.apply(lambda row: True if len(row['c_barr']) > 0 else False, axis = 1)
+    edges_gdf["sep_barr"] = edges_gdf.apply(lambda row: len(row["c_barr"]) > 0, axis=1)
     edges_gdf.drop('c_barr', axis = 1, inplace = True)
     
     return edges_gdf
