@@ -254,7 +254,7 @@ def split_line_at_MultiPoint(line_geometry, intersections, z = 0.0):
     
     # create LineString objects with z-coordinate values for each vertex
     if z is not None:
-        lineZ = [LineString([(coords[0], coords[1], z) for coords in line.coords]) for line in lines_list]
+        lines_list = [LineString([(coords[0], coords[1], z) for coords in line.coords]) for line in lines_list]
     # return the list of resulting line segments
     return lines_list
             
