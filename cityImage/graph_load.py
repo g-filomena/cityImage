@@ -1,19 +1,16 @@
 import warnings
+
 warnings.simplefilter(action="ignore", category=FutureWarning)
 
-import osmnx as ox 
-import pandas as pd
-import numpy as np
+
 import geopandas as gpd
-import math
-from math import sqrt
-import ast
-import functools
+import numpy as np
+import osmnx as ox
+import pandas as pd
+from shapely.geometry import Point
 
-from shapely.geometry import Point, LineString, Polygon, MultiPoint
-from shapely.ops import split, linemerge
+from .utilities import downloader, fix_multiparts_LineString_gdf
 
-from .utilities import fix_multiparts_LineString_gdf, downloader
 pd.set_option("display.precision", 3)
 pd.options.mode.chained_assignment = None
    
@@ -74,7 +71,7 @@ def get_network_fromOSM(OSMplace, download_method, network_type = "all", crs = N
     edges_gdf = edges_gdf[to_keep]
     edges_gdf = _resolve_list_edges_gdf(edges_gdf)
     nodes_gdf, edges_gdf = _project_gdfs(nodes_gdf, edges_gdf, crs)
-    nodes_gdf["x"], nodes_gdf["y"] = list(zip(*[(geometry.coords[0][0], geometry.coords[0][1]) for geometry in nodes_gdf.geometry]))
+    nodes_gdf["x"], nodes_gdf["y"] = list(zip(*[(geometry.coords[0][0], geometry.coords[0][1]) for geometry in nodes_gdf.geometry], strict=False))
     
     if len(nodes_gdf.geometry.iloc[0].coords) > 2:
         nodes_gdf['z'] = [geometry.coords[0][2] for geometry in nodes_gdf.geometry]
@@ -339,7 +336,7 @@ def obtain_nodes_gdf(edges_gdf, crs):
     else:
         nodes_data = pd.DataFrame(list(unique_nodes), columns=["x", "y"]).astype("float")
         
-    geometry = [Point(xy) for xy in zip(nodes_data.x, nodes_data.y)]
+    geometry = [Point(xy) for xy in zip(nodes_data.x, nodes_data.y, strict=False)]
     nodes_gdf = gpd.GeoDataFrame(nodes_data, crs=crs, geometry=geometry)
     nodes_gdf.reset_index(drop=True, inplace = True)
     nodes_gdf["nodeID"] = nodes_gdf.index.values.astype("int64")
@@ -363,9 +360,9 @@ def join_nodes_edges_by_coordinates(nodes_gdf, edges_gdf):
         The junction and street segment GeoDataFrames.
     """
        
-    if not "nodeID" in nodes_gdf.columns: 
+    if "nodeID" not in nodes_gdf.columns: 
         nodes_gdf["nodeID"] = nodes_gdf.index.values.astype("int64")
-    nodes_gdf["coordinates"] = list(zip(nodes_gdf.x, nodes_gdf.y))
+    nodes_gdf["coordinates"] = list(zip(nodes_gdf.x, nodes_gdf.y, strict=False))
     edges_gdf["u"] = edges_gdf.geometry.apply(lambda row: row.coords[0]).map(nodes_gdf.set_index('coordinates').nodeID)
     edges_gdf["v"] = edges_gdf.geometry.apply(lambda row: row.coords[-1]).map(nodes_gdf.set_index('coordinates').nodeID)
     nodes_gdf = nodes_gdf.drop('coordinates', axis = 1)
