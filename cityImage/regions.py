@@ -1,19 +1,16 @@
-import networkx as nx
-import pandas as pd
-import numpy as np
-import geopandas as gpd
-import functools
-import community
-import array
-import numbers
-import warnings
 
-from shapely.ops import polygonize_full, unary_union, nearest_points
-from shapely.geometry import Point, LineString, Polygon, MultiPolygon, mapping, MultiLineString
+import community
+import geopandas as gpd
+import networkx as nx
+import numpy as np
+import pandas as pd
+from shapely.ops import polygonize_full, unary_union
+
 pd.set_option("display.precision", 3)
 
-from .graph import graph_fromGDF, dual_id_dict
+from .graph import dual_id_dict, graph_fromGDF
 from .utilities import dict_to_df, min_distance_geometry_gdf
+
 
 def identify_regions(dual_graph, edges_gdf, weight = None):
     """
