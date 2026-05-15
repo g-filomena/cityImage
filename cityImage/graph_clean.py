@@ -472,7 +472,6 @@ def clean_same_vertexes_edges(nodes_gdf, edges_gdf, nodeID_column = 'nodeID', ed
         geometryB = edges_gdf.query("code == @code").iloc[1].geometry
         cl = center_line([geometryA, geometryB])
         edges_gdf.at[index, 'geometry'] = cl
-        sub_group = edges_gdf.query("code == @code").copy()
              
     edges_gdf = edges_gdf.drop(list(to_drop), axis = 0)
     
