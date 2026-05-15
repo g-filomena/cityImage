@@ -1,22 +1,19 @@
-import pandas as pd, numpy as np
 
-import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.patches as mpatches
+import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+import numpy as np
+import pandas as pd
+from matplotlib.lines import Line2D
 
-from matplotlib.lines import Line2D  
-from mpl_toolkits.axes_grid1 import make_axes_locatable, ImageGrid
-from mpl_toolkits.mplot3d.art3d import Line3DCollection
-from matplotlib.colors import LinearSegmentedColormap
-
-import colorsys
 pd.set_option("display.precision", 3)
 
+from .colors import kindlmann, rand_cmap
 from .utilities import scaling_columnDF
-from .colors import rand_cmap, random_colors_list, kindlmann, lighten_color
 
-class Plot():
+
+class Plot:
     """
     Class for creating a basic matplotlib plot with a title and customizable settings.
 
@@ -62,7 +59,7 @@ class Plot():
             self.fig.suptitle(title, color = self.text_color, fontsize = self.font_size_primary, fontfamily = 'Times New Roman')
             
                
-class MultiPlot():
+class MultiPlot:
     """
     A class for creating multi-plot figures.
     
@@ -314,7 +311,7 @@ def plot_grid_gdfs_column(gdfs = [], column = None, ncols = 1, nrows = 1, main_t
         norm = plt.Normalize(vmin = min_value, vmax = max_value)
     
     unique_categories = []
-    if (legend) & (scheme == None):
+    if legend and scheme is None:
         # Step 1: Collect unique categories
         unique_categories = set()
         for gdf in gdfs:
@@ -520,7 +517,7 @@ def plotOn_ax(ax, gdf, column = None, scheme = None, bins = None, classes = 7, n
     geometry_type = gdf.iloc[0].geometry.geom_type
     if geometry_type == 'Point':    
         if (geometry_size_factor is not None): 
-            if not '_sc' in column:
+            if '_sc' not in column:
                 gdf[column+'_sc'] = scaling_columnDF(gdf[column])
                 geometry_factor_column = column+'_sc'
             else:
@@ -604,7 +601,7 @@ def subplot(ax, n, multiPlot, gdf, column, titles, scheme, bins, classes, norm, 
     legend_ax = False
     legend_fig = False
     
-    if (legend and scheme != None):
+    if legend and scheme is not None:
         legend_ax = (n == 1 and scheme == 'User_Defined') or (scheme != 'User_Defined')
         legend_fig = (n == 1 and scheme == 'User_Defined')
     elif legend: # categorical legend
