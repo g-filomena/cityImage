@@ -28,18 +28,24 @@ Dependencies (from .land_use_tags)
 
 from __future__ import annotations
 
+from typing import Any
+
 import numpy as np
 import pandas as pd
 
 from .land_use_tags import (
     EXCLUDE_AMENITIES,
-    RESOLUTION_RULES,
     OSM_DOMAIN_GROUPS,
     OSM_DOMAIN_VALUE_TO_GROUP,
-    POW_RELIGIOUS_BUILDINGS
+    POW_RELIGIOUS_BUILDINGS,
+    RESOLUTION_RULES,
 )
-
-from .land_use_utils import _normalize_token, _clean_tokens, _is_truthy_osm_tag_value, _is_missing_scalar
+from .land_use_utils import (
+    _clean_tokens,
+    _is_missing_scalar,
+    _is_truthy_osm_tag_value,
+    _normalize_token,
+)
 
 # -----------------------------------------------------------------------------
 # Module-level constants
