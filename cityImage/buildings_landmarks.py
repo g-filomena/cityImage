@@ -549,8 +549,8 @@ def _building_local_score(building_geometry, buildingID, buildings_gdf, building
     cols = {"direct": ["3dvis", "fac", "height", "area", "2dvis", "cult", "prag"], "inverse": ["neigh", "road"]}
     
     buffer = building_geometry.buffer(radius)
-    possible_matches_index = list(buildings_gdf_sindex.intersection(buffer.bounds))
-    matches = buildings_gdf.iloc[list(buildings_gdf_sindex.intersection(buffer.bounds))].copy()
+    matches_index = list(buildings_gdf_sindex.intersection(buffer.bounds))
+    matches = buildings_gdf.iloc[matches_index].copy()
     matches = matches[matches.intersects(buffer)]
                 
     # Rescale all values dynamically if the column exists in matches
