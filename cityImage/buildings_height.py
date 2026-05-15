@@ -1,11 +1,12 @@
 import geopandas as gpd
-import pandas as pd
 import numpy as np
+import pandas as pd
 import rasterio
-from shapely.geometry import box
 from rasterstats import zonal_stats
+from shapely.geometry import box
 
 from .utilities import gdf_multipolygon_to_polygon
+
 
 def assign_building_heights_from_other_gdf(buildings_gdf, detailed_buildings_gdf, crs, base_field = 'base', height_field = 'height', min_overlap=0.4):
     """
@@ -82,7 +83,7 @@ def assign_building_heights_from_other_gdf(buildings_gdf, detailed_buildings_gdf
     buildings_gdf['ix'] = buildings_gdf.index
     
     intersections = gpd.sjoin(detailed_buildings_gdf, buildings_gdf, predicate="intersects", how="left")
-    intersections = intersections[intersections.geo_check != None]
+    intersections = intersections[intersections["geo_check"].notna()]
     
     # Compute intersection area
     intersections["area_intersection"] = intersections.apply(lambda row: row["geometry"].intersection(row["geo_check"]).area, axis=1)
