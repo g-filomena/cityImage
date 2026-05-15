@@ -268,15 +268,12 @@ def along_within_parks(edges_gdf, barriers_gdf):
     edges_gdf: LineString GeoDataFrame
         The updated street segments GeoDataFrame.
     """
-    
-    sindex = edges_gdf.sindex
-    tmp = barriers_gdf[barriers_gdf['barrier_type']=='park']
-    
+        
     # polygonize parks
     park_polygons = barriers_gdf[barriers_gdf['barrier_type']=='park'].copy()
     park_polygons['geometry'] = park_polygons.apply(lambda row: (polygonize_full(row['geometry']))[0], axis = 1)
     park_polygons = gpd.GeoDataFrame(park_polygons['barrierID'], geometry = park_polygons['geometry'], crs = edges_gdf.crs)
-    
+
     edges_gdf['w_parks'] = edges_gdf.apply(lambda row: _within_parks(row['geometry'], park_polygons), axis = 1) #within
 
     return edges_gdf
