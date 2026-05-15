@@ -63,7 +63,6 @@ def identify_regions_primal(graph, nodes_gdf, weight = None):
         A dictionary where to each nodeID (key) corresponds a region code (value).
     """
 
-    subdvisions = []
     if weight is None: 
         weight = 'topo' #the function requires a string 
     # extraction of the best partitions
@@ -193,10 +192,7 @@ def districts_to_edges_from_nodes(nodes_gdf, edges_gdf, column):
     edges_gdf: LineString GeoDataFrame
         The updated street segments GeoDataFrame.
     """
-    
-    ix_u = edges_gdf.columns.get_loc('u')+1  
-    ix_v = edges_gdf.columns.get_loc('v')+1  
-    
+       
     edges_gdf = edges_gdf.copy()
     edges_gdf[column+'_uv'] = 999999
     edges_gdf[column+'_u'] = 999999
