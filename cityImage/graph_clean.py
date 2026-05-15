@@ -1,13 +1,13 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
+from shapely.geometry import LineString
 
-from shapely.geometry import Point, LineString
-from shapely.ops import linemerge
 pd.set_option("display.precision", 3)
 
 from .graph import nodes_degree
+from .graph_topology import fix_fake_self_loops, fix_network_topology, remove_disconnected_islands
 from .utilities import center_line, convert_numeric_columns
-from .graph_topology import remove_disconnected_islands, fix_network_topology, fix_fake_self_loops
+
 
 def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_islands = True, same_vertexes_edges = True, self_loops = False, fix_topology = False, 
                   preserve_direction = False, nodeID_column = 'nodeID', edgeID_column  ='edgeID', nodes_to_keep_regardless = []):
@@ -103,7 +103,7 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_islands = True
     if remove_islands:
         nodes_gdf, edges_gdf = remove_disconnected_islands(nodes_gdf, edges_gdf, nodeID_column)
     
-    nodes_gdf['x'], nodes_gdf['y'] = list(zip(*[(r.coords[0][0], r.coords[0][1]) for r in nodes_gdf.geometry]))
+    nodes_gdf['x'], nodes_gdf['y'] = list(zip(*[(r.coords[0][0], r.coords[0][1]) for r in nodes_gdf.geometry], strict=False))
     edges_gdf = correct_edge_geometries(nodes_gdf, edges_gdf) # correct edges coordinates
     return _finalize_dataframes(nodes_gdf, edges_gdf, crs, nodeID_column, edgeID_column)
 
