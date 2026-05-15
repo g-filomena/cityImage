@@ -1,15 +1,15 @@
 from __future__ import annotations
 
+import geopandas as gpd
+import numpy as np
 import osmnx as ox
 import pandas as pd
-import numpy as np
-import geopandas as gpd
 
 pd.set_option("display.precision", 3)
 
-from .utilities import downloader, gdf_multipolygon_to_polygon
-from .land_use_derive import derive_land_uses_raw_fromOSM
 from .land_use_classify import classify_land_uses_raws_into_OSMgroups
+from .land_use_derive import derive_land_uses_raw_fromOSM
+from .utilities import downloader, gdf_multipolygon_to_polygon
 
 
 def _require_column(gdf: gpd.GeoDataFrame, column: str, argument_name: str) -> None:
