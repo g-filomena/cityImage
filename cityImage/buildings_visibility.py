@@ -1,26 +1,25 @@
-import os
 import gc
-import warnings
-import psutil
-import ast 
-
-import numpy as np
-import pandas as pd
-import geopandas as gpd
-
-from shapely.geometry import Point, LineString, Polygon, MultiPolygon, MultiLineString, MultiPoint, GeometryCollection
-from shapely.ops import unary_union
-from shapely.strtree import STRtree
-
-import pyvista as pv
-from tqdm import tqdm
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 # Parallel/Distributed
 import dask
-from dask import delayed, compute
-from concurrent.futures import ThreadPoolExecutor
-from concurrent.futures import ProcessPoolExecutor, as_completed
+import geopandas as gpd
+import numpy as np
+import pandas as pd
+import psutil
+import pyvista as pv
+from dask import delayed
+from shapely.geometry import (
+    LineString,
+    MultiLineString,
+    MultiPolygon,
+    Point,
+    Polygon,
+)
+from shapely.ops import unary_union
+from shapely.strtree import STRtree
+from tqdm import tqdm
 
 from .angles import get_coord_angle
 from .graph_consolidate import consolidate_nodes
@@ -70,13 +69,16 @@ def visibility_polygon2d(building_geometry, obstructions_gdf, obstructions_sinde
         ob = unary_union(obstacles.geometry)
 
         intersections = [line.intersection(ob) for line in lines]    
-        clipped_lines = [LineString([origin, Point(intersection.geoms[0].coords[0])]) 
-                         if ((type(intersection) == MultiLineString) & (not intersection.is_empty)) 
-                         else LineString([origin, Point(intersection.coords[0])]) 
-                         if ((type(intersection) == LineString) & (not intersection.is_empty))                               
-                         else LineString([origin, Point(intersection[0].coords[0])]) 
-                         if ((type(intersection) == Point) & (not intersection.is_empty))
-                         else line for intersection, line in zip(intersections, lines)]
+        clipped_lines = [
+            LineString([origin, Point(intersection.geoms[0].coords[0])])
+            if isinstance(intersection, MultiLineString) and not intersection.is_empty
+            else LineString([origin, Point(intersection.coords[0])])
+            if isinstance(intersection, LineString) and not intersection.is_empty
+            else LineString([origin, Point(intersection.coords[0])])
+            if isinstance(intersection, Point) and not intersection.is_empty
+            else line
+            for intersection, line in zip(intersections, lines, strict=False)
+        ]
     # the line are not interrupted, keeping the original ones
     else:
         clipped_lines = lines
@@ -186,7 +188,7 @@ def compute_3d_sight_lines(nodes_gdf: gpd.GeoDataFrame, target_buildings_gdf: gp
         print(" 03 - Checking 3d obstructions")
         visible_3d = pd.DataFrame()
         if not obstructed_2d.empty:
-            obstructed_2d['geometry'] = [LineString([observer, target]) for observer, target in zip(obstructed_2d['observer_geo'], obstructed_2d['target_geo'])]
+            obstructed_2d['geometry'] = [LineString([observer, target]) for observer, target in zip(obstructed_2d['observer_geo'], obstructed_2d['target_geo'], strict=False)]
             visible_3d = obstructions_3d(obstructed_2d, obstructions_gdf, 'matchesIDs', meshes, simplified_target_buildings, num_workers=num_workers)
             if not visible_3d.empty:
                 visibles.append(visible_3d)
@@ -300,7 +302,7 @@ def _prepare_3d_sight_lines(nodes_gdf, target_buildings_gdf, obstructions_gdf, d
     observer_points_gdf = observer_points_gdf.drop(["x", "y", "z"], axis = 1)
     
     obstructions_gdf['building_3d'] = [polygon_2d_to_3d(geometry, base, height, extrude_from_sealevel = True, height_relative_to_ground = False) for geometry, base, height in 
-                                       zip(obstructions_gdf['geometry'], obstructions_gdf['base'], obstructions_gdf['height'])]
+                                       zip(obstructions_gdf['geometry'], obstructions_gdf['base'], obstructions_gdf['height'], strict=False)]
     obstructions_gdf['geometry'] = obstructions_gdf['geometry'].apply(lambda geom: geom.exterior)
     
     return observer_points_gdf, target_points, obstructions_gdf
@@ -324,7 +326,7 @@ def _prepare_buildings_gdf(buildings_gdf):
         buildings_gdf["base"] = 1.0
         
     buildings_gdf['base'] = buildings_gdf['base'].where(buildings_gdf['base'] > 1.0, 1.0) # minimum base
-    buildings_gdf = buildings_gdf[buildings_gdf["height"].notna() & (buildings_gdf["height"] != None)]
+    buildings_gdf = buildings_gdf[buildings_gdf["height"].notna() & (buildings_gdf["height"] is not None)]
     buildings_gdf = buildings_gdf[['buildingID', 'geometry', 'height', 'base']].copy()
     buildings_gdf.index = buildings_gdf.buildingID
     buildings_gdf.index.name = None
@@ -533,7 +535,7 @@ def filter_distance(chunk, targets, min_observer_target_distance):
     # Extract 2D coordinates and then distance filter
     observer_coords = np.array(potential_lines['observer_coords'].to_list())
     target_coords = np.array(potential_lines['target_coords'].to_list())
-    line_geometries = [LineString([start, stop]) for start, stop in zip(observer_coords, target_coords)]
+    line_geometries = [LineString([start, stop]) for start, stop in zip(observer_coords, target_coords, strict=False)]
     potential_lines['geometry'] = line_geometries
 
     return potential_lines
@@ -662,7 +664,7 @@ def _find_obstructions_2d(sub_chunk, obstructions_gdf, obstructions_sindex):
 
     # Group buildingIDs by line index
     obstruction_dict = {}
-    for line_idx, poly_idx in zip(pairs[0], pairs[1]):
+    for line_idx, poly_idx in zip(pairs[0], pairs[1], strict=False):
         bid = poly_ids[poly_idx]
         obstruction_dict.setdefault(line_idx, []).append(bid)
 
@@ -733,7 +735,7 @@ def obstructions_3d(potential_sight_lines, obstructions_gdf, potential_obstructi
         
     potential_sight_lines["visible"] = results
     # Filter visible sight lines and append to the result
-    potential_sight_lines = potential_sight_lines[potential_sight_lines["visible"] == True]
+    potential_sight_lines = potential_sight_lines[potential_sight_lines["visible"]]
     return potential_sight_lines
 
 def _process_one(bid, solid):
@@ -744,7 +746,7 @@ def _build_meshes(obstructions_gdf, n_jobs=None):
     print("Building obstructions meshes")
     ids = obstructions_gdf["buildingID"].values
     solids = obstructions_gdf["building_3d"].values
-    tasks = list(zip(ids, solids))
+    tasks = list(zip(ids, solids, strict=False))
 
     meshes = {}
     with ProcessPoolExecutor(max_workers=n_jobs) as ex:
@@ -820,7 +822,7 @@ def _finalize_sight_lines(sight_lines_tmp, nodes_gdf, consolidate, simplified_bu
     sight_lines : GeoDataFrame
         Cleaned, deduplicated GeoDataFrame of final sight lines, with correct geometry, observer and target references, and length.
     """
-    nodes_gdf['geometry'] = [Point(geometry.x, geometry.y, z) for geometry, z in zip(nodes_gdf['geometry'], nodes_gdf['z'])]     
+    nodes_gdf['geometry'] = [Point(geometry.x, geometry.y, z) for geometry, z in zip(nodes_gdf['geometry'], nodes_gdf['z'], strict=False)]     
     oldIDs_column = "old_nodeID"
     
     if consolidate:
@@ -831,7 +833,7 @@ def _finalize_sight_lines(sight_lines_tmp, nodes_gdf, consolidate, simplified_bu
 
     if (simplified_buildings is not None) and (not simplified_buildings.empty):
         sight_lines_tmp['pair'] = sight_lines_tmp.apply(
-            lambda row: list(zip(row['buildingIDs'], row['target_GEOs'])), axis=1
+            lambda row: list(zip(row['buildingIDs'], row['target_GEOs'], strict=False)), axis=1
         )
         sight_lines_tmp_exploded = sight_lines_tmp.explode('pair', ignore_index=True)
         sight_lines_tmp_exploded['buildingID'] = sight_lines_tmp_exploded['pair'].apply(lambda x: x[0])
@@ -840,7 +842,7 @@ def _finalize_sight_lines(sight_lines_tmp, nodes_gdf, consolidate, simplified_bu
     
     if "observer_geo" in sight_lines_tmp.columns:
         sight_lines_tmp['geometry'] = [LineString([observer, target]) for observer, target in zip(sight_lines_tmp['observer_geo'], 
-                                                                                                  sight_lines_tmp['target_geo'])]
+                                                                                                  sight_lines_tmp['target_geo'], strict=False)]
                                                                                                                                                                    
     sight_lines_tmp = sight_lines_tmp.drop([oldIDs_column, 'buildingIDs', 'target_GEOs', 'pair', 'observer_geo', 'target_geo', 'observer_coords',
                                            'target_coords', 'matchesIDs'], errors='ignore', axis=1)
