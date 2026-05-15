@@ -238,9 +238,9 @@ def angle_line_geometries(line_geometryA, line_geometryB, degree = False, calcul
         magA = _dot(vA, vA)**0.5
         magB = _dot(vB, vB)**0.5
         # Get cosine value
-        cos_ = dot_prod/magA/magB
+        cos = dot_prod/magA/magB
         # Get angle in radians and then convert to degrees
-        angle_rad = math.acos(dot_prod/magB/magA)
+        angle_rad = math.acos(cos)
         # Basically doing angle <- angle mod 360
         angle_deg = math.degrees(angle_rad)%360
         
