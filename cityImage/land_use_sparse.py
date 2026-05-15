@@ -28,7 +28,6 @@ import pandas as pd
 
 from .land_use_utils import _to_list
 
-
 NULL_STRINGS = {"", "none", "nan", "null", "na", "n/a"}
 
 
