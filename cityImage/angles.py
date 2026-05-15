@@ -1,7 +1,6 @@
 import math
-import numpy as np
-from math import sqrt
-from shapely.geometry import Point, LineString, MultiLineString
+
+from shapely.geometry import LineString
 
 """
 Readapted for LineStrings from Abhinav Ramakrishnan's post in https://stackoverflow.com/a/28261304/7375309.
@@ -37,7 +36,7 @@ class Error(Exception):
 class AngleError(Error):
     """Raised when not-intersecting lines are provided for computing angles"""
 
-class Settings():
+class Settings:
     """
     A class to store and compare the coordinates of two line geometries.
     
@@ -94,14 +93,14 @@ class Settings():
             For example, if "A" is passed as the prefix, the coordinates will be stored as
             self.x_originA, self.y_originA, etc.
         """
-        setattr(self, 'x_origin'+ prefix, float("{0:.10f}".format(coords[0][0])))
-        setattr(self, 'y_origin'+ prefix, float("{0:.10f}".format(coords[0][1])))
-        setattr(self, 'x_second'+ prefix, float("{0:.10f}".format(coords[1][0])))
-        setattr(self, 'y_second'+ prefix, float("{0:.10f}".format(coords[1][1])))
-        setattr(self, 'x_destination'+ prefix, float("{0:.10f}".format(coords[-1][0])))
-        setattr(self, 'y_destination'+ prefix, float("{0:.10f}".format(coords[-1][1])))
-        setattr(self, 'x_second_last'+ prefix, float("{0:.10f}".format(coords[-2][0])))
-        setattr(self, 'y_second_last'+ prefix, float("{0:.10f}".format(coords[-2][1])))
+        setattr(self, 'x_origin'+ prefix, float(f"{coords[0][0]:.10f}"))
+        setattr(self, 'y_origin'+ prefix, float(f"{coords[0][1]:.10f}"))
+        setattr(self, 'x_second'+ prefix, float(f"{coords[1][0]:.10f}"))
+        setattr(self, 'y_second'+ prefix, float(f"{coords[1][1]:.10f}"))
+        setattr(self, 'x_destination'+ prefix, float(f"{coords[-1][0]:.10f}"))
+        setattr(self, 'y_destination'+ prefix, float(f"{coords[-1][1]:.10f}"))
+        setattr(self, 'x_second_last'+ prefix, float(f"{coords[-2][0]:.10f}"))
+        setattr(self, 'y_second_last'+ prefix, float(f"{coords[-2][1]:.10f}"))
     
     def set_conditions(self, calculation_type):
         """
@@ -245,7 +244,7 @@ def angle_line_geometries(line_geometryA, line_geometryB, degree = False, calcul
         # Basically doing angle <- angle mod 360
         angle_deg = math.degrees(angle_rad)%360
         
-    except:
+    except (ValueError, ZeroDivisionError):
         angle_deg = 0.0
         angle_rad = 0.0
     
