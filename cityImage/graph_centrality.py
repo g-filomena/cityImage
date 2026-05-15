@@ -1,16 +1,12 @@
-import networkx as nx
-import pandas as pd
-import numpy as np
-import geopandas as gpd
-import functools
-import math
-import igraph as ig
-
 from math import sqrt
-from shapely.geometry import Point 
+
+import igraph as ig
+import pandas as pd
+
 pd.set_option("display.precision", 3)
 
 from .utilities import dict_to_df
+
 
 def _nodes_dict(ig_graph):
     """Create a dictionary of node indices and their coordinates from igraph graph.
