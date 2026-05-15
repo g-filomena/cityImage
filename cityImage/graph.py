@@ -1,16 +1,9 @@
-import osmnx as ox
-import pandas as pd
-import numpy as np
+import warnings
+
 import geopandas as gpd
 import networkx as nx
-import math
-import ast
-import functools
-
-from math import sqrt
-from collections import Counter
-from shapely.geometry import Point, LineString
-import warnings
+import pandas as pd
+from shapely.geometry import LineString
 
 from .angles import angle_line_geometries
 
@@ -45,7 +38,7 @@ def graph_fromGDF(nodes_gdf, edges_gdf, nodeID_column = "nodeID"):
     
     # ignore fields containing values of type list
     for attribute_name in nodes_gdf.columns:
-        if nodes_gdf[attribute_name].apply(lambda x: type(x) == list).any(): 
+        if nodes_gdf[attribute_name].apply(lambda x: isinstance(x, list)).any(): 
             continue    
         # only add this attribute to nodes which have a non-null value for it
         else: 
@@ -89,7 +82,7 @@ def multiGraph_fromGDF(nodes_gdf, edges_gdf, nodeID_column):
     attributes = nodes_gdf.to_dict()
       
     for attribute_name in nodes_gdf.columns:
-        if nodes_gdf[attribute_name].apply(lambda x: type(x) == list).any(): 
+        if nodes_gdf[attribute_name].apply(lambda x: isinstance(x, list)).any(): 
             continue 
         # only add this attribute to nodes which have a non-null value for it
         attribute_values = {k:v for k, v in attributes[attribute_name].items() if pd.notnull(v)}
@@ -224,7 +217,7 @@ def dual_graph_fromGDF(nodes_dual, edges_dual):
        
     for attribute_name in nodes_dual.columns:
         # only add this attribute to nodes which have a non-null value for it
-        if nodes_dual[attribute_name].apply(lambda x: type(x) == list).any(): 
+        if nodes_dual[attribute_name].apply(lambda x: isinstance(x, list)).any(): 
             continue
         attribute_values = {k:v for k, v in attributes[attribute_name].items() if pd.notnull(v)}
         nx.set_node_attributes(Dg, name=attribute_name, values=attribute_values)
