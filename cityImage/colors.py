@@ -1,7 +1,9 @@
-import numpy as np
-import matplotlib.colors as mc
-from matplotlib.colors import LinearSegmentedColormap
 import colorsys
+
+import matplotlib.colors as mc
+import numpy as np
+from matplotlib.colors import LinearSegmentedColormap
+
 
 def random_colors_list(nlabels, vmin = 0.8, vmax = 1.0, hsv = False):
     """ 
@@ -140,7 +142,7 @@ def lighten_color(color, amount=0.5):
     """ 
     try:
         c = mc.cnames[color]
-    except:
+    except KeyError:
         c = color
     c = colorsys.rgb_to_hls(*mc.to_rgb(c))
     return colorsys.hls_to_rgb(c[0], 1 - amount * (1 - c[1]), c[2])
