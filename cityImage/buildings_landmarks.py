@@ -1,20 +1,21 @@
 from __future__ import annotations
 
-import osmnx as ox
-import pandas as pd
-import numpy as np
-import geopandas as gpd
 from typing import Any
 
+import geopandas as gpd
+import numpy as np
+import osmnx as ox
+import pandas as pd
 from shapely.geometry import Point, Polygon, mapping
-from shapely.ops import linemerge, unary_union
+
 pd.set_option("display.precision", 3)
 
 import concurrent.futures
-from .utilities import scaling_columnDF
-from .land_use_utils import _to_list
-from .buildings_visibility import visibility_polygon2d, compute_3d_sight_lines
-    
+
+from .buildings_visibility import visibility_polygon2d
+from .utilities import downloader, scaling_columnDF
+
+
 def structural_score(buildings_gdf, obstructions_gdf, edges_gdf, advance_vis_expansion_distance = 300, neighbours_radius = 150):
     """
     The function computes the "Structural Landmark Component" sub-scores of each building.
@@ -351,7 +352,7 @@ def pragmatic_score(
         return [x / s for x in w]
 
     gdf["_w_list"] = gdf.apply(_weights_for_row, axis=1)
-    gdf["_lu_w"] = gdf.apply(lambda r: list(zip(r[land_uses_column], r["_w_list"])), axis=1)
+    gdf["_lu_w"] = gdf.apply(lambda r: list(zip(r[land_uses_column], r["_w_list"], strict=False)), axis=1)
 
     gdf_exploded = gdf.explode("_lu_w", ignore_index=False)
     gdf_exploded[land_uses_column] = gdf_exploded["_lu_w"].apply(
