@@ -3,24 +3,36 @@
 cityImage API reference
 =======================
 
-This page documents the public API after the core refactor. Generic file IO,
-OSM acquisition, plotting internals, and low-level helper functions are not
-exposed as top-level user API unless they preserve cityImage-specific output
-semantics.
+This page documents the curated public API after the refactor. The package keeps
+cityImage-specific semantics at the top level and delegates generic operations to
+specialised libraries:
+
+- file reading and CRS handling to GeoPandas;
+- OpenStreetMap acquisition to OSMnx;
+- graph algorithms to NetworkX, iGraph, and python-louvain;
+- raster/zonal-statistics operations to rasterio/rasterstats;
+- optional 3D mesh/ray operations to PyVista and Dask;
+- optional static plotting to Matplotlib and mapclassify.
+
+The public API therefore focuses on stable cityImage schemas and computational
+urban-image semantics: networks, barriers, regions, land use, landmarks,
+visibility, and imageability scoring. Low-level implementation helpers and
+generic GeoPandas/Shapely operations are intentionally not listed here.
 
 .. currentmodule:: cityImage
 
-Core schema and adapters
-------------------------
+Schema and adapters
+-------------------
 
 .. autosummary::
    :toctree: api/
 
    SchemaError
    SchemaReport
+   missing_columns
    require_columns
    require_geometry
-   missing_columns
+   require_land_use_lists
    ensure_building_schema_defaults
    validate_nodes_gdf
    validate_edges_gdf
@@ -28,12 +40,13 @@ Core schema and adapters
    standardize_nodes_gdf
    standardize_edges_gdf
    standardize_buildings_gdf
-   adapt_nodes_gdf
-   adapt_edges_gdf
-   adapt_buildings_gdf
+   standardize_cityimage_inputs
 
 IO and OSM bridge API
 ---------------------
+
+These helpers preserve cityImage output schemas while delegating acquisition and
+file IO to GeoPandas and OSMnx.
 
 .. autosummary::
    :toctree: api/
@@ -48,6 +61,14 @@ IO and OSM bridge API
    pedestrian_network_from_osm
    pedestrian_network_from_osm_features
    filter_pedestrian_osm_features
+
+Buildings
+---------
+
+.. autosummary::
+   :toctree: api/
+
+   select_buildings_by_study_area
 
 Angles and graph semantics
 --------------------------
@@ -87,16 +108,23 @@ Network topology
 Centrality
 ----------
 
+Centrality wrappers keep cityImage node/edge output semantics while delegating
+centrality algorithms to graph libraries.
+
 .. autosummary::
    :toctree: api/
 
    calculate_centrality
    reach_centrality
    straightness_centrality
+   weight_nodes
    append_edges_metrics
 
 Barriers
 --------
+
+Barrier helpers convert roads, waterways, coastlines, railways, and parks into
+the Lynchian ``edge`` semantics used by cityImage.
 
 .. autosummary::
    :toctree: api/
@@ -132,6 +160,9 @@ Regions and districts
 Land use
 --------
 
+Land-use functions cover OSM-derived land-use semantics and sparse/non-OSM
+attribute workflows.
+
 .. autosummary::
    :toctree: api/
 
@@ -150,26 +181,30 @@ Land use
 Landmarks and imageability scoring
 ----------------------------------
 
+These functions implement the cityImage landmark and imageability model:
+structural, visual, cultural, and pragmatic salience, followed by global/local
+score composition.
+
 .. autosummary::
    :toctree: api/
 
+   LandmarkScoringConfig
    structural_score
    visibility_score
-   facade_area
-   number_neighbours
    cultural_score
    pragmatic_score
    compute_global_scores
    compute_local_scores
-   score_cityimage_buildings
+   score_building_components
    score_buildings_global
    score_buildings_local
-   score_building_components
+   score_cityimage_buildings
    validate_score_weights
-   LandmarkScoringConfig
 
 Building height
 ---------------
+
+Height helpers are optional. Raster workflows require the ``height`` extra.
 
 .. autosummary::
    :toctree: api/
@@ -180,6 +215,9 @@ Building height
 
 Visibility
 ----------
+
+2D visibility is part of the core geospatial workflow. 3D sight-line workflows
+are optional and require the ``visibility3d`` extra, or ``all``.
 
 .. autosummary::
    :toctree: api/
@@ -196,6 +234,10 @@ Visibility
 Geometry and small utilities
 ----------------------------
 
+Only cityImage-specific geometry helpers are exposed. Generic envelope,
+convex-hull, distance, file-loading, and arbitrary dataframe helpers were
+removed from the public API; use GeoPandas/Shapely/Pandas directly for those.
+
 .. autosummary::
    :toctree: api/
 
@@ -208,8 +250,8 @@ Geometry and small utilities
 Plotting
 --------
 
-Plotting is optional and imported lazily. Use the plotting entry points below
-rather than internal axis/legend helpers.
+Plotting is optional and imported lazily. Use these public plotting entry points
+rather than internal axis, legend, or colorbar helpers.
 
 .. autosummary::
    :toctree: api/

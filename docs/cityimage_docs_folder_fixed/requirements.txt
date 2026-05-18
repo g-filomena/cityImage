@@ -1,7 +1,0 @@
-cityImage[all]
-sphinx
-pydata-sphinx-theme
-nbsphinx
-myst-parser
-sphinx-autodoc-typehints
-ipykernel

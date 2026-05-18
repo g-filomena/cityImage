@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import sys
 from pathlib import Path
 
@@ -38,6 +37,7 @@ extensions = [
 
 templates_path = ["_templates"]
 exclude_patterns = [
+    "otherExamples/*",
     "_build",
     "Thumbs.db",
     ".DS_Store",
@@ -60,16 +60,14 @@ html_theme = "pydata_sphinx_theme"
 
 html_theme_options = {
     "github_url": "https://github.com/g-filomena/cityImage",
-    "twitter_url": "https://twitter.com/gfilo",
     "logo": {
-        "image_light": "logo.png",
-        "image_dark": "logo.png",
+        "image_light": "_static/logo.png",
+        "image_dark": "_static/logo.png",
     },
     "navigation_depth": 4,
     "show_prev_next": True,
     "show_toc_level": 2,
-    "page_sidebar_items": ["page-toc", "edit-this-page", "page-nav"],
-}
+    }
 
 html_static_path = ["_static"]
 

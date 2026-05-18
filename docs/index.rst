@@ -101,5 +101,5 @@ Documentation content
    Home <self>
    About <about>
    User Guide <notebooks/userGuide.rst>
+   Module ownership <development/module_ownership>
    API reference <api>
-   Module ownership <development/module_ownership.md>
