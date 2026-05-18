@@ -1,4 +1,20 @@
-import warnings
+"""Core graph construction and dual-graph semantics.
+
+This module is intentionally small. It keeps only the cityImage graph boundary:
+
+* convert prepared node/edge GeoDataFrames into NetworkX graphs;
+* build the dual graph representation used by imageability/region workflows;
+* map dual-graph results back to primal edge IDs;
+* calculate simple node degree counts from edge tables.
+
+Network loading, topology cleaning, centrality, and community detection now live
+in dedicated modules or are delegated to external libraries.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Hashable
+from typing import Any
 
 import geopandas as gpd
 import networkx as nx
@@ -8,305 +24,294 @@ from shapely.geometry import LineString
 from .angles import angle_line_geometries
 
 pd.set_option("display.precision", 3)
-pd.options.mode.chained_assignment = None
-warnings.simplefilter(action="ignore", category=FutureWarning)
 
 
-def graph_fromGDF(nodes_gdf, edges_gdf, nodeID_column = "nodeID"):
-    """
-    From two GeoDataFrames (nodes and edges), it creates a NetworkX undirected Graph.
-       
-    Parameters
-    ----------
-    nodes_gdf: Point GeoDataFrame
-        The nodes (junctions) GeoDataFrame.
-    edges_gdf: LineString GeoDataFrame
-        The street segments GeoDataFrame.
-    nodeID_column : str, optional
-        Column name for node unique identifiers in `nodes_gdf`. Default is 'nodeID'.
-        
-    Returns
-    -------
-    G: NetworkX.Graph
-        The undirected street network graph.
-    """
-    nodes_gdf.set_index(nodeID_column, drop = False, inplace = True, append = False)
-    nodes_gdf.index.name = None
-    G = nx.Graph()   
-    G.add_nodes_from(nodes_gdf.index)
+def _is_missing_scalar(value: Any) -> bool:
+    """Return True for scalar missing values, False for list-like/geometries."""
+    if isinstance(value, list):
+        return False
+
+    try:
+        return bool(pd.isna(value))
+    except (TypeError, ValueError):
+        return False
+
+
+def _node_attribute_columns(gdf: pd.DataFrame) -> list[str]:
+    """Return node attribute columns safe to attach to NetworkX nodes."""
+    return [
+        column
+        for column in gdf.columns
+        if not gdf[column].apply(lambda value: isinstance(value, list)).any()
+    ]
+
+
+def _set_node_attributes_from_gdf(
+    graph: nx.Graph,
+    nodes_gdf: gpd.GeoDataFrame,
+) -> None:
+    """Attach non-list, non-missing node attributes to a NetworkX graph."""
     attributes = nodes_gdf.to_dict()
-    
-    # ignore fields containing values of type list
-    for attribute_name in nodes_gdf.columns:
-        if nodes_gdf[attribute_name].apply(lambda x: isinstance(x, list)).any(): 
-            continue    
-        # only add this attribute to nodes which have a non-null value for it
-        else: 
-            attribute_values = {k: v for k, v in attributes[attribute_name].items() if pd.notnull(v)}
-        nx.set_node_attributes(G, name=attribute_name, values=attribute_values)
 
-    # add the edges and attributes that are not u, v (as they're added separately) or null
-    for _, row in edges_gdf.iterrows():
-        attrs = {}
-        for label, value in row.items():
-            if (label not in ['u', 'v']) and (isinstance(value, list) or pd.notnull(value)):  
-                attrs[label] = value
-        G.add_edge(row['u'], row['v'], **attrs)
-    
-    return G
+    for attribute_name in _node_attribute_columns(nodes_gdf):
+        attribute_values = {
+            key: value
+            for key, value in attributes[attribute_name].items()
+            if not _is_missing_scalar(value)
+        }
+        nx.set_node_attributes(graph, values=attribute_values, name=attribute_name)
 
 
-def multiGraph_fromGDF(nodes_gdf, edges_gdf, nodeID_column):
+def _edge_attributes(row: pd.Series, exclude: set[str]) -> dict[str, Any]:
+    """Return edge attributes to attach to a NetworkX edge."""
+    return {
+        label: value
+        for label, value in row.items()
+        if label not in exclude and (isinstance(value, list) or not _is_missing_scalar(value))
+    }
+
+
+def graph_fromGDF(
+    nodes_gdf: gpd.GeoDataFrame,
+    edges_gdf: gpd.GeoDataFrame,
+    nodeID_column: str = "nodeID",
+) -> nx.Graph:
+    """Create an undirected NetworkX graph from cityImage node/edge GeoDataFrames."""
+    nodes = nodes_gdf.copy()
+    edges = edges_gdf.copy()
+
+    nodes = nodes.set_index(nodeID_column, drop=False)
+    nodes.index.name = None
+
+    graph = nx.Graph()
+    graph.add_nodes_from(nodes.index)
+    _set_node_attributes_from_gdf(graph, nodes)
+
+    for _, row in edges.iterrows():
+        graph.add_edge(row["u"], row["v"], **_edge_attributes(row, {"u", "v"}))
+
+    return graph
+
+
+def multiGraph_fromGDF(
+    nodes_gdf: gpd.GeoDataFrame,
+    edges_gdf: gpd.GeoDataFrame,
+    nodeID_column: str = "nodeID",
+) -> nx.MultiGraph:
+    """Create an undirected NetworkX MultiGraph from cityImage graph GeoDataFrames.
+
+    This function is retained for legacy workflows with parallel edges. New code
+    should usually prefer ``graph_fromGDF`` unless edge multiplicity matters.
     """
-    From two GeoDataFrames (nodes and edges), it creates a NetworkX.MultiGraph.
-    
-    Parameters
-    ----------
-    nodes_gdf: Point GeoDataFrame
-        The nodes (junctions) GeoDataFrame.
-    edges_gdf: LineString GeoDataFrame
-        The street segments GeoDataFrame.
-    nodeID_column : str, optional
-        Column name for node unique identifiers in `nodes_gdf`. Default is 'nodeID'.
-    
-    Returns
-    -------
-    G: NetworkX.MultiGraph
-        The street network graph.
+    nodes = nodes_gdf.copy()
+    edges = edges_gdf.copy()
+
+    nodes = nodes.set_index(nodeID_column, drop=False)
+    nodes.index.name = None
+
+    multigraph = nx.MultiGraph()
+    multigraph.add_nodes_from(nodes.index)
+    _set_node_attributes_from_gdf(multigraph, nodes)
+
+    for _, row in edges.iterrows():
+        key = row["key"] if "key" in row.index else 0
+        multigraph.add_edge(
+            row["u"],
+            row["v"],
+            key=key,
+            **_edge_attributes(row, {"u", "v", "key"}),
+        )
+
+    return multigraph
+
+
+def _intersecting_edge_ids(edges: gpd.GeoDataFrame, row: pd.Series) -> list[Hashable]:
+    """Return edge IDs sharing either endpoint with an edge row."""
+    return list(
+        edges.loc[
+            (edges["u"] == row["u"])
+            | (edges["u"] == row["v"])
+            | (edges["v"] == row["v"])
+            | (edges["v"] == row["u"])
+        ].index
+    )
+
+
+def _oneway_intersecting_edge_ids(edges: gpd.GeoDataFrame, row: pd.Series) -> list[Hashable]:
+    """Return directed/oneway-aware dual-neighbour edge IDs."""
+    if row["oneway"] == 1:
+        mask = (edges["u"] == row["v"]) | ((edges["v"] == row["v"]) & (edges["oneway"] == 0))
+    else:
+        mask = (
+            (edges["u"] == row["v"])
+            | ((edges["v"] == row["v"]) & (edges["oneway"] == 0))
+            | (edges["u"] == row["u"])
+            | ((edges["v"] == row["u"]) & (edges["oneway"] == 0))
+        )
+    return list(edges.loc[mask].index)
+
+
+def dual_gdf(
+    nodes_gdf: gpd.GeoDataFrame,
+    edges_gdf: gpd.GeoDataFrame,
+    crs: Any,
+    oneway: bool = False,
+    angle: str | None = None,
+) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
+    """Create dual-node and dual-edge GeoDataFrames from a primal street graph.
+
+    Dual nodes represent primal street segments. Dual edges connect street
+    segments sharing a junction. Their length is the mean of the two original
+    segment lengths; optional angle values encode deflection between original
+    geometries.
     """
-    nodes_gdf.set_index(nodeID_column, drop = False, inplace = True, append = False)
-    nodes_gdf.index.name = None
-    
-    Mg = nx.MultiGraph()   
-    Mg.add_nodes_from(nodes_gdf.index)
-    attributes = nodes_gdf.to_dict()
-      
-    for attribute_name in nodes_gdf.columns:
-        if nodes_gdf[attribute_name].apply(lambda x: isinstance(x, list)).any(): 
-            continue 
-        # only add this attribute to nodes which have a non-null value for it
-        attribute_values = {k:v for k, v in attributes[attribute_name].items() if pd.notnull(v)}
-        nx.set_node_attributes(Mg, name=attribute_name, values=attribute_values)
+    nodes = nodes_gdf.copy().set_index("nodeID", drop=False)
+    nodes.index.name = None
 
-    # add the edges and attributes that are not u, v, key (as they're added separately) or null
-    for row in edges_gdf.itertuples():
-        attrs = {label: value for label, value in row._asdict().items() if (label not in ['u', 'v', 'key']) and (isinstance(value, list) or pd.notnull(value))}
-        Mg.add_edge(row.u, row.v, key=row.key, **attrs)
-      
-    return Mg
-    
-def dual_gdf(nodes_gdf, edges_gdf, crs, oneway = False, angle = None):
-    """
-    It creates two dataframes that are later exploited to generate the dual graph of a street network. The nodes_dual gdf contains edges 
-    centroids; the edges_dual gdf, instead, contains links between the street segment centroids. Those dual edges link real street segments 
-    that share a junction. The centroids are stored with the original edge edgeID, while the dual edges are associated with several
-    attributes computed on the original street segments (distance between centroids, deflection angle).
-    
-    Parameters
-    ----------
-    nodes_gdf: Point GeoDataFrame
-        The nodes (junctions) GeoDataFrame.
-    edges_gdf: LineString GeoDataFrame
-        The street segments GeoDataFrame.
-    crs : str, or pyproj.CRS
-        Coordinate Reference System for the output GeoDataFrames. Can be a string (e.g. 'EPSG:32633'),  or a pyproj.CRS object.
-    oneway: boolean
-        When true, the function takes into account the direction and therefore it may ignore certain links whereby vehichular movement is not allowed in 
-        a certain direction.
-    angle: string {'degree', 'radians'}
-        It indicates how to express the angle of deflection.
-        
-    Returns
-    -------
-    nodes_dual, edges_dual: tuple of GeoDataFrames
-        The dual nodes and edges GeoDataFrames.
-    """
-    nodes_gdf.set_index("nodeID", drop = False, inplace = True, append = False)
-    nodes_gdf.index.name = None
-    
-    edges_gdf.set_index("edgeID", drop = False, inplace = True, append = False)
-    edges_gdf.index.name = None
-    
-    # computing centroids                                       
-    centroids_gdf = edges_gdf.copy()
-    centroids_gdf['centroid'] = centroids_gdf['geometry'].centroid
+    edges = edges_gdf.copy().set_index("edgeID", drop=False)
+    edges.index.name = None
 
-     # find_intersecting segments and storing them in the centroids gdf
-    # Create a new column 'intersecting' with a list of indexes of rows that have matching 'u' or 'v' values
-    centroids_gdf['intersecting'] = centroids_gdf.apply(lambda row: list(centroids_gdf[(centroids_gdf['u'] == row['u'])|(centroids_gdf['u'] == row['v'])|(centroids_gdf['v'] == row['v'])|
-                        (centroids_gdf['v'] == row['u'])].index), axis=1)
+    centroids = edges.copy()
+    centroids["centroid"] = centroids.geometry.centroid
 
-
-    # find_intersecting segments and storing them in the centroids gdf
-    centroids_gdf['intersecting'] = centroids_gdf.apply(lambda row: list(centroids_gdf.loc[(centroids_gdf['u'] == row['u'])|(centroids_gdf['u'] == row['v'])|
-                                                    (centroids_gdf['v'] == row['v'])|(centroids_gdf['v'] == row['u'])].index), axis=1)
     if oneway:
-        centroids_gdf['intersecting'] = centroids_gdf.apply(lambda row: list(centroids_gdf.loc[(centroids_gdf['u'] == row['v']) | ((centroids_gdf['v'] == row['v']) & (centroids_gdf['oneway'] == 0))].index) 
-                                                if row['oneway'] == 1 else list(centroids_gdf.loc[(centroids_gdf['u'] == row['v']) | ((centroids_gdf['v'] == row['v']) & (centroids_gdf['oneway'] == 0)) | 
-                                                (centroids_gdf['u'] == row['u']) | ((centroids_gdf['v'] == row['u']) & (centroids_gdf['oneway'] == 0))].index), axis = 1)
-    
-    # creating vertexes representing street segments (centroids)
-    centroids_data = centroids_gdf.drop(['geometry', 'centroid'], axis = 1)
-    nodes_dual = gpd.GeoDataFrame(centroids_data, crs=crs, geometry=centroids_gdf['centroid'])
-    nodes_dual['x'], nodes_dual['y'] = [x.coords.xy[0][0] for x in centroids_gdf['centroid']],[y.coords.xy[1][0] for y in centroids_gdf['centroid']]
+        if "oneway" not in centroids.columns:
+            raise ValueError("edges_gdf must contain 'oneway' when oneway=True")
+        centroids["intersecting"] = centroids.apply(
+            lambda row: _oneway_intersecting_edge_ids(centroids, row),
+            axis=1,
+        )
+    else:
+        centroids["intersecting"] = centroids.apply(
+            lambda row: _intersecting_edge_ids(centroids, row),
+            axis=1,
+        )
+
+    nodes_dual_data = centroids.drop(columns=["geometry", "centroid"])
+    nodes_dual = gpd.GeoDataFrame(nodes_dual_data, crs=crs, geometry=centroids["centroid"])
+    nodes_dual["x"] = [geometry.x for geometry in nodes_dual.geometry]
+    nodes_dual["y"] = [geometry.y for geometry in nodes_dual.geometry]
     nodes_dual.index = nodes_dual.edgeID
     nodes_dual.index.name = None
-        
-    new_edges = []
-    processed = set()
+
+    new_edges: list[dict[str, Any]] = []
+    processed: set[tuple[Hashable, Hashable]] = set()
 
     for row in nodes_dual.itertuples():
-        for intersecting in getattr(row, 'intersecting'):
+        for intersecting in row.intersecting:
             if (
-                row.Index == intersecting or
-                (row.Index, intersecting) in processed or
-                (intersecting, row.Index) in processed
+                row.Index == intersecting
+                or (row.Index, intersecting) in processed
+                or (intersecting, row.Index) in processed
             ):
                 continue
-            length_intersecting = getattr(nodes_dual.loc[intersecting], 'length')
-            distance = (getattr(row, 'length') + length_intersecting) / 2
-            ls = LineString([
-                getattr(row, 'geometry'),
-                getattr(nodes_dual.loc[intersecting], 'geometry')
-            ])
-            new_edges.append({
-                'u': row.Index,
-                'v': intersecting,
-                'geometry': ls,
-                'length': distance
-            })
+
+            intersecting_row = nodes_dual.loc[intersecting]
+            distance = (row.length + intersecting_row.length) / 2
+            geometry = LineString([row.geometry, intersecting_row.geometry])
+            new_edges.append(
+                {
+                    "u": row.Index,
+                    "v": intersecting,
+                    "geometry": geometry,
+                    "length": distance,
+                }
+            )
             processed.add((row.Index, intersecting))
 
-    edges_dual = pd.DataFrame(new_edges, columns=['u', 'v', 'geometry', 'length'])
+    edges_dual = gpd.GeoDataFrame(
+        new_edges,
+        columns=["u", "v", "geometry", "length"],
+        crs=crs,
+        geometry="geometry",
+    )
 
-    edges_dual = edges_dual.sort_index(axis=0)
-    edges_dual = gpd.GeoDataFrame(edges_dual[['u', 'v', 'length']], crs=crs, geometry=edges_dual['geometry'])
-    
-    # setting angle values in degrees and radians
-    if angle != 'radians':
-        edges_dual['deg'] = edges_dual.apply(lambda row: angle_line_geometries(edges_gdf.loc[row['u']].geometry, edges_gdf.loc[row['v']].geometry, degree = True, 
-                                            calculation_type = 'deflection'), axis = 1)
-    else: 
-        edges_dual['rad'] = edges_dual.apply(lambda row: angle_line_geometries(edges_gdf.loc[row['u']].geometry, edges_gdf.loc[row['v']].geometry, degree = False, 
-                                            calculation_type = 'deflection'), axis = 1)
+    if angle != "radians":
+        edges_dual["deg"] = edges_dual.apply(
+            lambda row: angle_line_geometries(
+                edges.loc[row["u"]].geometry,
+                edges.loc[row["v"]].geometry,
+                degree=True,
+                calculation_type="deflection",
+            ),
+            axis=1,
+        )
+    else:
+        edges_dual["rad"] = edges_dual.apply(
+            lambda row: angle_line_geometries(
+                edges.loc[row["u"]].geometry,
+                edges.loc[row["v"]].geometry,
+                degree=False,
+                calculation_type="deflection",
+            ),
+            axis=1,
+        )
+
     return nodes_dual, edges_dual
 
-def dual_graph_fromGDF(nodes_dual, edges_dual):
-    """
-    The function generates a NetworkX.Graph from dual-nodes and -edges GeoDataFrames.
-            
-    Parameters
-    ----------
-    nodes_dual: Point GeoDataFrame
-        The GeoDataFrame of the dual nodes, namely the street segments' centroids.
-    edges_dual: LineString GeoDataFrame
-        The GeoDataFrame of the dual edges, namely the links between street segments' centroids.
-        
-    Returns
-    -------
-    Dg: NetworkX.Graph
-        The dual graph of the street network.
-    """
-    nodes_dual.set_index('edgeID', drop = False, inplace = True, append = False)
-    nodes_dual.index.name = None
-    edges_dual.u, edges_dual.v = edges_dual.u.astype(int), edges_dual.v.astype(int)
-    
-    Dg = nx.Graph()   
-    Dg.add_nodes_from(nodes_dual.index)
-    attributes = nodes_dual.to_dict()
-       
-    for attribute_name in nodes_dual.columns:
-        # only add this attribute to nodes which have a non-null value for it
-        if nodes_dual[attribute_name].apply(lambda x: isinstance(x, list)).any(): 
-            continue
-        attribute_values = {k:v for k, v in attributes[attribute_name].items() if pd.notnull(v)}
-        nx.set_node_attributes(Dg, name=attribute_name, values=attribute_values)
 
-    # add the edges and attributes that are not u, v, key (as they're added separately) or null
-    for _, row in edges_dual.iterrows():
-        attrs = {label:value for label, value in row.items() if (label not in ['u', 'v']) and (isinstance(value, list) or pd.notnull(value))}
-        Dg.add_edge(row['u'], row['v'], **attrs)
+def dual_graph_fromGDF(
+    nodes_dual: gpd.GeoDataFrame,
+    edges_dual: gpd.GeoDataFrame,
+) -> nx.Graph:
+    """Create a NetworkX graph from dual-node and dual-edge GeoDataFrames."""
+    nodes = nodes_dual.copy().set_index("edgeID", drop=False)
+    nodes.index.name = None
+    edges = edges_dual.copy()
+    edges["u"] = edges["u"].astype(int)
+    edges["v"] = edges["v"].astype(int)
 
-    return Dg
+    dual_graph = nx.Graph()
+    dual_graph.add_nodes_from(nodes.index)
+    _set_node_attributes_from_gdf(dual_graph, nodes)
 
-def dual_id_dict(dict_values, graph, node_attribute):
+    for _, row in edges.iterrows():
+        dual_graph.add_edge(row["u"], row["v"], **_edge_attributes(row, {"u", "v"}))
+
+    return dual_graph
+
+
+def dual_id_dict(
+    dict_values: dict[Any, Any],
+    graph: nx.Graph,
+    node_attribute: str,
+) -> dict[Any, Any]:
+    """Map a dual-graph node dictionary to a dictionary keyed by primal edge IDs."""
+    return {
+        graph.nodes[node][node_attribute]: value
+        for node, value in dict_values.items()
+    }
+
+
+def nodes_degree(edges_gdf: gpd.GeoDataFrame) -> dict[Any, int]:
+    """Return node degree counts from an edge GeoDataFrame with ``u``/``v`` columns."""
+    return edges_gdf[["u", "v"]].stack().value_counts().to_dict()
+
+
+def from_nx_to_gdf(
+    graph: nx.Graph,
+    crs: Any,
+) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
+    """Convert a NetworkX graph with geometry attributes into node/edge GeoDataFrames.
+
+    This is retained as a small adapter for workflows that already have a
+    geometry-bearing NetworkX graph. It does not perform loading or topology
+    repair.
     """
-    It can be used when one deals with a dual graph and wants to link analyses conducted on this representation to 
-    the primal graph. For instance, it takes the dictionary containing the betweennes-centrality values of the
-    nodes in the dual graph, and associates these variables to the corresponding edgeID.
-    
-    Parameters
-    ----------
-    dict_values: dictionary 
-        It should be in the form {nodeID: value} where values is a measure that has been computed on the graph, for example.
-    graph: networkx graph
-        The graph that was used to compute or to assign values to nodes or edges.
-    node_attribute: string
-        The attribute of the node to link to the edges GeoDataFrame.
-    
-    Returns
-    -------
-    ed_dict: dictionary
-        A dictionary where each item consists of a edgeID (key) and centrality values (for example) or other attributes (values).
-    """
-    ed_list = [(graph.nodes[node][node_attribute], value) for node, value in dict_values.items()]
-    return dict(ed_list)
-
-def nodes_degree(edges_gdf):
-    """
-    It returns a dictionary where keys are nodes identifier (e.g. "nodeID") and values their degree.
-    
-    Parameters
-    ----------
-    edges_gdf: LineString GeoDataFrame
-        The street segments GeoDataFrame.
-    
-    Returns
-    -------
-    dd: dictionary
-        A dictionary where each item consists of a nodeID (key) and degree values (values).
-    """
-    dd = edges_gdf[['u','v']].stack().value_counts().to_dict()
-    return dd 
-
-def from_nx_to_gdf(graph, crs):
-    """
-    Converts a NetworkX graph with geometry attributes into two GeoDataFrames: one for nodes and one for edges.
-
-    Each node and edge in the input graph must have a 'geometry' attribute containing a valid shapely geometry
-    (e.g., Point for nodes, LineString for edges).
-
-    Parameters
-    ----------
-    graph : networkx.Graph or networkx.DiGraph
-        The input NetworkX graph. Each node and edge must have a 'geometry' key in its attribute dictionary.
-    crs : str, or pyproj.CRS
-        Coordinate Reference System for the output GeoDataFrames. Can be a string (e.g. 'EPSG:32633'), or a pyproj.CRS object.
-
-    Returns
-    -------
-    nodes_gdf : GeoDataFrame
-        GeoDataFrame of graph nodes
-    edges_gdf : GeoDataFrame
-        GeoDataFrame of graph edges
-    """
-    # Nodes GeoDataFrame
     nodes_gdf = gpd.GeoDataFrame(
         [
-            {**data, "nodeID": node, "geometry": data["geometry"]} 
+            {**data, "nodeID": node, "geometry": data["geometry"]}
             for node, data in graph.nodes(data=True)
         ],
-        crs=crs
+        crs=crs,
     )
-    
-    # Edges GeoDataFrame
+
     edges_gdf = gpd.GeoDataFrame(
         [
-            {**data, "u": u, "v": v, "geometry": data["geometry"]} 
+            {**data, "u": u, "v": v, "geometry": data["geometry"]}
             for u, v, data in graph.edges(data=True)
         ],
-        crs=crs
+        crs=crs,
     )
-    
-    return nodes_gdf, edges_gdf
 
+    return nodes_gdf, edges_gdf

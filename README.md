@@ -1,36 +1,173 @@
-[![CodeFactor](https://www.codefactor.io/repository/github/g-filomena/cityimage/badge)](https://www.codefactor.io/repository/github/g-filomena/cityimage)
-[![Actions Status](https://github.com/g-filomena/cityimage/workflows/tests/badge.svg)](https://github.com//g-filomena/cityimage/actions?query=workflow%3Atests)
-[![codecov](https://codecov.io/gh/g-filomena/cityImage/branch/master/graph/badge.svg)](https://codecov.io/gh/g-filomena/cityImage)
+[![Actions Status](https://github.com/g-filomena/cityImage/actions/workflows/tests.yml/badge.svg)](https://github.com/g-filomena/cityImage/actions)
 [![PyPI version](https://badge.fury.io/py/cityImage.svg)](https://badge.fury.io/py/cityImage)
 [![Documentation Status](https://readthedocs.org/projects/cityimage/badge/?version=latest)](https://cityimage.readthedocs.io/en/latest/?badge=latest)
 
-<img src="docs/_static/logo.png" alt="Logo" width="33%">
+<img src="docs/_static/logo.png" alt="cityImage logo" width="33%">
 
 # cityImage
 
-**A tool for analysing urban legibility and extracting The Computational Image of the City**
+**cityImage** is a Python package for analysing urban legibility and extracting a
+computational version of Kevin Lynch's *Image of the City* from geospatial data.
 
-For full documentation and examples see [the user manual](https://cityimage.readthedocs.io/en/latest/).
+The package works with user-provided GeoPandas datasets and with OpenStreetMap
+data acquired through OSMnx. The refactored API keeps cityImage-specific schema,
+topology, barrier, district, landmark, and scoring semantics while delegating
+generic acquisition, spatial joins, plotting, graph algorithms, and raster/mesh
+operations to established libraries.
 
-This repository provides a set of functions to extract salient urban features in line with the definitions laid down by Kevin Lynch in [The Image of The City](https://mitpress.mit.edu/books/image-city) using open and freely available geospatial datasets.
-The methods are fully documented in *A Computational approach to The Image of the City* by Filomena, Verstegen, and Manley, published in [Cities](https://doi.org/10.1016/j.cities.2019.01.006).
+For full documentation and examples, see the
+[cityImage documentation](https://cityimage.readthedocs.io/en/latest/).
 
-The library is written in Python and built on:
+## What cityImage does
 
-* [OSMNx](https://osmnx.readthedocs.io/en/stable/).
-* [python-louvain](https://github.com/taynaud/python-louvain).
-* [GeoPandas](https://github.com/geopandas/geopandas), 
-* [NetworkX](https://github.com/networkx/networkx), 
-* [Shapely](https://github.com/shapely/shapely).
+cityImage operationalises Lynchian urban elements as reproducible geospatial
+workflows:
 
-It also requires:
+- **Paths and nodes** from street-network structure, centrality, graph topology,
+  and optional angular/dual-graph semantics.
+- **Edges** from structuring barriers such as water, railways, large parks, and
+  major roads.
+- **Districts** from network partitions, polygonisation, and gateway detection.
+- **Landmarks** from structural, visual, cultural, and pragmatic salience.
+- **Imageability scores** from composable landmark and urban-element indicators.
 
-* [dask](https://github.com/dask/dask).
-* [numba](https://github.com/numba/numba)
-* [PyVista](https://docs.pyvista.org/version/stable/).
+The package is designed as a semantic layer over geospatial data rather than as
+a replacement for general-purpose GIS, graph, or OSM tooling.
 
-for creating 3d sight lines.
+## How cityImage differs from other geospatial libraries
 
-## How to install *cityImage*
+cityImage deliberately delegates generic operations to specialised libraries:
 
-    pip install cityImage
+- **GeoPandas/Shapely** handle geometry containers, CRS conversion, spatial
+  predicates, overlay-like operations, and file IO.
+- **OSMnx** handles OpenStreetMap acquisition and raw OSM graph/feature access.
+- **NetworkX/iGraph** handle graph representation and graph algorithms.
+- **python-louvain** handles modularity-based community detection.
+- **Rasterio/rasterstats** handle raster sampling and zonal statistics.
+- **PyVista/Dask** handle optional 3D mesh/ray workflows.
+
+The specificity of cityImage is different: it defines the **urban-image
+semantics** that sit on top of those tools. In practice this means cityImage
+focuses on:
+
+- stable nodes/edges/buildings schemas used across the package;
+- conversion of raw files or OSM outputs into those schemas;
+- graph cleaning and topology repair where the cityImage node/edge relationship
+  must be preserved;
+- dual/primal graph transformations with street-segment angle semantics;
+- barrier extraction and assignment as Lynchian edge semantics;
+- district and gateway logic from network partitions;
+- landmark/imageability component scores and final score composition;
+- example-ready workflows that keep the same conceptual outputs across cities.
+
+So, for example, OSMnx can acquire a walk network, GeoPandas can spatially join
+layers, and NetworkX can compute graph measures. cityImage connects those pieces
+into a reproducible workflow that returns *paths, nodes, edges, districts,
+landmarks,* and imageability scores in a consistent schema.
+
+## Background
+
+The methods are based on:
+
+Filomena, G., Verstegen, J. A., & Manley, E. (2019).
+[A computational approach to The Image of the City](https://doi.org/10.1016/j.cities.2019.01.006).
+*Cities*, 89, 14–25.
+
+## Installation
+
+Core install:
+
+```bash
+pip install cityImage
+```
+
+The core install keeps heavyweight optional dependencies out of the base
+environment. Use extras for workflows that need specific optional backends:
+
+```bash
+pip install "cityImage[osm]"          # OSMnx acquisition helpers
+pip install "cityImage[centrality]"   # iGraph centrality helpers
+pip install "cityImage[regions]"      # python-louvain region detection
+pip install "cityImage[plot]"         # optional plotting helpers
+pip install "cityImage[height]"       # DEM/DTM height helpers
+pip install "cityImage[visibility3d]" # 3D sight-line workflow
+pip install "cityImage[all]"          # all optional runtime dependencies
+```
+
+For development:
+
+```bash
+pip install -e ".[all,test,docs,dev]"
+```
+
+### Why 3D visibility is optional
+
+The 3D visibility workflow depends on heavier scientific/mesh-processing
+libraries such as PyVista and Dask. These dependencies are useful for
+line-of-sight and obstruction workflows, but they are not required for core
+network construction, land-use assignment, barriers, districts, landmark
+scoring, or 2D visibility. For that reason, `cityImage.visibility3d` should
+remain an optional extra.
+
+This keeps the default installation lighter and makes it possible to use
+cityImage in environments where 3D mesh tooling is unnecessary or difficult to
+install.
+
+## Main API areas
+
+The current API separates cityImage-owned semantics from external libraries:
+
+- `cityImage.io`: file/GeoPandas loading into cityImage schemas.
+- `cityImage.osm`: OSMnx acquisition into cityImage schemas.
+- `cityImage.network` and `cityImage.network_topology`: street-network
+  construction, cleaning, simplification, and topology repair.
+- `cityImage.graph` and `cityImage.angles`: primal/dual graph semantics and
+  angular relationships.
+- `cityImage.barriers`: natural and artificial barriers such as rivers,
+  railways, parks, and major roads.
+- `cityImage.regions`: districts and gateways from network partitions.
+- `cityImage.landuse`: land-use derivation, classification, sparse
+  representation, and assignment.
+- `cityImage.landmarks` and `cityImage.scoring`: Lynchian landmark and
+  imageability scoring.
+- `cityImage.visibility2d`: 2D visibility workflows.
+- `cityImage.visibility3d`: optional 3D sight-line workflows.
+- `cityImage.plotting`: optional static plotting helpers.
+
+## Minimal example
+
+```python
+import cityImage as ci
+
+nodes, edges = ci.network_from_osm(
+    "Susa, Italy",
+    download_method="OSMplace",
+    network_type="walk",
+    crs="EPSG:32632",
+)
+
+buildings = ci.buildings_from_osm(
+    "Susa, Italy",
+    download_method="OSMplace",
+    crs="EPSG:32632",
+)
+
+barriers = ci.barriers_from_osm(
+    "Susa, Italy",
+    download_method="OSMplace",
+    crs="EPSG:32632",
+)
+```
+
+## Development checks
+
+```bash
+ruff check cityImage tests scripts
+pytest -m "not network" -ra
+python -m build
+twine check dist/*
+```
+
+## License
+
+cityImage is distributed under the GNU General Public License v3.0 or later.

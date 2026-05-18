@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,60 +8,100 @@ version = "1.2.3"
 description = "A package for studying urban form and obtaining the computational Image of the City"
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "GPL-3.0-only" }
+license = "GPL-3.0-only"
+license-files = ["LICENSE"]
 authors = [
   { name = "Gabriele Filomena", email = "gabriele.filomena@liverpool.ac.uk" }
 ]
-keywords = ["urban form analysis", "computational image of the city", "Kevin Lynch", "cognitive maps"]
+keywords = [
+  "urban form analysis",
+  "computational image of the city",
+  "Kevin Lynch",
+  "cognitive maps",
+  "GIS",
+]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Science/Research",
-  "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Topic :: Scientific/Engineering :: GIS",
 ]
+
 dependencies = [
-  "dask>=2025.7.0",
   "geopandas>=1.1.1",
+  "networkx>=3.3",
+  "numpy>=2.0",
+  "pandas>=2.2",
+  "pyproj>=3.4",
+  "shapely>=2.1",
+]
+
+[project.optional-dependencies]
+osm = [
+  "osmnx>=2.0.5",
+]
+centrality = [
+  "igraph>=0.11.9",
+]
+regions = [
+  "python-louvain>=0.16",
+]
+plot = [
+  "mapclassify>=2.6",
+  "matplotlib>=3.8",
+]
+height = [
+  "rasterio>=1.3",
+  "rasterstats>=0.19",
+]
+visibility3d = [
+  "dask>=2025.7.0",
+  "psutil>=5.9",
+  "pyvista>=0.45.3",
+  "tqdm>=4.65.0",
+]
+all = [
+  "dask>=2025.7.0",
   "igraph>=0.11.9",
   "mapclassify>=2.6",
   "matplotlib>=3.8",
-  "networkx>=3.3",
-  "numba>=0.61.2",
-  "numpy>=2.0",
   "osmnx>=2.0.5",
-  "pandas>=2.2",
   "psutil>=5.9",
-  "pyproj>=3.4",
   "python-louvain>=0.16",
   "pyvista>=0.45.3",
   "rasterio>=1.3",
   "rasterstats>=0.19",
-  "shapely>=2.1",
   "tqdm>=4.65.0",
 ]
-
-[project.optional-dependencies]
 test = [
   "pytest>=8",
   "pytest-cov>=5",
 ]
+docs = [
+  "myst-parser>=4",
+  "nbsphinx>=0.9",
+  "pydata-sphinx-theme>=0.15",
+  "sphinx>=8",
+  "sphinx-autodoc-typehints>=2",
+  "ipykernel>=6",
+]
 dev = [
+  "build>=1.2",
+  "mypy>=1.10",
   "pytest>=8",
   "pytest-cov>=5",
-  "build>=1.2",
-  "twine>=5",
   "ruff>=0.6",
-  "mypy>=1.10",
+  "twine>=5",
 ]
 
 [project.urls]
 Homepage = "https://github.com/g-filomena/cityImage"
 Documentation = "https://cityimage.readthedocs.io"
 Repository = "https://github.com/g-filomena/cityImage"
+Issues = "https://github.com/g-filomena/cityImage/issues"
 
 [tool.setuptools.packages.find]
 include = ["cityImage*"]
@@ -77,7 +117,20 @@ markers = [
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+extend-exclude = [
+  "build",
+  "dist",
+  "*.egg-info",
+  ".ipynb_checkpoints",
+  "*.ipynb",
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM"]
 ignore = ["E501"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+docstring-code-format = true

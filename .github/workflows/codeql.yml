@@ -2,11 +2,12 @@ name: codeql
 
 on:
   pull_request:
-    branches: [master]
+    branches: [main, master]
   push:
-    branches: [master]
+    branches: [main, master]
   schedule:
     - cron: "30 3 * * 1"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -16,9 +17,16 @@ jobs:
   analyze:
     name: Analyze Python
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: github/codeql-action/init@v3
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
         with:
           languages: python
-      - uses: github/codeql-action/analyze@v3
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v3
