@@ -270,30 +270,26 @@ def classify_land_uses_intoDMAs(
     land_uses_column: str = "land_uses",
     macro_to_dma: dict[str, str] | None = None,
 ):
-    """
-    Classify each building into the DMA functional mix framework:
-        live / work / visit / live_work / live_visit / work_visit / live_work_visit / other
-
-    This implements the "live/work/visit triangle + mixes" idea (Dovey & Pafka, 2020):
-    many land-use labels are collapsed into three primary functions (Live, Work, Visit),
-    and mixed-use buildings are labeled by the combination present.
-
-    Inputs
-    ------
-    buildings_gdf[land_uses_column]:
-        Scalar or list-like of macro-groups (e.g., ["tourism", "shop_food_beverages", "office"]).
-
-    Output
-    ------
-    buildings_gdf[new_dma_column]:
-        str label in:
-            {"live","work","visit","live_work","live_visit","work_visit","live_work_visit","other"}
-
-    Rules
-    -----
-    - UNCLASSIFIED is ignored (does not contribute to DMA dimensions).
-    - Any macro-group starting with "shop_" is treated as Visit.
-    - Unknown macro-groups are ignored; if nothing maps => default_label ("other").
+    """Classify cityImage land-use groups into DMA functional categories.
+    
+    The DMA categories are live, work, visit, and mixed combinations of those
+    functions. Input labels should already be normalised cityImage land-use groups,
+    for example values derived from OSM shop, amenity, office, tourism, leisure, or
+    building tags.
+    
+    Parameters
+    ----------
+    buildings_gdf : geopandas.GeoDataFrame
+        Building table containing normalised land-use labels.
+    land_uses_column : str
+        Column containing list-like land-use groups.
+    macro_to_dma : mapping, optional
+        Mapping from macro groups to DMA categories.
+    
+    Returns
+    -------
+    geopandas.GeoDataFrame
+        Copy of the building table with DMA classifications.
     """
 
     gdf = buildings_gdf.copy()

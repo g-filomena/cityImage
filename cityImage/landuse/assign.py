@@ -219,31 +219,33 @@ def land_use_from_polygons(
     min_overlap_threshold: float = 0.20,
     overlap_column_name: str | None = None,
 ):
-    """
-    Intersect polygons with each building and compute *building-centric* land-use weights.
-
-    Aggregation model (per building)
-    -------------------------------
-    1) Find candidate polygons via spatial index (bbox), then filter with intersects().
-    2) Compute raw intersection fractions:
-         frac = area(building ∩ polygon) / area(building)
-    3) Drop polygon matches with frac < min_overlap_threshold.
-    4) If a polygon carries multiple labels, split its frac evenly across its labels.
-    5) Sum fractions by label.
-    6) Rescale across labels so that the final overlaps sum to 1.0 for the building:
-         norm = raw / sum(raw)
-
-    Output ordering
-    ---------------
-    Labels are ordered by normalized overlap descending.
-    Ties are broken deterministically by label ascending.
-
-    Notes
-    -----
-    - Assumes other_gdf labels are already clean/normalized/classified.
-    - If a polygon label-list contains duplicates, we de-duplicate within that polygon
-      to avoid accidental double counting.
-    - Overlaps returned are *mixture weights* (sum to 1.0), not raw "% of building area".
+    """Assign land-use labels from polygon layers to building polygons.
+    
+    Aggregation model
+    -----------------
+    For each building, intersecting land-use polygons are weighted by the proportion
+    of the building area they cover. The resulting labels and overlap weights are
+    stored on the output building table.
+    
+    Parameters
+    ----------
+    buildings_gdf : geopandas.GeoDataFrame
+        Building polygons.
+    other_gdf : geopandas.GeoDataFrame
+        Polygon layer containing land-use labels.
+    new_land_use_column : str
+        Output column for assigned land-use labels.
+    other_land_use_column : str
+        Source column containing land-use labels.
+    min_overlap_threshold : float, optional
+        Minimum overlap proportion required to keep a label.
+    overlap_column_name : str, optional
+        Output column for overlap weights.
+    
+    Returns
+    -------
+    geopandas.GeoDataFrame
+        Building table with assigned land-use labels and overlap weights.
     """
     if buildings_gdf.crs != other_gdf.crs:
         raise ValueError("CRS mismatch: buildings_gdf and other_gdf must have the same CRS")

@@ -122,45 +122,24 @@ def drop_redundant_group_label(triplets: list[str]) -> list[str]:
     return out
 
 def derive_land_uses_raw_fromOSM(buildings_gdf, default: str = "residential"):
-    """
-    Derive building-level land-use triplets from an OSM-derived GeoDataFrame.
-
-    Output per row
-    --------------
-    - land_uses_raw: list[str] of "base:macro_group:domain"
-
-    Extraction sources (merge priority)
-    -----------------------------------
-    1) building:use:* columns (truthy => include the suffix token; source domain "building")
-    2) Domain tag columns for each domain in OSM_DOMAINS order (amenity, building, shop, ...)
-
-    Domain assignment
-    -----------------
-    - If base token exists in the source domain registry -> chosen_domain = source_domain
-    - Else if base token exists in any domain registry -> chosen_domain = first domain found in OSM_DOMAINS order
-    - Else -> chosen_domain = "UNCLASSIFIED"
-
-    Macro-group assignment
-    ----------------------
-    - If base token is a registered value within chosen_domain:
-          macro_group = OSM_DOMAIN_VALUE_TO_GROUP[chosen_domain][base]
-    - Else if base token is itself a macro-group label within chosen_domain:
-          macro_group = base
-      (e.g., "accommodation:accommodation:building")
-    - Else:
-          macro_group = "UNCLASSIFIED"
-
-    Post-processing (per row)
-    -------------------------
-    - Exact triplet de-duplication (order-preserving)
-    - Drop group-label triplets "g:g:D" if any member "x:g:D" exists
-    - Apply RESOLUTION_RULES (canonicalization + containers + place_of_worship special case)
-    - If still empty, emit default as:
-          "<default_token>:<macro_group>:building" (domain selection uses same logic)
-
+    """Derive raw cityImage land-use candidates from OSM-style tag columns.
+    
+    Parameters
+    ----------
+    buildings_gdf : geopandas.GeoDataFrame
+        Building table containing OSM-style tag columns.
+    land_uses_raw_column : str
+        Name of the output column containing raw land-use candidates.
+    
+    Returns
+    -------
+    geopandas.GeoDataFrame
+        Copy of the building table with derived raw land-use candidates.
+    
     Notes
     -----
-    - normalize_token() strips ':' at ingestion; qualifiers are added only after normalization.
+    The output is an intermediate representation used by the land-use classifier.
+    It preserves OSM tag provenance before conversion to cityImage land-use groups.
     """
     
     buildings_gdf = buildings_gdf.copy()

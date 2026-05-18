@@ -38,6 +38,7 @@ pd.set_option("display.precision", 3)
 def fix_network_topology(nodes_gdf, edges_gdf, edgeID_column = 'edgeID'):
     """
     Fix the network topology by splitting intersecting edges and adding fixed edges to the network.
+
     This function considers as segments to be fixed only segments that are actually fully intersecting, thus sharing coordinates, excluding their 
     from and to vertices coordinates, but withouth actually generating, in the given GeoDataFrame, the right number of features.
 
@@ -283,6 +284,7 @@ def clean_network(nodes_gdf, edges_gdf, dead_ends = False, remove_islands = True
     """
     Cleans a street network by applying a series of topology and geometry corrections to nodes and edges GeoDataFrames.
 
+
     This function can:
         - Remove pseudo-nodes
         - Remove duplicate nodes and edges (by geometry or node pairing)
@@ -453,6 +455,7 @@ def _finalize_dataframes(nodes_gdf, edges_gdf, crs, nodeID_column = 'nodeID', ed
  
 def _are_nodes_simplified(nodes_gdf, edges_gdf, nodes_to_keep_regardless = None):
     """
+
     The function checks the presence of pseudo-junctions, by using the edges_gdf GeoDataFrame.
      
     Parameters
@@ -480,6 +483,7 @@ def _are_nodes_simplified(nodes_gdf, edges_gdf, nodes_to_keep_regardless = None)
 
 def _are_edges_simplified(edges_gdf, preserve_direction):
     """
+
     The function checks the presence of possible duplicate geometries in the edges_gdf GeoDataFrame.
      
     Parameters
@@ -559,6 +563,7 @@ def clean_duplicate_nodes(nodes_gdf, edges_gdf, nodeID_column = 'nodeID'):
 
 def simplify_graph(nodes_gdf, edges_gdf, nodeID_column = 'nodeID', edgeID_column = 'edgeID', nodes_to_keep_regardless = None):
     """
+
     The function identify pseudo-nodes, namely nodes that represent intersection between only 2 segments.
     The segments geometries are merged and the node is removed from the nodes_gdf GeoDataFrame.
      
@@ -666,6 +671,7 @@ def simplify_graph(nodes_gdf, edges_gdf, nodeID_column = 'nodeID', edgeID_column
     
 def fix_dead_ends(nodes_gdf, edges_gdf):
     """
+
     The function removes dead-ends. In other words, it eliminates nodes from where only one segment originates, and the relative segment.
      
     Parameters
@@ -770,6 +776,7 @@ def clean_duplicate_edges(nodes_gdf, edges_gdf, nodeID_column = 'nodeID', preser
     """
     Cleans and deduplicates network edges, and removes unused nodes.
 
+
     The function performs the following:
       - Generates a unique 'code' for each edge, based on node IDs, with or without preserving direction.
       - Removes self-loop edges (edges from a node to itself).
@@ -827,6 +834,7 @@ def clean_duplicate_edges(nodes_gdf, edges_gdf, nodeID_column = 'nodeID', preser
  
 def correct_edge_geometries(nodes_gdf, edges_gdf):
     """
+
     The function adjusts the edges LineString coordinates consistently with their relative u and v nodes' coordinates.
     It might be necessary to run the function after having cleaned the network.
      
@@ -966,31 +974,26 @@ def consolidate_nodes(nodes_gdf, edges_gdf, nodeID_column = 'nodeID', consolidat
     return consolidated_nodes_gdf
     
 def consolidate_edges(edges_gdf, consolidated_nodes_gdf, nodeID_column):
-    """
-    Reassigns edge endpoints ('u', 'v') and updates geometries to match consolidated nodes.
-
-    This function replaces the 'u' and 'v' node IDs in each edge with new node IDs
-    based on the consolidation mapping found in `consolidated_nodes_gdf`.
-    It also updates the edge geometry by snapping the first and last coordinates of
-    each edge's LineString to the positions of the new (consolidated) node geometries.
-
+    """Consolidate edge geometries after node consolidation.
+    
     Parameters
     ----------
-    edges_gdf : GeoDataFrame
-        GeoDataFrame of edges, containing columns 'u', 'v', 'geometry', and 'edgeID'.
-        The 'u' and 'v' columns should refer to old node IDs.
-    consolidated_nodes_gdf : GeoDataFrame
-        GeoDataFrame of consolidated nodes
-    nodeID_column : str, optional
-        Column name for node unique identifiers in `nodes_gdf`. Default is 'nodeID'.
-        
+    nodes_gdf : geopandas.GeoDataFrame
+        cityImage node table.
+    edges_gdf : geopandas.GeoDataFrame
+        cityImage edge table.
+    consolidation_map : dict
+        Mapping from original node IDs to consolidated node IDs.
+    
     Returns
     -------
-    consolidated_edges : GeoDataFrame
-        Updated GeoDataFrame of edges with:
-            - 'u' and 'v': replaced by new node IDs
-            - 'geometry': LineString updated to start/end at the consolidated node locations
-        Self-loop edges (where u == v) are removed. The index is set to 'edgeID'.
+    geopandas.GeoDataFrame
+        Edge table with updated endpoints and geometries.
+    
+    Notes
+    -----
+    This helper preserves cityImage endpoint and identifier semantics while applying
+    geometry consolidation. It is not a generic line-merge wrapper.
     """
     
     oldIDs_column = "old_"+nodeID_column

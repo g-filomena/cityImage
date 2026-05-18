@@ -64,23 +64,25 @@ class Plot:
 
 
 class MultiPlot:
-    """
-    A class for creating multi-plot figures.
-
-    Attributes:
+    """Create a grid of static GeoDataFrame plots.
+    
+    Parameters
     ----------
-    figsize: tuple
-        The size of the figure (width, height) in inches.
-    nrows: int
-        The number of rows in the grid layout.
-    ncols: int
-        The number of columns in the grid layout.
-    black_background : bool
-        Specifies whether the plot has a black background (True) or white background (False).
-    fontsize: int
-        The font size to be used in the plot.
-    title: str or None, optional
-        The title of the figure. If None, no title is displayed.
+    ncols : int
+        Number of subplot columns.
+    nrows : int
+        Number of subplot rows.
+    figsize : tuple, optional
+        Matplotlib figure size.
+    **kwargs
+        Additional plotting options.
+    
+    Attributes
+    ----------
+    fig : matplotlib.figure.Figure
+        Figure created for the plot grid.
+    axes : numpy.ndarray
+        Matplotlib axes used by the plot grid.
     """
 
     def __init__(self, figsize, nrows, ncols, black_background, fontsize, title=None):
