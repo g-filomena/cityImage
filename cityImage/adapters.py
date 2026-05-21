@@ -71,14 +71,9 @@ def _column_or_index_level(
     return None
 
 
-def _as_list_column(series: pd.Series, *, default: str = "unknown") -> pd.Series:
-    """Convert a scalar/list-like Series to list-valued cells."""
-
-    def _normalise_cell(value: Any) -> list[Any]:
-        values = _to_list(value)
-        return values if values else [default]
-
-    return series.apply(_normalise_cell).astype("object")
+def _as_raw_land_use_column(series: pd.Series) -> pd.Series:
+    """Convert source/provenance land-use values to list-valued cells."""
+    return series.apply(_to_list).astype("object")
 
 
 def standardize_nodes_gdf(
@@ -174,12 +169,22 @@ def standardize_buildings_gdf(
     copy: bool = True,
     validate: bool = True,
 ) -> gpd.GeoDataFrame:
-    """Return a buildings GeoDataFrame matching the cityImage schema.
+    """Return a buildings GeoDataFrame matching the cityImage building schema.
 
-    The function only normalises column names and safe defaults. It does not
-    classify land-use labels. Use ``classify_sparse_land_uses`` or the OSM
-    land-use route when semantic classification is needed.
+    This adapter normalises identifiers, geometry-derived attributes, numeric
+    defaults, and source/provenance land-use values. It does not classify land
+    use and does not create ``land_uses`` or ``land_uses_overlap``.
+
+    Use ``land_uses_raw_column`` to map an unclassified source field such as
+    ``land_use`` into ``land_uses_raw`` as list-like values. The older
+    ``land_uses_column`` argument is retained as a compatibility alias for a
+    raw/source land-use field only; it no longer creates semantic
+    ``land_uses``. Semantic ``land_uses`` and matching overlap weights should
+    be produced by an explicit classifier/assignment step before or after this
+    adapter.
     """
+    del default_land_use  # retained for backward-compatible call signatures
+
     _require_geodataframe(buildings_gdf, frame_name="buildings_gdf")
     gdf = _copy_or_view(buildings_gdf, copy)
 
@@ -189,21 +194,28 @@ def standardize_buildings_gdf(
     elif BUILDING_ID not in gdf.columns:
         gdf[BUILDING_ID] = range(len(gdf))
 
-    if land_uses_column is not None:
-        require_columns(gdf, [land_uses_column], frame_name="buildings_gdf")
-        gdf[LAND_USES] = _as_list_column(gdf[land_uses_column], default=default_land_use)
-
-    if land_uses_raw_column is not None:
-        require_columns(gdf, [land_uses_raw_column], frame_name="buildings_gdf")
-        gdf[LAND_USES_RAW] = gdf[land_uses_raw_column]
-
     if land_uses_overlap_column is not None:
-        require_columns(gdf, [land_uses_overlap_column], frame_name="buildings_gdf")
-        gdf[LAND_USES_OVERLAP] = gdf[land_uses_overlap_column].apply(_to_list).astype("object")
+        raise ValueError(
+            "standardize_buildings_gdf does not create land_uses_overlap. "
+            "Create semantic land_uses and overlap weights in an explicit "
+            "classifier/assignment step."
+        )
+
+    raw_source_column = land_uses_raw_column
+    if raw_source_column is None:
+        raw_source_column = land_uses_column
+
+    if raw_source_column is not None:
+        require_columns(gdf, [raw_source_column], frame_name="buildings_gdf")
+        gdf[LAND_USES_RAW] = _as_raw_land_use_column(gdf[raw_source_column])
+    elif LAND_USES_RAW in gdf.columns:
+        gdf[LAND_USES_RAW] = _as_raw_land_use_column(gdf[LAND_USES_RAW])
+
+    if LAND_USES_OVERLAP in gdf.columns and LAND_USES not in gdf.columns:
+        raise ValueError("land_uses_overlap requires land_uses.")
 
     gdf = ensure_building_schema_defaults(
         gdf,
-        default_land_use=default_land_use,
         add_area=add_area,
     )
 
@@ -211,7 +223,10 @@ def standardize_buildings_gdf(
         gdf[AREA] = gdf[AREA].fillna(gdf.geometry.area)
 
     if validate:
-        report = validate_buildings_gdf(gdf, require_land_uses=True)
+        report = validate_buildings_gdf(
+            gdf,
+            require_land_uses=LAND_USES in gdf.columns,
+        )
         if not report.ok:
             missing = ", ".join(report.missing_columns)
             raise ValueError(f"buildings_gdf does not match cityImage schema: {missing}")
