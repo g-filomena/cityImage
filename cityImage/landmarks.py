@@ -274,21 +274,18 @@ def pragmatic_score(
     land_uses_column: str = "land_uses",
     overlaps_column: str = "land_uses_overlap",
     search_radius: float = 200,
-    default_land_use: str = "residential",
+    default_land_use: str = "unclassified",
 ):
-    """Compute a pragmatic landmark component from normalised land-use labels.
+    """Compute a pragmatic landmark component from semantic land-use labels.
 
-    The function expects an explicit normalised land-use column. Use the OSM
-    route to derive `land_uses` from OSM tags, or the sparse/non-OSM route in
-    `land_use_sparse.py` to derive/attach `land_uses` from external data.
+    Missing or empty land-use labels are treated as ``default_land_use``. This
+    keeps scoring total while making unclassified buildings explicit instead of
+    silently assuming a residential use.
     """
     gdf = buildings_gdf.copy()
 
     if land_uses_column not in gdf.columns:
-        raise ValueError(
-            f"GeoDataFrame must contain '{land_uses_column}'. "
-            "Use the OSM land-use route or classify/attach sparse land uses first."
-        )
+        gdf[land_uses_column] = [[default_land_use] for _ in range(len(gdf))]
 
     if overlaps_column not in gdf.columns:
         gdf[overlaps_column] = [[] for _ in range(len(gdf))]
