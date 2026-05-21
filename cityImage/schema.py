@@ -180,13 +180,13 @@ def validate_buildings_gdf(
 def ensure_building_schema_defaults(
     buildings_gdf: gpd.GeoDataFrame,
     *,
-    default_land_use: str = "unknown",
     add_area: bool = True,
 ) -> gpd.GeoDataFrame:
-    """Return buildings with common optional cityImage columns populated.
+    """Return buildings with common non-semantic cityImage defaults populated.
 
-    This is a convenience normaliser for adapter outputs. It does not classify
-    land use; it only fills safe defaults when a column is absent.
+    This function fills geometry-derived and numeric defaults only. It does not
+    classify land use and does not fabricate ``land_uses`` or
+    ``land_uses_overlap``.
     """
     gdf = buildings_gdf.copy()
     require_columns(gdf, REQUIRED_BUILDINGS_COLUMNS, frame_name="buildings_gdf")
@@ -200,19 +200,5 @@ def ensure_building_schema_defaults(
 
     if BASE not in gdf.columns:
         gdf[BASE] = 0.0
-
-    if LAND_USES not in gdf.columns:
-        gdf[LAND_USES] = pd.Series(
-            [[default_land_use] for _ in range(len(gdf))],
-            index=gdf.index,
-            dtype="object",
-        )
-
-    if LAND_USES_OVERLAP not in gdf.columns:
-        gdf[LAND_USES_OVERLAP] = pd.Series(
-            [[1.0] for _ in range(len(gdf))],
-            index=gdf.index,
-            dtype="object",
-        )
 
     return gdf
