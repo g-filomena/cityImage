@@ -1,31 +1,75 @@
 """Optional 3D sight-line generation utilities for cityImage.
 
-This module preserves the existing cityImage 3D sight-line workflow, but keeps
-it out of the lightweight core. It imports heavy optional dependencies such as
-PyVista, Dask, psutil, and tqdm only when this module is imported.
+This module preserves the existing cityImage 3D sight-line workflow while
+keeping it out of the lightweight core. Heavy optional dependencies such as
+PyVista, Dask, psutil, and tqdm are imported lazily by the functions that need
+them, so importing :mod:`cityImage` or resolving its public API does not require
+the 3D stack to be installed.
 """
 
 from __future__ import annotations
 
 import gc
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
+from importlib import import_module
 from pathlib import Path
 
-import dask
 import geopandas as gpd
 import numpy as np
 import pandas as pd
-import psutil
-import pyvista as pv
-from dask import delayed
 from shapely.geometry import LineString, MultiPolygon, Point, Polygon
 from shapely.strtree import STRtree
-from tqdm import tqdm
 
 from .geometry import gdf_multipolygon_to_polygon
 from .network_topology import consolidate_nodes
 
 pd.set_option("display.precision", 3)
+
+_VISIBILITY3D_OPTIONAL_DEPENDENCIES = {
+    "dask": "dask",
+    "psutil": "psutil",
+    "pyvista": "pyvista",
+    "tqdm": "tqdm",
+}
+
+
+def _import_optional_dependency(import_name: str):
+    """Import an optional visibility3d dependency with a clear error message."""
+    try:
+        return import_module(import_name)
+    except ImportError as exc:
+        package_name = _VISIBILITY3D_OPTIONAL_DEPENDENCIES.get(import_name, import_name)
+        raise ImportError(
+            "cityImage visibility3d functionality requires optional dependency "
+            f"'{package_name}'. Install the 3D visibility dependencies before "
+            "using this function."
+        ) from exc
+
+
+def _require_visibility3d_dependencies(*import_names: str) -> None:
+    """Raise a clear error if required optional 3D dependencies are missing."""
+    if not import_names:
+        import_names = tuple(_VISIBILITY3D_OPTIONAL_DEPENDENCIES)
+
+    missing = []
+    for import_name in import_names:
+        try:
+            import_module(import_name)
+        except ImportError:
+            missing.append(_VISIBILITY3D_OPTIONAL_DEPENDENCIES.get(import_name, import_name))
+
+    if missing:
+        raise ImportError(
+            "cityImage visibility3d functionality requires optional dependencies: "
+            f"{', '.join(missing)}. Install the 3D visibility dependencies before "
+            "using this function."
+        )
+
+
+def _tqdm(*args, **kwargs):
+    """Return tqdm.tqdm lazily."""
+    return _import_optional_dependency("tqdm").tqdm(*args, **kwargs)
+
 
 def compute_3d_sight_lines(
     nodes_gdf: gpd.GeoDataFrame,
@@ -42,54 +86,56 @@ def compute_3d_sight_lines(
     consolidate_tolerance: float = 0.0,
     num_workers: int = 20,
 ):
-    """
-    Computes 3D sight lines between observer nodes and target buildings, accounting for 2D and 3D obstructions.
-
-    The computation is performed in memory-efficient chunks. For each chunk:
-    1. Filters potential sight lines by minimum distance.
-    2. Restricts obstruction checks to those near each target.
-    3. Checks for 2D (planimetric) obstructions.
-    4. Conducts visibility with full 3D intersection analysis.
-    5. Outputs are merged and saved to disk per chunk, then concatenated and finalized.
-
+    """Compute visible 3D sight lines between observer nodes and target buildings.
+    
+    The workflow samples target points along building roofs, generates candidate
+    observer-target lines, removes lines that are too short, filters 2D
+    obstructions, and checks remaining candidate lines with PyVista ray tracing.
+    Large candidate sets are processed in chunks and written temporarily to
+    GeoPackage files before being merged.
+    
     Parameters
     ----------
-    nodes_gdf : GeoDataFrame
-        Observer locations (usually points) with 3D coordinates and unique node IDs.
-    target_buildings_gdf : GeoDataFrame
-        Target building polygons (must have 3D geometry).
-    obstructions_buildings_gdf : GeoDataFrame
-        All buildings considered as potential obstructions (must have 3D geometry).
-    simplified_target_buildings : GeoDataFrame
-        Simplified versions of target buildings (used for finalization and snapping).
-    edges_gdf : GeoDataFrame
-        Edge geometries for network structure (used for consolidation).
+    nodes_gdf : geopandas.GeoDataFrame
+        Observer nodes. Required columns are ``geometry``, ``x``, ``y``, ``nodeID``,
+        and ``z``.
+    target_buildings_gdf : geopandas.GeoDataFrame
+        Buildings to use as visibility targets. Required columns are
+        ``buildingID``, ``geometry``, ``height``, and optionally ``base``.
+    obstructions_buildings_gdf : geopandas.GeoDataFrame
+        Buildings to use as possible obstructions. Required columns are
+        ``buildingID``, ``geometry``, ``height``, and optionally ``base``.
+    simplified_target_buildings : geopandas.GeoDataFrame or None
+        Optional simplified target outlines. When provided, detailed target
+        buildings are mapped back to simplified geometries for final sight-line
+        assignment.
+    edges_gdf : geopandas.GeoDataFrame
+        Network edges used only when ``consolidate=True``.
     city_name : str
-        Name prefix for exported chunk files.
-    distance_along : float, optional
-        Sampling step along building edges (default: 200).
-    min_observer_target_distance : float, optional
-        Minimum allowed observer-to-target distance (default: 300).
-    sight_lines_chunk_size : int, optional
-        Maximum number of sight lines to process per chunk (default: 500000).
-    consolidate : bool, optional
-        Whether to spatially consolidate observer nodes and targets (default: False).
-    consolidate_tolerance : float, optional
-        Tolerance for consolidation (default: 0.0).
-    num_workers : int, optional
-        Number of parallel workers to use for chunked and obstruction operations (default: 20).
-
+        Prefix used for temporary chunk files.
+    distance_along : float, default 200
+        Sampling distance along target-building roof edges.
+    min_observer_target_distance : float, default 300
+        Minimum 2D distance allowed between observer and target.
+    height_relative_to_ground : bool, default False
+        Whether building heights are already relative to local ground/base height.
+    sight_lines_chunk_size : int, default 500000
+        Maximum number of candidate sight lines processed per chunk.
+    consolidate : bool, default False
+        Whether to consolidate observer nodes before sight-line generation.
+    consolidate_tolerance : float, default 0.0
+        Spatial tolerance used for node consolidation.
+    num_workers : int, default 20
+        Number of parallel workers used for obstruction and mesh operations.
+    
     Returns
     -------
-    sight_lines : GeoDataFrame
-        Finalized GeoDataFrame of visible sight lines (3D LineString), with relevant attributes. If no lines are visible, returns empty GeoDataFrame.
-
-    Notes
-    -----
-    - The function splits the computation into manageable chunks for memory efficiency.
-    - Intermediate chunk files are written to disk and merged at the end.
-    - Columns such as 'matchesIDs', 'observer_coords', and 'target_coords' are added temporarily and dropped in the final result.
+    geopandas.GeoDataFrame
+        Visible 3D sight lines. If no visible lines are found, an empty
+        GeoDataFrame with the obstruction CRS is returned.
     """
+
+    _require_visibility3d_dependencies()
 
     # Step 0: Prepare data
     observers, targets, obstructions_gdf = _prepare_3d_sight_lines(
@@ -225,43 +271,35 @@ def _prepare_3d_sight_lines(
     edges_gdf=None,
     height_relative_to_ground=False,
 ):
-    """
-    Prepares observer points, target points, and obstruction geometries for 3D sight line analysis.
-
-    This function processes the input node and building GeoDataFrames to:
-        - Set up observer points with 3D coordinates,
-        - Prepare target building roof points at regular intervals,
-        - Optionally apply simplified building outlines and spatial consolidation,
-        - Annotate each target with nearby building IDs for efficient obstruction queries,
-        - Create 3D representations for all obstruction polygons.
-
+    """Prepare observers, target points, and obstruction geometries.
+    
     Parameters
     ----------
-    nodes_gdf : GeoDataFrame
-        Observer locations with columns ['geometry', 'x', 'y', 'nodeID', 'z'].
-    target_buildings_gdf : GeoDataFrame
-        Target building polygons with 'height' and 'base' attributes.
-    obstructions_gdf : GeoDataFrame
-        Building polygons considered as obstructions (must have 'height' and 'base').
-    distance_along : float, optional
-        Interval in CRS units for sampling target building roofs (default: 200).
-    simplified_buildings : GeoDataFrame, optional
-        Simplified building outlines, used if not empty (default: empty).
-    consolidate : bool, optional
-        If True, spatially merges close observer points (default: False).
-    consolidate_tolerance : float, optional
-        Distance tolerance for observer consolidation (default: 0.0).
-    edges_gdf : GeoDataFrame, optional
-        Network edges for observer consolidation.
-
+    nodes_gdf : geopandas.GeoDataFrame
+        Observer nodes with ``geometry``, ``x``, ``y``, ``nodeID``, and ``z``.
+    target_buildings_gdf : geopandas.GeoDataFrame
+        Target buildings with ``buildingID``, ``geometry``, ``height``, and
+        optionally ``base``.
+    obstructions_gdf : geopandas.GeoDataFrame
+        Buildings considered as potential obstructions.
+    distance_along : float, default 200
+        Sampling distance along target-building roof edges.
+    simplified_buildings : geopandas.GeoDataFrame or None, default None
+        Optional simplified building outlines.
+    consolidate : bool, default False
+        Whether to consolidate observer nodes.
+    consolidate_tolerance : float, default 0.0
+        Tolerance used for observer consolidation.
+    edges_gdf : geopandas.GeoDataFrame or None, default None
+        Network edges required when observer consolidation is enabled.
+    height_relative_to_ground : bool, default False
+        Whether building heights are already relative to local ground/base height.
+    
     Returns
     -------
-    observer_points_gdf : GeoDataFrame
-        GeoDataFrame of observer points with 3D geometry.
-    target_points : GeoDataFrame
-        Points along target building roofs with associated nearby building IDs.
-    obstructions_gdf : GeoDataFrame
-        Obstructions as 3D polygons with updated geometry.
+    tuple
+        ``(observer_points_gdf, target_points, obstructions_gdf)`` prepared for
+        3D sight-line generation.
     """
 
     if simplified_buildings is None:
@@ -313,18 +351,19 @@ def _prepare_3d_sight_lines(
 
 
 def _prepare_buildings_gdf(buildings_gdf):
-    """
-    Sets minimum base elevation, filters invalid heights, and standardizes columns.
-
+    """Clean and standardize a building GeoDataFrame for 3D processing.
+    
     Parameters
     ----------
-    buildings_gdf : GeoDataFrame
-        Building footprints with 'geometry', 'buildingID', 'height', and (optionally) 'base' columns.
-
+    buildings_gdf : geopandas.GeoDataFrame
+        Building footprints with ``buildingID``, ``geometry``, ``height``, and
+        optionally ``base``.
+    
     Returns
     -------
-    buildings_gdf : GeoDataFrame
-        Cleaned building GeoDataFrame, indexed by 'buildingID', with non-null height and base >= 1.0.
+    geopandas.GeoDataFrame
+        Building table indexed by ``buildingID`` with non-null heights and a
+        minimum base elevation of 1.0.
     """
     # add a 'base' column to the buildings GeoDataFrame with a default value of 1.0, if not provided
     if "base" not in buildings_gdf.columns:
@@ -343,20 +382,21 @@ def _prepare_buildings_gdf(buildings_gdf):
 
 
 def _prepare_targets(target_buildings_gdf, distance_along, height_relative_to_ground=False):
-    """
-    Generates 3D target points along the roof perimeter of each building at specified intervals.
-
+    """Generate 3D target points along target-building roof perimeters.
+    
     Parameters
     ----------
-    target_buildings_gdf : GeoDataFrame
-        Target building polygons with 'geometry', 'height', and 'base' columns.
+    target_buildings_gdf : geopandas.GeoDataFrame
+        Target buildings with ``geometry``, ``height``, and ``base`` columns.
     distance_along : float
-        Interval in CRS units for placing points along the roof edge.
-
+        Sampling distance along each roof perimeter.
+    height_relative_to_ground : bool, default False
+        Whether height values are relative to local ground/base height.
+    
     Returns
     -------
-    target_points : GeoDataFrame
-        Exploded GeoDataFrame with 3D points along each building's roof edge.
+    geopandas.GeoDataFrame
+        Exploded target-point table with a ``target_geo`` geometry column.
     """
 
     target_buildings = target_buildings_gdf.copy()
@@ -548,18 +588,19 @@ def _use_simplified_buildings(target_points, obstructions_gdf, simplified_buildi
 
 
 def merge_gpkg_chunks_to_gdf(out_files, potential_obstructions_column):
-    """
-    Reads multiple GeoPackage chunk files and merges them into a single GeoDataFrame.
-
+    """Merge temporary GeoPackage sight-line chunks.
+    
     Parameters
     ----------
-    out_files : list of str
-        List of file paths to the .gpkg files (one per chunk).
-
+    out_files : sequence of path-like
+        GeoPackage chunk files written by ``compute_3d_sight_lines``.
+    potential_obstructions_column : str
+        Kept for API compatibility with the chunking workflow.
+    
     Returns
     -------
-    final_gdf : GeoDataFrame
-        Combined GeoDataFrame containing all features from the input files.
+    geopandas.GeoDataFrame
+        Combined sight-line chunks.
     """
 
     # Read each chunk one at a time and append to a list, then concat all together
@@ -654,35 +695,32 @@ def _prepare_chunk_data(chunk: gpd.GeoDataFrame, targets: gpd.GeoDataFrame):
 
 ## Step 1 ###########################
 def obstructions_2d(potential_sight_lines, obstructions_gdf, obstructions_sindex, num_workers=20):
-    """
-    Identifies 2D (planimetric) obstructions between each observer-target sight line and surrounding buildings.
-
-    Uses spatial batch processing and parallel computation to:
-      1. Find which obstructions could intersect each sight line (via spatial index).
-      2. Check actual intersections and compute obstruction locations for each line.
-      3. Split results into visible and potentially obstructed sight lines.
-
+    """Split candidate sight lines by 2D planimetric obstruction status.
+    
     Parameters
     ----------
-    potential_sight_lines : GeoDataFrame
-        Candidate sight lines (with geometry).
-    obstructions_gdf : GeoDataFrame
-        Building polygons (must include 'buildingID', 'geometry', 'height', and 'base').
-    num_workers : int, optional
-        Number of parallel threads for batch computation (default: 20).
-
+    potential_sight_lines : geopandas.GeoDataFrame
+        Candidate sight lines with 2D line geometry.
+    obstructions_gdf : geopandas.GeoDataFrame
+        Obstruction geometries with a ``buildingID`` column.
+    obstructions_sindex : geopandas.sindex.SpatialIndex
+        Spatial index built from ``obstructions_gdf``.
+    num_workers : int, default 20
+        Number of worker threads used by Dask.
+    
     Returns
     -------
-    visible : GeoDataFrame
-        Sight lines with no 2D obstructions.
-    potentially_obstructed : GeoDataFrame
-        Sight lines that intersect at least one obstruction in 2D.
+    tuple[geopandas.GeoDataFrame, geopandas.GeoDataFrame]
+        Visible lines and lines that require 3D obstruction testing.
     """
+
+    _require_visibility3d_dependencies("dask", "psutil")
+    dask = _import_optional_dependency("dask")
 
     potential_sight_lines = potential_sight_lines.copy()
     sub_chunks = _define_batches(potential_sight_lines)
     tasks = [
-        _find_obstructions_2d_delayed(sub_chunk, obstructions_gdf, obstructions_sindex)
+        dask.delayed(_find_obstructions_2d)(sub_chunk, obstructions_gdf, obstructions_sindex)
         for sub_chunk in sub_chunks
     ]
     results = dask.compute(*tasks, scheduler="threads", num_workers=num_workers)
@@ -721,6 +759,7 @@ def _define_batches(
         The next batch of rows.
     """
 
+    psutil = _import_optional_dependency("psutil")
     available_mem = psutil.virtual_memory().available
     rows_per_batch = int(available_mem * mem_fraction / row_weight_kb)
     rows_per_batch = max(min_size, min(rows_per_batch, max_size))
@@ -730,25 +769,22 @@ def _define_batches(
 
 
 def _find_obstructions_2d(sub_chunk, obstructions_gdf, obstructions_sindex):
-    """
-    For each sight line in the batch, checks for actual 2D intersections with obstructions,
-    using a prebuilt GeoPandas.sindex (SpatialIndex).
-
+    """Find 2D obstruction candidates for a batch of sight lines.
+    
     Parameters
     ----------
-    sub_chunk : GeoDataFrame
-        Batch of candidate sight lines, must have 'geometry' and typically 'buildingID'.
-    obstructions_gdf : GeoDataFrame
-        Obstructions with 'buildingID' and 'geometry'.
-    sindex : geopandas.sindex.SpatialIndex
-        Pre-built spatial index of obstructions_gdf.
-
+    sub_chunk : geopandas.GeoDataFrame
+        Batch of candidate sight lines.
+    obstructions_gdf : geopandas.GeoDataFrame
+        Obstruction geometries with a ``buildingID`` column.
+    obstructions_sindex : geopandas.sindex.SpatialIndex
+        Spatial index built from ``obstructions_gdf``.
+    
     Returns
     -------
-    visible : GeoDataFrame
-        Lines without any true 2D obstructions.
-    obstructed : GeoDataFrame
-        Lines intersecting ≥1 obstruction; includes 'obstructionIDs' column.
+    tuple[geopandas.GeoDataFrame, geopandas.GeoDataFrame]
+        Lines with no 2D crossings and lines with candidate obstruction IDs in
+        ``matchesIDs``.
     """
 
     # Vectorised spatial query – true intersections if backend supports predicate
@@ -774,9 +810,6 @@ def _find_obstructions_2d(sub_chunk, obstructions_gdf, obstructions_sindex):
     return visible, obstructed
 
 
-_find_obstructions_2d_delayed = delayed(_find_obstructions_2d)
-
-
 ## Step 3 ###########################
 def obstructions_3d(
     potential_sight_lines,
@@ -786,32 +819,36 @@ def obstructions_3d(
     simplified_target_buildings,
     num_workers,
 ):
-    """
-    Checks 3D visibility of each sight line using detailed ray tracing with PyVista.
-
-    Each sight line is tested for intersection with potential obstructions (buildings) using mesh ray tracing.
-    Parallelized for speed using ThreadPoolExecutor.
-
+    """Check 3D visibility for sight lines with candidate obstructions.
+    
     Parameters
     ----------
-    potential_sight_lines : GeoDataFrame
-        Candidate sight lines with observer/target coordinates and a column listing potential obstruction IDs.
-    obstructions_gdf : GeoDataFrame
-        Buildings with 'building_3d' mesh geometry.
+    potential_sight_lines : geopandas.GeoDataFrame
+        Candidate sight lines with 3D geometry and a candidate-obstruction column.
+    obstructions_gdf : geopandas.GeoDataFrame
+        Obstruction building table. Kept for workflow consistency.
     potential_obstructions_column : str
-        Name of the column in `potential_sight_lines` with a list of candidate obstruction building IDs.
+        Column containing lists of candidate obstruction building IDs.
+    meshes : dict
+        Mapping from building IDs to triangulated PyVista meshes.
+    simplified_target_buildings : geopandas.GeoDataFrame or None
+        Optional simplified target outlines. When provided, the current target
+        building is removed from each candidate obstruction list.
     num_workers : int
-        Number of parallel threads to use for the visibility checks.
-
+        Number of worker threads used for ray tracing.
+    
     Returns
     -------
-    GeoDataFrame
-        Only sight lines which are unobstructed in 3D, as determined by PyVista ray tracing.
+    geopandas.GeoDataFrame
+        Sight lines that remain visible after 3D ray-tracing checks.
     """
+    _require_visibility3d_dependencies("tqdm")
+    tqdm = _import_optional_dependency("tqdm").tqdm
+
     potential_sight_lines = potential_sight_lines.copy()
     # Remove the current buildingID from the list of potential obstructions for each sight line
 
-    if not simplified_target_buildings.empty:
+    if simplified_target_buildings is not None and not simplified_target_buildings.empty:
         potential_sight_lines[potential_obstructions_column] = potential_sight_lines.apply(
             lambda r: [bid for bid in r[potential_obstructions_column] if bid != r.buildingID],
             axis=1,
@@ -845,11 +882,43 @@ def obstructions_3d(
 
 
 def _process_one(bid, solid):
+    """Build a triangulated PyVista mesh for one obstruction solid.
+    
+    Parameters
+    ----------
+    bid : hashable
+        Building identifier.
+    solid : object
+        PyVista-compatible solid geometry.
+    
+    Returns
+    -------
+    tuple
+        ``(bid, mesh)`` where ``mesh`` is a triangulated surface mesh.
+    """
+    pv = _import_optional_dependency("pyvista")
     mesh = pv.wrap(solid).extract_surface().triangulate()
     return bid, mesh
 
 
 def _build_meshes(obstructions_gdf, n_jobs=None):
+    """Build PyVista meshes for obstruction buildings.
+    
+    Parameters
+    ----------
+    obstructions_gdf : geopandas.GeoDataFrame
+        Obstruction table containing ``buildingID`` and ``building_3d`` columns.
+    n_jobs : int or None, default None
+        Number of worker processes. ``None`` lets ``ProcessPoolExecutor`` choose.
+    
+    Returns
+    -------
+    dict
+        Mapping from ``buildingID`` to triangulated PyVista mesh.
+    """
+    _require_visibility3d_dependencies("pyvista", "tqdm")
+    tqdm = _import_optional_dependency("tqdm").tqdm
+
     print("Building obstructions meshes")
     ids = obstructions_gdf["buildingID"].values
     solids = obstructions_gdf["building_3d"].values
@@ -865,23 +934,22 @@ def _build_meshes(obstructions_gdf, n_jobs=None):
 
 
 def _intervisibility(row, meshes, potential_obstructions_column):
-    """
-    Checks if a 3D line of sight is unobstructed using prebuilt PyVista meshes.
-
+    """Return whether one 3D sight line is unobstructed.
+    
     Parameters
     ----------
     row : namedtuple
-        A single row from the potential sight lines DataFrame, containing observer and target coordinates,
-        and the list of potential obstruction building IDs.
+        Row from the candidate sight-line table. It must contain observer and target
+        coordinate attributes and the candidate-obstruction list.
     meshes : dict
-        Prebuilt dictionary {buildingID: pv.PolyData} with triangulated surfaces.
+        Mapping from building IDs to triangulated PyVista meshes.
     potential_obstructions_column : str
-        Name of the column in `row` containing candidate obstruction building IDs.
-
+        Name of the attribute containing candidate obstruction IDs.
+    
     Returns
     -------
     bool
-        True if no intersections are found, False if any obstruction blocks the line.
+        ``True`` when no candidate mesh intersects the ray, otherwise ``False``.
     """
     if len(getattr(row, potential_obstructions_column)) == 0:
         return True
@@ -891,7 +959,10 @@ def _intervisibility(row, meshes, potential_obstructions_column):
 
     for buildingID in getattr(row, potential_obstructions_column):
         mesh = meshes.get(buildingID)
-        points, intersections = mesh.ray_trace(p0, p1)
+        if mesh is None:
+            continue
+
+        _, intersections = mesh.ray_trace(p0, p1)
         if len(intersections) > 0:
             return False
     return True
@@ -900,48 +971,65 @@ def _intervisibility(row, meshes, potential_obstructions_column):
 def _last_check(
     potential_sight_lines, obstructions_gdf, obstructions_sindex, meshes, nodes_gdf, num_workers
 ):
+    """Run a final 2D/3D obstruction check on consolidated sight lines.
+
+    Parameters
+    ----------
+    potential_sight_lines : geopandas.GeoDataFrame
+        Candidate sight lines to re-check.
+    obstructions_gdf : geopandas.GeoDataFrame
+        Building obstructions with 2D and 3D obstruction attributes.
+    obstructions_sindex : geopandas.sindex.SpatialIndex
+        Spatial index built from ``obstructions_gdf``.
+    meshes : dict
+        Mapping from building IDs to triangulated PyVista meshes.
+    nodes_gdf : geopandas.GeoDataFrame
+        Original observer nodes used to finalize sight-line geometries.
+    num_workers : int
+        Number of worker threads for 3D intervisibility checks.
+
+    Returns
+    -------
+    geopandas.GeoDataFrame
+        Finalized sight lines that pass the last obstruction check.
+    """
+    empty_simplified = gpd.GeoDataFrame(geometry=[], crs=nodes_gdf.crs)
 
     visible_2d, obstructed = _find_obstructions_2d(
         potential_sight_lines, obstructions_gdf, obstructions_sindex
     )
-    visbile_3d = obstructions_3d(
+    visible_3d = obstructions_3d(
         obstructed,
         obstructions_gdf,
         "matchesIDs",
         meshes,
-        gpd.GeoDataFrame,
+        empty_simplified,
         num_workers=num_workers,
     )
-    sight_lines_tmp = pd.concat([visible_2d, visbile_3d], ignore_index=True)
-    return _finalize_sight_lines(sight_lines_tmp, nodes_gdf, False, gpd.GeoDataFrame)
+    sight_lines_tmp = pd.concat([visible_2d, visible_3d], ignore_index=True)
+    return _finalize_sight_lines(sight_lines_tmp, nodes_gdf, False, empty_simplified)
 
 
 def _finalize_sight_lines(sight_lines_tmp, nodes_gdf, consolidate, simplified_buildings):
-    """
-    Finalizes, cleans, and merges sight lines after visibility analysis.
-
-    This function handles the final step in sight line construction by:
-      - Exploding node pairs if node consolidation was performed.
-      - (If using simplified buildings) Exploding all building-target pairs from simplified outlines.
-      - Rebuilding correct LineString geometries for each observer-target pair.
-      - Dropping intermediate columns used in previous steps.
-      - Sorting and deduplicating the result so each (buildingID, nodeID) pair appears only once, keeping the longest line.
-
+    """Finalize, clean, and deduplicate visible sight lines.
+    
     Parameters
     ----------
-    sight_lines_tmp : DataFrame or GeoDataFrame
-        Temporary results table with observer/target columns, node/building references, and possibly intermediate attributes.
-    nodes_gdf : GeoDataFrame
-        Reference nodes with 3D coordinates, including 'nodeID', 'geometry', and (optionally) 'z'.
+    sight_lines_tmp : pandas.DataFrame or geopandas.GeoDataFrame
+        Temporary sight-line results with observer/target references.
+    nodes_gdf : geopandas.GeoDataFrame
+        Original observer nodes with ``nodeID``, ``geometry``, and ``z``.
     consolidate : bool
-        Whether node consolidation (merging/clustered nodes) was performed.
-    simplified_buildings : GeoDataFrame
-        If non-empty, provides simplified outlines for additional sight line explosion and assignment.
-
+        Whether observer node consolidation was used.
+    simplified_buildings : geopandas.GeoDataFrame or None
+        Optional simplified building table used to explode simplified target
+        assignments back to detailed building IDs.
+    
     Returns
     -------
-    sight_lines : GeoDataFrame
-        Cleaned, deduplicated GeoDataFrame of final sight lines, with correct geometry, observer and target references, and length.
+    geopandas.GeoDataFrame
+        Cleaned visible sight lines with ``nodeID``, ``buildingID``, ``geometry``,
+        and ``length``.
     """
     nodes_gdf["geometry"] = [
         Point(geometry.x, geometry.y, z)
@@ -1008,27 +1096,32 @@ def _finalize_sight_lines(sight_lines_tmp, nodes_gdf, consolidate, simplified_bu
 def polygon_2d_to_3d(
     building_polygon, base, height, extrude_from_sealevel=True, height_relative_to_ground=False
 ):
-    """
-    Convert a 2D polygon (building) to a 3D geometry by extruding it with a specified height and base.
-
+    """Extrude a 2D building polygon into a 3D PyVista solid.
+    
     Parameters
     ----------
     building_polygon : shapely.geometry.Polygon
-        2D polygon representing the building footprint to be extruded.
+        Building footprint to extrude.
     base : float
-        The base height of the 3D polygon (the height from which extrusion starts).
+        Base elevation of the building.
     height : float
-        The total height of the 3D polygon after extrusion.
-    extrude_from_zero : bool, optional, default=True
-        If True, the extrusion starts from the zero height (i.e., sea level). If False, the extrusion starts from the `base` height.
-    height_from_base : bool, optional, default=True
-        If True, the `height` is considered to be above the `base`. If False, it is considered above sea level (i.e., height is reduced by `base`).
-
+        Building height or absolute top elevation, depending on
+        ``height_relative_to_ground`` and ``extrude_from_sealevel``.
+    extrude_from_sealevel : bool, default True
+        If ``True``, extrusion starts from zero. If ``False``, extrusion starts
+        from ``base``.
+    height_relative_to_ground : bool, default False
+        If ``True``, ``height`` is interpreted as height above ``base``. If
+        ``False``, ``height`` is interpreted as absolute height above sea level
+        when appropriate.
+    
     Returns
     -------
     pyvista.PolyData
-        The resulting 3D polygon (building) after extrusion.
+        Extruded 3D building solid.
     """
+
+    pv = _import_optional_dependency("pyvista")
 
     def reorient_coords(xy):
 
