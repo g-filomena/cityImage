@@ -22,7 +22,6 @@ from .schema import (
     LAND_USES,
     LAND_USES_OVERLAP,
     ensure_building_schema_defaults,
-    require_land_use_lists,
     validate_buildings_gdf,
     validate_edges_gdf,
 )
@@ -65,6 +64,7 @@ class LandmarkScoringConfig:
         default_factory=lambda: DEFAULT_LOCAL_COMPONENT_WEIGHTS.copy()
     )
     pragmatic_search_radius: float = 1500.0
+    pragmatic_default_land_use: str = "unclassified"
     local_rescaling_radius: float = 1500.0
     visibility_method: str = "longest"
 
@@ -129,6 +129,7 @@ def score_building_components(
     compute_pragmatic: bool = True,
     visibility_method: str = "longest",
     pragmatic_search_radius: float = 1500.0,
+    pragmatic_default_land_use: str = "unclassified",
     land_uses_column: str = LAND_USES,
     land_uses_overlap_column: str = LAND_USES_OVERLAP,
     structural_kwargs: Mapping[str, Any] | None = None,
@@ -143,7 +144,7 @@ def score_building_components(
     buildings = ensure_building_schema_defaults(buildings_gdf)
 
     if validate_schema:
-        _validate_buildings_for_scoring(buildings, require_land_uses=compute_pragmatic)
+        _validate_buildings_for_scoring(buildings, require_land_uses=False)
 
     impl = _landmark_module()
 
@@ -178,14 +179,10 @@ def score_building_components(
         )
 
     if compute_pragmatic:
-        require_land_use_lists(
-            buildings,
-            land_uses_column=land_uses_column,
-            overlaps_column=land_uses_overlap_column,
-        )
         buildings = impl.pragmatic_score(
             buildings,
             search_radius=pragmatic_search_radius,
+            default_land_use=pragmatic_default_land_use,
             land_uses_column=land_uses_column,
             overlaps_column=land_uses_overlap_column,
         )
@@ -248,6 +245,7 @@ def score_cityimage_buildings(
         buildings_gdf,
         visibility_method=config.visibility_method,
         pragmatic_search_radius=config.pragmatic_search_radius,
+        pragmatic_default_land_use=config.pragmatic_default_land_use,
         **component_kwargs,
     )
 
