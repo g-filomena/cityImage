@@ -15,6 +15,7 @@ from .adapters import standardize_buildings_gdf
 from .buildings import select_buildings_by_study_area
 from .geometry import gdf_multipolygon_to_polygon
 from .network import network_from_lines
+from .schema import LAND_USES_RAW
 
 
 def _normalise_crs(crs: Any) -> Any:
@@ -101,10 +102,12 @@ def buildings_from_file(
     elif "base" not in buildings.columns:
         buildings["base"] = 0.0
 
-    if land_use_field is not None and land_use_field in buildings.columns:
-        buildings["land_uses_raw"] = buildings[land_use_field]
-    elif "land_uses_raw" not in buildings.columns:
-        buildings["land_uses_raw"] = default_land_use
+    if land_use_field is not None and land_use_field not in buildings.columns:
+        raise ValueError(f"land_use_field {land_use_field!r} not found in input file")
+
+    land_uses_raw_column = land_use_field
+    if land_uses_raw_column is None and LAND_USES_RAW in buildings.columns:
+        land_uses_raw_column = LAND_USES_RAW
 
     if "buildingID" not in buildings.columns:
         buildings = buildings.reset_index(drop=True)
@@ -114,7 +117,7 @@ def buildings_from_file(
     buildings = standardize_buildings_gdf(
         buildings,
         building_id_column="buildingID",
-        land_uses_raw_column="land_uses_raw",
+        land_uses_raw_column=land_uses_raw_column,
         default_land_use=default_land_use,
         validate=False,
     )
