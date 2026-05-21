@@ -243,7 +243,7 @@ def plot_gdf(
         max_value = gdf[column].max()
         norm = plt.Normalize(vmin=min_value, vmax=max_value)
 
-    if not base_map_gdf.empty:
+    if base_map_gdf is not None and not base_map_gdf.empty:
         _plot_base_map(
             gdf=base_map_gdf,
             ax=ax,
