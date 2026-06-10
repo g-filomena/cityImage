@@ -56,6 +56,11 @@ def structural_score(
 
     buildings_gdf = buildings_gdf.copy()
     assert_all_polygons(buildings_gdf)
+    if buildings_gdf.empty:
+        buildings_gdf["road"] = pd.Series(dtype=float, index=buildings_gdf.index)
+        buildings_gdf["2dvis"] = pd.Series(dtype=float, index=buildings_gdf.index)
+        buildings_gdf["neigh"] = pd.Series(dtype=int, index=buildings_gdf.index)
+        return buildings_gdf
 
     # remove z coordinates if they are there already - issue with 2dvis
     if len(buildings_gdf.geometry.iloc[0].exterior.coords[0]) == 3:
@@ -112,19 +117,25 @@ def visibility_score(buildings_gdf, sight_lines=None, method="longest"):
     """Calculate visibility landmark sub-scores.
 
     Adds:
-    - fac: approximate facade area;
-    - 3dvis: 3D visibility score, derived from sight-line lengths.
-
-    The function always returns a GeoDataFrame. Older code returned a tuple in
-    the empty/no-height branch, which broke downstream callers.
+    - fac: approximate facade area, computed whenever height is available;
+    - 3dvis: 3D visibility score, derived from sight-line lengths when provided.
     """
     if sight_lines is None:
-        sight_lines = pd.DataFrame({"a": []})
+        sight_lines = pd.DataFrame()
 
     buildings_gdf = buildings_gdf.copy()
     buildings_gdf["fac"] = 0.0
 
-    if "height" not in buildings_gdf.columns or sight_lines.empty:
+    has_height = "height" in buildings_gdf.columns
+    if has_height and not buildings_gdf.empty:
+        buildings_gdf["fac"] = buildings_gdf.apply(
+            lambda row: _facade_area(row["geometry"], row["height"])
+            if pd.notnull(row["height"])
+            else 0.0,
+            axis=1,
+        )
+
+    if not has_height or sight_lines.empty:
         buildings_gdf["3dvis"] = 0.0
         return buildings_gdf
 
@@ -132,11 +143,6 @@ def visibility_score(buildings_gdf, sight_lines=None, method="longest"):
     sight_lines["nodeID"] = sight_lines["nodeID"].astype(int)
     sight_lines["buildingID"] = sight_lines["buildingID"].astype(int)
     sight_lines["length"] = sight_lines.geometry.length
-
-    buildings_gdf["fac"] = buildings_gdf.apply(
-        lambda row: _facade_area(row["geometry"], row["height"]),
-        axis=1,
-    )
 
     stats = sight_lines.groupby("buildingID").agg({"length": ["mean", "max", "count"]})
     stats.columns = stats.columns.droplevel(0)
@@ -166,6 +172,7 @@ def visibility_score(buildings_gdf, sight_lines=None, method="longest"):
         pd.notnull(buildings_gdf["3dvis"]),
         0.0,
     )
+
     return buildings_gdf
 
 
@@ -278,21 +285,20 @@ def pragmatic_score(
 ):
     """Compute a pragmatic landmark component from semantic land-use labels.
 
-    Missing or empty land-use labels are treated as ``default_land_use``. This
-    keeps scoring total while making unclassified buildings explicit instead of
-    silently assuming a residential use.
+    Missing or empty land-use labels are treated as ``default_land_use`` and
+    aligned with a full overlap weight of ``[1.0]``.
     """
     gdf = buildings_gdf.copy()
-
-    if land_uses_column not in gdf.columns:
-        gdf[land_uses_column] = [[default_land_use] for _ in range(len(gdf))]
-
-    if overlaps_column not in gdf.columns:
-        gdf[overlaps_column] = [[] for _ in range(len(gdf))]
 
     def _as_list(v):
         if isinstance(v, list):
             return v
+        if isinstance(v, tuple):
+            return list(v)
+        if isinstance(v, set):
+            return list(v)
+        if isinstance(v, np.ndarray):
+            return v.tolist()
         if v is None:
             return []
         try:
@@ -302,29 +308,54 @@ def pragmatic_score(
             pass
         return [v]
 
-    gdf[land_uses_column] = gdf[land_uses_column].apply(lambda v: _as_list(v) or [default_land_use])
+    if land_uses_column not in gdf.columns:
+        gdf[land_uses_column] = pd.Series(
+            [[default_land_use] for _ in range(len(gdf))],
+            index=gdf.index,
+            dtype="object",
+        )
+
+    if overlaps_column not in gdf.columns:
+        gdf[overlaps_column] = pd.Series(
+            [[] for _ in range(len(gdf))],
+            index=gdf.index,
+            dtype="object",
+        )
+
+    gdf[land_uses_column] = gdf[land_uses_column].apply(
+        lambda v: _as_list(v) or [default_land_use]
+    )
+
+    if gdf.empty:
+        gdf["prag"] = pd.Series(dtype=float, index=gdf.index)
+        return gdf
 
     def _weights_for_row(row):
         labels = row[land_uses_column]
-        w = _as_list(row[overlaps_column])
+        weights = _as_list(row[overlaps_column])
 
-        if len(labels) == 0 or len(w) != len(labels):
+        if len(labels) == 0:
+            return []
+        if len(weights) != len(labels):
             return [1.0 / len(labels)] * len(labels)
 
         try:
-            w = [float(x) for x in w]
+            weights = [float(x) for x in weights]
         except Exception:
             return [1.0 / len(labels)] * len(labels)
 
-        s = float(np.nansum(w))
-        if not np.isfinite(s) or s <= 0:
+        total = float(np.nansum(weights))
+        if not np.isfinite(total) or total <= 0:
             return [1.0 / len(labels)] * len(labels)
 
-        return [x / s for x in w]
+        return [x / total for x in weights]
 
+    gdf["_ci_row_id"] = np.arange(len(gdf))
     gdf["_w_list"] = gdf.apply(_weights_for_row, axis=1)
+    gdf[overlaps_column] = pd.Series(gdf["_w_list"].tolist(), index=gdf.index, dtype="object")
     gdf["_lu_w"] = gdf.apply(
-        lambda r: list(zip(r[land_uses_column], r["_w_list"], strict=False)), axis=1
+        lambda r: list(zip(r[land_uses_column], r["_w_list"], strict=False)),
+        axis=1,
     )
 
     gdf_exploded = gdf.explode("_lu_w", ignore_index=False)
@@ -337,7 +368,7 @@ def pragmatic_score(
 
     sindex = gdf_exploded.sindex
 
-    def _unexpectedness(building_index, building_geometry, building_label):
+    def _unexpectedness(row_id, building_geometry, building_label):
         buf = building_geometry.buffer(search_radius)
         candidate_idx = list(sindex.intersection(buf.bounds))
         if not candidate_idx:
@@ -345,7 +376,7 @@ def pragmatic_score(
 
         possible = gdf_exploded.iloc[candidate_idx]
         matches = possible[possible.intersects(buf)]
-        matches = matches[matches.index != building_index]
+        matches = matches[matches["_ci_row_id"] != row_id]
 
         if matches.empty:
             return 0.0
@@ -358,12 +389,14 @@ def pragmatic_score(
         return 1.0 - (Nj_w / total_w)
 
     gdf_exploded["prag_temp"] = gdf_exploded.apply(
-        lambda row: _unexpectedness(row.name, row.geometry, row[land_uses_column]),
+        lambda row: _unexpectedness(row["_ci_row_id"], row.geometry, row[land_uses_column]),
         axis=1,
     )
 
-    gdf["prag"] = gdf_exploded.groupby(gdf_exploded.index)["prag_temp"].max()
-    return gdf.drop(columns=["_w_list", "_lu_w"], errors="ignore")
+    scores = gdf_exploded.groupby("_ci_row_id")["prag_temp"].max()
+    gdf["prag"] = gdf["_ci_row_id"].map(scores).fillna(0.0).astype(float)
+
+    return gdf.drop(columns=["_ci_row_id", "_w_list", "_lu_w"], errors="ignore")
 
 
 def compute_global_scores(buildings_gdf, global_indexes_weights, global_components_weights):
@@ -500,10 +533,7 @@ def compute_local_scores(
         }
         for future in concurrent.futures.as_completed(future_scores):
             buildingID = future_scores[future]
-            try:
-                buildings_gdf.loc[buildingID, "lScore"] = future.result()
-            except Exception:
-                buildings_gdf.loc[buildingID, "lScore"] = 0.0
+            buildings_gdf.loc[buildingID, "lScore"] = future.result()
 
     buildings_gdf["lScore_sc"] = scaling_columnDF(buildings_gdf["lScore"])
     return buildings_gdf
@@ -585,9 +615,9 @@ def _building_local_score(
         )
 
     # Compute cultural and pragmatic scores if defined
-    if "cScore" in local_components_weights:
+    if "cScore" in local_components_weights and "cult_sc" in matches.columns:
         matches["cScore_l"] = matches["cult_sc"]
-    if "pScore" in local_components_weights:
+    if "pScore" in local_components_weights and "prag_sc" in matches.columns:
         matches["pScore_l"] = matches["prag_sc"]
 
     # Rescale component scores dynamically
