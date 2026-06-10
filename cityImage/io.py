@@ -78,12 +78,12 @@ def buildings_from_file(
     land_use_field: str | None = None,
     min_area: float = 200,
     min_height: float = 5,
-    default_land_use: str = "unknown",
 ) -> gpd.GeoDataFrame:
     """Load building polygons from file and convert them to cityImage schema.
 
     GeoPandas handles file reading and CRS conversion. cityImage standardises
-    identifiers, area, height/base defaults, and land-use columns.
+    identifiers, area, height/base defaults, and source/provenance land-use
+    columns.
     """
     crs = _normalise_crs(crs)
     buildings = gpd.read_file(input_path).to_crs(crs).copy()
@@ -92,18 +92,22 @@ def buildings_from_file(
     buildings["area"] = buildings.geometry.area
     buildings = buildings[buildings["area"] >= min_area].copy()
 
-    if height_field is not None and height_field in buildings.columns:
+    if height_field is not None and height_field not in buildings.columns:
+        raise ValueError(f"height_field {height_field!r} not found in input file")
+    if base_field is not None and base_field not in buildings.columns:
+        raise ValueError(f"base_field {base_field!r} not found in input file")
+    if land_use_field is not None and land_use_field not in buildings.columns:
+        raise ValueError(f"land_use_field {land_use_field!r} not found in input file")
+
+    if height_field is not None:
         buildings["height"] = buildings[height_field]
     elif "height" not in buildings.columns:
         buildings["height"] = min_height
 
-    if base_field is not None and base_field in buildings.columns:
+    if base_field is not None:
         buildings["base"] = buildings[base_field]
     elif "base" not in buildings.columns:
         buildings["base"] = 0.0
-
-    if land_use_field is not None and land_use_field not in buildings.columns:
-        raise ValueError(f"land_use_field {land_use_field!r} not found in input file")
 
     land_uses_raw_column = land_use_field
     if land_uses_raw_column is None and LAND_USES_RAW in buildings.columns:
@@ -118,7 +122,6 @@ def buildings_from_file(
         buildings,
         building_id_column="buildingID",
         land_uses_raw_column=land_uses_raw_column,
-        default_land_use=default_land_use,
         validate=False,
     )
 
