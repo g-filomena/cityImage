@@ -1,2 +1,78 @@
-# Auto detect text files and perform LF normalization
+# =============================================================================
+# Default text handling
+# =============================================================================
+
 * text=auto
+
+
+# =============================================================================
+# Source code / config files: force LF line endings
+# =============================================================================
+
+*.py text eol=lf
+*.pyi text eol=lf
+*.toml text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.rst text eol=lf
+*.txt text eol=lf
+*.cfg text eol=lf
+*.ini text eol=lf
+*.sh text eol=lf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+
+# =============================================================================
+# Notebooks: text, but keep stable line endings
+# =============================================================================
+
+*.ipynb text eol=lf
+
+
+# =============================================================================
+# Geospatial / data files: binary
+# =============================================================================
+
+*.gpkg binary
+*.shp binary
+*.shx binary
+*.dbf binary
+*.prj text eol=lf
+*.cpg text eol=lf
+*.geojson text eol=lf
+*.tif binary
+*.tiff binary
+*.vrt text eol=lf
+*.parquet binary
+*.feather binary
+*.pkl binary
+*.pickle binary
+
+
+# =============================================================================
+# Images / archives / documents: binary
+# =============================================================================
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.svg text eol=lf
+*.pdf binary
+*.zip binary
+*.tar binary
+*.gz binary
+*.7z binary
+*.rar binary
+
+
+# =============================================================================
+# Package metadata
+# =============================================================================
+
+LICENSE text eol=lf
+README* text eol=lf
+CHANGELOG* text eol=lf

@@ -1,16 +1,99 @@
+# =============================================================================
+# Python bytecode / caches
+# =============================================================================
+
 __pycache__/
+*.py[cod]
+*$py.class
+
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+.coverage
+coverage.xml
+htmlcov/
+
+
+# =============================================================================
+# Distribution / packaging
+# =============================================================================
+
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+*.egg-info/
+.installed.cfg
+*.egg
+sdist/
+parts/
+var/
+
+
+# =============================================================================
+# Virtual environments
+# =============================================================================
+
+env/
+venv/
+.venv/
+ENV/
+.micromamba/
+
+lib/
+lib64/
+
+
+# =============================================================================
+# Jupyter / notebooks / notebook caches
+# =============================================================================
+
+.ipynb_checkpoints/
+**/.ipynb_checkpoints/
+
+tests/.ipynb_checkpoints/
 tests/cache/
-docs/notebooks/cache/
-docs/otherExamples/cache/
-docs/data/
-docs/cache/
-docs/output/
+
 docs/notebooks/.ipynb_checkpoints/
 docs/otherExamples/.ipynb_checkpoints/
-cache/
 
-.temp
-.pytest_cache
+docs/notebooks/cache/
+docs/otherExamples/cache/
+docs/cache/
+docs/data/
+docs/output/
+
+*.nbconvert.ipynb
+
+
+# =============================================================================
+# Local cache / temporary / output folders
+# =============================================================================
+
+cache/
+tmp/
+temp/
+.temp/
+output/
+outputs/
+
+
+# =============================================================================
+# Sphinx / documentation builds
+# =============================================================================
+
+docs/_build/
+docs/generated/
+docs/api/
+
+
+# =============================================================================
+# Archives / packaged files
+# =============================================================================
 
 *.7z
 *.dmg
@@ -20,46 +103,40 @@ cache/
 *.rar
 *.tar
 *.zip
- 
+
+
+# =============================================================================
+# Logs / databases
+# =============================================================================
+
 *.log
 *.sql
 *.sqlite
- 
+*.sqlite3
+*.db
+
+
+# =============================================================================
+# OS artefacts
+# =============================================================================
+
 .DS_Store
 .DS_Store?
 ._*
 .Spotlight-V100
 .Trashes
-ehthumbs.db
+
 Thumbs.db
+ehthumbs.db
 
 
+# =============================================================================
+# IDE / editor artefacts
+# =============================================================================
 
-# Byte-compiled / optimized / DLL files
-__pycache__/
-*.py[cod]
-*$py.class
+.vscode/
+.idea/
 
-
-# Distribution / packaging
-.Python
-env/
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# Sphinx documentation
-docs/_build/
-docs/generated/
-docs/api/
+*.swp
+*.swo
+*~

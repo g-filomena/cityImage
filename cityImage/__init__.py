@@ -1,30 +1,208 @@
-################################################################################
-# Module: __init__.py
-# Description: cityImage - a package for capturing the Image of the City with street network and GIS-based analysis.
-# License: GNU General Public License v3.0, see full license in LICENSE.txt
-################################################################################
+"""Top-level public API for cityImage.
 
-from .angles import *
-from .barriers import *
-from .buildings_height import *
-from .buildings_landmarks import *
-from .buildings_load import *
-from .buildings_visibility import *
-from .colors import *
-from .graph import *
-from .graph_centrality import *
-from .graph_clean import *
-from .graph_consolidate import *
-from .graph_load import *
-from .graph_topology import *
-from .land_use_assign import *
-from .land_use_classify import *
-from .land_use_derive import *
-from .land_use_sparse import *
-from .land_use_tags import *
-from .land_use_utils import *
-from .plot import *
-from .regions import *
-from .utilities import *
+The package now uses lazy attribute loading: importing ``cityImage`` no longer
+eagerly imports optional heavy dependencies such as OSMnx, PyVista, rasterstats,
+igraph, python-louvain, or matplotlib. Public functions/classes are loaded from
+their implementation modules only when first accessed, preserving the historical
+``import cityImage as ci`` style for most workflows.
+"""
 
-__version__ = '1.2.3'
+from __future__ import annotations
+
+from importlib import import_module
+from typing import Any
+
+__version__ = "1.2.3"
+
+_PUBLIC_SYMBOLS: dict[str, str] = {
+    "AMENITY_GROUPS": "landuse",
+    "AREA": "schema",
+    "AngleError": "angles",
+    "BASE": "schema",
+    "BUILDING_GROUPS": "landuse",
+    "BUILDING_ID": "schema",
+    "BUILDING_USE_PREFIX": "landuse",
+    "CRAFT_GROUPS": "landuse",
+    "EDGE_ID": "schema",
+    "EXCLUDE_AMENITIES": "landuse",
+
+    "DEFAULT_GLOBAL_COMPONENT_WEIGHTS": "scoring",
+    "DEFAULT_GLOBAL_INDEX_WEIGHTS": "scoring",
+    "DEFAULT_LOCAL_COMPONENT_WEIGHTS": "scoring",
+    "DEFAULT_LOCAL_INDEX_WEIGHTS": "scoring",
+    "LandmarkScoringConfig": "scoring",
+    "FALSEY_OSM_TAG_VALUES": "landuse",
+    "GEOMETRY": "schema",
+    "HEIGHT": "schema",
+    "INDUSTRIAL_GROUPS": "landuse",
+    "LAND_USES": "schema",
+    "LAND_USES_OVERLAP": "schema",
+    "LAND_USES_RAW": "schema",
+    "LEISURE_GROUPS": "landuse",
+    "MultiPlot": "plotting",
+    "NODE_ID": "schema",
+    "NULL_STRINGS": "landuse",
+    "OFFICE_GROUPS": "landuse",
+    "OPTIONAL_BUILDINGS_COLUMNS": "schema",
+    "OSM_DOMAINS": "landuse",
+    "OSM_DOMAIN_GROUPS": "landuse",
+    "OSM_DOMAIN_VALUE_TO_GROUP": "landuse",
+    "OSM_MACRO_GROUP_LABELS": "landuse",
+    "PLACE_OF_WORSHIP_GROUPS": "landuse",
+    "POW_RELIGIOUS_BUILDINGS": "landuse",
+    "Plot": "plotting",
+    "REQUIRED_BUILDINGS_COLUMNS": "schema",
+    "REQUIRED_EDGES_COLUMNS": "schema",
+    "REQUIRED_NODES_COLUMNS": "schema",
+    "RESOLUTION_RULES": "landuse",
+    "SHOP_GROUPS": "landuse",
+    "SchemaError": "schema",
+    "SchemaReport": "schema",
+    "Settings": "angles",
+    "TOURISM_GROUPS": "landuse",
+    "UNCLASSIFIED": "landuse",
+    "along_water": "barriers",
+    "along_within_parks": "barriers",
+    "amend_nodes_membership": "regions",
+    "angle_line_geometries": "angles",
+    "append_edges_metrics": "centrality",
+    "apply_manual_triplet_overrides": "landuse",
+    "apply_resolution_rules": "landuse",
+    "assert_all_polygons": "landmarks",
+    "assign_building_heights_from_other_gdf": "height",
+    "assign_height_from_dtm": "height",
+    "assign_structuring_barriers": "barriers",
+    "attach_sparse_land_uses": "landuse",
+    "barriers_along": "barriers",
+    "barrier_osm_feature_tags": "barriers",
+    "barriers_from_osm_features": "barriers",
+    "park_barriers_from_osm_features": "barriers",
+    "railway_barriers_from_osm_features": "barriers",
+    "road_barriers_from_osm_features": "barriers",
+    "water_barriers_from_osm_features": "barriers",
+    "build_duplicate_tokens_map": "landuse",
+    "buildings_height_from_dem_dtm": "height",
+    "calculate_centrality": "centrality",
+    "center_line": "geometry",
+    "classify_land_use": "landuse",
+    "classify_land_uses_intoDMAs": "landuse",
+    "classify_land_uses_raws_into_OSMgroups": "landuse",
+    "classify_sparse_land_uses": "landuse",
+    "clean_duplicate_edges": "network_topology",
+    "clean_duplicate_nodes": "network_topology",
+    "clean_network": "network_topology",
+    "clean_same_vertexes_edges": "network_topology",
+    "columnError": "centrality",
+    "compute_3d_sight_lines": "visibility3d",
+    "compute_global_scores": "landmarks",
+    "compute_local_scores": "landmarks",
+    "consolidate_edges": "network_topology",
+    "consolidate_nodes": "network_topology",
+    "correct_edge_geometries": "network_topology",
+    "cultural_score": "landmarks",
+    "derive_land_uses_raw_fromOSM": "landuse",
+    "district_to_nodes_from_edges": "regions",
+    "district_to_nodes_from_polygons": "regions",
+    "districts_to_edges_from_nodes": "regions",
+    "downsample_coords": "visibility3d",
+    "drop_redundant_group_label": "landuse",
+    "dual_gdf": "graph",
+    "dual_graph_fromGDF": "graph",
+    "dual_id_dict": "graph",
+    "ensure_building_schema_defaults": "schema",
+    "filter_distance": "visibility3d",
+    "find_gateways": "regions",
+    "find_land_use_values_matching": "landuse",
+    "find_unclassified_tokens_OSM_groups": "landuse",
+    "fix_dead_ends": "network_topology",
+    "fix_fake_self_loops": "network_topology",
+    "fix_multiparts_LineString_gdf": "geometry",
+    "fix_network_topology": "network_topology",
+    "from_nx_to_gdf": "graph",
+    "gdf_multipolygon_to_polygon": "geometry",
+    "get_coord_angle": "angles",
+    "graph_fromGDF": "graph",
+    "identify_regions": "regions",
+    "identify_regions_primal": "regions",
+    "regions_from_dual_partition": "regions",
+    "regions_from_primal_partition": "regions",
+    "kindlmann": "plotting",
+    "land_use_from_other_gdf": "landuse",
+    "land_use_from_points": "landuse",
+    "land_use_from_polygons": "landuse",
+    "lighten_color": "plotting",
+    "merge_gpkg_chunks_to_gdf": "visibility3d",
+    "missing_columns": "schema",
+    "multiGraph_fromGDF": "graph",
+    "nameError": "centrality",
+    "network_from_lines": "network",
+    "network_from_file": "io",
+    "buildings_from_file": "io",
+    "features_from_osm": "osm",
+    "network_from_osm": "osm",
+    "buildings_from_osm": "osm",
+    "barriers_from_osm": "osm",
+    "nodes_degree": "graph",
+    "normalize": "plotting",
+    "obstructions_2d": "visibility3d",
+    "obstructions_3d": "visibility3d",
+    "filter_pedestrian_osm_features": "pedestrian",
+    "pedestrian_network_from_osm": "pedestrian",
+    "pedestrian_network_from_osm_features": "pedestrian",
+    "plot_gdf": "plotting",
+    "plot_grid_gdf_columns": "plotting",
+    "plot_grid_gdfs_column": "plotting",
+    "polygon_2d_to_3d": "visibility3d",
+    "polygonise_partitions": "regions",
+    "pragmatic_score": "landmarks",
+    "rand_cmap": "plotting",
+    "random_colors_list": "plotting",
+    "reach_centrality": "centrality",
+    "remove_disconnected_islands": "network_topology",
+    "require_columns": "schema",
+    "require_geometry": "schema",
+    "require_land_use_lists": "schema",
+    "reset_index_graph_gdfs": "network",
+    "scaling_columnDF": "data_utils",
+
+    "score_building_components": "scoring",
+    "score_buildings_global": "scoring",
+    "score_buildings_local": "scoring",
+    "score_cityimage_buildings": "scoring",
+    "validate_score_weights": "scoring",
+    "select_buildings_by_study_area": "buildings",
+    "simplify_graph": "network_topology",
+    "split_line_at_MultiPoint": "geometry",
+    "straightness_centrality": "centrality",
+
+    "standardize_buildings_gdf": "adapters",
+    "standardize_cityimage_inputs": "adapters",
+    "standardize_edges_gdf": "adapters",
+    "standardize_nodes_gdf": "adapters",
+    "structural_score": "landmarks",
+    "validate_buildings_gdf": "schema",
+    "validate_edges_gdf": "schema",
+    "validate_nodes_gdf": "schema",
+    "visibility_polygon2d": "visibility2d",
+    "visibility_score": "landmarks",
+    "weight_nodes": "centrality",
+}
+
+__all__ = sorted(["__version__", *_PUBLIC_SYMBOLS])
+
+
+def __getattr__(name: str) -> Any:
+    """Load public symbols lazily from their implementation modules."""
+    module_name = _PUBLIC_SYMBOLS.get(name)
+    if module_name is None:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+    module = import_module(f".{module_name}", __name__)
+    value = getattr(module, name)
+    globals()[name] = value
+    return value
+
+
+def __dir__() -> list[str]:
+    """Return a stable directory including lazily available public symbols."""
+    return sorted(set(globals()) | set(_PUBLIC_SYMBOLS))

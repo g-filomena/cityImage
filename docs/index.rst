@@ -9,55 +9,97 @@ cityImage's documentation
 Introduction
 ------------
 
-`cityImage` is a Python package that supports the extraction of the Image of the City by using geospatial datasets, either provided by the user or directly downloaded from OpenStreetMap.
+``cityImage`` is a Python package for extracting a computational representation
+of Lynch's *Image of the City* from geospatial data. It works with user-provided
+GeoPandas datasets and with OpenStreetMap data acquired through OSMnx, while
+preserving a cityImage-specific schema for networks, buildings, barriers,
+districts, landmarks, and imageability scores.
 
 Theoretical considerations
 --------------------------
 
-The *Image of the City* is a community mental representation of a city resulting from the overlap of people's individual images of the city. The term "image of the city" coincides, to some extent, with other notions such as cognitive map, mental images, and image schemata, conceptualizing cognitive representations of urban space.
+The *Image of the City* is a community mental representation of a city resulting
+from the overlap of people's individual images of urban space. The term overlaps
+with related notions such as cognitive maps, mental images, and image schemata.
 
-In a nutshell, these are cognitive mental models employed to navigate and interact with urban elements. Lynch identified five urban elements that are shared across the citizens and visitors of a city: paths, nodes, edges, districts, and landmarks.
+Lynch identified five urban elements commonly shared across citizens and
+visitors: paths, nodes, edges, districts, and landmarks. Whereas Lynch's original
+work relied on qualitative interviews, ``cityImage`` supports a computational
+formulation based on geospatial data.
 
-Whereas Lynch originally used qualitative interviews to identify the image of cities like Los Angeles, Boston, and New Jersey, this library allows the identification of such shared salient elements from geospatial datasets. For more details on Lynch’s work and the geo-computational formulation, refer to: Filomena, G., Verstegen, J. A., & Manley, E. (2019). `A computational approach to The Image of the City. Cities, 89, 14–25 <https://doi.org/10.1016/j.cities.2019.01.006>`_.
+For the original computational formulation, see: Filomena, G., Verstegen, J. A.,
+& Manley, E. (2019). `A computational approach to The Image of the City. Cities,
+89, 14–25 <https://doi.org/10.1016/j.cities.2019.01.006>`_.
 
-How to install
---------------
+Installation
+------------
 
-From PyPI using pip:
+Core install:
 
 .. code-block:: bash
 
-    pip install cityImage
+   pip install cityImage
 
-Main purposes
--------------
+Install with all optional extras:
 
-The functions implemented in `cityImage` enable the identification of the five Lynchian elements:
+.. code-block:: bash
 
-- **Nodes** and **Paths**: Identified based on betweenness centrality measures computed on the street network. Paths can be identified from both primal and dual graph representations of the street network, utilizing angularity measures.
-- **Districts**: Urban regions identified using network community detection techniques (e.g., modularity optimization).
-- **Edges**: Natural and artificial barriers such as rivers, railway structures, and main roads.
-- **Landmarks**: Computational landmarks based on visual, structural, cultural, and pragmatic salience.
+   pip install "cityImage[all]"
 
-Additional functions
---------------------
+Main API areas
+--------------
 
-The library also presents a set of novel spatial methods and algorithms not typically implemented in Python environments:
+The refactored API separates cityImage-owned semantics from external libraries:
 
-- Supports straightforward scraping from OSM of buildings and street network data into `GeoPandas` GeoDataFrames.
-- Allows cleaning and simplifying graph representations of the street network (module `clean`).
-- Facilitates operations on dual graph representations of the street network (modules `load` and `graph`).
-- Computes 3D sight-lines towards buildings and calculates actual 3D visibility considering obstructions, leveraging the capabilities of the `pyvista` package. This is a valid, free, and open alternative to sightlines computation in ArcGIS.
-- Provides ready-to-use visualization tools that support the comparison of metrics of interest across cities (module `plot`), such as accessibility values, centrality values, etc.
+- ``cityImage.io``: file/GeoPandas loading into cityImage schemas.
+- ``cityImage.osm``: OSMnx acquisition into cityImage schemas.
+- ``cityImage.network`` and ``cityImage.network_topology``: street-network
+  construction, cleaning, simplification, and topology repair.
+- ``cityImage.graph`` and ``cityImage.angles``: primal/dual graph semantics and
+  angular relationships.
+- ``cityImage.barriers``: natural and artificial barriers such as rivers,
+  railways, parks, and major roads.
+- ``cityImage.regions``: districts and gateways from network partitions.
+- ``cityImage.landmarks`` and ``cityImage.scoring``: Lynchian landmark and
+  imageability scoring.
+- ``cityImage.visibility2d`` and ``cityImage.visibility3d``: 2D/3D visibility
+  workflows.
+- ``cityImage.plotting``: optional static plotting helpers.
 
-The examples in the rest of the documentation (see the `userGuide <https://cityimage.readthedocs.io/en/latest/notebooks/userGuide.html>`_) demonstrate the capabilities of the library.
+Typical use
+-----------
+
+.. code-block:: python
+
+   import cityImage as ci
+
+   nodes, edges = ci.network_from_osm(
+       "Susa, Italy",
+       download_method="OSMplace",
+       network_type="walk",
+       crs="EPSG:32632",
+   )
+
+   buildings = ci.buildings_from_osm(
+       "Susa, Italy",
+       download_method="OSMplace",
+       crs="EPSG:32632",
+   )
+
+   barriers = ci.barriers_from_osm(
+       "Susa, Italy",
+       download_method="OSMplace",
+       crs="EPSG:32632",
+   )
 
 Documentation content
 ---------------------
-  
+
 .. toctree::
    :maxdepth: 1
 
    Home <self>
+   About <about>
    User Guide <notebooks/userGuide.rst>
+   Module ownership <development/module_ownership>
    API reference <api>

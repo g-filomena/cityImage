@@ -1,464 +1,391 @@
+"""District/region and gateway semantics.
 
-import community
+This module keeps the cityImage-specific district/gateway semantics while
+making community detection an explicitly delegated operation.
+
+Preferred delegated workflow:
+
+```python
+partition = community.best_partition(dual_graph, weight="topo")
+regions = ci.regions_from_dual_partition(partition, dual_graph, edges_gdf, column="p_topo")
+```
+
+Convenience wrappers ``identify_regions`` and ``identify_regions_primal`` are
+retained, but they lazy-import ``python-louvain``/``community`` and only wrap its
+``best_partition`` result.
+"""
+
+from __future__ import annotations
+
+from collections.abc import Mapping
+from typing import Any
+
 import geopandas as gpd
-import networkx as nx
 import numpy as np
 import pandas as pd
 from shapely.ops import polygonize_full, unary_union
 
 pd.set_option("display.precision", 3)
 
-from .graph import dual_id_dict, graph_fromGDF
-from .utilities import dict_to_df, min_distance_geometry_gdf
+INVALID_DISTRICT = 999999
 
 
-def identify_regions(dual_graph, edges_gdf, weight = None):
-    """
-    It identifies regions in the street network, using the dual graph representation.
-    The modularity optimisation technique is used to identify urban regions.
-    
-    Parameters
-    ----------
-    dual_graph: Networkx.Graph
-        The dual graph of an urban area.
-    edges_gdf: LineString GeoDataFrame
-        The (primal) street segments GeoDataFrame.
-    weight: string
-        The edges' attribute to use when extracting the communities. If None is passed, only the topological relations influence the resulting communities.
-    
-    Returns
-    -------
-    regions: dict
-        A dictionary where to each primal edgeID (key) corresponds a region code (value).
-    """
-    edges_gdf = edges_gdf.copy()
-    subdvisions = []
-    if weight is None: 
-        weight = 'topo' #the function requires a string 
-    # extraction of the best partitions
-    partition = community.best_partition(dual_graph, weight=weight)
-    dct = dual_id_dict(partition, dual_graph, 'edgeID')
-    subdvisions.append(dct)
+def _best_partition(graph: Any, weight: str) -> dict[Any, int]:
+    """Delegate modularity/community detection to python-louvain."""
+    try:
+        import community
+    except ImportError as exc:
+        raise ImportError(
+            "Region identification requires the optional 'community' dependency "
+            "from python-louvain. Install the regions extra or pass a precomputed "
+            "partition to regions_from_dual_partition/regions_from_primal_partition."
+        ) from exc
 
-    # saving the data in a GeoDataFrame
-    partitions_df = dict_to_df(subdvisions, ['p_'+weight])
-    regions = pd.merge(edges_gdf, partitions_df, left_on = 'edgeID', right_index = True, how= 'left')
+    return community.best_partition(graph, weight=weight)
+
+
+def _graph_from_gdfs(nodes_gdf: gpd.GeoDataFrame, edges_gdf: gpd.GeoDataFrame, node_id_column: str = "nodeID"):
+    """Build a NetworkX graph using cityImage graph semantics, imported lazily."""
+    from .graph import graph_fromGDF
+
+    return graph_fromGDF(nodes_gdf, edges_gdf, node_id_column)
+
+
+def _dual_id_dict(partition: Mapping[Any, int], dual_graph: Any, attribute: str) -> dict[Any, int]:
+    """Map a dual-graph node partition to a primal edge attribute value."""
+    regions: dict[Any, int] = {}
+    for node, district in partition.items():
+        regions[dual_graph.nodes[node][attribute]] = district
     return regions
-    
-def identify_regions_primal(graph, nodes_gdf, weight = None):
-    """
-    It identifies regions in the street network, using the primal graph representation.
-    The modularity optimisation technique is used to identify urban regions.
-    
+
+
+def _min_distance_geometry_gdf(geometry: Any, gdf: gpd.GeoDataFrame) -> tuple[float, Any]:
+    """Return minimum distance and index label of the nearest geometry row."""
+    if gdf.empty:
+        raise ValueError("Cannot calculate nearest geometry from an empty GeoDataFrame")
+
+    distances = gdf.geometry.distance(geometry)
+    index = distances.idxmin()
+    return float(distances.loc[index]), index
+
+
+def _geometry_union(geometries: gpd.GeoSeries) -> Any:
+    """Union geometries with GeoPandas/Shapely compatibility."""
+    if hasattr(geometries, "union_all"):
+        return geometries.union_all()
+    return unary_union(list(geometries))
+
+
+def regions_from_dual_partition(
+    partition: Mapping[Any, int],
+    dual_graph: Any,
+    edges_gdf: gpd.GeoDataFrame,
+    *,
+    column: str = "p_topo",
+) -> gpd.GeoDataFrame:
+    """Assign a precomputed dual-graph partition to primal street segments.
+
     Parameters
     ----------
-    graph: Networkx.Graph
-        The primal graph of an urban area.
-    nodes_gdf: Point GeoDataFrame
-        The nodes (junctions) GeoDataFrame.
-
-    Returns
-    -------
-    regions: dict
-        A dictionary where to each nodeID (key) corresponds a region code (value).
+    partition
+        Mapping from dual-graph node IDs to district/community IDs.
+    dual_graph
+        Dual graph whose nodes expose an ``edgeID`` attribute.
+    edges_gdf
+        Primal street-segment GeoDataFrame containing an ``edgeID`` column.
+    column
+        Output district column name.
     """
+    edge_partition = _dual_id_dict(partition, dual_graph, "edgeID")
+    regions = edges_gdf.copy()
+    regions[column] = regions["edgeID"].map(edge_partition)
+    return regions
 
-    if weight is None: 
-        weight = 'topo' #the function requires a string 
-    # extraction of the best partitions
-    partition = community.best_partition(graph, weight=weight)
+
+def regions_from_primal_partition(
+    partition: Mapping[Any, int],
+    nodes_gdf: gpd.GeoDataFrame,
+    *,
+    column: str = "p_topo",
+) -> gpd.GeoDataFrame:
+    """Assign a precomputed primal-graph partition to street nodes."""
     regions = nodes_gdf.copy()
-    regions['p_'+weight] = regions.nodeID.map(partition)
+    regions[column] = regions["nodeID"].map(partition)
     return regions
-                
-def polygonise_partitions(edges_gdf, column, convex_hull = True, buffer = 30):
+
+
+def identify_regions(dual_graph: Any, edges_gdf: gpd.GeoDataFrame, weight: str | None = None) -> gpd.GeoDataFrame:
+    """Identify edge-based regions using delegated python-louvain partitioning.
+
+    This convenience function preserves the old cityImage behaviour but the
+    community-detection algorithm itself is delegated to python-louvain.
     """
-    Given districts assign to street segments it create polygons representing districts, either by creating a convex_hull for each group of segments or 
-    simply polygonising them.
-    
-    Parameters
-    ----------
-    edges_gdf: LineString GeoDataFrame
-        The street segments GeoDataFrame.
-    column: string
-        The name of the column containing the district identifier.
-    convex_hull: boolean
-        When True creates create convex hulls after having polygonised the cluster of segments.
-    buffer: float
-        Desired buffer around the polygonised segments, before possibly obtaining the convex hulls.
-        
-    Returns
-    -------
-    polygonised_partitions: Polygon GeoDataFrame
-        A GeoDataFrame containing the polygonised partitions.
+    if weight is None:
+        weight = "topo"
+
+    partition = _best_partition(dual_graph, weight=weight)
+    return regions_from_dual_partition(
+        partition,
+        dual_graph,
+        edges_gdf,
+        column=f"p_{weight}",
+    )
+
+
+def identify_regions_primal(graph: Any, nodes_gdf: gpd.GeoDataFrame, weight: str | None = None) -> gpd.GeoDataFrame:
+    """Identify node-based regions using delegated python-louvain partitioning."""
+    if weight is None:
+        weight = "topo"
+
+    partition = _best_partition(graph, weight=weight)
+    return regions_from_primal_partition(partition, nodes_gdf, column=f"p_{weight}")
+
+
+def polygonise_partitions(
+    edges_gdf: gpd.GeoDataFrame,
+    column: str,
+    convex_hull: bool = True,
+    buffer: float = 30,
+) -> gpd.GeoDataFrame:
+    """Create district polygons from edge-based partition labels.
+
+    This preserves the old geometry pipeline: union partition edges,
+    ``polygonize_full``, union the result, buffer, and optionally return the
+    convex hull.
     """
-    
     polygons = []
-    partitionIDs = []
-    d = {'geometry' : polygons, column : partitionIDs}
+    partition_ids = []
 
-    partitions = edges_gdf[column].unique()
-    for i in partitions:
-        polygon = polygonize_full(edges_gdf[edges_gdf[column] == i].geometry.union_all())
-        polygon = unary_union(polygon).buffer(buffer)
-        if convex_hull:
-            polygons.append(polygon.convex_hull)
-        else: 
-            polygons.append(polygon)
-        partitionIDs.append(i)
+    for partition_id in edges_gdf[column].unique():
+        partition_edges = edges_gdf[edges_gdf[column] == partition_id]
+        polygonised = polygonize_full(_geometry_union(partition_edges.geometry))
+        polygon = unary_union(polygonised).buffer(buffer)
+        polygons.append(polygon.convex_hull if convex_hull else polygon)
+        partition_ids.append(partition_id)
 
-    df = pd.DataFrame(d)
-    polygonised_partitions = gpd.GeoDataFrame(df, crs=edges_gdf.crs, geometry=df['geometry'])
-    return polygonised_partitions
-   
-def district_to_nodes_from_edges(nodes_gdf, edges_gdf, column):
-    """
-    It assigns districts' identifiers to the street junctions (nodes), when the districts are assigned to the street segments (edges),
-    i.e. communities are identified on the dual graph. The attribution is based on Euclidean distance from each node to the closest street segment.
-    
-    Parameters
-    ----------
-    nodes_gdf: Point GeoDataFrame
-        The nodes (junctions) GeoDataFrame.
-    edges_gdf: LineString GeoDataFrame
-        The street segments GeoDataFrame.
-    column: string
-        The name of the column containing the district identifier.
-        
-    Returns
-    -------
-    nodes_gdf: Point GeoDataFrame
-        The updated street junctions GeoDataFrame.
-    """
-    
+    return gpd.GeoDataFrame(
+        {column: partition_ids},
+        geometry=polygons,
+        crs=edges_gdf.crs,
+    )
+
+
+def district_to_nodes_from_edges(
+    nodes_gdf: gpd.GeoDataFrame,
+    edges_gdf: gpd.GeoDataFrame,
+    column: str,
+) -> gpd.GeoDataFrame:
+    """Assign edge-based district IDs to nodes using nearest street segment."""
     nodes_gdf = nodes_gdf.copy()
-    nodes_gdf[column] = 0
-    sindex = edges_gdf.sindex # spatial index
-    
-    nodes_gdf[column] = nodes_gdf.apply(lambda row: _assign_district_to_node(row['geometry'], edges_gdf, sindex, column), axis = 1)
+    sindex = edges_gdf.sindex
+
+    nodes_gdf[column] = nodes_gdf.apply(
+        lambda row: _assign_district_to_node(row["geometry"], edges_gdf, sindex, column),
+        axis=1,
+    )
     nodes_gdf[column] = nodes_gdf[column].astype(int)
     return nodes_gdf
-    
-def _assign_district_to_node(node_geometry, edges_gdf, sindex, column):   
+
+
+def _assign_district_to_node(
+    node_geometry: Any,
+    edges_gdf: gpd.GeoDataFrame,
+    sindex: Any,
+    column: str,
+) -> int:
+    """Assign one node to the district of its nearest edge."""
+    search_area = node_geometry.buffer(100)
+    possible_matches_index = list(sindex.intersection(search_area.bounds))
+    possible_matches = edges_gdf.iloc[possible_matches_index].copy()
+    _, nearest_index = _min_distance_geometry_gdf(node_geometry, possible_matches)
+    return int(edges_gdf.loc[nearest_index][column])
+
+
+def districts_to_edges_from_nodes(
+    nodes_gdf: gpd.GeoDataFrame,
+    edges_gdf: gpd.GeoDataFrame,
+    column: str,
+) -> gpd.GeoDataFrame:
+    """Assign node-based district IDs to edges.
+
+    The output preserves the old columns:
+    ``{column}_uv``, ``{column}_u``, and ``{column}_v``.
     """
-    Supporting function for district_to_nodes_from_edges
-    
-    Parameters
-    ----------
-    node_geometry: Point
-        A node's geometry.
-    edges_gdf: LineString GeoDataFrame
-        The street segments GeoDataFrame.
-    sindex: Spatial Index
-        Spatial Index object of the edges_gdf.
-    column: string
-        The name of the column containing the district identifier.
-        
-    Returns
-    -------
-    district: int
-        The district identifier.
-    """   
-    point = node_geometry
-    n = point.buffer(100)
-    possible_matches_index = list(sindex.intersection(n.bounds))
-    pm = edges_gdf.iloc[possible_matches_index].copy()
-    dist = min_distance_geometry_gdf(point, pm)
-    district = edges_gdf.loc[dist[1]][column]
-    
-    return district
-    
-def districts_to_edges_from_nodes(nodes_gdf, edges_gdf, column):
-    """
-    It assigns districts' identifiers to the street segments (edges), when the districts are assigned to the junctions(nodes), i.e. communities are identified on the 
-    primal graph. The attribution is based on Euclidean distance from each node to the closest street segment.
-    Three values are assigned to each edge:
-    - district_u: An integer representing the district identifier for the starting node of the edge.
-    - district_v: An integer representing the district identifier for the ending node of the edge.
-    - district_uv: An integer representing the district identifier for the edge, when district_u == district_v.
-    
-    
-    Parameters
-    ----------
-    nodes_gdf: Point GeoDataFrame
-        The nodes (junctions) GeoDataFrame.
-    edges_gdf: LineString GeoDataFrame
-        The street segments GeoDataFrame.
-    column: string
-        The name of the column containing the district identifier.
-        
-    Returns
-    -------
-    edges_gdf: LineString GeoDataFrame
-        The updated street segments GeoDataFrame.
-    """
-       
     edges_gdf = edges_gdf.copy()
-    edges_gdf[column+'_uv'] = 999999
-    edges_gdf[column+'_u'] = 999999
-    edges_gdf[column+'_v'] = 999999
-    
-    edges_gdf[[column+'_uv', column+'_u', column+'_v']] = edges_gdf.apply(lambda row: _assign_district_to_edge(row['edgeID'], nodes_gdf, edges_gdf, 
-                        column), axis = 1, result_type= 'expand')      
+    edges_gdf[f"{column}_uv"] = INVALID_DISTRICT
+    edges_gdf[f"{column}_u"] = INVALID_DISTRICT
+    edges_gdf[f"{column}_v"] = INVALID_DISTRICT
+
+    edges_gdf[[f"{column}_uv", f"{column}_u", f"{column}_v"]] = edges_gdf.apply(
+        lambda row: _assign_district_to_edge(row["edgeID"], nodes_gdf, edges_gdf, column),
+        axis=1,
+        result_type="expand",
+    )
 
     return edges_gdf
 
-def _assign_district_to_edge(edgeID, nodes_gdf, edges_gdf, column):
-    """
-    Supporting function for districts_to_edges_from_nodes
-    
-    Parameters
-    ----------
-    edgeID: int
-        The edgeID.
-    nodes_gdf: Point GeoDataFrame
-        The nodes (junctions) GeoDataFrame   .
-    edges_gdf: LineString GeoDataFrame
-        The street segments GeoDataFrame.
-    column: string
-        The name of the column containing the district identifier.
-    
-    Returns
-    -------
-    tuple
-    """
-    series = edges_gdf.loc[edgeID]
-    district_uv = 999999
-    district_u = nodes_gdf.loc[series.u][column]
-    district_v = nodes_gdf.loc[series.v][column]
-    if district_u == district_v: 
-        district_uv = district_u
+
+def _assign_district_to_edge(
+    edge_id: Any,
+    nodes_gdf: gpd.GeoDataFrame,
+    edges_gdf: gpd.GeoDataFrame,
+    column: str,
+) -> tuple[int, int, int]:
+    """Return edge district assignment from the districts of endpoint nodes."""
+    edge = edges_gdf.loc[edge_id]
+    district_u = int(nodes_gdf.loc[edge.u][column])
+    district_v = int(nodes_gdf.loc[edge.v][column])
+    district_uv = district_u if district_u == district_v else INVALID_DISTRICT
     return district_uv, district_u, district_v
-    
-def district_to_nodes_from_polygons(nodes_gdf, partitions_gdf, column):
-    """
-    It assigns districts' identifiers to the street junctions (nodes), from polygons representing district areas.
-    
-    Parameters
-    ----------
-    nodes_gdf: Point GeoDataFrame
-        The nodes (junctions) GeoDataFrame.   
-    partitions_gdf: Polygon GeoDataFrame
-        The nodes (junctions) GeoDataFrame.      
-    column: string
-        The name of the column containing the district identifier.
-    
-    Returns
-    -------
-    nodes_gdf: Point GeoDataFrame
-        The updated street junctions GeoDataFrame.
-    """
-    
+
+
+def district_to_nodes_from_polygons(
+    nodes_gdf: gpd.GeoDataFrame,
+    partitions_gdf: gpd.GeoDataFrame,
+    column: str,
+) -> gpd.GeoDataFrame:
+    """Assign polygon-based district IDs to nodes using nearest polygon."""
     nodes_gdf = nodes_gdf.copy()
-    nodes_gdf[column] = nodes_gdf.apply(lambda row: _assign_district_to_node_from_polygons(row['geometry'], partitions_gdf, column), axis = 1)
+    nodes_gdf[column] = nodes_gdf.apply(
+        lambda row: _assign_district_to_node_from_polygons(row["geometry"], partitions_gdf, column),
+        axis=1,
+    )
     nodes_gdf[column] = nodes_gdf[column].astype(int)
 
     return nodes_gdf
-    
-def _assign_district_to_node_from_polygons(node_geometry, partitions_gdf, column):
-    """
-    Supporting function for district_to_nodes_from_polygons
-    
-    Parameters
-    ----------
-    node_geometry: Point
-        A node's geometry.
-    partitions_gdf: Polygon GeoDataFrame
-        The nodes (junctions) GeoDataFrame.     
-    column: string
-        The name of the column containing the district identifier.
-    
-    Returns
-    -------
-    district: int
-        The district identifier.
-    """
-    
-    point = node_geometry  
-    dist = min_distance_geometry_gdf(point, partitions_gdf)
-    district = partitions_gdf.loc[dist[1]][column]
-    return district        
-    
-def amend_nodes_membership(nodes_gdf, edges_gdf, column, min_size_district = 10):
-    """
-    Amend the membership of nodes to districts based on connectivity and minimum district size.
-    
-    Parameters
-    ----------
-    nodes_gdf: Point GeoDataFrame
-        The nodes (junctions) GeoDataFrame.
-    edges_gdf: LineString GeoDataFrame
-        The street segments GeoDataFrame.
-    column: str
-        The name of the column containing the district identifier.
-    min_size_district: int
-        The minimum size (number of nodes) required for a district to be considered valid. Default is 10.
-    
-    Returns
-    -------
-    nodes_gdf: GeoDataFrame
-        The updated nodes GeoDataFrame with amended district memberships.
-    """
-    
+
+
+def _assign_district_to_node_from_polygons(
+    node_geometry: Any,
+    partitions_gdf: gpd.GeoDataFrame,
+    column: str,
+) -> int:
+    """Assign one node to the nearest district polygon."""
+    _, nearest_index = _min_distance_geometry_gdf(node_geometry, partitions_gdf)
+    return int(partitions_gdf.loc[nearest_index][column])
+
+
+def amend_nodes_membership(
+    nodes_gdf: gpd.GeoDataFrame,
+    edges_gdf: gpd.GeoDataFrame,
+    column: str,
+    min_size_district: int = 10,
+) -> gpd.GeoDataFrame:
+    """Amend node membership based on connectivity and minimum district size."""
     nodes_gdf = nodes_gdf.copy()
     nodes_gdf = _check_disconnected_districts(nodes_gdf, edges_gdf, column, min_size_district)
-    # if there are invalid districts, amend
-    while (999999 in nodes_gdf[column].unique()):
-        nodes_gdf[column] = nodes_gdf.apply(lambda row: _amend_node_membership(row['nodeID'], nodes_gdf, edges_gdf, column), axis = 1)
+
+    while INVALID_DISTRICT in nodes_gdf[column].unique():
+        current_nodes_gdf = nodes_gdf
+        nodes_gdf[column] = nodes_gdf.apply(
+            lambda row, current_nodes_gdf=current_nodes_gdf: _amend_node_membership(
+                row["nodeID"], current_nodes_gdf, edges_gdf, column
+            ),
+            axis=1,
+        )
         nodes_gdf = _check_disconnected_districts(nodes_gdf, edges_gdf, column, min_size_district)
-    
+
     return nodes_gdf
 
-def _amend_node_membership(nodeID, nodes_gdf, edges_gdf, column):
-    """
-    Amend the membership of a specific node to a district based on connectivity and neighboring nodes' districts.
 
-    Parameters
-    ----------
-    nodeID: int
-        The ID of the node to amend the membership for.
-    nodes_gdf: Point GeoDataFrame
-        The nodes (junctions) GeoDataFrame.
-    edges_gdf: LineString GeoDataFrame
-        The street segments GeoDataFrame.
-    column: str
-        The name of the column containing the district membership.
+def _amend_node_membership(
+    node_id: Any,
+    nodes_gdf: gpd.GeoDataFrame,
+    edges_gdf: gpd.GeoDataFrame,
+    column: str,
+) -> int:
+    """Amend one invalid node to the most plausible neighbouring district."""
+    if nodes_gdf.loc[node_id][column] != INVALID_DISTRICT:
+        return int(nodes_gdf.loc[node_id][column])
 
-    Returns
-    -------
-    new_district: int
-        The amended district membership for the specified node.
-    """  
-    # check if the current district membership of the node is not 999999, in which case return the existing membership without any changes
-    if nodes_gdf.loc[nodeID][column] != 999999: 
-        return nodes_gdf.loc[nodeID][column]
-    
-    # if the current membership is 999999 (no district), select the edges connected to the node and create a list of unique neighboring nodes
-    tmp_edges = edges_gdf[(edges_gdf.u == nodeID) | (edges_gdf.v == nodeID)].copy()
-    unique =  list(np.unique(tmp_edges[['u', 'v']].values))
-    unique.remove(nodeID)
-    # select the subset of nodes from the nodes_gdf that belong to the neighboring nodes and have a non-999999 district membership
-    tmp_nodes = nodes_gdf[(nodes_gdf.nodeID.isin(unique)) & (nodes_gdf[column] != 999999) ].copy()
-    
-    # if no such nodes are found, indicating a lack of connected nodes with valid district memberships, assign the node to the invalid district 999999 and return it
-    if len(tmp_nodes) == 0: 
-        return 999999
-    
-    # If there are connected nodes with valid district memberships, calculate the counts of each district and sort them in descending order
+    tmp_edges = edges_gdf[(edges_gdf.u == node_id) | (edges_gdf.v == node_id)].copy()
+    unique_nodes = list(np.unique(tmp_edges[["u", "v"]].values))
+    unique_nodes.remove(node_id)
+
+    tmp_nodes = nodes_gdf[
+        (nodes_gdf.nodeID.isin(unique_nodes)) & (nodes_gdf[column] != INVALID_DISTRICT)
+    ].copy()
+
+    if tmp_nodes.empty:
+        return INVALID_DISTRICT
+
     districts_sorted = tmp_nodes[column].value_counts(sort=True, ascending=False)
-    if len(districts_sorted) == 1:  
-        return districts_sorted.idxmax()
-    # If there is only one district with the highest count, return the district with the highest count as the amended membership for the node
-    if districts_sorted.iloc[0] > districts_sorted.iloc[1]: 
-        return districts_sorted.idxmax()
-    
-    # if there's more than a winnter select a subset of tmp_nodes based on their district membership. 
-    # this filters the nodes to consider only to those belonging to the two districts with the highest counts.
-    # keep the first two and the corresponding nodes and find the final best district on the basis of Euclidean distance
-    tmp_nodes = tmp_nodes[tmp_nodes[column].isin(list(districts_sorted[0:2].index))]
-    closest_ix = min_distance_geometry_gdf(nodes_gdf.loc[nodeID].geometry, tmp_nodes)[1]
-    new_district = tmp_nodes.loc[closest_ix][column]
-    
-    return new_district
+    if len(districts_sorted) == 1:
+        return int(districts_sorted.idxmax())
 
-def _check_disconnected_districts(nodes_gdf, edges_gdf, column, min_size = 10):
-    """
-    Check for disconnected districts in the nodes GeoDataFrame and update their membership to '999999' if necessary.
+    if districts_sorted.iloc[0] > districts_sorted.iloc[1]:
+        return int(districts_sorted.idxmax())
 
-    Parameters
-    ----------
-    nodes_gdf: Point GeoDataFrame
-        The nodes (junctions) GeoDataFrame.
-    edges_gdf: LineString GeoDataFrame
-        The street segments GeoDataFrame.
-    column: str
-        The name of the column containing the district identifier.
-    min_size: int
-        The minimum size of a district for it to be considered valid. Defaults to 10.
+    candidate_districts = list(districts_sorted.iloc[0:2].index)
+    tmp_nodes = tmp_nodes[tmp_nodes[column].isin(candidate_districts)]
+    _, closest_index = _min_distance_geometry_gdf(nodes_gdf.loc[node_id].geometry, tmp_nodes)
+    return int(tmp_nodes.loc[closest_index][column])
 
-    Returns
-    -------
-    nodes_gdf: Point GeoDataFrame
-        The updated nodes GeoDataFrame with potentially disconnected districts updated to '999999'.
-    """
+
+def _check_disconnected_districts(
+    nodes_gdf: gpd.GeoDataFrame,
+    edges_gdf: gpd.GeoDataFrame,
+    column: str,
+    min_size: int = 10,
+) -> gpd.GeoDataFrame:
+    """Mark too-small/disconnected districts as invalid."""
+    try:
+        import networkx as nx
+    except ImportError as exc:
+        raise ImportError("amend_nodes_membership requires networkx") from exc
+
     nodes_gdf = nodes_gdf.copy()
-    districts = nodes_gdf[column].unique()
-    
-    for district in districts:
-        if district == 999999: 
+
+    for district in nodes_gdf[column].unique():
+        if district == INVALID_DISTRICT:
             continue
-        
+
         tmp_nodes = nodes_gdf[nodes_gdf[column] == district].copy()
-        tmp_edges = edges_gdf[edges_gdf.u.isin(tmp_nodes.nodeID) & edges_gdf.v.isin(tmp_nodes.nodeID)].copy()
-        
-        # if the district is too small, make it not valid
-        if len(tmp_nodes) < min_size: 
-            nodes_gdf.loc[nodes_gdf.nodeID.isin(tmp_nodes.nodeID), column] = 999999
+        tmp_edges = edges_gdf[
+            edges_gdf.u.isin(tmp_nodes.nodeID) & edges_gdf.v.isin(tmp_nodes.nodeID)
+        ].copy()
+
+        if len(tmp_nodes) < min_size:
+            nodes_gdf.loc[nodes_gdf.nodeID.isin(tmp_nodes.nodeID), column] = INVALID_DISTRICT
             continue
-        
-        # create a graph with only nodes and belonging to the district
-        tmp_graph = graph_fromGDF(tmp_nodes, tmp_edges, 'nodeID')
-        
-        # if the graph composed of these elements is not connected
-        if not nx.is_connected(tmp_graph): 
+
+        tmp_graph = _graph_from_gdfs(tmp_nodes, tmp_edges, "nodeID")
+
+        if not nx.is_connected(tmp_graph):
             largest_component = max(nx.connected_components(tmp_graph), key=len)
-            G = tmp_graph.subgraph(largest_component)
-            # make not valid all the nodes not connected within the graph
-            to_check = [item for item in list(tmp_nodes.nodeID) if item not in list(G.nodes())]
-            nodes_gdf.loc[nodes_gdf.nodeID.isin(to_check), column] = 999999
-    
+            component_graph = tmp_graph.subgraph(largest_component)
+            to_check = [node for node in list(tmp_nodes.nodeID) if node not in list(component_graph.nodes())]
+            nodes_gdf.loc[nodes_gdf.nodeID.isin(to_check), column] = INVALID_DISTRICT
+
     return nodes_gdf
 
-def find_gateways(nodes_gdf, edges_gdf, column):
-    """
-    This function identifies junctions lying on the boundary of a district, thus connected to other districts through "bridge" edges.
-    
-    Parameters
-    ----------
-    nodes_gdf: Point GeoDataFrame
-        The nodes (junctions) GeoDataFrame.
-    edges_gdf: LineString GeoDataFrame
-        The street segments GeoDataFrame.
-    column: string
-        The name of the column containing the district membership. 
-    
-    Returns
-    -------
-    nodes_gdf: Point GeoDataFrame
-        The updated nodes GeoDataFrame with potentially disconnected districts updated to '999999'.
-    """
-    
-    # assign gateways
+
+def find_gateways(
+    nodes_gdf: gpd.GeoDataFrame,
+    edges_gdf: gpd.GeoDataFrame,
+    column: str,
+) -> gpd.GeoDataFrame:
+    """Identify nodes lying on a district boundary."""
     nodes_gdf = nodes_gdf.copy()
-    nodes_gdf['gateway'] = nodes_gdf.apply(lambda row: _gateway(row['nodeID'], nodes_gdf, edges_gdf, column), axis = 1)
+    nodes_gdf["gateway"] = nodes_gdf.apply(
+        lambda row: _gateway(row["nodeID"], nodes_gdf, edges_gdf, column),
+        axis=1,
+    )
     return nodes_gdf
-    
-def _gateway(nodeID, nodes_gdf, edges_gdf, column):
-    """
-    It supports the find_gateways function.
-    
-    Parameters
-    ----------
-    nodeID: int
-        nodeID of the node.
-    nodes_gdf: Point GeoDataFrame
-        The nodes (junctions) GeoDataFrame.
-    edges_gdf: LineString GeoDataFrame
-        The street segments GeoDataFrame.
-    column: str
-        The name of the column containing the district membership. 
-    
-    Returns
-    -------
-    int
-        1 = gateway, 0 = not a gateway.
-    """
-    
-    # edges connected to the given node
-    tmp = edges_gdf[(edges_gdf.u == nodeID) | (edges_gdf.v == nodeID)].copy() 
-    # nodes linked to the given node
-    tmp_nodes = nodes_gdf[nodes_gdf.nodeID.isin(tmp.u) | nodes_gdf.nodeID.isin(tmp.v)].copy() 
-    # if some of the other nodes belong to a different district, then this is a gateway
-    if (len(tmp_nodes[column].unique()) > 1):
+
+
+def _gateway(
+    node_id: Any,
+    nodes_gdf: gpd.GeoDataFrame,
+    edges_gdf: gpd.GeoDataFrame,
+    column: str,
+) -> int:
+    """Return 1 if a node connects to another district, otherwise 0."""
+    connected_edges = edges_gdf[(edges_gdf.u == node_id) | (edges_gdf.v == node_id)].copy()
+    connected_nodes = nodes_gdf[
+        nodes_gdf.nodeID.isin(connected_edges.u) | nodes_gdf.nodeID.isin(connected_edges.v)
+    ].copy()
+
+    if len(connected_nodes[column].unique()) > 1:
         return 1
     return 0
