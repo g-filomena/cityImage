@@ -129,9 +129,9 @@ def visibility_score(buildings_gdf, sight_lines=None, method="longest"):
     has_height = "height" in buildings_gdf.columns
     if has_height and not buildings_gdf.empty:
         buildings_gdf["fac"] = buildings_gdf.apply(
-            lambda row: _facade_area(row["geometry"], row["height"])
-            if pd.notnull(row["height"])
-            else 0.0,
+            lambda row: (
+                _facade_area(row["geometry"], row["height"]) if pd.notnull(row["height"]) else 0.0
+            ),
             axis=1,
         )
 
@@ -211,8 +211,6 @@ def _is_historic(value: Any) -> bool:
     except Exception:
         pass
     return str(value).strip().lower() not in {"0", "no", "false", "", "none", "nan"}
-
-
 
 
 def cultural_score(
@@ -322,9 +320,7 @@ def pragmatic_score(
             dtype="object",
         )
 
-    gdf[land_uses_column] = gdf[land_uses_column].apply(
-        lambda v: _as_list(v) or [default_land_use]
-    )
+    gdf[land_uses_column] = gdf[land_uses_column].apply(lambda v: _as_list(v) or [default_land_use])
 
     if gdf.empty:
         gdf["prag"] = pd.Series(dtype=float, index=gdf.index)

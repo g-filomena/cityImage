@@ -65,7 +65,7 @@ class Plot:
 
 class MultiPlot:
     """Create a grid of static GeoDataFrame plots.
-    
+
     Parameters
     ----------
     ncols : int
@@ -76,7 +76,7 @@ class MultiPlot:
         Matplotlib figure size.
     **kwargs
         Additional plotting options.
-    
+
     Attributes
     ----------
     fig : matplotlib.figure.Figure

@@ -22,7 +22,9 @@ def test_network_from_lines_builds_cityimage_nodes_and_edges():
     )
 
     assert nodes.sort_values("nodeID")["nodeID"].tolist() == [0, 1, 2]
-    assert edges.sort_values("edgeID")[["edgeID", "u", "v", "name"]].to_records(index=False).tolist() == [
+    assert edges.sort_values("edgeID")[["edgeID", "u", "v", "name"]].to_records(
+        index=False
+    ).tolist() == [
         (0, 0, 1, "a"),
         (1, 1, 2, "b"),
     ]

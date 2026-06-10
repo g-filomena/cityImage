@@ -91,7 +91,7 @@ def test_refactor_boundary_static_audit_passes():
     )
 
     assert findings == []
-    
+
 
 def test_core_import_does_not_import_visibility3d_or_pyvista():
     repo_root = Path(__file__).resolve().parents[1]

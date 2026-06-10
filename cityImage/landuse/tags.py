@@ -7,24 +7,21 @@ EXCLUDE_AMENITIES = {
     "cash_withdrawal",
     "vending_machine",
     "payment_terminal",
-
     # Sanitary / hygiene micro-POIs
     "toilets",
     "shower",
     "changing_room",
     "drinking_water",
     "dog_toilet",
-
     # Bicycle / mobility micro-POIs
     "bicycle_parking",
     "bicycle_repair_station",
     "charging_station",
-    "taxi",              # a taxi stand is not a building land-use
+    "taxi",  # a taxi stand is not a building land-use
     "motorcycle_parking",
-    "parking",           # generic parking area
+    "parking",  # generic parking area
     "parking_entrance",
     "parking_space",
-
     # Street furniture
     "bench",
     "waste_basket",
@@ -37,7 +34,6 @@ EXCLUDE_AMENITIES = {
     "post_box",
     "telephone",
     "emergency_phone",
-
     # Small public utilities
     "water_point",
     "watering_place",
@@ -45,7 +41,6 @@ EXCLUDE_AMENITIES = {
     "ice_cream",
     "parcel_locker",
     "loading_dock",
-
     # Electric / network cabinets etc.
     "power_supply",
     "power_outlet",
@@ -53,23 +48,19 @@ EXCLUDE_AMENITIES = {
     "generator",
     "transformer",
     "substation",
-
     # Transport infrastructure (not land use)
     "bus_stop",
     "boat_rental",
     "cycle_hire",
     "car_pool",
     "motorcycle_rental",
-
     # First aid but not a building land-use
     "defibrillator",
     "first_aid_kit",
-
     # Security / access control
     "gate",
     "security_cage",
     "security_post",
-
     # Misc public objects
     "bbq",
     "picnic_table",
@@ -78,12 +69,10 @@ EXCLUDE_AMENITIES = {
     "internet_cafe",  # sometimes room-level not building-level
     "smoking_area",
     "mailroom",
-
     # Religious micro-POIs (not the building)
     "bible_box",
     "holy_water",
     "prayer_room",
-
     # Information / signage
     "information",
     "map",
@@ -93,7 +82,6 @@ EXCLUDE_AMENITIES = {
     "public_bookcase",
     "guidepost",
     "route_marker",
-
     # Waste / disposal
     "waste_transfer_station",
     "waste_packaging",
@@ -102,7 +90,6 @@ EXCLUDE_AMENITIES = {
 }
 
 BUILDING_GROUPS = {
-
     # originally accommodation split into residential and accommodation
     "residential": [
         "apartments",
@@ -112,8 +99,7 @@ BUILDING_GROUPS = {
         "semidetached_house",
         "terrace",
     ],
-    
-    "accommodation":[
+    "accommodation": [
         "barracks",
         "bungalow",
         "cabin",
@@ -126,8 +112,7 @@ BUILDING_GROUPS = {
         "stilt_house",
         "tree_house",
         "trullo",
-    ],  
-        
+    ],
     "commercial": [
         "industrial",
         "kiosk",
@@ -136,7 +121,6 @@ BUILDING_GROUPS = {
         "supermarket",
         "warehouse",
     ],
-    
     "religious": [
         "cathedral",
         "chapel",
@@ -361,7 +345,6 @@ AMENITY_GROUPS = {
         "waste_disposal",
         "waste_transfer_station",
     ],
-    
     "other": [
         "animal_boarding",
         "animal_breeding",
@@ -439,80 +422,218 @@ TOURISM_GROUPS = {
 SHOP_GROUPS = {
     # Food, beverages
     "shop_food_beverages": [
-        "alcohol","bakery","beverages","brewing_supplies","butcher","cheese","chocolate","coffee",
-        "confectionery","convenience","dairy","deli","farm","food","frozen_food","greengrocer",
-        "health_food","ice_cream","nuts","pasta","pastry","seafood","spices","tea","tortilla",
-        "water","wine",
+        "alcohol",
+        "bakery",
+        "beverages",
+        "brewing_supplies",
+        "butcher",
+        "cheese",
+        "chocolate",
+        "coffee",
+        "confectionery",
+        "convenience",
+        "dairy",
+        "deli",
+        "farm",
+        "food",
+        "frozen_food",
+        "greengrocer",
+        "health_food",
+        "ice_cream",
+        "nuts",
+        "pasta",
+        "pastry",
+        "seafood",
+        "spices",
+        "tea",
+        "tortilla",
+        "water",
+        "wine",
     ],
-
     # General store, department store, mall
     "shop_general": [
-        "department_store","general","kiosk","mall","supermarket","wholesale",
+        "department_store",
+        "general",
+        "kiosk",
+        "mall",
+        "supermarket",
+        "wholesale",
     ],
-
     # Clothing, shoes, accessories
     "shop_clothing_accessories": [
-        "baby_goods","bag","boutique","clothes","fabric","fashion","fashion_accessories","jewelry",
-        "leather","sewing","shoes","shoe_repair","tailor","watches","wool",
+        "baby_goods",
+        "bag",
+        "boutique",
+        "clothes",
+        "fabric",
+        "fashion",
+        "fashion_accessories",
+        "jewelry",
+        "leather",
+        "sewing",
+        "shoes",
+        "shoe_repair",
+        "tailor",
+        "watches",
+        "wool",
     ],
-
     # Discount store, charity
     "shop_discount_charity": [
-        "charity","second_hand","variety_store",
+        "charity",
+        "second_hand",
+        "variety_store",
     ],
-
     # Health and beauty
     "shop_health_beauty": [
-        "beauty","chemist","cosmetics","erotic","hairdresser","hairdresser_supply","hearing_aids",
-        "herbalist","massage","medical_supply","nutrition_supplements","optician","perfumery",
-        "piercing","tattoo",
+        "beauty",
+        "chemist",
+        "cosmetics",
+        "erotic",
+        "hairdresser",
+        "hairdresser_supply",
+        "hearing_aids",
+        "herbalist",
+        "massage",
+        "medical_supply",
+        "nutrition_supplements",
+        "optician",
+        "perfumery",
+        "piercing",
+        "tattoo",
     ],
-
     # Do-it-yourself, household, building materials, gardening
     "shop_diy_garden": [
-        "agrarian","appliance","bathroom_furnishing","country_store","doityourself","electrical",
-        "energy","fireplace","florist","garden_centre","garden_furniture","gas","glaziery",
-        "groundskeeping","hardware","houseware","locksmith","paint","pottery","security",
-        "tool_hire","trade",
+        "agrarian",
+        "appliance",
+        "bathroom_furnishing",
+        "country_store",
+        "doityourself",
+        "electrical",
+        "energy",
+        "fireplace",
+        "florist",
+        "garden_centre",
+        "garden_furniture",
+        "gas",
+        "glaziery",
+        "groundskeeping",
+        "hardware",
+        "houseware",
+        "locksmith",
+        "paint",
+        "pottery",
+        "security",
+        "tool_hire",
+        "trade",
     ],
-
     # Furniture and interior
     "shop_furniture_interior": [
-        "antiques","bed","candles","carpet","curtain","doors","flooring","furniture",
-        "household_linen","interior_decoration","kitchen","lighting","tiles","window_blind",
+        "antiques",
+        "bed",
+        "candles",
+        "carpet",
+        "curtain",
+        "doors",
+        "flooring",
+        "furniture",
+        "household_linen",
+        "interior_decoration",
+        "kitchen",
+        "lighting",
+        "tiles",
+        "window_blind",
     ],
-
     # Electronics
     "shop_electronics": [
-        "computer","electronics","hifi","mobile_phone","printer_ink","radiotechnics",
-        "telecommunication","vacuum_cleaner",
+        "computer",
+        "electronics",
+        "hifi",
+        "mobile_phone",
+        "printer_ink",
+        "radiotechnics",
+        "telecommunication",
+        "vacuum_cleaner",
     ],
-
     # Outdoors and sport, vehicles
     "shop_outdoors_vehicles": [
-        "atv","bicycle","boat","car","car_parts","car_repair","caravan","fishing","fuel","golf",
-        "hunting","military_surplus","motorcycle","motorcycle_repair","outdoor","scooter",
-        "scuba_diving","ski","snowmobile","sports","surf","swimming_pool","trailer","truck",
+        "atv",
+        "bicycle",
+        "boat",
+        "car",
+        "car_parts",
+        "car_repair",
+        "caravan",
+        "fishing",
+        "fuel",
+        "golf",
+        "hunting",
+        "military_surplus",
+        "motorcycle",
+        "motorcycle_repair",
+        "outdoor",
+        "scooter",
+        "scuba_diving",
+        "ski",
+        "snowmobile",
+        "sports",
+        "surf",
+        "swimming_pool",
+        "trailer",
+        "truck",
         "tyres",
     ],
-
     # Art, music, hobbies
     "shop_art_hobbies": [
-        "art","camera","collector","craft","frame","games","model","music","musical_instrument",
-        "photo","trophy","video","video_games",
+        "art",
+        "camera",
+        "collector",
+        "craft",
+        "frame",
+        "games",
+        "model",
+        "music",
+        "musical_instrument",
+        "photo",
+        "trophy",
+        "video",
+        "video_games",
     ],
-
     # Stationery, gifts, books, newspapers
     "shop_books_gifts_stationery": [
-        "anime","books","gift","lottery","newsagent","stationery","ticket",
+        "anime",
+        "books",
+        "gift",
+        "lottery",
+        "newsagent",
+        "stationery",
+        "ticket",
     ],
-
     # Others
     "shop_other": [
-        "bookmaker","cannabis","copyshop","dry_cleaning","e-cigarette","funeral_directors",
-        "laundry","money_lender","outpost","party","pawnbroker","pest_control","pet",
-        "pet_grooming","pyrotechnics","religion","rental","storage_rental","tobacco","toys",
-        "travel_agency","vacant","vending_machine","weapons",
+        "bookmaker",
+        "cannabis",
+        "copyshop",
+        "dry_cleaning",
+        "e-cigarette",
+        "funeral_directors",
+        "laundry",
+        "money_lender",
+        "outpost",
+        "party",
+        "pawnbroker",
+        "pest_control",
+        "pet",
+        "pet_grooming",
+        "pyrotechnics",
+        "religion",
+        "rental",
+        "storage_rental",
+        "tobacco",
+        "toys",
+        "travel_agency",
+        "vacant",
+        "vending_machine",
+        "weapons",
     ],
 }
 
@@ -604,10 +725,10 @@ INDUSTRIAL_GROUPS = {
         "wellsite",
         "depot",
         "scrap_yard",
-        "gas",              # discouraged on wiki, but you asked to include it
+        "gas",  # discouraged on wiki, but you asked to include it
         "warehouse",
         "brickyard",
-        "well_cluster",     # deprecated, but you asked to include it
+        "well_cluster",  # deprecated, but you asked to include it
         "port",
         "mine",
         "sawmill",
@@ -744,6 +865,7 @@ CRAFT_GROUPS = {
     ]
 }
 
+
 # ----------------------------
 # Reverse maps: value -> macro-group label
 # ----------------------------
@@ -758,6 +880,7 @@ def _build_value_to_group(group_name_to_values: Mapping[str, Iterable[str]]) -> 
             if v:
                 out[v] = group_label
     return out
+
 
 # 1) Single source of truth: domain -> raw GROUPS dict
 OSM_DOMAIN_GROUPS = {
@@ -779,8 +902,7 @@ OSM_DOMAIN_GROUPS = {
 # ----------------------------
 # 2) Derive value->group lookups from the same registry
 OSM_DOMAIN_VALUE_TO_GROUP = {
-    domain: _build_value_to_group(groups)
-    for domain, groups in OSM_DOMAIN_GROUPS.items()
+    domain: _build_value_to_group(groups) for domain, groups in OSM_DOMAIN_GROUPS.items()
 }
 
 # ----------------------------
@@ -823,67 +945,59 @@ RESOLUTION_RULES = {
     # Always education (amenity), regardless of source domain/group
     # ---------------------------------------------------------
     "kindergarten": {"canonical": {"domain": "amenity", "macro_group": "education"}},
-    "college":      {"canonical": {"domain": "amenity", "macro_group": "education"}},
-    "school":       {"canonical": {"domain": "amenity", "macro_group": "education"}},
-    "university":   {"canonical": {"domain": "amenity", "macro_group": "education"}},
-
+    "college": {"canonical": {"domain": "amenity", "macro_group": "education"}},
+    "school": {"canonical": {"domain": "amenity", "macro_group": "education"}},
+    "university": {"canonical": {"domain": "amenity", "macro_group": "education"}},
     # ---------------------------------------------------------
     # Always public_service (amenity), regardless of source domain/group
     # ---------------------------------------------------------
     "fire_station": {"canonical": {"domain": "amenity", "macro_group": "public_service"}},
-    "police":       {"canonical": {"domain": "amenity", "macro_group": "public_service"}},
-
+    "police": {"canonical": {"domain": "amenity", "macro_group": "public_service"}},
     # ---------------------------------------------------------
     # Always healthcare (amenity), regardless of source domain/group
     # ---------------------------------------------------------
     "hospital": {"canonical": {"domain": "amenity", "macro_group": "healthcare"}},
-    "clinic":   {"canonical": {"domain": "amenity", "macro_group": "healthcare"}},
-
+    "clinic": {"canonical": {"domain": "amenity", "macro_group": "healthcare"}},
     # ---------------------------------------------------------
     # Always religious (building), regardless of source domain/group
     # ---------------------------------------------------------
-    "chapel":    {"canonical": {"domain": "building", "macro_group": "religious"}},
+    "chapel": {"canonical": {"domain": "building", "macro_group": "religious"}},
     "monastery": {"canonical": {"domain": "building", "macro_group": "religious"}},
-    "temple":    {"canonical": {"domain": "building", "macro_group": "religious"}},
-
+    "temple": {"canonical": {"domain": "building", "macro_group": "religious"}},
     # ---------------------------------------------------------
     # Always accommodation (building), regardless of source domain/group
     # ---------------------------------------------------------
     "hotel": {"canonical": {"domain": "building", "macro_group": "accommodation"}},
     "house": {"canonical": {"domain": "building", "macro_group": "accommodation"}},
-
     # ---------------------------------------------------------
     # Museum: canonical to tourism, regardless of source domain/group
     # ---------------------------------------------------------
     "museum": {"canonical": {"domain": "tourism", "macro_group": "tourism"}},
-
     # ---------------------------------------------------------
     # Pharmacy: canonical to shop taxonomy, regardless of source domain/group
     # ---------------------------------------------------------
     "pharmacy": {"canonical": {"domain": "shop", "macro_group": "shop_health_beauty"}},
-
     # ---------------------------------------------------------
     # Always shop_food_beverages (shop), regardless of source domain/group
     # ---------------------------------------------------------
     "restaurant": {"canonical": {"domain": "shop", "macro_group": "shop_food_beverages"}},
-    "bar":        {"canonical": {"domain": "shop", "macro_group": "shop_food_beverages"}},
-    "cafe":       {"canonical": {"domain": "shop", "macro_group": "shop_food_beverages"}},
-    "ice_cream":  {"canonical": {"domain": "shop", "macro_group": "shop_food_beverages"}},
-
+    "bar": {"canonical": {"domain": "shop", "macro_group": "shop_food_beverages"}},
+    "cafe": {"canonical": {"domain": "shop", "macro_group": "shop_food_beverages"}},
+    "ice_cream": {"canonical": {"domain": "shop", "macro_group": "shop_food_beverages"}},
     # ---------------------------------------------------------
     # Always entertainment_arts_culture (amenity), regardless of source domain/group
     # ---------------------------------------------------------
-    "cinema":           {"canonical": {"domain": "amenity", "macro_group": "entertainment_arts_culture"}},
-    "community_centre": {"canonical": {"domain": "amenity", "macro_group": "entertainment_arts_culture"}},
-
+    "cinema": {"canonical": {"domain": "amenity", "macro_group": "entertainment_arts_culture"}},
+    "community_centre": {
+        "canonical": {"domain": "amenity", "macro_group": "entertainment_arts_culture"}
+    },
     # ---------------------------------------------------------
     # Always shop categories (shop), regardless of source domain/group
     # ---------------------------------------------------------
     "internet_cafe": {"canonical": {"domain": "shop", "macro_group": "shop_other"}},
-    "kiosk":         {"canonical": {"domain": "shop", "macro_group": "shop_general"}},
-    "kitchen":       {"canonical": {"domain": "shop", "macro_group": "shop_furniture_interior"}},
-    "supermarket":   {"canonical": {"domain": "shop", "macro_group": "shop_general"}},
-
+    "kiosk": {"canonical": {"domain": "shop", "macro_group": "shop_general"}},
+    "kitchen": {"canonical": {"domain": "shop", "macro_group": "shop_furniture_interior"}},
+    "supermarket": {"canonical": {"domain": "shop", "macro_group": "shop_general"}},
     # ---------------------------------------------------------
     # Building containers: drop if ANY shop token exists (any base under domain="shop")
     # ---------------------------------------------------------
@@ -899,35 +1013,46 @@ RESOLUTION_RULES = {
             "drop_parent_if_child": [{"child_domain": "shop", "child_tokens": None}],
         }
     },
-
     # ---------------------------------------------------------
     # amenity=place_of_worship (generic) -> move into place_of_worship domain taxonomy
     # (then the global POW drop rule may remove it if any religious building exists)
     # ---------------------------------------------------------
     "place_of_worship": {
-        "when": [{
-            "if": {"domain_equals": "amenity"},
-            "then": {"action": "reclassify",
-                     "to": {"token": "place_of_worship",
-                            "domain": "place_of_worship",
-                            "macro_group": "place_of_worship"}},
-        }]
+        "when": [
+            {
+                "if": {"domain_equals": "amenity"},
+                "then": {
+                    "action": "reclassify",
+                    "to": {
+                        "token": "place_of_worship",
+                        "domain": "place_of_worship",
+                        "macro_group": "place_of_worship",
+                    },
+                },
+            }
+        ]
     },
-
     # ---------------------------------------------------------
     # amenity=place_of_mourning -> move into place_of_worship domain taxonomy (keep base token)
     # (then the global POW drop rule may remove it if any religious building exists)
     # ---------------------------------------------------------
     "place_of_mourning": {
-        "when": [{
-            "if": {"domain_equals": "amenity"},
-            "then": {"action": "reclassify",
-                     "to": {"token": "place_of_mourning",
-                            "domain": "place_of_worship",
-                            "macro_group": "place_of_worship"}},
-        }]
+        "when": [
+            {
+                "if": {"domain_equals": "amenity"},
+                "then": {
+                    "action": "reclassify",
+                    "to": {
+                        "token": "place_of_mourning",
+                        "domain": "place_of_worship",
+                        "macro_group": "place_of_worship",
+                    },
+                },
+            }
+        ]
     },
 }
+
 
 # ----------------------------
 # Duplicates (values appearing in multiple GROUPS across domains)

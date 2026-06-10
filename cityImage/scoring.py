@@ -95,9 +95,7 @@ def validate_score_weights(
     if expected_sum is not None:
         actual_sum = sum(clean_weights.values())
         if abs(actual_sum - expected_sum) > tolerance:
-            raise ValueError(
-                f"{name} must sum to {expected_sum}; got {actual_sum:.12g}"
-            )
+            raise ValueError(f"{name} must sum to {expected_sum}; got {actual_sum:.12g}")
 
     return clean_weights
 

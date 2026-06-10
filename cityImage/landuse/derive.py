@@ -54,7 +54,8 @@ from .utils import (
 BUILDING_USE_PREFIX = "building:use:"
 
 # OSM domains (ordered) come from tags registry
-OSM_DOMAINS = tuple(OSM_DOMAIN_GROUPS) # e.g. amenity, building, shop, industrial, craft, ...
+OSM_DOMAINS = tuple(OSM_DOMAIN_GROUPS)  # e.g. amenity, building, shop, industrial, craft, ...
+
 
 def drop_redundant_group_label(triplets: list[str]) -> list[str]:
     """
@@ -109,9 +110,7 @@ def drop_redundant_group_label(triplets: list[str]) -> list[str]:
             continue
 
         is_group_label_triplet = (
-            macro_group
-            and macro_group != "UNCLASSIFIED"
-            and base == macro_group
+            macro_group and macro_group != "UNCLASSIFIED" and base == macro_group
         )
 
         if is_group_label_triplet and (macro_group, domain) in member_groups:
@@ -121,37 +120,38 @@ def drop_redundant_group_label(triplets: list[str]) -> list[str]:
 
     return out
 
+
 def derive_land_uses_raw_fromOSM(buildings_gdf, default: str = "residential"):
     """Derive raw cityImage land-use candidates from OSM-style tag columns.
-    
+
     Parameters
     ----------
     buildings_gdf : geopandas.GeoDataFrame
         Building table containing OSM-style tag columns.
     land_uses_raw_column : str
         Name of the output column containing raw land-use candidates.
-    
+
     Returns
     -------
     geopandas.GeoDataFrame
         Copy of the building table with derived raw land-use candidates.
-    
+
     Notes
     -----
     The output is an intermediate representation used by the land-use classifier.
     It preserves OSM tag provenance before conversion to cityImage land-use groups.
     """
-    
+
     buildings_gdf = buildings_gdf.copy()
     default_token = _normalize_token(default)
 
     # token -> first domain where token exists (OSM_DOMAINS order)
     # token_primary_domain: dict[str, str] = {}
     # for domain in OSM_DOMAINS:
-        # for token in OSM_DOMAIN_VALUE_TO_GROUP[domain]:
-            # token_primary_domain.setdefault(token, domain)
+    # for token in OSM_DOMAIN_VALUE_TO_GROUP[domain]:
+    # token_primary_domain.setdefault(token, domain)
     # # or:
-        
+
     # token -> first domain where token exists (values OR group labels), OSM_DOMAINS order
     token_primary_domain: dict[str, str] = {}
     for domain in OSM_DOMAINS:
@@ -166,7 +166,7 @@ def derive_land_uses_raw_fromOSM(buildings_gdf, default: str = "residential"):
     building_use_suffixes = []
     for col in buildings_gdf.columns:
         if isinstance(col, str) and col.startswith(BUILDING_USE_PREFIX):
-            suffix = _normalize_token(col[len(BUILDING_USE_PREFIX):])
+            suffix = _normalize_token(col[len(BUILDING_USE_PREFIX) :])
             if suffix:
                 building_use_suffixes.append((col, suffix))
 
@@ -179,7 +179,9 @@ def derive_land_uses_raw_fromOSM(buildings_gdf, default: str = "residential"):
 
     def _build_token_macro_domain_triplet(token: str, source_domain: str) -> str:
         # choose domain
-        if token in OSM_DOMAIN_VALUE_TO_GROUP[source_domain] or token in OSM_DOMAIN_GROUPS.get(source_domain, {}):
+        if token in OSM_DOMAIN_VALUE_TO_GROUP[source_domain] or token in OSM_DOMAIN_GROUPS.get(
+            source_domain, {}
+        ):
             chosen_domain = source_domain
         else:
             # fallback: keep provenance (source_domain) if token is unknown everywhere
@@ -223,10 +225,10 @@ def derive_land_uses_raw_fromOSM(buildings_gdf, default: str = "residential"):
 
         return labeled_tokens
 
-
     buildings_gdf["land_uses_raw"] = buildings_gdf.apply(_extract_row, axis=1)
     return buildings_gdf
-    
+
+
 def apply_resolution_rules(triplets: list[str]) -> list[str]:
     """
     Resolver for "token:macro_group:domain" triplets using RESOLUTION_RULES.
@@ -317,7 +319,7 @@ def apply_resolution_rules(triplets: list[str]) -> list[str]:
     reclassify_override: dict[int, tuple[str, str, str]] = {}
 
     for i, token, _group, domain in parsed:
-        for clause in (RESOLUTION_RULES.get(token, {}).get("when") or []):
+        for clause in RESOLUTION_RULES.get(token, {}).get("when") or []:
             cond = clause.get("if") or {}
             if cond.get("domain_equals") != domain:
                 continue
@@ -355,7 +357,9 @@ def apply_resolution_rules(triplets: list[str]) -> list[str]:
         domain_to_tokens.setdefault(domain, set()).add(token)
 
     # POW global drop condition:
-    religious_building_present = bool(domain_to_tokens.get("building", set()) & POW_RELIGIOUS_BUILDINGS)
+    religious_building_present = bool(
+        domain_to_tokens.get("building", set()) & POW_RELIGIOUS_BUILDINGS
+    )
 
     # ============================================================================
     # Containers — rule-driven
@@ -376,7 +380,7 @@ def apply_resolution_rules(triplets: list[str]) -> list[str]:
         if token not in domain_to_tokens.get(parent_domain, set()):
             continue
 
-        for cond in (container.get("drop_parent_if_child") or []):
+        for cond in container.get("drop_parent_if_child") or []:
             child_domain = cond["child_domain"]
             child_tokens = cond.get("child_tokens")  # None => any token in child_domain
             present_children = domain_to_tokens.get(child_domain, set())
@@ -401,8 +405,8 @@ def apply_resolution_rules(triplets: list[str]) -> list[str]:
     #   - exact triplet dedup
     # ============================================================================
     out: list[str] = []
-    seen: set[str] = set()          # exact triplet dedup
-    emitted_canon: set[str] = set() # token-level canonical dedup
+    seen: set[str] = set()  # exact triplet dedup
+    emitted_canon: set[str] = set()  # token-level canonical dedup
 
     for i, tok0, grp0, dom0 in parsed:
         tok, grp, dom = after_when(i, tok0, grp0, dom0)
@@ -429,4 +433,3 @@ def apply_resolution_rules(triplets: list[str]) -> list[str]:
             out.append(t)
 
     return out
-   

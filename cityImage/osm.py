@@ -69,7 +69,6 @@ def _distance_arg(distance: float | None, download_method: str) -> float | None:
     return distance
 
 
-
 def _unit_overlaps_for_land_uses(value):
     """Return equal overlap weights matching a land-use list."""
     if isinstance(value, tuple | set | list):
@@ -84,7 +83,7 @@ def _unit_overlaps_for_land_uses(value):
 
     weight = 1.0 / len(values)
     return [weight] * len(values)
-    
+
 
 def _require_osmnx():
     """Import OSMnx only when an OSM acquisition helper is called."""
@@ -107,8 +106,7 @@ def _normalise_crs(crs: Any) -> Any:
 def _validate_download_method(download_method: str) -> None:
     if download_method not in OSM_DOWNLOAD_METHODS:
         raise ValueError(
-            "download_method must be one of: "
-            f"{', '.join(sorted(OSM_DOWNLOAD_METHODS))}"
+            f"download_method must be one of: {', '.join(sorted(OSM_DOWNLOAD_METHODS))}"
         )
 
 
@@ -160,7 +158,6 @@ def features_from_osm(
         features = features.set_crs("EPSG:4326", allow_override=True).to_crs(crs)
 
     return features
-
 
 
 def _network_from_osmnx_graph(
@@ -357,9 +354,7 @@ def buildings_from_osm(
     buildings = buildings.reset_index(drop=True)
     buildings["buildingID"] = buildings.index.astype(int)
 
-    buildings["land_uses_overlap"] = buildings["land_uses"].apply(
-        _unit_overlaps_for_land_uses
-    )
+    buildings["land_uses_overlap"] = buildings["land_uses"].apply(_unit_overlaps_for_land_uses)
 
     return standardize_buildings_gdf(
         buildings,
@@ -403,4 +398,3 @@ def barriers_from_osm(
         include_secondary=include_secondary,
         parks_min_area=parks_min_area,
     )
-

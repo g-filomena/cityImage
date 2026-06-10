@@ -38,7 +38,9 @@ graph = None
 def _graph_to_cityimage_gdfs(G, crs):
     """Convert an OSMnx graph to cityImage-standardized node/edge tables."""
     nodes = ox.graph_to_gdfs(G, nodes=True, edges=False, node_geometry=True)
-    edges = ox.graph_to_gdfs(G, nodes=False, edges=True, node_geometry=False, fill_edge_geometry=True)
+    edges = ox.graph_to_gdfs(
+        G, nodes=False, edges=True, node_geometry=False, fill_edge_geometry=True
+    )
 
     if crs is not None:
         nodes = nodes.to_crs(crs)
@@ -56,7 +58,9 @@ def _network_from_osmnx_place(query, crs):
 
 def _network_from_osmnx_address(query, crs, dist):
     """Delegate live address-distance OSM loading to OSMnx."""
-    return _graph_to_cityimage_gdfs(ox.graph_from_address(query, dist=dist, network_type="all"), crs)
+    return _graph_to_cityimage_gdfs(
+        ox.graph_from_address(query, dist=dist, network_type="all"), crs
+    )
 
 
 def _network_from_osmnx_polygon(poly, crs):
@@ -221,7 +225,7 @@ def test_loadOSM():
     global crs_susa
 
     nodes_gdf, edges_gdf = _network_from_osmnx_place(place, crs_susa)
-    polygon = edges_gdf.to_crs('EPSG:4326').geometry.union_all().convex_hull
+    polygon = edges_gdf.to_crs("EPSG:4326").geometry.union_all().convex_hull
     _, _ = _network_from_osmnx_polygon(polygon, crs_susa)
     _, _ = _network_from_osmnx_address(address, crs_susa, distance)
 

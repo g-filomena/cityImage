@@ -78,6 +78,7 @@ Given triplets in original row order, Stage 2 applies:
    - final output preserves order; identical triplets are emitted once
 
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -89,11 +90,9 @@ from .utils import _to_list
 
 UNCLASSIFIED = "UNCLASSIFIED"
 
-def classify_land_uses_raws_into_OSMgroups(
-    buildings_gdf,
-    land_uses_raw_column: str = "land_uses_raw",
-    new_group_column: str = "land_uses"
 
+def classify_land_uses_raws_into_OSMgroups(
+    buildings_gdf, land_uses_raw_column: str = "land_uses_raw", new_group_column: str = "land_uses"
 ):
     """
     Convert per-row triplets into per-row macro-group labels.
@@ -138,8 +137,11 @@ def classify_land_uses_raws_into_OSMgroups(
 
         return groups
 
-    buildings_gdf[new_group_column] = buildings_gdf[land_uses_raw_column].apply(_row_triplets_to_groups)
+    buildings_gdf[new_group_column] = buildings_gdf[land_uses_raw_column].apply(
+        _row_triplets_to_groups
+    )
     return buildings_gdf
+
 
 def find_unclassified_tokens_OSM_groups(
     buildings_gdf,
@@ -177,6 +179,7 @@ def find_unclassified_tokens_OSM_groups(
         raise ValueError("mode must be one of: 'token', 'token_domain', 'triplet'")
 
     return values.value_counts() if return_counts else sorted(set(values))
+
 
 def apply_manual_triplet_overrides(
     buildings_gdf,
@@ -265,18 +268,19 @@ def apply_manual_triplet_overrides(
     buildings_gdf[land_uses_raw_column] = buildings_gdf[land_uses_raw_column].apply(_process_cell)
     return buildings_gdf
 
+
 def classify_land_uses_intoDMAs(
     buildings_gdf,
     land_uses_column: str = "land_uses",
     macro_to_dma: dict[str, str] | None = None,
 ):
     """Classify cityImage land-use groups into DMA functional categories.
-    
+
     The DMA categories are live, work, visit, and mixed combinations of those
     functions. Input labels should already be normalised cityImage land-use groups,
     for example values derived from OSM shop, amenity, office, tourism, leisure, or
     building tags.
-    
+
     Parameters
     ----------
     buildings_gdf : geopandas.GeoDataFrame
@@ -285,7 +289,7 @@ def classify_land_uses_intoDMAs(
         Column containing list-like land-use groups.
     macro_to_dma : mapping, optional
         Mapping from macro groups to DMA categories.
-    
+
     Returns
     -------
     geopandas.GeoDataFrame
@@ -302,7 +306,6 @@ def classify_land_uses_intoDMAs(
         # LIVE
         "residential": "live",
         "accommodation": "live",
-
         # WORK
         "commercial": "work",
         "office": "work",
@@ -318,7 +321,6 @@ def classify_land_uses_intoDMAs(
         "storage": "work",
         "cars": "work",
         "civic_amenity": "work",
-
         # VISIT
         "tourism": "visit",
         "leisure": "visit",
@@ -369,8 +371,9 @@ def classify_land_uses_intoDMAs(
         return "other"  # defensive
 
     dims_series = gdf[land_uses_column].apply(_dims_from_macros)
-    gdf['DMA'] = dims_series.apply(_dims_to_dma_label)
+    gdf["DMA"] = dims_series.apply(_dims_to_dma_label)
     return gdf
+
 
 def classify_land_use(
     buildings_gdf,

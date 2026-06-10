@@ -25,7 +25,6 @@ _PUBLIC_SYMBOLS: dict[str, str] = {
     "CRAFT_GROUPS": "landuse",
     "EDGE_ID": "schema",
     "EXCLUDE_AMENITIES": "landuse",
-
     "DEFAULT_GLOBAL_COMPONENT_WEIGHTS": "scoring",
     "DEFAULT_GLOBAL_INDEX_WEIGHTS": "scoring",
     "DEFAULT_LOCAL_COMPONENT_WEIGHTS": "scoring",
@@ -164,7 +163,6 @@ _PUBLIC_SYMBOLS: dict[str, str] = {
     "require_land_use_lists": "schema",
     "reset_index_graph_gdfs": "network",
     "scaling_columnDF": "data_utils",
-
     "score_building_components": "scoring",
     "score_buildings_global": "scoring",
     "score_buildings_local": "scoring",
@@ -174,7 +172,6 @@ _PUBLIC_SYMBOLS: dict[str, str] = {
     "simplify_graph": "network_topology",
     "split_line_at_MultiPoint": "geometry",
     "straightness_centrality": "centrality",
-
     "standardize_buildings_gdf": "adapters",
     "standardize_cityimage_inputs": "adapters",
     "standardize_edges_gdf": "adapters",

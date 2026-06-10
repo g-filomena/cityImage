@@ -139,4 +139,3 @@ def buildings_from_file(
         )
 
     return buildings.reset_index(drop=True)
-

@@ -19,7 +19,9 @@ def test_buildings_from_osm_converts_raw_features_to_cityimage_schema(monkeypatc
     monkeypatch.setattr(
         osm,
         "features_from_osm",
-        lambda query, tags, download_method="OSMplace", distance=None, crs=None: raw_buildings.copy(),
+        lambda query, tags, download_method="OSMplace", distance=None, crs=None: (
+            raw_buildings.copy()
+        ),
     )
 
     buildings = osm.buildings_from_osm(
@@ -32,7 +34,6 @@ def test_buildings_from_osm_converts_raw_features_to_cityimage_schema(monkeypatc
     assert "land_uses_raw" in buildings.columns
     assert "land_uses" in buildings.columns
     assert buildings.geometry.iloc[0].area == pytest.approx(900.0)
-
 
 
 def test_features_from_osm_requires_valid_download_method_before_importing_osmnx():

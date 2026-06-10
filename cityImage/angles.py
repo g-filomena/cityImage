@@ -46,7 +46,9 @@ def _coord_tuple(coord: Any) -> tuple[float, float]:
     return (float(coord[0]), float(coord[1]))
 
 
-def get_coord_angle(origin: tuple[float, float], distance: float, angle: float) -> tuple[float, float]:
+def get_coord_angle(
+    origin: tuple[float, float], distance: float, angle: float
+) -> tuple[float, float]:
     """Return coordinates at ``distance`` and bearing-like angle from an origin.
 
     The angle convention is the historical cityImage convention: degrees from
@@ -76,7 +78,9 @@ def _oriented_lines(
     coords_a: list[Any],
     coords_b: list[Any],
     calculation_type: str,
-) -> tuple[tuple[tuple[float, float], tuple[float, float]], tuple[tuple[float, float], tuple[float, float]]]:
+) -> tuple[
+    tuple[tuple[float, float], tuple[float, float]], tuple[tuple[float, float], tuple[float, float]]
+]:
     """Return the two oriented line segments used for angle calculation."""
     start_a, end_a = _round_coord(coords_a[0]), _round_coord(coords_a[-1])
     start_b, end_b = _round_coord(coords_b[0]), _round_coord(coords_b[-1])
@@ -89,7 +93,9 @@ def _oriented_lines(
         if start_a == start_b:
             return tuple(reversed(_local_start_segment(coords_a))), _local_start_segment(coords_b)
         if start_a == end_b:
-            return tuple(reversed(_local_start_segment(coords_a))), tuple(reversed(_local_end_segment(coords_b)))
+            return tuple(reversed(_local_start_segment(coords_a))), tuple(
+                reversed(_local_end_segment(coords_b))
+            )
 
     elif calculation_type == "deflection":
         full_a = _full_segment(coords_a)

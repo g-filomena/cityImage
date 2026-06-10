@@ -70,13 +70,14 @@ def _module_is_forbidden(module_name: str) -> bool:
     """Return True if an absolute module path points at a deleted flat module."""
     forbidden_absolute = {f"{PACKAGE_NAME}.{name}" for name in DELETED_FLAT_MODULES}
 
-    return (
-        module_name in forbidden_absolute
-        or any(module_name.startswith(f"{forbidden}.") for forbidden in forbidden_absolute)
+    return module_name in forbidden_absolute or any(
+        module_name.startswith(f"{forbidden}.") for forbidden in forbidden_absolute
     )
 
 
-def _relative_module_name(current_file: Path, module: str | None, level: int, root: Path) -> str | None:
+def _relative_module_name(
+    current_file: Path, module: str | None, level: int, root: Path
+) -> str | None:
     """Resolve simple relative imports inside the cityImage package."""
     if level <= 0:
         return module
@@ -125,9 +126,7 @@ def find_deleted_files(root: Path) -> list[Path]:
 def find_missing_expected_paths(root: Path) -> list[Path]:
     """Return expected refactor paths missing from the working tree."""
     return sorted(
-        root / rel_path
-        for rel_path in EXPECTED_NEW_PATHS
-        if not (root / rel_path).exists()
+        root / rel_path for rel_path in EXPECTED_NEW_PATHS if not (root / rel_path).exists()
     )
 
 

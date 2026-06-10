@@ -85,9 +85,9 @@ def assign_building_heights_from_other_gdf(
         lambda row: row["geometry"].intersection(row["geo_check"]).area,
         axis=1,
     )
-    intersections["overlap_ratio"] = intersections["area_intersection"] / intersections[
-        "geometry"
-    ].area
+    intersections["overlap_ratio"] = (
+        intersections["area_intersection"] / intersections["geometry"].area
+    )
 
     valid_matches = intersections[intersections["overlap_ratio"] >= min_overlap]
     best_matches = valid_matches.loc[
@@ -120,9 +120,9 @@ def assign_building_heights_from_other_gdf(
         lambda row: row["geometry"].intersection(row["geo_check"]).area,
         axis=1,
     )
-    intersections["overlap_ratio"] = intersections["area_intersection"] / intersections[
-        "geometry"
-    ].area
+    intersections["overlap_ratio"] = (
+        intersections["area_intersection"] / intersections["geometry"].area
+    )
 
     valid_matches = intersections[intersections["overlap_ratio"] >= min_overlap]
     best_matches = valid_matches.loc[

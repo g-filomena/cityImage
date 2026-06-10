@@ -50,4 +50,3 @@ def test_buildings_from_file_preserves_height_base_and_land_use_fields(monkeypat
     assert buildings.loc[0, "height"] == 12.0
     assert buildings.loc[0, "base"] == 1.0
     assert buildings.loc[0, "land_uses_raw"] == ["retail"]
-

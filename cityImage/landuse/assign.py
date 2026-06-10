@@ -33,6 +33,7 @@ from .utils import _deduplicate_preserving_order, _to_list
 # Public API
 # =============================================================================
 
+
 def land_use_from_other_gdf(
     buildings_gdf,
     other_gdf,
@@ -147,11 +148,15 @@ def land_use_from_other_gdf(
 
         # In polygon mode: optionally also assign default overlap=1.0
         if effective_overlap_col is not None:
-            empty_overlap_mask = output_gdf[effective_overlap_col].apply(lambda v: len(_to_list(v)) == 0)
+            empty_overlap_mask = output_gdf[effective_overlap_col].apply(
+                lambda v: len(_to_list(v)) == 0
+            )
             apply_default_overlap_mask = no_land_use_mask & empty_overlap_mask
             if apply_default_overlap_mask.any():
                 idx2 = output_gdf.index[apply_default_overlap_mask]
-                output_gdf[effective_overlap_col] = output_gdf[effective_overlap_col].astype("object")
+                output_gdf[effective_overlap_col] = output_gdf[effective_overlap_col].astype(
+                    "object"
+                )
                 output_gdf.loc[idx2, effective_overlap_col] = pd.Series(
                     [[1.0]] * len(idx2),
                     index=idx2,
@@ -164,6 +169,7 @@ def land_use_from_other_gdf(
 # =============================================================================
 # Point mode
 # =============================================================================
+
 
 def land_use_from_points(
     buildings_gdf,
@@ -211,6 +217,7 @@ def land_use_from_points(
 # Polygon mode
 # =============================================================================
 
+
 def land_use_from_polygons(
     buildings_gdf,
     other_gdf,
@@ -220,13 +227,13 @@ def land_use_from_polygons(
     overlap_column_name: str | None = None,
 ):
     """Assign land-use labels from polygon layers to building polygons.
-    
+
     Aggregation model
     -----------------
     For each building, intersecting land-use polygons are weighted by the proportion
     of the building area they cover. The resulting labels and overlap weights are
     stored on the output building table.
-    
+
     Parameters
     ----------
     buildings_gdf : geopandas.GeoDataFrame
@@ -241,7 +248,7 @@ def land_use_from_polygons(
         Minimum overlap proportion required to keep a label.
     overlap_column_name : str, optional
         Output column for overlap weights.
-    
+
     Returns
     -------
     geopandas.GeoDataFrame

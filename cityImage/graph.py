@@ -277,10 +277,7 @@ def dual_id_dict(
     node_attribute: str,
 ) -> dict[Any, Any]:
     """Map a dual-graph node dictionary to a dictionary keyed by primal edge IDs."""
-    return {
-        graph.nodes[node][node_attribute]: value
-        for node, value in dict_values.items()
-    }
+    return {graph.nodes[node][node_attribute]: value for node, value in dict_values.items()}
 
 
 def nodes_degree(edges_gdf: gpd.GeoDataFrame) -> dict[Any, int]:

@@ -54,14 +54,12 @@ def center_line(line_geometries: list[LineString]) -> LineString:
     # same-direction lines and fixes opposite-direction duplicates.
     for i in range(1, len(all_coords)):
         coords = all_coords[i]
-        same_direction_distance = (
-            _squared_distance(coords[0], reference_start)
-            + _squared_distance(coords[-1], reference_end)
+        same_direction_distance = _squared_distance(coords[0], reference_start) + _squared_distance(
+            coords[-1], reference_end
         )
-        reversed_direction_distance = (
-            _squared_distance(coords[-1], reference_start)
-            + _squared_distance(coords[0], reference_end)
-        )
+        reversed_direction_distance = _squared_distance(
+            coords[-1], reference_start
+        ) + _squared_distance(coords[0], reference_end)
         if reversed_direction_distance < same_direction_distance:
             all_coords[i] = coords[::-1]
 
@@ -123,8 +121,7 @@ def split_line_at_MultiPoint(
 
     if z is not None:
         lines_list = [
-            LineString([(coords[0], coords[1], z) for coords in line.coords])
-            for line in lines_list
+            LineString([(coords[0], coords[1], z) for coords in line.coords]) for line in lines_list
         ]
 
     return lines_list
@@ -163,6 +160,7 @@ def gdf_multipolygon_to_polygon(
     columnID: str = "buildingID",
 ) -> gpd.GeoDataFrame:
     """Convert one-part MultiPolygons to Polygons and explode remaining MultiPolygons."""
+
     def convert_multipolygon_to_polygon(geometry: Any) -> Any:
         if isinstance(geometry, MultiPolygon) and len(geometry.geoms) == 1:
             return geometry.geoms[0]

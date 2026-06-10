@@ -80,7 +80,10 @@ def visibility_polygon2d(
         clipped_lines = lines
 
     polygon = Polygon(
-        [[p.x, p.y] for p in [origin] + [Point(line.coords[1]) for line in clipped_lines] + [origin]]
+        [
+            [p.x, p.y]
+            for p in [origin] + [Point(line.coords[1]) for line in clipped_lines] + [origin]
+        ]
     )
     visible_polygon = polygon.difference(building_geometry)
     if visible_polygon.is_empty:

@@ -176,10 +176,11 @@ def _clean_tokens(raw_tokens: Any) -> list[str]:
 
     return cleaned
 
+
 def find_land_use_values_matching(
     buildings_gdf,
     land_uses_column: str = "land_uses",
-    pattern: str = r"^shop",          # e.g. "^shop" or "shop"
+    pattern: str = r"^shop",  # e.g. "^shop" or "shop"
     ignore_case: bool = True,
     return_counts: bool = True,
 ) -> pd.Series | list[str]:
@@ -214,6 +215,8 @@ def find_land_use_values_matching(
     rx = re.compile(pattern, flags)
 
     exploded = buildings_gdf[land_uses_column].explode().dropna()
-    matched = exploded.map(lambda v: str(v).strip()).loc[lambda s: s.map(lambda x: bool(rx.search(x)))]
+    matched = exploded.map(lambda v: str(v).strip()).loc[
+        lambda s: s.map(lambda x: bool(rx.search(x)))
+    ]
 
     return matched.value_counts() if return_counts else sorted(set(matched))

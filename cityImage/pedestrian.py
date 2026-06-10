@@ -134,7 +134,9 @@ def _is_pedestrian_row(row: pd.Series) -> bool:
         if str(column).startswith("sidewalk"):
             sidewalk_tokens.update(_as_tokens(value))
 
-    return not (sidewalk_tokens & SIDEWALK_NO_VALUES and highway not in RESIDENTIAL_SIDEWALK_EXCEPTION)
+    return not (
+        sidewalk_tokens & SIDEWALK_NO_VALUES and highway not in RESIDENTIAL_SIDEWALK_EXCEPTION
+    )
 
 
 def filter_pedestrian_osm_features(highways_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:

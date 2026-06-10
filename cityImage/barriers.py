@@ -122,7 +122,9 @@ def _union_all(geometries: Any) -> Any:
 
 def _features_gdf(geometries: list[Any], crs: Any, barrier_type: str) -> gpd.GeoDataFrame:
     """Create a normalised barrier GeoDataFrame from geometries."""
-    geometries = [geometry for geometry in geometries if geometry is not None and not geometry.is_empty]
+    geometries = [
+        geometry for geometry in geometries if geometry is not None and not geometry.is_empty
+    ]
     if not geometries:
         return _empty_barriers(crs=crs, barrier_type=barrier_type)
 
@@ -350,7 +352,9 @@ def along_water(edges_gdf: gpd.GeoDataFrame, barriers_gdf: gpd.GeoDataFrame) -> 
     return edges_gdf
 
 
-def along_within_parks(edges_gdf: gpd.GeoDataFrame, barriers_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+def along_within_parks(
+    edges_gdf: gpd.GeoDataFrame, barriers_gdf: gpd.GeoDataFrame
+) -> gpd.GeoDataFrame:
     """Assign park barrier IDs lying along or containing each street segment."""
     park_polygons = barriers_gdf[barriers_gdf["barrier_type"] == "park"].copy()
     if park_polygons.empty:

@@ -120,5 +120,11 @@ def test_score_cityimage_buildings_can_run_pipeline_facade(monkeypatch):
         compute_local=True,
     )
 
-    assert fake.calls == ["visibility:longest", "cultural", "pragmatic:1500.0", "global", "local:300"]
+    assert fake.calls == [
+        "visibility:longest",
+        "cultural",
+        "pragmatic:1500.0",
+        "global",
+        "local:300",
+    ]
     assert {"gScore", "lScore"}.issubset(scored.columns)

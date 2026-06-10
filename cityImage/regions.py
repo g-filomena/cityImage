@@ -44,7 +44,9 @@ def _best_partition(graph: Any, weight: str) -> dict[Any, int]:
     return community.best_partition(graph, weight=weight)
 
 
-def _graph_from_gdfs(nodes_gdf: gpd.GeoDataFrame, edges_gdf: gpd.GeoDataFrame, node_id_column: str = "nodeID"):
+def _graph_from_gdfs(
+    nodes_gdf: gpd.GeoDataFrame, edges_gdf: gpd.GeoDataFrame, node_id_column: str = "nodeID"
+):
     """Build a NetworkX graph using cityImage graph semantics, imported lazily."""
     from .graph import graph_fromGDF
 
@@ -114,7 +116,9 @@ def regions_from_primal_partition(
     return regions
 
 
-def identify_regions(dual_graph: Any, edges_gdf: gpd.GeoDataFrame, weight: str | None = None) -> gpd.GeoDataFrame:
+def identify_regions(
+    dual_graph: Any, edges_gdf: gpd.GeoDataFrame, weight: str | None = None
+) -> gpd.GeoDataFrame:
     """Identify edge-based regions using delegated python-louvain partitioning.
 
     This convenience function preserves the old cityImage behaviour but the
@@ -132,7 +136,9 @@ def identify_regions(dual_graph: Any, edges_gdf: gpd.GeoDataFrame, weight: str |
     )
 
 
-def identify_regions_primal(graph: Any, nodes_gdf: gpd.GeoDataFrame, weight: str | None = None) -> gpd.GeoDataFrame:
+def identify_regions_primal(
+    graph: Any, nodes_gdf: gpd.GeoDataFrame, weight: str | None = None
+) -> gpd.GeoDataFrame:
     """Identify node-based regions using delegated python-louvain partitioning."""
     if weight is None:
         weight = "topo"
@@ -354,7 +360,9 @@ def _check_disconnected_districts(
         if not nx.is_connected(tmp_graph):
             largest_component = max(nx.connected_components(tmp_graph), key=len)
             component_graph = tmp_graph.subgraph(largest_component)
-            to_check = [node for node in list(tmp_nodes.nodeID) if node not in list(component_graph.nodes())]
+            to_check = [
+                node for node in list(tmp_nodes.nodeID) if node not in list(component_graph.nodes())
+            ]
             nodes_gdf.loc[nodes_gdf.nodeID.isin(to_check), column] = INVALID_DISTRICT
 
     return nodes_gdf

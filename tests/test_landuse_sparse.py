@@ -134,11 +134,13 @@ def test_sparse_polygon_attachment_preserves_labels_and_normalised_overlap():
         default_land_use="residential",
     )
 
-    rows = attached.sort_values("buildingID")[[
-        "buildingID",
-        "land_uses",
-        "land_uses_overlap",
-    ]].to_dict("records")
+    rows = attached.sort_values("buildingID")[
+        [
+            "buildingID",
+            "land_uses",
+            "land_uses_overlap",
+        ]
+    ].to_dict("records")
 
     assert rows[0]["buildingID"] == 1
     assert rows[0]["land_uses"] == ["retail", "education"]
