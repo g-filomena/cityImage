@@ -43,11 +43,11 @@ def test_buildings_from_file_preserves_height_base_and_land_use_fields(monkeypat
         "EPSG:3857",
         height_field="h",
         base_field="b",
-        land_use_field="lu",
+        land_uses_raw_field="lu",
         min_area=1,
     )
 
-    assert buildings["height"].tolist() == [12.0]
-    assert buildings["base"].tolist() == [1.0]
-    assert buildings["land_uses_raw"].tolist() == ["retail"]
+    assert buildings.loc[0, "height"] == 12.0
+    assert buildings.loc[0, "base"] == 1.0
+    assert buildings.loc[0, "land_uses_raw"] == ["retail"]
 

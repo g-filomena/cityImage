@@ -58,8 +58,9 @@ def test_ensure_building_schema_defaults_adds_optional_columns():
 
     assert out.loc[0, "area"] == 4.0
     assert out.loc[0, "base"] == 0.0
-    assert out.loc[0, "land_uses"] == ["unknown"]
-    assert out.loc[0, "land_uses_overlap"] == [1.0]
+    assert "height" in out.columns
+    assert "land_uses" not in out.columns
+    assert "land_uses_overlap" not in out.columns
 
 
 def test_require_land_use_lists_rejects_mismatched_overlap_lengths():

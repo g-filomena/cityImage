@@ -51,6 +51,7 @@ class _FakeLandmarkModule:
         self,
         buildings_gdf,
         search_radius=1500,
+        default_land_use=None,
         land_uses_column="land_uses",
         overlaps_column="land_uses_overlap",
     ):

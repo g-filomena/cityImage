@@ -30,7 +30,7 @@ def test_standardize_osmnx_like_nodes_edges():
     assert "length" in edges_out.columns
 
 
-def test_standardize_buildings_with_scalar_land_use():
+def test_standardize_buildings_with_scalar_land_use_raw_provenance():
     buildings = gpd.GeoDataFrame(
         {"my_id": [10, 11], "lu": ["retail", None]},
         geometry=[
@@ -43,14 +43,14 @@ def test_standardize_buildings_with_scalar_land_use():
     out = ci.standardize_buildings_gdf(
         buildings,
         building_id_column="my_id",
-        land_uses_column="lu",
-        default_land_use="unknown",
+        land_uses_raw_column="lu",
     )
 
     assert list(out["buildingID"]) == [10, 11]
-    assert out.loc[0, "land_uses"] == ["retail"]
-    assert out.loc[1, "land_uses"] == ["unknown"]
-    assert out.loc[0, "land_uses_overlap"] == [1.0]
+    assert out.loc[0, "land_uses_raw"] == ["retail"]
+    assert out.loc[1, "land_uses_raw"] == []
+    assert "land_uses" not in out.columns
+    assert "land_uses_overlap" not in out.columns
     assert "area" in out.columns
     assert "height" in out.columns
     assert "base" in out.columns
