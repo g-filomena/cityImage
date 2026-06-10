@@ -75,7 +75,7 @@ def buildings_from_file(
     distance_from_center: float | None = None,
     height_field: str | None = None,
     base_field: str | None = None,
-    land_use_field: str | None = None,
+    land_uses_raw_field: str | None = None,
     min_area: float = 200,
     min_height: float = 5,
 ) -> gpd.GeoDataFrame:
@@ -96,8 +96,8 @@ def buildings_from_file(
         raise ValueError(f"height_field {height_field!r} not found in input file")
     if base_field is not None and base_field not in buildings.columns:
         raise ValueError(f"base_field {base_field!r} not found in input file")
-    if land_use_field is not None and land_use_field not in buildings.columns:
-        raise ValueError(f"land_use_field {land_use_field!r} not found in input file")
+    if land_uses_raw_field is not None and land_uses_raw_field not in buildings.columns:
+        raise ValueError(f"land_uses_raw_field {land_uses_raw_field!r} not found in input file")
 
     if height_field is not None:
         buildings["height"] = buildings[height_field]
@@ -109,7 +109,7 @@ def buildings_from_file(
     elif "base" not in buildings.columns:
         buildings["base"] = 0.0
 
-    land_uses_raw_column = land_use_field
+    land_uses_raw_column = land_uses_raw_field
     if land_uses_raw_column is None and LAND_USES_RAW in buildings.columns:
         land_uses_raw_column = LAND_USES_RAW
 
