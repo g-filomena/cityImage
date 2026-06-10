@@ -353,16 +353,18 @@ def buildings_from_osm(
     buildings["area"] = buildings.geometry.area
     if min_area is not None:
         buildings = buildings[buildings["area"] >= min_area].copy()
+
     buildings = buildings.reset_index(drop=True)
     buildings["buildingID"] = buildings.index.astype(int)
 
-    buildings["land_uses_overlap"] = buildings["land_uses"].apply(_unit_overlaps_for_land_uses)
+    buildings["land_uses_overlap"] = buildings["land_uses"].apply(
+        _unit_overlaps_for_land_uses
+    )
 
     return standardize_buildings_gdf(
         buildings,
         building_id_column="buildingID",
         land_uses_raw_column="land_uses_raw",
-        default_land_use=default_land_use,
     )
 
 
