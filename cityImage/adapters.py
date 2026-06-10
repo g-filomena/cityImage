@@ -161,10 +161,7 @@ def standardize_buildings_gdf(
     buildings_gdf: gpd.GeoDataFrame,
     *,
     building_id_column: str | None = None,
-    land_uses_column: str | None = None,
     land_uses_raw_column: str | None = None,
-    land_uses_overlap_column: str | None = None,
-    default_land_use: str = "unknown",
     add_area: bool = True,
     copy: bool = True,
     validate: bool = True,
@@ -175,16 +172,9 @@ def standardize_buildings_gdf(
     defaults, and source/provenance land-use values. It does not classify land
     use and does not create ``land_uses`` or ``land_uses_overlap``.
 
-    Use ``land_uses_raw_column`` to map an unclassified source field such as
-    ``land_use`` into ``land_uses_raw`` as list-like values. The older
-    ``land_uses_column`` argument is retained as a compatibility alias for a
-    raw/source land-use field only; it no longer creates semantic
-    ``land_uses``. Semantic ``land_uses`` and matching overlap weights should
-    be produced by an explicit classifier/assignment step before or after this
-    adapter.
+    Use ``land_uses_raw_column`` to map an unclassified source/provenance field
+    such as ``land_use`` into ``land_uses_raw`` as list-like values.
     """
-    del default_land_use  # retained for backward-compatible call signatures
-
     _require_geodataframe(buildings_gdf, frame_name="buildings_gdf")
     gdf = _copy_or_view(buildings_gdf, copy)
 
@@ -194,20 +184,9 @@ def standardize_buildings_gdf(
     elif BUILDING_ID not in gdf.columns:
         gdf[BUILDING_ID] = range(len(gdf))
 
-    if land_uses_overlap_column is not None:
-        raise ValueError(
-            "standardize_buildings_gdf does not create land_uses_overlap. "
-            "Create semantic land_uses and overlap weights in an explicit "
-            "classifier/assignment step."
-        )
-
-    raw_source_column = land_uses_raw_column
-    if raw_source_column is None:
-        raw_source_column = land_uses_column
-
-    if raw_source_column is not None:
-        require_columns(gdf, [raw_source_column], frame_name="buildings_gdf")
-        gdf[LAND_USES_RAW] = _as_raw_land_use_column(gdf[raw_source_column])
+    if land_uses_raw_column is not None:
+        require_columns(gdf, [land_uses_raw_column], frame_name="buildings_gdf")
+        gdf[LAND_USES_RAW] = _as_raw_land_use_column(gdf[land_uses_raw_column])
     elif LAND_USES_RAW in gdf.columns:
         gdf[LAND_USES_RAW] = _as_raw_land_use_column(gdf[LAND_USES_RAW])
 
