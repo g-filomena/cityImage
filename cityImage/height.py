@@ -16,6 +16,19 @@ from shapely.geometry import box
 from .geometry import gdf_multipolygon_to_polygon
 
 
+def _require_raster_deps():
+    """Import the optional raster stack, with a helpful error if it is missing."""
+    try:
+        import rasterio
+        from rasterstats import zonal_stats
+    except ImportError as exc:
+        raise ImportError(
+            "This height operation requires the optional 'height' extra "
+            '(rasterio, rasterstats). Install with: python -m pip install -e ".[height]"'
+        ) from exc
+    return rasterio, zonal_stats
+
+
 def assign_building_heights_from_other_gdf(
     buildings_gdf,
     detailed_buildings_gdf,
@@ -156,8 +169,7 @@ def buildings_height_from_dem_dtm(
 
     Requires the optional ``height`` extra: ``rasterio`` and ``rasterstats``.
     """
-    import rasterio
-    from rasterstats import zonal_stats
+    rasterio, zonal_stats = _require_raster_deps()
 
     original_crs = buildings_gdf.crs
     buildings_with_data = buildings_gdf.copy()
@@ -241,7 +253,7 @@ def assign_height_from_dtm(
 
     Requires the optional ``height`` extra: ``rasterio``.
     """
-    import rasterio
+    rasterio, _ = _require_raster_deps()
 
     nodes_gdf_with_data = nodes_gdf.copy()
     original_crs = nodes_gdf.crs

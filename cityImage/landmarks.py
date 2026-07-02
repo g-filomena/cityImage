@@ -8,6 +8,7 @@ External libraries should prepare/download data; cityImage should score already-
 from __future__ import annotations
 
 import concurrent.futures
+import re
 from typing import Any
 
 import geopandas as gpd
@@ -18,6 +19,22 @@ from shapely.geometry import Point, Polygon, mapping
 from .data_utils import scaling_columnDF
 
 pd.set_option("display.precision", 3)
+
+
+def _clean_height(x):
+    if isinstance(x, (list, tuple, set)):
+        x = next(iter(x), None)
+
+    if pd.isna(x):
+        return None
+
+    if isinstance(x, (int, float)):
+        return float(x)
+
+    s = str(x).replace(",", ".")
+    m = re.search(r"\d+(\.\d+)?", s)
+
+    return float(m.group()) if m else None
 
 
 def structural_score(
@@ -127,6 +144,10 @@ def visibility_score(buildings_gdf, sight_lines=None, method="longest"):
     buildings_gdf["fac"] = 0.0
 
     has_height = "height" in buildings_gdf.columns
+
+    if has_height:
+        buildings_gdf["height"] = buildings_gdf["height"].apply(_clean_height)
+
     if has_height and not buildings_gdf.empty:
         buildings_gdf["fac"] = buildings_gdf.apply(
             lambda row: (

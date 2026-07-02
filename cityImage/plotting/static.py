@@ -418,7 +418,7 @@ def plot_grid_gdfs_column(
         # Step 1: Collect unique categories
         unique_categories = set()
         for gdf in gdfs:
-            unique_categories = unique_categories.union(set(gdf["land_use"].unique()))
+            unique_categories = unique_categories.union(set(gdf[column].unique()))
 
     for n, ax in enumerate(multiPlot.grid.flat):
         if n > len(gdfs) - 1:

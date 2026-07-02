@@ -13,6 +13,7 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 import geopandas as gpd
+import osmnx as ox
 import pandas as pd
 from shapely.geometry import Point
 
@@ -85,19 +86,6 @@ def _unit_overlaps_for_land_uses(value):
     return [weight] * len(values)
 
 
-def _require_osmnx():
-    """Import OSMnx only when an OSM acquisition helper is called."""
-    try:
-        import osmnx as ox
-    except ImportError as exc:
-        raise ImportError(
-            "OSM acquisition helpers require the optional 'osm' extra. "
-            "Install with: pip install cityImage[osm]"
-        ) from exc
-
-    return ox
-
-
 def _normalise_crs(crs: Any) -> Any:
     """Accept integer EPSG codes as a convenience."""
     return f"EPSG:{crs}" if isinstance(crs, int) else crs
@@ -124,7 +112,6 @@ def features_from_osm(
     download-method dispatch used by the OSM bridge helpers.
     """
     _validate_download_method(download_method)
-    ox = _require_osmnx()
 
     try:
         if download_method == "OSMplace":
@@ -254,7 +241,6 @@ def network_from_osm(
         )
 
     _validate_download_method(download_method)
-    ox = _require_osmnx()
 
     try:
         if download_method == "OSMplace":
@@ -336,7 +322,6 @@ def buildings_from_osm(
     buildings = _polygonal_buildings(buildings)
 
     if crs is None:
-        ox = _require_osmnx()
         buildings = ox.projection.project_gdf(buildings)
 
     buildings = gdf_multipolygon_to_polygon(buildings)

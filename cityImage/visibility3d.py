@@ -41,8 +41,8 @@ def _import_optional_dependency(import_name: str):
         package_name = _VISIBILITY3D_OPTIONAL_DEPENDENCIES.get(import_name, import_name)
         raise ImportError(
             "cityImage visibility3d functionality requires optional dependency "
-            f"'{package_name}'. Install the 3D visibility dependencies before "
-            "using this function."
+            f"'{package_name}'. Install the 'visibility3d' extra with: "
+            'python -m pip install -e ".[visibility3d]"'
         ) from exc
 
 
@@ -61,8 +61,8 @@ def _require_visibility3d_dependencies(*import_names: str) -> None:
     if missing:
         raise ImportError(
             "cityImage visibility3d functionality requires optional dependencies: "
-            f"{', '.join(missing)}. Install the 3D visibility dependencies before "
-            "using this function."
+            f"{', '.join(missing)}. Install the 'visibility3d' extra with: "
+            'python -m pip install -e ".[visibility3d]"'
         )
 
 

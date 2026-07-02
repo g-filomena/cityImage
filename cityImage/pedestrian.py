@@ -36,28 +36,95 @@ EXCLUDED_ACCESS_VALUES = {
     "no",
 }
 
+# OSM ``foot=*`` values that grant public pedestrian access. ``official`` is a
+# signposted legal designation (a stronger ``designated``). Restricted values
+# such as ``permit`` and ``customers`` are deliberately excluded: like
+# ``private``, they do not grant general-public access. Note "promiscuous" is not
+# an OSM value; the intended concept is ``permissive`` (access tolerated but
+# revocable), which is already covered.
 PEDESTRIAN_OK_FOOT_VALUES = {
     "yes",
     "designated",
     "permissive",
     "destination",
+    "official",
 }
 
-EXCLUDED_FOOTWAY_VALUES = {
-    "sidewalk",
-    "traffic_island",
-}
-
-SIDEWALK_NO_VALUES = {
+# OSM ``foot=*`` values that mean pedestrians should not use this way. Like
+# ``foot=no`` they take precedence over a permissive general ``access`` and drop
+# the way. ``use_sidepath`` means "walk on the parallel path, not here";
+# ``discouraged`` is legal but advised against; ``private`` restricts access.
+FOOT_NO_VALUES = {
     "no",
-    "none",
+    "use_sidepath",
+    "discouraged",
+    "private",
+}
+
+# OSM-style affirmative spellings. OSM prefers "yes", but sloppy data also uses
+# these variants; treat them all as an affirmative value.
+OSM_YES_VALUES = {
+    "yes",
+    "true",
+    "1",
+    "y",
+}
+
+# A sidewalk counts as present when it is tagged affirmatively or with a
+# side/position ("separate" means it is mapped as its own way). This also covers
+# sub-keys such as ``sidewalk:left=1`` because their tokens are collected too.
+SIDEWALK_EVIDENCE_VALUES = OSM_YES_VALUES | {
+    "both",
+    "left",
+    "right",
     "separate",
 }
 
-RESIDENTIAL_SIDEWALK_EXCEPTION = {
-    "residential",
+# Highways that are inherently walkable and kept regardless of any evidence.
+INHERENTLY_PEDESTRIAN_HIGHWAYS = {
+    "footway",
+    "pedestrian",
+    "path",
+    "steps",
+    "corridor",
+    "track",
+    "bridleway",
+}
+
+# Pedestrian-priority streets (woonerf-style), kept as walkable regardless of
+# evidence.
+KEEP_REGARDLESS = {
     "living_street",
 }
+
+# Highways kept unconditionally, but whose ``ped`` column records whether there
+# is actual pedestrian evidence: "yes" with a usable foot tag or mapped sidewalk,
+# otherwise "noEvidence". Covers residential streets and major through-roads,
+# where walkability is assumed but uncertain without evidence.
+KEEP_WITH_EVIDENCE_FLAG = {
+    "residential",
+    "primary",
+    "secondary",
+    "tertiary",
+}
+
+# Values written to the ``ped`` column of the resulting edges.
+PED_YES = "yes"
+PED_NO_EVIDENCE = "noEvidence"
+
+# How to reconcile separately-mapped sidewalks (``highway=footway`` +
+# ``footway=sidewalk``) with road centrelines, which can otherwise describe the
+# same street twice as parallel edges:
+#   - "keep_both":   keep both, no de-duplication (may double-count streets).
+#   - "centrelines": one edge per street — drop separately-mapped
+#                    ``footway=sidewalk`` ways and keep road centrelines. Suits
+#                    Image-of-the-City / centrality analysis.
+#   - "sidewalks":   walking-surface network — keep sidewalks/crossings and drop
+#                    the centreline of any road that declares ``sidewalk=separate``
+#                    (its sidewalk is mapped elsewhere). Suits fine pedestrian
+#                    simulation/routing.
+SIDEWALK_POLICIES = ("keep_both", "centrelines", "sidewalks")
+DEFAULT_SIDEWALK_POLICY = "keep_both"
 
 
 def _as_tokens(value: Any) -> list[str]:
@@ -85,8 +152,8 @@ def _first_token(value: Any) -> str | None:
 
 
 def _truthy_osm_yes(value: Any) -> bool:
-    """Return True for OSM-style yes/true/1 values."""
-    return _first_token(value) in {"yes", "true", "1"}
+    """Return True for OSM-style affirmative values (yes/true/1/y)."""
+    return _first_token(value) in OSM_YES_VALUES
 
 
 def _ensure_columns(gdf: gpd.GeoDataFrame, columns: Iterable[str]) -> gpd.GeoDataFrame:
@@ -103,43 +170,108 @@ def _line_geometries_only(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     return gdf[gdf.geometry.geom_type.isin({"LineString", "MultiLineString"})].copy()
 
 
-def _is_pedestrian_row(row: pd.Series) -> bool:
-    """Return True when an OSM highway row should remain in the pedestrian network."""
+def _pedestrian_status(
+    row: pd.Series, sidewalk_policy: str = DEFAULT_SIDEWALK_POLICY
+) -> str | None:
+    """Classify an OSM highway row for the pedestrian network.
+
+    Parameters
+    ----------
+    row
+        A row of OSM highway features.
+    sidewalk_policy
+        How to reconcile separately-mapped sidewalks with road centrelines; one
+        of :data:`SIDEWALK_POLICIES`.
+
+    Returns
+    -------
+    str or None
+        - ``"yes"``: confidently walkable — inherently pedestrian, a
+          walkable-by-default street, or carrying explicit pedestrian evidence
+          (a usable ``foot`` tag or a mapped sidewalk).
+        - ``"noEvidence"``: a residential street or major through-road kept
+          without pedestrian evidence; walkability is uncertain.
+        - ``None``: the row should be dropped from the network.
+    """
     highway_tokens = set(_as_tokens(row.get("highway")))
     highway = _first_token(row.get("highway"))
 
     if not highway_tokens:
-        return False
+        return None
 
     if highway_tokens & EXCLUDED_HIGHWAY_VALUES:
-        return False
+        return None
 
     if _truthy_osm_yes(row.get("area")):
-        return False
+        return None
 
-    if set(_as_tokens(row.get("access"))) & EXCLUDED_ACCESS_VALUES:
-        return False
+    foot_tokens = set(_as_tokens(row.get("foot")))
+    if foot_tokens & FOOT_NO_VALUES:
+        return None
 
-    if set(_as_tokens(row.get("foot"))) & {"no"}:
-        return False
+    has_explicit_foot_access = bool(foot_tokens & PEDESTRIAN_OK_FOOT_VALUES)
 
-    if highway == "cycleway" and not (set(_as_tokens(row.get("foot"))) & PEDESTRIAN_OK_FOOT_VALUES):
-        return False
-
-    if set(_as_tokens(row.get("footway"))) & EXCLUDED_FOOTWAY_VALUES:
-        return False
+    # A generic access restriction excludes the way unless pedestrians are
+    # explicitly allowed via the mode-specific ``foot`` tag, which takes
+    # precedence over ``access`` in OSM.
+    access_tokens = set(_as_tokens(row.get("access")))
+    if access_tokens & EXCLUDED_ACCESS_VALUES and not has_explicit_foot_access:
+        return None
 
     sidewalk_tokens = set()
     for column, value in row.items():
         if str(column).startswith("sidewalk"):
             sidewalk_tokens.update(_as_tokens(value))
 
-    return not (
-        sidewalk_tokens & SIDEWALK_NO_VALUES and highway not in RESIDENTIAL_SIDEWALK_EXCEPTION
-    )
+    has_sidewalk_evidence = bool(sidewalk_tokens & SIDEWALK_EVIDENCE_VALUES)
+    has_evidence = has_explicit_foot_access or has_sidewalk_evidence
+
+    footway_tokens = set(_as_tokens(row.get("footway")))
+    is_separately_mapped_sidewalk = "footway" in highway_tokens and "sidewalk" in footway_tokens
+    is_inherently_pedestrian = bool(highway_tokens & INHERENTLY_PEDESTRIAN_HIGHWAYS)
+
+    # Sidewalk-vs-centreline de-duplication.
+    if sidewalk_policy == "centrelines" and is_separately_mapped_sidewalk:
+        # The road centreline already represents this street; drop the parallel
+        # sidewalk way.
+        return None
+    if (
+        sidewalk_policy == "sidewalks"
+        and "separate" in sidewalk_tokens
+        and not is_inherently_pedestrian
+        and highway != "cycleway"
+    ):
+        # The sidewalk is mapped as its own way; drop the redundant road centreline.
+        return None
+
+    if highway == "cycleway":
+        # A cycleway joins the pedestrian network when pedestrians are allowed
+        # (foot tag) or a sidewalk is mapped alongside it; otherwise it is dropped.
+        return PED_YES if has_evidence else None
+
+    if is_inherently_pedestrian:
+        return PED_YES
+
+    if highway_tokens & KEEP_REGARDLESS:
+        return PED_YES
+
+    if highway_tokens & KEEP_WITH_EVIDENCE_FLAG:
+        return PED_YES if has_evidence else PED_NO_EVIDENCE
+
+    # Ambiguous ways (service, unclassified, road) and any unrecognised highway
+    # type are kept only with explicit pedestrian evidence, otherwise dropped.
+    return PED_YES if has_evidence else None
 
 
-def filter_pedestrian_osm_features(highways_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+def _is_pedestrian_row(row: pd.Series) -> bool:
+    """Return True when an OSM highway row should remain in the pedestrian network."""
+    return _pedestrian_status(row) is not None
+
+
+def filter_pedestrian_osm_features(
+    highways_gdf: gpd.GeoDataFrame,
+    sidewalk_policy: str = DEFAULT_SIDEWALK_POLICY,
+) -> gpd.GeoDataFrame:
     """Filter OSM highway features using cityImage pedestrian-network semantics.
 
     Parameters
@@ -148,14 +280,27 @@ def filter_pedestrian_osm_features(highways_gdf: gpd.GeoDataFrame) -> gpd.GeoDat
         GeoDataFrame of OSM features, usually downloaded with an OSMnx
         ``features_from_*``/``geometries_from_*`` call using
         ``tags={"highway": True}``.
+    sidewalk_policy
+        How to reconcile separately-mapped sidewalks with road centrelines; one
+        of :data:`SIDEWALK_POLICIES`. Defaults to ``"keep_both"`` (no
+        de-duplication). Use ``"centrelines"`` for one edge per street or
+        ``"sidewalks"`` for a walking-surface network.
 
     Returns
     -------
     geopandas.GeoDataFrame
-        Line/MultiLine features that remain after pedestrian filtering.
+        Line/MultiLine features that remain after pedestrian filtering, with an
+        added ``ped`` column: ``"yes"`` for confidently walkable ways and
+        ``"noEvidence"`` for residential/major roads kept without pedestrian
+        evidence.
     """
     if not isinstance(highways_gdf, gpd.GeoDataFrame):
         raise TypeError("highways_gdf must be a GeoDataFrame")
+
+    if sidewalk_policy not in SIDEWALK_POLICIES:
+        raise ValueError(
+            f"sidewalk_policy must be one of {SIDEWALK_POLICIES}, got {sidewalk_policy!r}"
+        )
 
     if highways_gdf.empty:
         return highways_gdf.copy()
@@ -176,20 +321,24 @@ def filter_pedestrian_osm_features(highways_gdf: gpd.GeoDataFrame) -> gpd.GeoDat
     if gdf.empty:
         return gdf
 
-    mask = gdf.apply(_is_pedestrian_row, axis=1)
-    return gdf[mask].copy()
+    gdf["ped"] = gdf.apply(_pedestrian_status, axis=1, sidewalk_policy=sidewalk_policy)
+    return gdf[gdf["ped"].notna()].copy()
 
 
 def pedestrian_network_from_osm_features(
     highways_gdf: gpd.GeoDataFrame,
     crs: Any,
+    sidewalk_policy: str = DEFAULT_SIDEWALK_POLICY,
 ) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
     """Build a cityImage pedestrian network from already-downloaded OSM features.
 
     Raw OSM download is deliberately not owned by this function. Use OSMnx or
     another data source to retrieve highway features, then pass them here.
+
+    ``sidewalk_policy`` selects how separately-mapped sidewalks and road
+    centrelines are reconciled; see :func:`filter_pedestrian_osm_features`.
     """
-    filtered = filter_pedestrian_osm_features(highways_gdf)
+    filtered = filter_pedestrian_osm_features(highways_gdf, sidewalk_policy=sidewalk_policy)
 
     if filtered.empty:
         empty_edges = gpd.GeoDataFrame(columns=["edgeID", "u", "v", "length"], geometry=[], crs=crs)
@@ -199,6 +348,7 @@ def pedestrian_network_from_osm_features(
     metadata_columns = [
         "name",
         "highway",
+        "ped",
         "lit",
         "foot",
         "footway",
@@ -214,9 +364,15 @@ def pedestrian_network_from_osm_features(
     other_columns = []
     seen = set()
     for column in metadata_columns:
-        if column in filtered.columns and column not in seen:
-            other_columns.append(column)
-            seen.add(column)
+        if column in seen or column not in filtered.columns:
+            continue
+        # Skip metadata columns that are entirely empty (e.g. tag columns
+        # back-filled with NA when the source lacked them), so the edges do not
+        # carry all-null passthrough columns.
+        if filtered[column].isna().all():
+            continue
+        other_columns.append(column)
+        seen.add(column)
 
     return network_from_lines(filtered, crs, other_columns=other_columns)
 
@@ -245,6 +401,7 @@ def pedestrian_network_from_osm(
     address: str | None = None,
     point: tuple[float, float] | None = None,
     polygon: Any = None,
+    sidewalk_policy: str = DEFAULT_SIDEWALK_POLICY,
 ) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
     """Download OSM highway features with OSMnx and build a pedestrian network.
 
@@ -265,14 +422,11 @@ def pedestrian_network_from_osm(
         Distance in metres for address/point downloads.
     address, point, polygon
         Explicit spatial inputs for the corresponding download methods.
+    sidewalk_policy
+        How to reconcile separately-mapped sidewalks with road centrelines; see
+        :func:`filter_pedestrian_osm_features`.
     """
-    try:
-        import osmnx as ox
-    except ImportError as exc:
-        raise ImportError(
-            "pedestrian_network_from_osm requires the optional 'osm' dependency. "
-            'Install with: python -m pip install -e ".[osm]"'
-        ) from exc
+    import osmnx as ox
 
     tags = {"highway": True}
 
@@ -305,4 +459,4 @@ def pedestrian_network_from_osm(
             "distance_from_point, polygon"
         )
 
-    return pedestrian_network_from_osm_features(features, crs)
+    return pedestrian_network_from_osm_features(features, crs, sidewalk_policy=sidewalk_policy)

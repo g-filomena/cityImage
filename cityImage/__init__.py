@@ -1,9 +1,9 @@
 """Top-level public API for cityImage.
 
-The package now uses lazy attribute loading: importing ``cityImage`` no longer
-eagerly imports optional heavy dependencies such as OSMnx, PyVista, rasterstats,
-igraph, python-louvain, or matplotlib. Public functions/classes are loaded from
-their implementation modules only when first accessed, preserving the historical
+The package uses lazy attribute loading: importing ``cityImage`` no longer
+eagerly imports heavy dependencies such as PyVista, rasterstats, igraph,
+python-louvain, or matplotlib. Public functions/classes are loaded from their
+implementation modules only when first accessed, preserving the historical
 ``import cityImage as ci`` style for most workflows.
 """
 
