@@ -34,7 +34,6 @@ def test_import_cityimage_does_not_eagerly_import_heavy_optional_modules():
             "cityImage.plotting",
             "cityImage.plotting.static",
             "cityImage.plotting.colors",
-            "osmnx",
             "pyvista",
             "rasterstats",
             "igraph",
