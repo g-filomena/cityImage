@@ -32,6 +32,7 @@ jobs:
             numpy>=2.0
             pandas>=2.2
             networkx>=3.3
+            osmnx>=2.0.5
           cache-environment: true
           cache-downloads: true
 

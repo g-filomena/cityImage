@@ -1,0 +1,32 @@
+name: ruff-format
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Ruff
+        run: pipx install ruff
+
+      - name: Apply Ruff format
+        run: ruff format cityImage tests scripts
+
+      - name: Commit changes
+        run: |
+          if [[ -n "$(git status --porcelain)" ]]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add cityImage tests scripts
+            git commit -m "Apply ruff formatting"
+            git push
+          else
+            echo "No formatting changes."
+          fi
