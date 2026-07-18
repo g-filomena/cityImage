@@ -12,7 +12,7 @@ from __future__ import annotations
 from importlib import import_module
 from typing import Any
 
-__version__ = "1.2.3"
+__version__ = "2.0.0"
 
 _PUBLIC_SYMBOLS: dict[str, str] = {
     "AMENITY_GROUPS": "landuse",

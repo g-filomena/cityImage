@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cityImage"
-version = "1.2.3"
+version = "2.0.0"
 description = "A package for studying urban form and obtaining the computational Image of the City"
 readme = "README.md"
 requires-python = ">=3.10"
