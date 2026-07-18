@@ -33,7 +33,25 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx_autodoc_typehints",
     "sphinx.ext.autosummary",
+    "sphinx.ext.intersphinx",
 ]
+
+# -- Intersphinx -------------------------------------------------------------
+# Enables validated cross-references to Python objects in this project and to
+# external libraries (used from Markdown notebook cells and docstrings).
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3", None),
+    "numpy": ("https://numpy.org/doc/stable", None),
+    "pandas": ("https://pandas.pydata.org/docs", None),
+    "geopandas": ("https://geopandas.org/en/stable", None),
+    "shapely": ("https://shapely.readthedocs.io/en/stable", None),
+    "networkx": ("https://networkx.org/documentation/stable", None),
+    "osmnx": ("https://osmnx.readthedocs.io/en/stable", None),
+    "matplotlib": ("https://matplotlib.org/stable", None),
+}
+# Do not fail the build if an inventory cannot be fetched (e.g. offline builds).
+intersphinx_timeout = 10
+intersphinx_disabled_reftypes = ["*"]
 
 templates_path = ["_templates"]
 exclude_patterns = [

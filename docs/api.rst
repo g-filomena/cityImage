@@ -201,14 +201,22 @@ score composition.
    score_cityimage_buildings
    validate_score_weights
 
-Building height
----------------
+Building height and terrain elevation
+-------------------------------------
 
 Height helpers are optional. Raster workflows require the ``height`` extra.
+
+Terminology: the **DTM** (bare-earth terrain) provides node ``z`` and building
+``base``; a **surface** model (DSM — first-return elevations including rooftops,
+often distributed under the generic name *DEM*) compared against the DTM provides
+above-ground building heights. ``assign_elevations_from_rasters`` is the one-stop
+entry point for cities without building-height data.
 
 .. autosummary::
    :toctree: api/
 
+   assign_elevations_from_rasters
+   buildings_base_from_dtm
    buildings_height_from_dem_dtm
    assign_building_heights_from_other_gdf
    assign_height_from_dtm
