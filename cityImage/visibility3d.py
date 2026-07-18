@@ -512,9 +512,7 @@ def _use_simplified_buildings(target_points, obstructions_gdf, simplified_buildi
         """First intersecting simplified-building label per input geometry (or None)."""
         geometries = np.asarray(geometries, dtype=object)
         # 'intersects' subsumes the previous within/touches/intersects triple.
-        input_positions, tree_positions = simplified_tree.query(
-            geometries, predicate="intersects"
-        )
+        input_positions, tree_positions = simplified_tree.query(geometries, predicate="intersects")
         first_match = {}
         for geometry_position, tree_position in zip(input_positions, tree_positions, strict=False):
             if geometry_position not in first_match:
@@ -643,9 +641,7 @@ def filter_distance(chunk, targets, min_observer_target_distance):
     observer_coords = shapely.get_coordinates(
         np.asarray(potential_lines["observer_geo"], dtype=object)
     )
-    target_coords = shapely.get_coordinates(
-        np.asarray(potential_lines["target_geo"], dtype=object)
-    )
+    target_coords = shapely.get_coordinates(np.asarray(potential_lines["target_geo"], dtype=object))
     distances = np.linalg.norm(observer_coords - target_coords, axis=1)
     mask = distances >= min_observer_target_distance
     potential_lines = potential_lines.loc[mask]

@@ -446,9 +446,7 @@ def assign_elevations_from_rasters(
             if "buildingID" in buildings_gdf.columns and "buildingID" in scored.columns:
                 buildings_out = buildings_gdf.copy()
                 for column in ("base", "height"):
-                    mapping = pd.Series(
-                        scored[column].values, index=scored["buildingID"].values
-                    )
+                    mapping = pd.Series(scored[column].values, index=scored["buildingID"].values)
                     buildings_out[column] = buildings_out["buildingID"].map(mapping)
             else:
                 # No stable key to merge back on: return the (filtered) scored frame.
