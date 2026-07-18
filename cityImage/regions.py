@@ -38,12 +38,12 @@ def _best_partition(graph: Any, weight: str) -> dict[Any, int]:
 
 
 def _graph_from_gdfs(
-    nodes_gdf: gpd.GeoDataFrame, edges_gdf: gpd.GeoDataFrame, node_id_column: str = "nodeID"
+    nodes_gdf: gpd.GeoDataFrame, edges_gdf: gpd.GeoDataFrame,
 ):
     """Build a NetworkX graph using cityImage graph semantics, imported lazily."""
     from .graph import graph_fromGDF
 
-    return graph_fromGDF(nodes_gdf, edges_gdf, node_id_column)
+    return graph_fromGDF(nodes_gdf, edges_gdf)
 
 
 def _dual_id_dict(partition: Mapping[Any, int], dual_graph: Any, attribute: str) -> dict[Any, int]:
@@ -352,7 +352,7 @@ def _check_disconnected_districts(
             nodes_gdf.loc[nodes_gdf.nodeID.isin(tmp_nodes.nodeID), column] = INVALID_DISTRICT
             continue
 
-        tmp_graph = _graph_from_gdfs(tmp_nodes, tmp_edges, "nodeID")
+        tmp_graph = _graph_from_gdfs(tmp_nodes, tmp_edges)
 
         if not nx.is_connected(tmp_graph):
             largest_component = max(nx.connected_components(tmp_graph), key=len)
