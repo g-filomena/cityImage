@@ -47,9 +47,7 @@ def test_along_within_parks_without_park_barriers_yields_empty_lists():
         geometry=[LineString([(0, 0), (10, 0)])],
         crs=CRS,
     )
-    edges = gpd.GeoDataFrame(
-        {"edgeID": [1]}, geometry=[LineString([(0, 0), (5, 5)])], crs=CRS
-    )
+    edges = gpd.GeoDataFrame({"edgeID": [1]}, geometry=[LineString([(0, 0), (5, 5)])], crs=CRS)
 
     out = ci.along_within_parks(edges.copy(), barriers)
     assert out["w_parks"].tolist() == [[]]
@@ -75,9 +73,7 @@ def test_barriers_along_empty_barriers_returns_empty():
     edges = gpd.GeoDataFrame(
         {"edgeID": [10]}, geometry=[LineString([(0, 0), (10, 0)])], crs=CRS
     ).set_index("edgeID", drop=False)
-    empty = gpd.GeoDataFrame(
-        {"barrierID": [], "barrier_type": []}, geometry=[], crs=CRS
-    )
+    empty = gpd.GeoDataFrame({"barrierID": [], "barrier_type": []}, geometry=[], crs=CRS)
     assert ci.barriers_along(10, edges, empty, edges.sindex, offset=100) == []
 
 
@@ -114,9 +110,7 @@ def test_railway_barriers_keep_light_rail_and_empty_when_none_match():
 
 
 def test_assign_structuring_barriers_excludes_parks_and_secondary_roads():
-    edges = gpd.GeoDataFrame(
-        {"edgeID": [1]}, geometry=[LineString([(0, 0), (10, 0)])], crs=CRS
-    )
+    edges = gpd.GeoDataFrame({"edgeID": [1]}, geometry=[LineString([(0, 0), (10, 0)])], crs=CRS)
     barriers = gpd.GeoDataFrame(
         {"barrierID": [1, 2], "barrier_type": ["park", "secondary_road"]},
         geometry=[LineString([(5, -5), (5, 5)]), LineString([(7, -5), (7, 5)])],

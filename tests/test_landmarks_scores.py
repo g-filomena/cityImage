@@ -65,9 +65,7 @@ def test_structural_score_empty_buildings_returns_typed_columns():
 
 def test_structural_score_computes_distance_visibility_and_neighbours():
     buildings = _buildings(3)
-    edges = gpd.GeoDataFrame(
-        {"edgeID": [1]}, geometry=[LineString([(-5, -5), (100, -5)])], crs=CRS
-    )
+    edges = gpd.GeoDataFrame({"edgeID": [1]}, geometry=[LineString([(-5, -5), (100, -5)])], crs=CRS)
     out = ci.structural_score(buildings, obstructions_gdf=None, edges_gdf=edges)
     assert (out["road"] > 0).all()  # all buildings sit above the street line
     assert (out["neigh"] >= 1).all()  # a building is its own neighbour at minimum
