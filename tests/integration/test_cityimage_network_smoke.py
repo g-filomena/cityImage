@@ -234,7 +234,7 @@ def test_loadFile_clean():
     global nodes_gdf_y
     global edges_gdf_y
     global crs_york
-    input_path = "tests/input/York_street_network.shp"
+    input_path = "tests/input/York_street_network.gpkg"
     dict_columns = {
         "highway": "type",
         "oneway": "oneway",
@@ -653,7 +653,7 @@ def test_plot():
 def test_landuse():
 
     crs = "EPSG:25832"
-    input_path = "tests/input/Muenster_buildings.shp"
+    input_path = "tests/input/Muenster_buildings_clipped.gpkg"
     buildings_raw = gpd.read_file(input_path).to_crs(crs)
     buildings_shp = ci.standardize_buildings_gdf(
         buildings_raw,
@@ -665,7 +665,9 @@ def test_landuse():
         buildings_shp["height"] = buildings_raw["height"]
     if "base" not in buildings_shp.columns and "base" in buildings_raw.columns:
         buildings_shp["base"] = buildings_raw["base"]
-    attributes_gdf = gpd.read_file("tests/input/Muenster_buildings_attributes.shp").to_crs(crs)
+    attributes_gdf = gpd.read_file("tests/input/Muenster_buildings_attributes_clipped.gpkg").to_crs(
+        crs
+    )
 
     adult_entertainment = ["brothel", "casino", "swingerclub", "stripclub", "nightclub", "gambling"]
     agriculture = [

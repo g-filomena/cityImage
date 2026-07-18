@@ -10,6 +10,7 @@ import geopandas as gpd
 from shapely.geometry import LineString, Polygon
 
 import cityImage as ci
+from tests.fixtures.cityimage_minimal import york_network
 
 CRS = "EPSG:3857"
 
@@ -116,3 +117,24 @@ def test_existing_barrier_assignment_semantics_still_work():
     assigned = ci.assign_structuring_barriers(edges, barriers)
 
     assert assigned["sep_barr"].tolist() == [True]
+
+
+def test_along_water_indexes_edges_by_edgeid_with_non_contiguous_ids():
+    # Regression: barriers_along looks edges up by edgeID via .loc, so on the real York network -
+    # whose cleaned edgeIDs are non-contiguous while the index is a plain RangeIndex - it must not
+    # raise KeyError.
+    _, edges_gdf = york_network()
+    assert edges_gdf["edgeID"].tolist() != list(range(len(edges_gdf)))  # genuinely non-contiguous
+
+    minx, miny, maxx, maxy = edges_gdf.total_bounds
+    mid_y = (miny + maxy) / 2
+    barriers = gpd.GeoDataFrame(
+        {"barrierID": [10], "barrier_type": ["water"]},
+        geometry=[LineString([(minx - 10, mid_y), (maxx + 10, mid_y)])],  # river crossing the area
+        crs=edges_gdf.crs,
+    )
+
+    out = ci.along_water(edges_gdf.copy(), barriers)
+
+    assert "a_rivers" in out.columns
+    assert len(out) == len(edges_gdf)

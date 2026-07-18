@@ -6,7 +6,7 @@ import networkx as nx
 import pytest
 
 import cityImage as ci
-from tests.fixtures.cityimage_minimal import CRS, minimal_network
+from tests.fixtures.cityimage_minimal import CRS, minimal_network, york_network
 
 
 def test_regions_from_dual_partition_maps_dual_partition_to_primal_edges():
@@ -86,3 +86,20 @@ def test_identify_regions_convenience_delegates_to_python_louvain_when_available
 
     assert "p_topo" in regions.columns
     assert len(regions) == len(edges_gdf)
+
+
+def test_amend_nodes_membership_reassigns_small_district_and_survives_connectivity_check():
+    # Regression: amend_nodes_membership must run the connectivity check (which builds a graph via
+    # _graph_from_gdfs -> graph_fromGDF) for a large-enough district and reassign a too-small one to
+    # a neighbouring district. Uses the real York subset (non-contiguous nodeID on a plain
+    # RangeIndex), which is where the .loc-by-nodeID lookups used to KeyError.
+    nodes_gdf, edges_gdf = york_network()
+    nodes_gdf["district"] = 1
+    lone = int(nodes_gdf["nodeID"].iloc[0])
+    nodes_gdf.loc[nodes_gdf["nodeID"] == lone, "district"] = 2  # a single too-small district
+
+    out = ci.amend_nodes_membership(nodes_gdf, edges_gdf, "district", min_size_district=2)
+
+    # The lone district is absorbed and the connectivity pass keeps everything in one district.
+    assert set(out["district"]) == {1}
+    assert len(out) == len(nodes_gdf)

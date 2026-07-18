@@ -1,6 +1,7 @@
 [![Actions Status](https://github.com/g-filomena/cityImage/actions/workflows/tests.yml/badge.svg)](https://github.com/g-filomena/cityImage/actions)
 [![PyPI version](https://badge.fury.io/py/cityImage.svg)](https://badge.fury.io/py/cityImage)
 [![Documentation Status](https://readthedocs.org/projects/cityimage/badge/?version=latest)](https://cityimage.readthedocs.io/en/latest/?badge=latest)
+[![codecov](https://codecov.io/gh/g-filomena/cityImage/branch/master/graph/badge.svg)](https://codecov.io/gh/g-filomena/cityImage)
 
 <img src="docs/_static/logo.png" alt="cityImage logo" width="33%">
 

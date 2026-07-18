@@ -6,6 +6,7 @@ import geopandas as gpd
 from shapely.geometry import LineString, Point
 
 import cityImage.network_topology as nt
+from tests.fixtures.cityimage_minimal import york_raw_network
 
 
 def _nodes(rows, crs="EPSG:3857"):
@@ -234,3 +235,51 @@ def test_clean_same_vertexes_edges_keeps_longer_duplicate_when_lengths_differ():
     assert len(clean_edges) == 1
     assert clean_edges.iloc[0]["edgeID"] == 11
     assert list(clean_edges.iloc[0].geometry.coords) == [(0.0, 0.0), (5.0, 10.0), (10.0, 0.0)]
+
+
+def test_consolidate_nodes_merges_close_nodes_and_returns_edges_when_requested():
+    nodes = _nodes(
+        [
+            {"nodeID": 1, "x": 0.0, "y": 0.0},
+            {"nodeID": 2, "x": 100.0, "y": 0.0},
+            {"nodeID": 3, "x": 101.0, "y": 0.0},  # within tolerance of node 2 -> merged
+            {"nodeID": 4, "x": 200.0, "y": 0.0},
+        ]
+    )
+    edges = _edges(
+        [
+            {"edgeID": 1, "u": 1, "v": 2, "geometry": LineString([(0, 0), (100, 0)])},
+            {"edgeID": 2, "u": 2, "v": 3, "geometry": LineString([(100, 0), (101, 0)])},
+            {"edgeID": 3, "u": 3, "v": 4, "geometry": LineString([(101, 0), (200, 0)])},
+        ]
+    )
+
+    cons_nodes, cons_edges = nt.consolidate_nodes(
+        nodes, edges, consolidate_edges_too=True, tolerance=5
+    )
+
+    assert len(cons_nodes) < len(nodes)  # nodes 2 and 3 were merged
+    assert (cons_edges["u"] != cons_edges["v"]).all()  # the 2-3 edge collapsed and was dropped
+
+
+def test_clean_network_full_pass_yields_consistent_topology():
+    # Run the full clean_network pass over a central subset of the real York street network. It must
+    # dedupe, drop dead ends/islands, and leave a valid topology: every edge endpoint resolves to a
+    # surviving node and no self-loops remain.
+    nodes_gdf, edges_gdf = york_raw_network()
+
+    clean_nodes, clean_edges = nt.clean_network(
+        nodes_gdf,
+        edges_gdf,
+        dead_ends=True,
+        remove_islands=True,
+        same_vertexes_edges=True,
+        self_loops=True,
+        fix_topology=True,
+    )
+
+    node_ids = set(clean_nodes["nodeID"])
+    assert len(clean_nodes) > 0 and len(clean_edges) > 0
+    assert set(clean_edges["u"]).issubset(node_ids)
+    assert set(clean_edges["v"]).issubset(node_ids)
+    assert (clean_edges["u"] != clean_edges["v"]).all()  # no self-loops
