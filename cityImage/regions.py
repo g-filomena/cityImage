@@ -38,7 +38,8 @@ def _best_partition(graph: Any, weight: str) -> dict[Any, int]:
 
 
 def _graph_from_gdfs(
-    nodes_gdf: gpd.GeoDataFrame, edges_gdf: gpd.GeoDataFrame,
+    nodes_gdf: gpd.GeoDataFrame,
+    edges_gdf: gpd.GeoDataFrame,
 ):
     """Build a NetworkX graph using cityImage graph semantics, imported lazily."""
     from .graph import graph_fromGDF
