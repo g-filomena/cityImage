@@ -90,7 +90,13 @@ def test_compute_3d_sight_lines_with_consolidation(monkeypatch, tmp_path):
         num_workers=1,
     )
 
-    assert isinstance(out, gpd.GeoDataFrame)  # consolidate path runs the final _last_check too
+    # The consolidate path additionally runs consolidate_nodes and the final _last_check;
+    # it must still yield genuine 3D sight lines (observers are 20 units apart, so the
+    # 5-unit tolerance merges nothing and visible lines are still found).
+    assert isinstance(out, gpd.GeoDataFrame)
+    assert len(out) > 0
+    assert (out.geometry.geom_type == "LineString").all()
+    assert out.geometry.iloc[0].has_z
 
 
 def test_compute_3d_sight_lines_no_visible_returns_empty(monkeypatch, tmp_path):

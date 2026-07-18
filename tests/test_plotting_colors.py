@@ -26,14 +26,18 @@ def test_random_colors_list_returns_hsv_triples():
 
 def test_rand_cmap_bright_soft_and_invalid_type():
     np.random.seed(1)
-    assert isinstance(rand_cmap(4, type_color="bright"), LinearSegmentedColormap)
-    assert isinstance(rand_cmap(4, type_color="soft"), LinearSegmentedColormap)
-    # An unknown type falls back to "bright".
-    assert isinstance(rand_cmap(4, type_color="unknown"), LinearSegmentedColormap)
+    bright = rand_cmap(4, type_color="bright")
+    assert isinstance(bright, LinearSegmentedColormap) and bright.N == 4  # one colour per label
+    assert rand_cmap(7, type_color="soft").N == 7
+    # An unknown type falls back to "bright" (still builds a valid N-colour map).
+    assert rand_cmap(4, type_color="unknown").N == 4
 
 
 def test_kindlmann_returns_colormap():
-    assert isinstance(kindlmann(), LinearSegmentedColormap)
+    cmap = kindlmann()
+    assert isinstance(cmap, LinearSegmentedColormap)
+    # Kindlmann runs dark->bright: the top of the map is markedly lighter than the bottom.
+    assert sum(cmap(1.0)[:3]) > sum(cmap(0.0)[:3])
 
 
 def test_normalize_maps_between_ranges():

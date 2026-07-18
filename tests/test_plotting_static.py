@@ -64,10 +64,22 @@ def _lines():
     )
 
 
+def _data_axes(fig):
+    """Axes that actually have geometry drawn on them (a non-empty collection)."""
+    return [ax for ax in fig.axes if len(ax.collections) > 0]
+
+
 def test_plot_gdf_plain_and_categorical_with_legend():
-    assert isinstance(plot_gdf(_polygons()), Figure)  # plain map, no column
+    plain = plot_gdf(_polygons())
+    assert isinstance(plain, Figure)
+    assert len(plain.axes[0].collections) == 1  # the three polygons were drawn
+
     fig = plot_gdf(_polygons(), column="kind", legend=True, black_background=False)
-    assert isinstance(fig, Figure)
+    ax = fig.axes[0]
+    assert len(ax.collections) == 1  # geometry drawn
+    legend = ax.get_legend()
+    assert legend is not None  # categorical legend rendered
+    assert {t.get_text() for t in legend.get_texts()} == {"a", "b"}  # both categories labelled
 
 
 def test_plot_gdf_numeric_with_colorbar_and_scheme():
@@ -79,10 +91,12 @@ def test_plot_gdf_numeric_with_colorbar_and_scheme():
         cbar_max_symbol=True,
         axes_frame=True,
     )
-    assert isinstance(cbar_fig, Figure)
+    assert len(cbar_fig.axes[0].collections) == 1  # geometry drawn
+    assert len(cbar_fig.axes) >= 2  # colorbar adds its own axes
 
     scheme_fig = plot_gdf(_lines(), column="flow", scheme="quantiles", classes=2, legend=True)
-    assert isinstance(scheme_fig, Figure)
+    assert len(scheme_fig.axes[0].collections) == 1  # the two lines were drawn
+    assert scheme_fig.axes[0].get_legend() is not None  # scheme classes legend
 
 
 def test_plot_gdf_points_with_size_scaling_and_base_map():
@@ -94,7 +108,8 @@ def test_plot_gdf_points_with_size_scaling_and_base_map():
         base_map_gdf=_polygons(),
         base_map_color="grey",
     )
-    assert isinstance(fig, Figure)
+    ax = fig.axes[0]
+    assert len(ax.collections) == 2  # base map layer + points layer both drawn
 
 
 def test_plot_grid_gdfs_column_across_multiple_gdfs():
@@ -107,7 +122,7 @@ def test_plot_grid_gdfs_column_across_multiple_gdfs():
         titles=["one", "two"],
         main_title="grid",
     )
-    assert isinstance(fig, Figure)
+    assert len(_data_axes(fig)) == 2  # both subplots drew their GeoDataFrame
 
 
 def test_plot_grid_gdfs_column_validates_layout():
@@ -123,4 +138,4 @@ def test_plot_grid_gdf_columns_across_multiple_columns():
         nrows=1,
         titles=["score", "kind"],
     )
-    assert isinstance(fig, Figure)
+    assert len(_data_axes(fig)) == 2  # one subplot per column, each drawn
