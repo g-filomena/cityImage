@@ -81,14 +81,12 @@ Core install:
 pip install cityImage
 ```
 
-The core install keeps heavyweight optional dependencies out of the base
-environment. Use extras for workflows that need specific optional backends:
+The core install includes graph centrality (igraph) and region detection
+(python-louvain), and keeps only heavier, workflow-specific dependencies out of the
+base environment. Use extras for those:
 
 ```bash
-pip install "cityImage[osm]"          # OSMnx acquisition helpers
-pip install "cityImage[centrality]"   # iGraph centrality helpers
-pip install "cityImage[regions]"      # python-louvain region detection
-pip install "cityImage[plot]"         # optional plotting helpers
+pip install "cityImage[plot]"         # plotting helpers (matplotlib, mapclassify)
 pip install "cityImage[height]"       # DEM/DTM height helpers
 pip install "cityImage[visibility3d]" # 3D sight-line workflow
 pip install "cityImage[all]"          # all optional runtime dependencies
@@ -115,24 +113,35 @@ install.
 
 ## Main API areas
 
-The current API separates cityImage-owned semantics from external libraries:
+The current API separates cityImage-owned semantics from external libraries.
+Submodules marked *(extra: X)* need the corresponding optional install (see
+[Installation](#installation)); the rest are available with the core install.
 
+- `cityImage.schema` and `cityImage.adapters`: stable node/edge/building schemas,
+  validation, and input standardisation.
 - `cityImage.io`: file/GeoPandas loading into cityImage schemas.
 - `cityImage.osm`: OSMnx acquisition into cityImage schemas.
+- `cityImage.pedestrian`: pedestrian-network filtering and construction from OSM
+  highway features.
 - `cityImage.network` and `cityImage.network_topology`: street-network
   construction, cleaning, simplification, and topology repair.
 - `cityImage.graph` and `cityImage.angles`: primal/dual graph semantics and
   angular relationships.
+- `cityImage.centrality`: node/edge centrality wrappers (iGraph-based measures;
+  iGraph is a core dependency).
 - `cityImage.barriers`: natural and artificial barriers such as rivers,
   railways, parks, and major roads.
-- `cityImage.regions`: districts and gateways from network partitions.
+- `cityImage.regions`: districts and gateways from network partitions
+  (modularity-based detection via python-louvain, a core dependency).
 - `cityImage.landuse`: land-use derivation, classification, sparse
   representation, and assignment.
+- `cityImage.buildings`: building selection and study-area helpers.
+- `cityImage.height`: DEM/DTM-based building heights. *(extra: height)*
 - `cityImage.landmarks` and `cityImage.scoring`: Lynchian landmark and
   imageability scoring.
 - `cityImage.visibility2d`: 2D visibility workflows.
-- `cityImage.visibility3d`: optional 3D sight-line workflows.
-- `cityImage.plotting`: optional static plotting helpers.
+- `cityImage.visibility3d`: optional 3D sight-line workflows. *(extra: visibility3d)*
+- `cityImage.plotting`: optional static plotting helpers. *(extra: plot)*
 
 ## Minimal example
 
