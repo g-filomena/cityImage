@@ -31,15 +31,8 @@ INVALID_DISTRICT = 999999
 
 
 def _best_partition(graph: Any, weight: str) -> dict[Any, int]:
-    """Delegate modularity/community detection to python-louvain."""
-    try:
-        import community
-    except ImportError as exc:
-        raise ImportError(
-            "Region identification requires the optional 'community' dependency "
-            "from python-louvain. Install the regions extra or pass a precomputed "
-            "partition to regions_from_dual_partition/regions_from_primal_partition."
-        ) from exc
+    """Delegate modularity/community detection to python-louvain (imported lazily)."""
+    import community
 
     return community.best_partition(graph, weight=weight)
 

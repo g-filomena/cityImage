@@ -63,12 +63,12 @@ Installation above); the rest are available with the core install.
   construction, cleaning, simplification, and topology repair.
 - ``cityImage.graph`` and ``cityImage.angles``: primal/dual graph semantics and
   angular relationships.
-- ``cityImage.centrality``: node/edge centrality wrappers (iGraph-based measures
-  need *extra: centrality*).
+- ``cityImage.centrality``: node/edge centrality wrappers (iGraph-based measures;
+  iGraph is a core dependency).
 - ``cityImage.barriers``: natural and artificial barriers such as rivers,
   railways, parks, and major roads.
 - ``cityImage.regions``: districts and gateways from network partitions
-  (*extra: regions* for modularity-based detection).
+  (modularity-based detection via python-louvain, a core dependency).
 - ``cityImage.landuse``: land-use derivation, classification, sparse
   representation, and assignment.
 - ``cityImage.buildings``: building selection and study-area helpers.

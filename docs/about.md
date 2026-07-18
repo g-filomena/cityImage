@@ -26,7 +26,7 @@ The current API separates cityImage-owned semantics from external-library respon
 - `cityImage.landuse`, `cityImage.barriers`, `cityImage.regions`, `cityImage.landmarks`, and `cityImage.scoring` implement the core urban-image logic.
 - `cityImage.visibility3d` remains optional because 3D sight-line computation requires heavier mesh and parallel-processing dependencies.
 
-This design keeps the core installation lighter while retaining advanced optional workflows for OSM acquisition, plotting, building-height estimation, centrality, community detection, and 3D visibility.
+This design keeps the core installation lighter while retaining advanced optional workflows for plotting, building-height estimation, and 3D visibility.
 
 ## Terms and conditions
 

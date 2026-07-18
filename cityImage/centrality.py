@@ -12,8 +12,8 @@ library behaviour:
 * reach centrality based on reachable node attributes within a network radius;
 * straightness centrality using Euclidean/network-distance ratios.
 
-Heavy optional dependency ``igraph`` is imported lazily only when the igraph
-backend or igraph-specific metrics are requested.
+``igraph`` is a core dependency but is still imported lazily (only when a centrality
+operation runs), so ``import cityImage`` stays light.
 """
 
 from __future__ import annotations
@@ -27,14 +27,9 @@ pd.set_option("display.precision", 3)
 
 
 def _import_igraph():
-    """Import igraph lazily with a clear optional-dependency message."""
-    try:
-        import igraph as ig
-    except ImportError as exc:
-        raise ImportError(
-            "This centrality operation requires the optional 'centrality' extra. "
-            'Install with: python -m pip install -e ".[centrality]"'
-        ) from exc
+    """Import igraph lazily, keeping it out of module import so ``import cityImage`` stays light."""
+    import igraph as ig
+
     return ig
 
 
