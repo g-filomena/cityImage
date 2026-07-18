@@ -139,3 +139,25 @@ def test_plot_grid_gdf_columns_across_multiple_columns():
         titles=["score", "kind"],
     )
     assert len(_data_axes(fig)) == 2  # one subplot per column, each drawn
+
+
+def test_plot_grid_gdfs_column_point_legend_and_line_legend():
+    # Point and LineString categorical legends exercise the marker/Line2D handle branches.
+    point_fig = plot_grid_gdfs_column(
+        gdfs=[_points(), _points()], column="kind", ncols=2, nrows=1, legend=True
+    )
+    assert len(_data_axes(point_fig)) == 2
+
+    line_fig = plot_grid_gdfs_column(
+        gdfs=[_lines(), _lines()], column="edgeID", ncols=2, nrows=1, legend=True
+    )
+    assert len(_data_axes(line_fig)) == 2
+
+
+def test_plot_grid_gdfs_column_with_colorbar():
+    fig = plot_grid_gdfs_column(
+        gdfs=[_polygons(), _polygons()], column="score", ncols=2, nrows=1, cbar=True
+    )
+    # The two subplot axes come first and both draw their GeoDataFrame; the colorbar adds a 3rd axes.
+    assert all(len(ax.collections) > 0 for ax in fig.axes[:2])
+    assert len(fig.axes) == 3

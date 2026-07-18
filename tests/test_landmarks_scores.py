@@ -187,3 +187,61 @@ def test_compute_local_scores_produces_rescaled_local_score():
 def test_compute_local_scores_rejects_unnormalised_component_weights():
     with pytest.raises(ValueError, match="sum to 1.0"):
         ci.compute_local_scores(_scored_buildings(3), {}, {"sScore": 0.5})
+
+
+def test_visibility_score_cleans_messy_height_values():
+    buildings = _buildings(3)
+    # A comma-decimal string, a list-wrapped value, and a NaN exercise the _clean_height branches.
+    buildings["height"] = ["12,5", [10.0], float("nan")]
+
+    out = ci.visibility_score(buildings)  # no sight lines -> fac derived from cleaned heights
+
+    fac = out["fac"].tolist()
+    assert fac[0] > 0 and fac[1] > 0  # "12,5" -> 12.5 and [10.0] -> 10.0 give a facade area
+    assert fac[2] == 0.0  # NaN height -> no facade area
+
+
+def test_pragmatic_score_accepts_tuple_set_and_array_land_use_cells():
+    import numpy as np
+
+    buildings = _buildings(3)
+    buildings["land_uses"] = [("residential",), {"residential"}, np.array(["retail"])]
+    buildings["land_uses_overlap"] = [[1.0], [1.0], [1.0]]
+
+    out = ci.pragmatic_score(buildings, search_radius=100)
+
+    assert "prag" in out.columns
+    assert out["prag"].between(0.0, 1.0).all()
+
+
+def test_pragmatic_score_handles_mismatched_and_nonnumeric_overlaps():
+    buildings = _buildings(3)
+    buildings["land_uses"] = [["a", "b"], ["c"], ["d"]]
+    # First row's overlap length != labels (falls back to equal split); second is non-numeric.
+    buildings["land_uses_overlap"] = [[1.0], ["not_a_number"], [1.0]]
+
+    out = ci.pragmatic_score(buildings, search_radius=100)
+    assert out["prag"].notna().all()
+
+
+def test_cultural_score_from_osm_uses_historic_flag():
+    buildings = _buildings(3)
+    buildings["historic"] = ["castle", None, "yes"]
+    out = ci.cultural_score(buildings, from_OSM=True)
+    cult = out.set_index("buildingID")["cult"]
+    assert cult[0] == 1.0 and cult[2] == 1.0  # historic tags flagged
+    assert cult[1] == 0.0  # no historic tag
+
+
+def test_cultural_score_rejects_unknown_score_column():
+    buildings = _buildings(2)
+    historic = gpd.GeoDataFrame({"importance": [1.0]}, geometry=[Point(5, 5)], crs=CRS)
+    with pytest.raises(ValueError, match="score_column"):
+        ci.cultural_score(buildings, historic_elements_gdf=historic, score_column="missing")
+
+
+def test_cultural_score_empty_historic_geometries_returns_zero():
+    buildings = _buildings(2)
+    historic = gpd.GeoDataFrame({"importance": [1.0]}, geometry=[None], crs=CRS)
+    out = ci.cultural_score(buildings, historic_elements_gdf=historic)
+    assert (out["cult"] == 0.0).all()  # nothing to intersect

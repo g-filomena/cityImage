@@ -132,3 +132,53 @@ def test_classify_land_uses_into_dmas_requires_the_column():
     gdf = gpd.GeoDataFrame({"other": [[]]}, geometry=[Point(0, 0)], crs=CRS)
     with pytest.raises(ValueError, match="must contain"):
         ci.classify_land_uses_intoDMAs(gdf, land_uses_column="land_uses")
+
+
+def test_classify_land_use_handles_list_none_and_scalar_cells():
+    gdf = gpd.GeoDataFrame(
+        {"lu_eng": [["church", "bank", "church"], None, "unknown"]},
+        geometry=[Point(i, 0) for i in range(3)],
+        crs=CRS,
+    )
+    out = ci.classify_land_use(
+        gdf,
+        raw_land_use_column="lu_eng",
+        new_land_use_column="land_use",
+        categories=[["church"], ["bank"]],
+        strings=["religious", "business_services"],
+    )
+    result = out["land_use"].tolist()
+    assert result[0] == ["religious", "business_services"]  # multi-value, de-duplicated in order
+    assert result[1] is None  # empty/None cell
+    assert result[2] == "unknown"  # unmatched scalar preserved
+
+
+def test_classify_land_use_handles_none_and_nan_within_cells():
+    gdf = gpd.GeoDataFrame(
+        {"lu_eng": [["church", float("nan")], [None], "unknown"]},
+        geometry=[Point(i, 0) for i in range(3)],
+        crs=CRS,
+    )
+    out = ci.classify_land_use(
+        gdf,
+        raw_land_use_column="lu_eng",
+        new_land_use_column="land_use",
+        categories=[["church"]],
+        strings=["religious"],
+    )
+    result = out["land_use"].tolist()
+    assert result[0] == ["religious"]  # NaN element in a multi-value cell is dropped
+    assert result[1] is None  # single None cell -> None
+    assert result[2] == "unknown"  # unmatched scalar preserved
+
+
+def test_classify_land_use_rejects_length_mismatch():
+    gdf = gpd.GeoDataFrame({"lu_eng": ["church"]}, geometry=[Point(0, 0)], crs=CRS)
+    with pytest.raises(ValueError, match="same length"):
+        ci.classify_land_use(
+            gdf,
+            raw_land_use_column="lu_eng",
+            new_land_use_column="land_use",
+            categories=[["church"]],
+            strings=["religious", "extra"],
+        )

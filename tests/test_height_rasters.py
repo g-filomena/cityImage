@@ -119,3 +119,15 @@ def test_buildings_height_requires_intersection_and_crs(rasters):
     no_crs = _buildings(crs=None)
     with pytest.raises(ValueError, match="no CRS"):
         ci.buildings_height_from_dem_dtm(no_crs, dsm, dtm)
+
+
+def test_assign_height_from_dtm_requires_raster_crs(tmp_path):
+    dtm_no_crs = _write_raster(tmp_path / "nocrs.tif", 10.0, crs=None)
+    with pytest.raises(ValueError, match="no CRS"):
+        ci.assign_height_from_dtm(_nodes(), dtm_no_crs)
+
+
+def test_buildings_base_from_dtm_requires_buildings_crs(rasters):
+    dtm, _ = rasters
+    with pytest.raises(ValueError, match="no CRS"):
+        ci.buildings_base_from_dtm(_buildings(crs=None), dtm)

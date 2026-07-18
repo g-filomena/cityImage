@@ -113,6 +113,31 @@ def test_district_to_nodes_from_polygons_assigns_nearest_polygon():
     assert out["p_topo"].dtype.kind == "i"  # cast to int
 
 
+def test_find_gateways_flags_district_boundary_nodes():
+    # A path 1-2-3-4 split into districts {1,2}=A and {3,4}=B. Nodes 2 and 3 straddle the
+    # boundary (each connects to a node in the other district); nodes 1 and 4 do not.
+    nodes = gpd.GeoDataFrame(
+        {"nodeID": [1, 2, 3, 4], "district": [10, 10, 20, 20]},
+        geometry=[Point(0, 0), Point(1, 0), Point(2, 0), Point(3, 0)],
+        crs=CRS,
+    )
+    edges = gpd.GeoDataFrame(
+        {"edgeID": [1, 2, 3], "u": [1, 2, 3], "v": [2, 3, 4]},
+        geometry=[
+            LineString([(0, 0), (1, 0)]),
+            LineString([(1, 0), (2, 0)]),
+            LineString([(2, 0), (3, 0)]),
+        ],
+        crs=CRS,
+    )
+
+    out = ci.find_gateways(nodes, edges, "district")
+
+    gateway = out.set_index("nodeID")["gateway"]
+    assert gateway[2] == 1 and gateway[3] == 1  # boundary nodes
+    assert gateway[1] == 0 and gateway[4] == 0  # interior nodes
+
+
 # --------------------------------------------------------------------------- network builders
 
 

@@ -70,6 +70,41 @@ def test_attach_sparse_empty_land_uses_returns_defaults():
     assert "_ci_sparse_row" not in out.columns
 
 
+def test_attach_sparse_points_with_no_intersection_keep_defaults():
+    far_points = gpd.GeoDataFrame(
+        {"use": ["shop"]},
+        geometry=[Point(999, 999)],
+        crs=CRS,  # outside every building
+    )
+    out = ci.attach_sparse_land_uses(_buildings(), far_points, source_column="use")
+    assert out["land_uses"].tolist() == [["unknown"], ["unknown"]]
+
+
+def test_attach_sparse_polygons_with_no_overlap_keep_defaults():
+    far_poly = gpd.GeoDataFrame(
+        {"use": ["shop"]},
+        geometry=[Polygon([(900, 900), (910, 900), (910, 910), (900, 910)])],
+        crs=CRS,
+    )
+    out = ci.attach_sparse_land_uses(_buildings(), far_poly, source_column="use")
+    assert out["land_uses"].tolist() == [["unknown"], ["unknown"]]
+
+
+def test_attach_sparse_from_polygons_uses_area_weights():
+    # A polygon covering building 1 and mapped to "retail" -> that label with full overlap.
+    poly = gpd.GeoDataFrame(
+        {"use": ["shop"]},
+        geometry=[Polygon([(0, 0), (10, 0), (10, 10), (0, 10)])],
+        crs=CRS,
+    )
+    out = ci.attach_sparse_land_uses(
+        _buildings(), poly, source_column="use", mapping={"shop": "retail"}
+    )
+    by_id = out.set_index("buildingID")
+    assert by_id.loc[1, "land_uses"] == ["retail"]
+    assert abs(sum(by_id.loc[1, "land_uses_overlap"]) - 1.0) < 1e-9
+
+
 def test_classify_sparse_unmapped_falls_back_to_default_when_not_preserved():
     buildings = _buildings()
     buildings["use"] = ["mystery", "shop"]

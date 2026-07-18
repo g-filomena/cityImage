@@ -7,11 +7,36 @@ Complements ``test_barriers_module.py`` by covering the park-assignment path,
 from __future__ import annotations
 
 import geopandas as gpd
-from shapely.geometry import LineString, Polygon
+from shapely.geometry import (
+    GeometryCollection,
+    LineString,
+    MultiLineString,
+    MultiPolygon,
+    Point,
+    Polygon,
+)
 
 import cityImage as ci
+from cityImage.barriers import _simplify_barrier
 
 CRS = "EPSG:3857"
+
+
+def test_simplify_barrier_handles_every_geometry_type():
+    line = LineString([(0, 0), (1, 1)])
+    poly = Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])
+
+    assert _simplify_barrier(None) == []  # missing
+    assert _simplify_barrier(Polygon()) == []  # empty
+    assert _simplify_barrier(line) == [line]  # line passes through
+    assert len(_simplify_barrier(poly)) == 1  # polygon -> its boundary
+    assert len(_simplify_barrier(MultiLineString([[(0, 0), (1, 0)], [(2, 2), (3, 3)]]))) == 2
+    assert (
+        len(_simplify_barrier(MultiPolygon([poly, Polygon([(5, 5), (6, 5), (6, 6), (5, 6)])]))) == 2
+    )
+    collection = _simplify_barrier(GeometryCollection([poly, line]))
+    assert len(collection) == 2  # polygon -> boundary, line kept
+    assert _simplify_barrier(Point(0, 0)) == []  # unsupported type -> dropped
 
 
 def _park_barriers():

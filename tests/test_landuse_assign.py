@@ -167,6 +167,58 @@ def test_land_use_from_other_gdf_raises_on_empty_other_gdf():
         )
 
 
+def test_land_use_from_polygons_identical_three_labels_renormalise_to_one():
+    identical = gpd.GeoDataFrame(
+        {"lu": [["a", "b", "c"]]},  # one polygon, three labels, equal split
+        geometry=[_square(20, 0)],  # exactly equal to building 2
+        crs=CRS,
+    )
+
+    out = ci.land_use_from_polygons(
+        _buildings(),
+        identical,
+        new_land_use_column="land_uses",
+        other_land_use_column="lu",
+        overlap_column_name="overlap",
+    )
+
+    row = out.set_index("buildingID").loc[2]
+    assert set(row["land_uses"]) == {"a", "b", "c"}
+    assert abs(sum(row["overlap"]) - 1.0) < 1e-9  # rounded weights still sum to exactly 1.0
+    assert len(row["overlap"]) == 3
+
+
+def test_land_use_from_polygons_below_threshold_match_falls_back_to_default():
+    others = gpd.GeoDataFrame(
+        {"lu": ["sliver"]},
+        geometry=[Polygon([(0, 0), (1, 0), (1, 10), (0, 10)])],  # covers only 10% of building 1
+        crs=CRS,
+    )
+
+    out = ci.land_use_from_other_gdf(
+        _buildings(),
+        others,
+        new_land_use_column="land_uses",
+        other_land_use_column="lu",
+        min_overlap_threshold=0.20,
+        overlap_column_name="overlap",
+        default_land_use="residential",
+    )
+
+    by_id = out.set_index("buildingID")
+    # The 10% sliver is below the 20% threshold, so building 1 gets the default, not "sliver".
+    assert by_id.loc[1, "land_uses"] == ["residential"]
+    assert "sliver" not in by_id.loc[1, "land_uses"]
+
+
+def test_land_use_from_points_raises_on_crs_mismatch():
+    points = gpd.GeoDataFrame({"lu": ["retail"]}, geometry=[Point(5, 5)], crs="EPSG:4326")
+    with pytest.raises(ValueError, match="CRS mismatch"):
+        ci.land_use_from_points(
+            _buildings(), points, new_land_use_column="land_uses", other_land_use_column="lu"
+        )
+
+
 def test_land_use_from_other_gdf_raises_on_mixed_geometry_types():
     mixed = gpd.GeoDataFrame(
         {"lu": ["retail", "office"]},
