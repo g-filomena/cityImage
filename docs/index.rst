@@ -49,22 +49,35 @@ Install with all optional extras:
 Main API areas
 --------------
 
-The refactored API separates cityImage-owned semantics from external libraries:
+The refactored API separates cityImage-owned semantics from external libraries.
+Submodules marked *(extra: X)* need the corresponding optional install (see
+Installation above); the rest are available with the core install.
 
+- ``cityImage.schema`` and ``cityImage.adapters``: stable node/edge/building
+  schemas, validation, and input standardisation.
 - ``cityImage.io``: file/GeoPandas loading into cityImage schemas.
 - ``cityImage.osm``: OSMnx acquisition into cityImage schemas.
+- ``cityImage.pedestrian``: pedestrian-network filtering and construction from
+  OSM highway features.
 - ``cityImage.network`` and ``cityImage.network_topology``: street-network
   construction, cleaning, simplification, and topology repair.
 - ``cityImage.graph`` and ``cityImage.angles``: primal/dual graph semantics and
   angular relationships.
+- ``cityImage.centrality``: node/edge centrality wrappers (iGraph-based measures
+  need *extra: centrality*).
 - ``cityImage.barriers``: natural and artificial barriers such as rivers,
   railways, parks, and major roads.
-- ``cityImage.regions``: districts and gateways from network partitions.
+- ``cityImage.regions``: districts and gateways from network partitions
+  (*extra: regions* for modularity-based detection).
+- ``cityImage.landuse``: land-use derivation, classification, sparse
+  representation, and assignment.
+- ``cityImage.buildings``: building selection and study-area helpers.
+- ``cityImage.height``: DEM/DTM-based building heights. *(extra: height)*
 - ``cityImage.landmarks`` and ``cityImage.scoring``: Lynchian landmark and
   imageability scoring.
-- ``cityImage.visibility2d`` and ``cityImage.visibility3d``: 2D/3D visibility
-  workflows.
-- ``cityImage.plotting``: optional static plotting helpers.
+- ``cityImage.visibility2d``: 2D visibility workflows.
+- ``cityImage.visibility3d``: optional 3D sight-line workflows. *(extra: visibility3d)*
+- ``cityImage.plotting``: optional static plotting helpers. *(extra: plot)*
 
 Typical use
 -----------
