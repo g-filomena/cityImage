@@ -328,6 +328,10 @@ def barriers_from_osm_features(
 
 def along_water(edges_gdf: gpd.GeoDataFrame, barriers_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
     """Assign water barriers lying along/crossing each street segment."""
+    # barriers_along looks edges up by edgeID via .loc, so index by edgeID regardless of the
+    # caller's index (a plain RangeIndex would otherwise KeyError).
+    edges_gdf = edges_gdf.set_index("edgeID", drop=False)
+    edges_gdf.index.name = None
     sindex = edges_gdf.sindex
     tmp = barriers_gdf[barriers_gdf["barrier_type"].isin(["water"])]
     edges_gdf["ac_rivers"] = edges_gdf.apply(

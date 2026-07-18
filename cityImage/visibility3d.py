@@ -10,6 +10,7 @@ the 3D stack to be installed.
 from __future__ import annotations
 
 import gc
+import threading
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from importlib import import_module
 from pathlib import Path
@@ -30,6 +31,7 @@ _VISIBILITY3D_OPTIONAL_DEPENDENCIES = {
     "psutil": "psutil",
     "pyvista": "pyvista",
     "tqdm": "tqdm",
+    "vtk": "pyvista",  # VTK ships with pyvista; installing the extra provides both
 }
 
 
@@ -154,7 +156,9 @@ def compute_3d_sight_lines(
     num_targets = len(targets)
     projected_nr_sight_lines = num_observers * num_targets
     obstructions_sindex = obstructions_gdf.sindex  # GeoPandas SpatialIndex wrapper
-    meshes = _build_meshes(obstructions_gdf)
+    # Meshes and their VTK ray-casting locators are built lazily, only for buildings that
+    # actually turn up as 2D-obstruction candidates (usually a small fraction of the city).
+    meshes = _MeshCache(obstructions_gdf)
 
     if projected_nr_sight_lines <= sight_lines_chunk_size:
         observer_chunks = [observers]
@@ -497,31 +501,31 @@ def _use_simplified_buildings(target_points, obstructions_gdf, simplified_buildi
     """
 
     simplified_buildings = gdf_multipolygon_to_polygon(simplified_buildings)
-    # Create a spatial index for the simplified buildings
-    simplified_tree = STRtree(simplified_buildings.geometry)
+    # Create a spatial index for the simplified buildings. STRtree.query returns
+    # *positions* into the geometry array passed to the constructor, NOT index labels:
+    # translate positions back to the frame's index explicitly (the previous
+    # label-based .loc lookup only worked while the index happened to be a RangeIndex).
+    simplified_tree = STRtree(simplified_buildings.geometry.values)
+    simplified_labels = simplified_buildings.index.to_numpy()
 
-    def assign_geometry_to_simplified_building(geometry):
-        # First, check if the target is within or touches any simplified building using spatial index
-        touching_buildings = simplified_tree.query(geometry)
+    def assign_geometries_to_simplified_buildings(geometries):
+        """First intersecting simplified-building label per input geometry (or None)."""
+        geometries = np.asarray(geometries, dtype=object)
+        # 'intersects' subsumes the previous within/touches/intersects triple.
+        input_positions, tree_positions = simplified_tree.query(
+            geometries, predicate="intersects"
+        )
+        first_match = {}
+        for geometry_position, tree_position in zip(input_positions, tree_positions, strict=False):
+            if geometry_position not in first_match:
+                first_match[geometry_position] = simplified_labels[tree_position]
+        return [first_match.get(position) for position in range(len(geometries))]
 
-        # Check for touch or within condition
-        for simplified_building in touching_buildings:  # provided these are IDs
-            simplified_building_geo = simplified_buildings.loc[simplified_building].geometry
-            if (
-                geometry.within(simplified_building_geo)
-                or geometry.touches(simplified_building_geo)
-                or geometry.intersects(simplified_building_geo)
-            ):
-                return simplified_building
-
-        return None
-
-    # Apply the optimized function to each target
-    target_points["simplifiedID"] = target_points["target_geo"].apply(
-        lambda x: assign_geometry_to_simplified_building(x)
+    target_points["simplifiedID"] = assign_geometries_to_simplified_buildings(
+        target_points["target_geo"]
     )
-    obstructions_gdf["simplifiedID"] = obstructions_gdf["geometry"].apply(
-        lambda x: assign_geometry_to_simplified_building(x)
+    obstructions_gdf["simplifiedID"] = assign_geometries_to_simplified_buildings(
+        obstructions_gdf["geometry"]
     )
 
     # Function to get building IDs, average height, and average base of targets assigned to the same simplified building
@@ -630,29 +634,25 @@ def filter_distance(chunk, targets, min_observer_target_distance):
         with new 'geometry' (LineString) and coordinate columns.
     """
 
+    import shapely
+
     # Prepare data
     potential_lines = _prepare_chunk_data(chunk, targets)
-    # Assign 2D coordinates to new columns directly
-    potential_lines["observer_coords"] = [(p.x, p.y) for p in potential_lines["observer_geo"]]
-    potential_lines["target_coords"] = [(p.x, p.y) for p in potential_lines["target_geo"]]
 
-    # Extract 2D coordinates and then distance filter
-    observer_coords = np.array(potential_lines["observer_coords"].to_list())
-    target_coords = np.array(potential_lines["target_coords"].to_list())
-
-    # Query pairs with distance >= threshold
+    # Vectorised 2D coordinate extraction (drops z) and distance filter.
+    observer_coords = shapely.get_coordinates(
+        np.asarray(potential_lines["observer_geo"], dtype=object)
+    )
+    target_coords = shapely.get_coordinates(
+        np.asarray(potential_lines["target_geo"], dtype=object)
+    )
     distances = np.linalg.norm(observer_coords - target_coords, axis=1)
     mask = distances >= min_observer_target_distance
     potential_lines = potential_lines.loc[mask]
 
-    # Extract 2D coordinates and then distance filter
-    observer_coords = np.array(potential_lines["observer_coords"].to_list())
-    target_coords = np.array(potential_lines["target_coords"].to_list())
-    line_geometries = [
-        LineString([start, stop])
-        for start, stop in zip(observer_coords, target_coords, strict=False)
-    ]
-    potential_lines["geometry"] = line_geometries
+    # Vectorised 2D line construction for the planimetric obstruction check.
+    segments = np.stack([observer_coords[mask], target_coords[mask]], axis=1)
+    potential_lines["geometry"] = shapely.linestrings(segments)
 
     return potential_lines
 
@@ -731,7 +731,7 @@ def obstructions_2d(potential_sight_lines, obstructions_gdf, obstructions_sindex
 
 
 def _define_batches(
-    potential_sight_lines, min_size=50, max_size=2000, mem_fraction=0.1, row_weight_kb=10_000
+    potential_sight_lines, min_size=50, max_size=25_000, mem_fraction=0.1, row_weight_kb=10_000
 ):
     """
     Splits a GeoDataFrame of sight lines into memory-aware batches for efficient parallel processing.
@@ -745,7 +745,9 @@ def _define_batches(
     min_size : int, optional
         Minimum number of rows per batch (default: 50).
     max_size : int, optional
-        Maximum number of rows per batch (default: 2000).
+        Maximum number of rows per batch (default: 25,000). The previous 2,000 cap was
+        always binding (the memory estimate is very conservative), which fragmented the
+        2D check into thousands of tiny Dask tasks whose scheduling overhead dominated.
     mem_fraction : float, optional
         Fraction of available system memory to use for each batch (default: 0.1).
     row_weight_kb : int, optional
@@ -879,6 +881,52 @@ def obstructions_3d(
     return potential_sight_lines
 
 
+class _MeshCache:
+    """Lazy per-building triangulated meshes and VTK OBB ray-casting locators.
+
+    Two performance properties compared to building every mesh upfront:
+
+    - meshes are built **on first use only**, so obstructions that never appear as a
+      2D-crossing candidate (usually the vast majority of a city) are never triangulated;
+    - each building gets a **cached, pre-built ``vtkOBBTree``** reused across all its
+      ray checks. PyVista's ``mesh.ray_trace`` constructs a fresh OBB tree on *every
+      call*, which dominated the 3D step when thousands of candidate lines crossed the
+      same tall building.
+
+    Locators are built under a lock; afterwards ``IntersectWithLine`` traversals are
+    read-only, so concurrent queries from the worker threads are safe.
+    """
+
+    def __init__(self, obstructions_gdf):
+        self._solids = dict(
+            zip(obstructions_gdf["buildingID"], obstructions_gdf["building_3d"], strict=False)
+        )
+        self._locators = {}
+        self._lock = threading.Lock()
+
+    def get_locator(self, buildingID):
+        """Return the (cached) OBB locator for a building, or None when unknown."""
+        locator = self._locators.get(buildingID)
+        if locator is not None:
+            return locator
+        solid = self._solids.get(buildingID)
+        if solid is None:
+            return None
+
+        with self._lock:
+            locator = self._locators.get(buildingID)  # racing thread may have built it
+            if locator is not None:
+                return locator
+            pv = _import_optional_dependency("pyvista")
+            vtk = _import_optional_dependency("vtk")
+            mesh = pv.wrap(solid).extract_surface().triangulate()
+            locator = vtk.vtkOBBTree()
+            locator.SetDataSet(mesh)
+            locator.BuildLocator()
+            self._locators[buildingID] = locator
+            return locator
+
+
 def _process_one(bid, solid):
     """Build a triangulated PyVista mesh for one obstruction solid.
 
@@ -949,13 +997,27 @@ def _intervisibility(row, meshes, potential_obstructions_column):
     bool
         ``True`` when no candidate mesh intersects the ray, otherwise ``False``.
     """
-    if len(getattr(row, potential_obstructions_column)) == 0:
+    candidates = getattr(row, potential_obstructions_column)
+    if len(candidates) == 0:
         return True
 
     p0 = row.observer_coords
     p1 = row.target_coords
 
-    for buildingID in getattr(row, potential_obstructions_column):
+    get_locator = getattr(meshes, "get_locator", None)
+    if get_locator is not None:
+        # _MeshCache path: pre-built OBB locators, one ray cast per candidate.
+        for buildingID in candidates:
+            locator = get_locator(buildingID)
+            if locator is None:
+                continue
+            if locator.IntersectWithLine(p0, p1, None, None) != 0:
+                return False
+        return True
+
+    # Plain mapping of pyvista meshes (kept for API compatibility with callers that
+    # pass their own dict): ray_trace rebuilds its locator per call, so this is slow.
+    for buildingID in candidates:
         mesh = meshes.get(buildingID)
         if mesh is None:
             continue
@@ -1029,6 +1091,9 @@ def _finalize_sight_lines(sight_lines_tmp, nodes_gdf, consolidate, simplified_bu
         Cleaned visible sight lines with ``nodeID``, ``buildingID``, ``geometry``,
         and ``length``.
     """
+    # Work on a copy: this frame is the caller's original nodes GeoDataFrame, and
+    # replacing its geometry with 3D points in place would leak out of this function.
+    nodes_gdf = nodes_gdf.copy()
     nodes_gdf["geometry"] = [
         Point(geometry.x, geometry.y, z)
         for geometry, z in zip(nodes_gdf["geometry"], nodes_gdf["z"], strict=False)

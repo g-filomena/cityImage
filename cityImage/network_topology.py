@@ -18,6 +18,8 @@ operations.
 
 from __future__ import annotations
 
+from collections import defaultdict
+
 import geopandas as gpd
 import networkx as nx
 import numpy as np
@@ -35,12 +37,16 @@ pd.set_option("display.precision", 3)
 # -----------------------------------------------------------------------------
 # Topology fixing
 # -----------------------------------------------------------------------------
-def fix_network_topology(nodes_gdf, edges_gdf, edgeID_column="edgeID"):
+def fix_network_topology(nodes_gdf, edges_gdf):
     """
-    Fix the network topology by splitting intersecting edges and adding fixed edges to the network.
+    Node the network at shared, un-noded vertices.
 
-    This function considers as segments to be fixed only segments that are actually fully intersecting, thus sharing coordinates, excluding their
-    from and to vertices coordinates, but withouth actually generating, in the given GeoDataFrame, the right number of features.
+    An edge is split at one of its own internal vertices only when that vertex **coincides with a
+    vertex** (endpoint or internal) of another edge: two edges genuinely meet there but the junction
+    was never noded. Crossings that do **not** share a vertex are left intact — this covers
+    grade-separated bridges/tunnels and ways that merely cross in 2D, which must not be noded, as
+    well as an edge whose vertex happens to fall on another edge's interior (the split would only be
+    undone by the pseudo-node simplification anyway). No new vertices are ever introduced.
 
     Parameters
     ----------
@@ -48,103 +54,54 @@ def fix_network_topology(nodes_gdf, edges_gdf, edgeID_column="edgeID"):
         The nodes (junctions) GeoDataFrame.
     edges_gdf: LineString GeoDataFrame
         The street segments GeoDataFrame.
-    edgeID_column : str, optional
-        Column name for edge unique identifiers in `edges_gdf`. Default is 'edgeID'.
 
     Returns
     -------
-    LineString GeoDataFrame
-        The updated edges GeoDataFrame.
+    nodes_gdf, edges_gdf: tuple of GeoDataFrames
+        The (possibly unchanged) nodes and the updated edges.
     """
     edges_gdf = edges_gdf.copy()
-    edges_gdf["coords"] = [list(geometry.coords) for geometry in edges_gdf.geometry]
-    # spatial index
-    sindex = edges_gdf.sindex
+    coords_list = [list(geometry.coords) for geometry in edges_gdf.geometry]
+    edges_gdf["coords"] = coords_list
 
-    def find_intersections(ix, line_geometry, coords):
-        """
-        Find intersection points between a line and other intersecting edges.
+    def _coord_key(coord, ndigits=10):
+        return (round(float(coord[0]), ndigits), round(float(coord[1]), ndigits))
 
-        Parameters
-        ----------
-        ix : int
-            The index of the line to check for intersections.
-        line_geometry : LineString
-            The LineString geometry of the line to check for intersections.
-        coords : list
-            The list of coordinates of the line's geometry.
+    # coordinate -> set of edge positions carrying it as any vertex (endpoint or internal)
+    vertex_edges = defaultdict(set)
+    for pos, coords in enumerate(coords_list):
+        for coord in coords:
+            vertex_edges[_coord_key(coord)].add(pos)
 
-        Returns
-        -------
-        list
-            A list of actual intersection points between the line and other intersecting edges.
-        """
-
-        possible_matches_index = list(sindex.intersection(line_geometry.buffer(5).bounds))
-        possible_matches = edges_gdf.iloc[possible_matches_index].copy()
-        # lines intersecting the given line
-        tmp = possible_matches[possible_matches.intersects(line_geometry)]
-        tmp = tmp.drop(ix, axis=0)
-        union = tmp.union_all()
-
-        # find actual intersections
-        actual_intersections = []
-        intersections = line_geometry.intersection(union)
-        if intersections is None:
-            return actual_intersections
-        if intersections.geom_type == "LineString":
-            # probably overlapping (to resolve)
-            return actual_intersections
-
-        if intersections.geom_type == "Point":
-            intersections = [intersections]
-        else:
-            intersections = intersections.geoms
-
-        # Obtain all intersecting Points.
-        intersection_points = [
-            intersection for intersection in intersections if intersection.geom_type == "Point"
-        ]
-
-        def _coord_key(coord, ndigits=10):
-            return tuple(round(float(value), ndigits) for value in coord[:2])
-
-        # Keep only intersection points that are existing internal vertices
-        # of the current segment. Endpoints are already represented by u/v.
-        segment_vertices = {_coord_key(coords[0]), _coord_key(coords[-1])}
-        segment_coords = {_coord_key(coord) for coord in coords}
-
-        seen = set()
-        for point in intersection_points:
-            point_coord = _coord_key(point.coords[0])
-
-            if point_coord not in segment_coords:
+    # An internal vertex that is also a vertex of a *different* edge is a shared, un-noded junction
+    # -> a split point. Endpoints are already u/v nodes, so only internal vertices are considered.
+    to_fix_points = []
+    for pos, coords in enumerate(coords_list):
+        endpoints = {_coord_key(coords[0]), _coord_key(coords[-1])}
+        points, seen = [], set()
+        for coord in coords[1:-1]:
+            key = _coord_key(coord)
+            if key in endpoints or key in seen:
                 continue
-            if point_coord in segment_vertices:
-                continue
-            if point_coord in seen:
-                continue
+            if vertex_edges[key] - {pos}:  # the vertex belongs to another edge too
+                points.append(Point(coord[0], coord[1]))
+                seen.add(key)
+        to_fix_points.append(points)
 
-            actual_intersections.append(point)
-            seen.add(point_coord)
-
-        return actual_intersections
-
-    # verify which street segment needs to be fixed
-    edges_gdf["to_fix"] = edges_gdf.apply(
-        lambda row: find_intersections(row.name, row.geometry, row.coords), axis=1
-    )
-    # verify which street segment needs to be fixed
-    edges_gdf["fixing"] = [len(to_fix) > 0 for to_fix in edges_gdf["to_fix"]]
+    edges_gdf["to_fix"] = to_fix_points
+    edges_gdf["fixing"] = [len(item) > 0 for item in to_fix_points]
 
     to_fix = edges_gdf[edges_gdf["fixing"]].copy()
     edges_gdf = edges_gdf[~edges_gdf["fixing"]]
     if len(to_fix) == 0:
-        return edges_gdf
-    return _add_fixed_edges(edges_gdf, to_fix, edgeID_column)
+        # Nothing to split: drop temp columns and return the unchanged nodes alongside the edges,
+        # matching the (nodes_gdf, edges_gdf) contract callers unpack.
+        edges_gdf = edges_gdf.drop(columns=["coords", "to_fix", "fixing"], errors="ignore")
+        return nodes_gdf, edges_gdf
+    return _add_fixed_edges(edges_gdf, to_fix)
 
 
-def fix_fake_self_loops(nodes_gdf, edges_gdf, edgeID_column="edgeID"):
+def fix_fake_self_loops(nodes_gdf, edges_gdf):
     """
     Fix the network topology by removing (fake) self-loops and adding fixed edges.
 
@@ -154,8 +111,6 @@ def fix_fake_self_loops(nodes_gdf, edges_gdf, edgeID_column="edgeID"):
         The nodes (junctions) GeoDataFrame.
     edges_gdf: LineString GeoDataFrame
         The street segments GeoDataFrame.
-    edgeID_column : str, optional
-        Column name for edge unique identifiers in `edges_gdf`. Default is 'edgeID'.
 
     Returns
     -------
@@ -191,10 +146,10 @@ def fix_fake_self_loops(nodes_gdf, edges_gdf, edgeID_column="edgeID"):
     edges_gdf = edges_gdf[~edges_gdf["fixing"]]
     if len(to_fix) == 0:
         return nodes_gdf, edges_gdf
-    return _add_fixed_edges(edges_gdf, to_fix, edgeID_column)
+    return _add_fixed_edges(edges_gdf, to_fix)
 
 
-def _add_fixed_edges(edges_gdf, to_fix_gdf, edgeID_column="edgeID"):
+def _add_fixed_edges(edges_gdf, to_fix_gdf):
     """
     Add fixed edges to the edges GeoDataFrame.
 
@@ -204,8 +159,6 @@ def _add_fixed_edges(edges_gdf, to_fix_gdf, edgeID_column="edgeID"):
         The street segments GeoDataFrame.
     to_fix_gdf: GeoDataFrame
         The GeoDataFrame containing the edges to be fixed.
-    edgeID_column : str, optional
-        Column name for edge unique identifiers in `edges_gdf`. Default is 'edgeID'.
 
     Returns
     -------
@@ -229,7 +182,7 @@ def _add_fixed_edges(edges_gdf, to_fix_gdf, edgeID_column="edgeID"):
             # copy attributes
             row = to_fix_gdf.loc[ix].copy()
             # and assign geometry an new edgeID
-            row[edgeID_column] = index
+            row["edgeID"] = index
             row["geometry"] = line
             dfs.append(row.to_frame().T)
 
@@ -241,14 +194,14 @@ def _add_fixed_edges(edges_gdf, to_fix_gdf, edgeID_column="edgeID"):
     edges_gdf = pd.concat([edges_gdf, rows], ignore_index=True)
     edges_gdf.drop(["u", "v", "to_fix", "fixing", "coords"], inplace=True, axis=1)
     edges_gdf["length"] = edges_gdf.geometry.length
-    edges_gdf[edgeID_column] = edges_gdf.index
+    edges_gdf["edgeID"] = edges_gdf.index
     nodes_gdf = obtain_nodes_gdf(edges_gdf, edges_gdf.crs)
     nodes_gdf, edges_gdf = join_nodes_edges_by_coordinates(nodes_gdf, edges_gdf)
 
     return nodes_gdf, edges_gdf
 
 
-def remove_disconnected_islands(nodes_gdf, edges_gdf, nodeID_column="nodeID"):
+def remove_disconnected_islands(nodes_gdf, edges_gdf):
     """
     Remove disconnected islands from a graph.
 
@@ -258,24 +211,21 @@ def remove_disconnected_islands(nodes_gdf, edges_gdf, nodeID_column="nodeID"):
         The nodes (junctions) GeoDataFrame.
     edges_gdf: LineString GeoDataFrame
         The street segments GeoDataFrame.
-    nodeID_column : str, optional
-        Column name for node unique identifiers in `nodes_gdf`. Default is 'nodeID'.
 
     Returns
     -------
     nodes_gdf, edges_gdf: tuple of GeoDataFrames
         The updated junctions and street segments GeoDataFrame.
     """
-    Ng = graph_fromGDF(nodes_gdf, edges_gdf, nodeID_column)
+    Ng = graph_fromGDF(nodes_gdf, edges_gdf)
     if not nx.is_connected(Ng):
         largest_component = max(nx.connected_components(Ng), key=len)
         # Create a subgraph of Ng consisting only of this component:
         G = Ng.subgraph(largest_component)
         to_keep = list(G.nodes())
-        nodes_gdf = nodes_gdf[nodes_gdf[nodeID_column].isin(to_keep)]
+        nodes_gdf = nodes_gdf[nodes_gdf["nodeID"].isin(to_keep)]
         edges_gdf = edges_gdf[
-            (edges_gdf.u.isin(nodes_gdf[nodeID_column]))
-            & (edges_gdf.v.isin(nodes_gdf[nodeID_column]))
+            (edges_gdf.u.isin(nodes_gdf["nodeID"])) & (edges_gdf.v.isin(nodes_gdf["nodeID"]))
         ]
 
     return nodes_gdf, edges_gdf
@@ -293,8 +243,6 @@ def clean_network(
     self_loops=False,
     fix_topology=False,
     preserve_direction=False,
-    nodeID_column="nodeID",
-    edgeID_column="edgeID",
     nodes_to_keep_regardless=None,
 ):
     """
@@ -321,8 +269,9 @@ def clean_network(
     remove_islands : bool, optional
         If True, removes disconnected components ("islands") in the network. Default is True.
     same_vertexes_edges : bool, optional
-        If True, treats multiple edges between the same pair of nodes as duplicates. Removes the longer edge if one is >1% longer,
-        otherwise replaces them with a center line. Default is True.
+        If True, treats multiple edges between the same pair of nodes as duplicates. Keeps only the
+        longest edge when it is at least 10% longer than the others, otherwise replaces them with a
+        center line. Default is True.
     self_loops : bool, optional
         If True, removes self-loop edges (where start and end node are the same). Default is False.
     fix_topology : bool, optional
@@ -330,10 +279,6 @@ def clean_network(
     preserve_direction : bool, optional
         If True, considers edge direction: edges with the same coordinates but opposite directions are not considered duplicates.
         If False, such edges are treated as duplicates. Default is False.
-    nodeID_column : str, optional
-        Column name for node unique identifiers in `nodes_gdf`. Default is 'nodeID'.
-    edgeID_column : str, optional
-        Column name for edge unique identifiers in `edges_gdf`. Default is 'edgeID'.
     nodes_to_keep_regardless : list, optional
         List of node IDs to always keep, even if they would otherwise be removed (e.g. for transport stations). Default is empty list.
 
@@ -349,16 +294,16 @@ def clean_network(
         nodes_to_keep_regardless = []
 
     crs = nodes_gdf.crs
-    nodes_gdf, edges_gdf = _prepare_dataframes(nodes_gdf, edges_gdf, nodeID_column, edgeID_column)
+    nodes_gdf, edges_gdf = _prepare_dataframes(nodes_gdf, edges_gdf)
     # removes fake self-loops wrongly coded by the data source
-    nodes_gdf, edges_gdf = fix_fake_self_loops(nodes_gdf, edges_gdf, edgeID_column)
+    nodes_gdf, edges_gdf = fix_fake_self_loops(nodes_gdf, edges_gdf)
 
     if dead_ends:
         nodes_gdf, edges_gdf = fix_dead_ends(nodes_gdf, edges_gdf)
     if remove_islands:
-        nodes_gdf, edges_gdf = remove_disconnected_islands(nodes_gdf, edges_gdf, nodeID_column)
+        nodes_gdf, edges_gdf = remove_disconnected_islands(nodes_gdf, edges_gdf)
     if fix_topology:
-        nodes_gdf, edges_gdf = fix_network_topology(nodes_gdf, edges_gdf, edgeID_column)
+        nodes_gdf, edges_gdf = fix_network_topology(nodes_gdf, edges_gdf)
 
     cycle = 0
     while (
@@ -371,27 +316,23 @@ def clean_network(
         ].length  # recomputing length, to account for small changes
         cycle += 1
 
-        nodes_gdf, edges_gdf = clean_duplicate_nodes(nodes_gdf, edges_gdf, nodeID_column)
+        nodes_gdf, edges_gdf = clean_duplicate_nodes(nodes_gdf, edges_gdf)
         # eliminate loops
         if self_loops:
             edges_gdf = edges_gdf[edges_gdf["u"] != edges_gdf["v"]]
         if dead_ends:
             nodes_gdf, edges_gdf = fix_dead_ends(nodes_gdf, edges_gdf)
 
-        nodes_gdf, edges_gdf = clean_duplicate_edges(
-            nodes_gdf, edges_gdf, nodeID_column, preserve_direction
-        )
+        nodes_gdf, edges_gdf = clean_duplicate_edges(nodes_gdf, edges_gdf, preserve_direction)
 
         # edges with different geometries but same u-v nodes pairs
         if same_vertexes_edges:
             nodes_gdf, edges_gdf = clean_same_vertexes_edges(
-                nodes_gdf, edges_gdf, nodeID_column, edgeID_column, preserve_direction
+                nodes_gdf, edges_gdf, preserve_direction
             )
 
         # simplify the graph
-        nodes_gdf, edges_gdf = simplify_graph(
-            nodes_gdf, edges_gdf, nodeID_column, edgeID_column, nodes_to_keep_regardless
-        )
+        nodes_gdf, edges_gdf = simplify_graph(nodes_gdf, edges_gdf, nodes_to_keep_regardless)
 
         # repreat eliminate loops
         if self_loops:
@@ -399,19 +340,17 @@ def clean_network(
         if dead_ends:
             nodes_gdf, edges_gdf = fix_dead_ends(nodes_gdf, edges_gdf)
 
-    if remove_islands:
-        nodes_gdf, edges_gdf = remove_disconnected_islands(nodes_gdf, edges_gdf, nodeID_column)
-
+    # No second island removal here: the loop (node/edge de-duplication, dead-end and pseudo-node
+    # removal) can only merge or peel, never split a component, so any islands were already removed
+    # before the loop.
     nodes_gdf["x"], nodes_gdf["y"] = list(
         zip(*[(r.coords[0][0], r.coords[0][1]) for r in nodes_gdf.geometry], strict=False)
     )
     edges_gdf = correct_edge_geometries(nodes_gdf, edges_gdf)  # correct edges coordinates
-    return _finalize_dataframes(nodes_gdf, edges_gdf, crs, nodeID_column, edgeID_column)
+    return _finalize_dataframes(nodes_gdf, edges_gdf, crs)
 
 
-def _prepare_dataframes(
-    nodes_gdf, edges_gdf, nodeID_column="nodeID", edgeID_column="edgeID_column"
-):
+def _prepare_dataframes(nodes_gdf, edges_gdf):
     """
     Prepare nodes and edges dataframes for further analysis by extracting the x,y coordinates of the nodes
     and adding new columns to the edges dataframe.
@@ -424,10 +363,6 @@ def _prepare_dataframes(
         The street segments GeoDataFrame.
     crs : str, or pyproj.CRS
         Coordinate Reference System for the output GeoDataFrames. Can be a string (e.g. 'EPSG:32633'), or a pyproj.CRS object.
-    nodeID_column : str, optional
-        Column name for node unique identifiers in `nodes_gdf`. Default is 'nodeID'.
-    edgeID_column : str, optional
-        Column name for edge unique identifiers in `edges_gdf`. Default is 'edgeID'.
 
     Returns:
     ----------
@@ -435,8 +370,8 @@ def _prepare_dataframes(
         The cleaned junctions and street segments GeoDataFrames.
     """
 
-    nodes_gdf = nodes_gdf.copy().set_index(nodeID_column, drop=False)
-    edges_gdf = edges_gdf.copy().set_index(edgeID_column, drop=False)
+    nodes_gdf = nodes_gdf.copy().set_index("nodeID", drop=False)
+    edges_gdf = edges_gdf.copy().set_index("edgeID", drop=False)
 
     nodes_gdf.index.name, edges_gdf.index.name = None, None
     nodes_gdf["x"], nodes_gdf["y"] = nodes_gdf.geometry.x, nodes_gdf.geometry.y
@@ -448,9 +383,7 @@ def _prepare_dataframes(
     return nodes_gdf, edges_gdf
 
 
-def _finalize_dataframes(
-    nodes_gdf, edges_gdf, crs, nodeID_column="nodeID", edgeID_column="edgeID_column"
-):
+def _finalize_dataframes(nodes_gdf, edges_gdf, crs):
     """
     Final steps to output clean dataframes.
 
@@ -462,10 +395,6 @@ def _finalize_dataframes(
         The street segments GeoDataFrame.
     crs : str, or pyproj.CRS
         Coordinate Reference System for the output GeoDataFrames. Can be a string (e.g. 'EPSG:32633'), or a pyproj.CRS object.
-    nodeID_column : str, optional
-        Column name for node unique identifiers in `nodes_gdf`. Default is 'nodeID'.
-    edgeID_column : str, optional
-        Column name for edge unique identifiers in `edges_gdf`. Default is 'edgeID'.
 
     Returns:
     ----------
@@ -478,8 +407,8 @@ def _finalize_dataframes(
         ["coords", "tmp", "code", "wkt", "fixing", "to_fix"], axis=1, inplace=True, errors="ignore"
     )  # remove temporary columns
     edges_gdf["length"] = edges_gdf["geometry"].length
-    edges_gdf.set_index(edgeID_column, drop=False, inplace=True, append=False)
-    nodes_gdf.set_index(nodeID_column, drop=False, inplace=True, append=False)
+    edges_gdf.set_index("edgeID", drop=False, inplace=True, append=False)
+    nodes_gdf.set_index("nodeID", drop=False, inplace=True, append=False)
     nodes_gdf.index.name = None
     edges_gdf.index.name = None
     nodes_gdf = convert_numeric_columns(nodes_gdf)
@@ -548,7 +477,7 @@ def _are_edges_simplified(edges_gdf, preserve_direction):
     return not duplicates.any()
 
 
-def clean_duplicate_nodes(nodes_gdf, edges_gdf, nodeID_column="nodeID"):
+def clean_duplicate_nodes(nodes_gdf, edges_gdf):
     """
     Removes duplicate nodes in a network based on coincident geometry, updating both nodes and edges GeoDataFrames.
 
@@ -561,8 +490,6 @@ def clean_duplicate_nodes(nodes_gdf, edges_gdf, nodeID_column="nodeID"):
         Point GeoDataFrame containing network nodes (junctions).
     edges_gdf : GeoDataFrame
         LineString GeoDataFrame containing street segments.
-    nodeID_column : str, optional
-        Name of the column containing unique node identifiers in `nodes_gdf`. Default is 'nodeID'.
 
     Returns
     -------
@@ -572,7 +499,7 @@ def clean_duplicate_nodes(nodes_gdf, edges_gdf, nodeID_column="nodeID"):
         Edges GeoDataFrame with references to duplicate node IDs updated.
     """
 
-    nodes_gdf = nodes_gdf.copy().set_index(nodeID_column, drop=False)
+    nodes_gdf = nodes_gdf.copy().set_index("nodeID", drop=False)
     nodes_gdf.index.name = None
 
     # detecting duplicate geometries
@@ -603,8 +530,6 @@ def clean_duplicate_nodes(nodes_gdf, edges_gdf, nodeID_column="nodeID"):
 def simplify_graph(
     nodes_gdf,
     edges_gdf,
-    nodeID_column="nodeID",
-    edgeID_column="edgeID",
     nodes_to_keep_regardless=None,
 ):
     """
@@ -618,10 +543,6 @@ def simplify_graph(
         The nodes (junctions) GeoDataFrame.
     edges_gdf: LineString GeoDataFrame
         The street segments GeoDataFrame.
-    nodeID_column : str, optional
-        Column name for node unique identifiers in `nodes_gdf`. Default is 'nodeID'.
-    edgeID_column : str, optional
-        Column name for edge unique identifiers in `edges_gdf`. Default is 'edgeID'.
     nodes_to_keep_regardless: list
         List of nodeIDs representing nodes to keep, even when pseudo-nodes (e.g. stations, when modelling transport networks).
 
@@ -643,79 +564,92 @@ def simplify_graph(
     if nodes_to_keep_regardless:
         to_edit_list = list(to_edit)
         tmp_nodes = nodes_gdf[
-            (nodes_gdf[nodeID_column].isin(to_edit_list))
-            & (~nodes_gdf[nodeID_column].isin(nodes_to_keep_regardless))
+            (nodes_gdf["nodeID"].isin(to_edit_list))
+            & (~nodes_gdf["nodeID"].isin(nodes_to_keep_regardless))
         ].copy()
-        to_edit = list(tmp_nodes[nodeID_column])
+        to_edit = list(tmp_nodes["nodeID"])
 
-    def _merge_pair_pseudo_edges(first_edge, second_edge, nodes_gdf, edges_gdf, nodeID):
-        """
-        Merge pseudo-edges by updating node and edge information in the corresponding GeoDataFrames.
+    # Mutable edge state and a node->edges incidence map, so each pseudo-node is resolved with O(1)
+    # dict lookups instead of the old per-node full-frame scan and per-merge .drop (both O(edges),
+    # making the whole pass O(pseudo-nodes x edges)). The merge rules — which two incident edges
+    # (lowest frame position first) and the orientation of the merged line — are unchanged.
+    u_of = edges_gdf["u"].to_dict()
+    v_of = edges_gdf["v"].to_dict()
+    geom_of = edges_gdf["geometry"].to_dict()
+    order = {eid: pos for pos, eid in enumerate(edges_gdf.index)}
 
-        """
-        index_first, index_second = first_edge[edgeID_column], second_edge[edgeID_column]
-        first_coords = first_edge["geometry"].coords
-        second_coords = second_edge["geometry"].coords
+    incidence = defaultdict(set)
+    for eid in edges_gdf.index:
+        incidence[u_of[eid]].add(eid)
+        incidence[v_of[eid]].add(eid)
 
-        # meeting at u
-        if first_edge["u"] == second_edge["u"]:
-            edges_gdf.at[index_first, "u"] = first_edge["v"]
-            edges_gdf.at[index_first, "v"] = second_edge["v"]
-            line_coordsA, line_coordsB = list(first_coords), list(second_coords)
-            line_coordsA.reverse()
-        # meeting at u and v
-        elif first_edge["u"] == second_edge["v"]:
-            edges_gdf.at[index_first, "u"] = second_edge["u"]
-            line_coordsA, line_coordsB = list(second_coords), list(first_coords)
-        # meeting at v and u
-        elif first_edge["v"] == second_edge["u"]:
-            edges_gdf.at[index_first, "v"] = second_edge["v"]
-            line_coordsA, line_coordsB = list(first_coords), list(second_coords)
-        # meeting at v and v
-        else:  # (first_edge['v'] == second_edge['v'])
-            edges_gdf.at[index_first, "v"] = second_edge["u"]
-            line_coordsA, line_coordsB = list(first_coords), list(second_coords)
-            line_coordsB.reverse()
+    dropped_edges: set = set()
+    dropped_nodes: set = set()
 
-        # checking that no edges with node_u == node_v has been created, if yes: drop it
-        if edges_gdf.loc[index_first].u == edges_gdf.loc[index_first].v:
-            edges_gdf = edges_gdf.drop([index_first, index_second], axis=0)
-            nodes_gdf = nodes_gdf.drop(nodeID, axis=0)
-            return nodes_gdf, edges_gdf
-
-        # Obtain coordinates in consistent order and merge them.
-        # If both lines meet at the pseudo-node, avoid storing that coordinate twice.
-        def _coord_key(coord, ndigits=10):
-            return tuple(round(float(value), ndigits) for value in coord[:2])
-
-        if _coord_key(line_coordsA[-1]) == _coord_key(line_coordsB[0]):
-            merged_line = line_coordsA + line_coordsB[1:]
-        else:
-            merged_line = line_coordsA + line_coordsB
-
-        edges_gdf.at[index_first, "geometry"] = LineString([coor for coor in merged_line])
-
-        # dropping the second segment, as the new geometry was assigned to the first edge
-        edges_gdf = edges_gdf.drop(index_second, axis=0)
-        nodes_gdf = nodes_gdf.drop(nodeID, axis=0)
-        return nodes_gdf, edges_gdf
+    def _coord_key(coord, ndigits=10):
+        return tuple(round(float(value), ndigits) for value in coord[:2])
 
     for nodeID in to_edit:
-        tmp = edges_gdf[(edges_gdf.u == nodeID) | (edges_gdf.v == nodeID)].copy()
-
-        if len(tmp) == 0:
-            nodes_gdf.drop(nodeID, axis=0, inplace=True)
+        incident = sorted(
+            (e for e in incidence[nodeID] if e not in dropped_edges), key=order.__getitem__
+        )
+        if len(incident) == 0:
+            dropped_nodes.add(nodeID)
             continue
-        if len(tmp) == 1:
+        if len(incident) == 1:
             continue  # possible dead end
 
-        # pseudo junction identified
-        first_edge, second_edge = tmp.iloc[0], tmp.iloc[1]
-        nodes_gdf, edges_gdf = _merge_pair_pseudo_edges(
-            first_edge, second_edge, nodes_gdf, edges_gdf, nodeID
-        )
+        first, second = incident[0], incident[1]
+        u1, v1, u2, v2 = u_of[first], v_of[first], u_of[second], v_of[second]
+        coords_first, coords_second = list(geom_of[first].coords), list(geom_of[second].coords)
 
+        if u1 == u2:  # meeting at u
+            new_u, new_v = v1, v2
+            line_a, line_b = coords_first[::-1], coords_second
+        elif u1 == v2:  # meeting at u and v
+            new_u, new_v = u2, v1
+            line_a, line_b = coords_second, coords_first
+        elif v1 == u2:  # meeting at v and u
+            new_u, new_v = u1, v2
+            line_a, line_b = coords_first, coords_second
+        else:  # meeting at v and v
+            new_u, new_v = u1, u2
+            line_a, line_b = coords_first, coords_second[::-1]
+
+        # detach both edges from their endpoints and remove the pseudo-node and second segment
+        incidence[u1].discard(first)
+        incidence[v1].discard(first)
+        incidence[u2].discard(second)
+        incidence[v2].discard(second)
+        dropped_edges.add(second)
+        dropped_nodes.add(nodeID)
+
+        # if the merge would create a node-line (u == v), drop the first segment too
+        if new_u == new_v:
+            dropped_edges.add(first)
+            continue
+
+        if _coord_key(line_a[-1]) == _coord_key(line_b[0]):
+            merged_line = line_a + line_b[1:]
+        else:
+            merged_line = line_a + line_b
+
+        u_of[first], v_of[first] = new_u, new_v
+        geom_of[first] = LineString(merged_line)
+        incidence[new_u].add(first)
+        incidence[new_v].add(first)
+
+    surviving = [eid for eid in edges_gdf.index if eid not in dropped_edges]
+    edges_gdf = edges_gdf.loc[surviving].copy()
+    edges_gdf["u"] = edges_gdf.index.map(u_of)
+    edges_gdf["v"] = edges_gdf.index.map(v_of)
+    edges_gdf["geometry"] = edges_gdf.index.map(geom_of)
     edges_gdf = edges_gdf[edges_gdf["u"] != edges_gdf["v"]]  # eliminate node-lines
+
+    if dropped_nodes:
+        nodes_gdf = nodes_gdf.drop(
+            index=[n for n in dropped_nodes if n in nodes_gdf.index], errors="ignore"
+        )
 
     return nodes_gdf, edges_gdf
 
@@ -756,9 +690,7 @@ def fix_dead_ends(nodes_gdf, edges_gdf):
     return nodes_gdf, edges_gdf
 
 
-def clean_same_vertexes_edges(
-    nodes_gdf, edges_gdf, nodeID_column="nodeID", edgeID_column="edgeID", preserve_direction=False
-):
+def clean_same_vertexes_edges(nodes_gdf, edges_gdf, preserve_direction=False):
     """
     Removes duplicate edges with the same start and end nodes (same vertexes) in a network GeoDataFrame.
 
@@ -777,10 +709,6 @@ def clean_same_vertexes_edges(
         GeoDataFrame of nodes (junctions), must include unique node IDs.
     edges_gdf : GeoDataFrame
         GeoDataFrame of street segments (edges), must include 'u', 'v', 'geometry', and 'length' columns.
-    nodeID_column : str, optional
-        Name of the column for unique node IDs in `nodes_gdf`. Default is 'nodeID'.
-    edgeID_column : str, optional
-        Name of the column for unique edge IDs in `edges_gdf`. Default is 'edgeID'.
     preserve_direction : bool
         Whether to preserve edge direction (see above).
 
@@ -806,7 +734,7 @@ def clean_same_vertexes_edges(
 
     groups = (
         edges_gdf.groupby("code")
-        .filter(lambda x: len(x) > 1)[["code", "length", edgeID_column]]
+        .filter(lambda x: len(x) > 1)[["code", "length", "edgeID"]]
         .sort_values(by=["code", "length"])
     )
     max_lengths = edges_gdf.groupby("code").agg({"length": "max"}).to_dict()["length"]
@@ -818,11 +746,11 @@ def clean_same_vertexes_edges(
     groups = groups.drop(list(to_drop), axis=0)
     groups_filtered = (
         groups.groupby("code")
-        .filter(lambda x: len(x) > 1)[["code", "length", edgeID_column]]
+        .filter(lambda x: len(x) > 1)[["code", "length", "edgeID"]]
         .sort_values(by=["code", "length"])
     )
-    first_indexes = list(groups_filtered.groupby("code")[[edgeID_column]].first()[edgeID_column])
-    others = set(groups_filtered[edgeID_column].to_list()) - set(first_indexes)
+    first_indexes = list(groups_filtered.groupby("code")[["edgeID"]].first()["edgeID"])
+    others = set(groups_filtered["edgeID"].to_list()) - set(first_indexes)
     to_drop.update(others)
 
     # Update the geometry of the first edge in each group to the center line of the edge to update
@@ -837,14 +765,13 @@ def clean_same_vertexes_edges(
 
     # only keep nodes which are actually used by the edges in the GeoDataFrame
     to_keep = list(set(list(edges_gdf["u"].unique()) + list(edges_gdf["v"].unique())))
-    nodes_gdf = nodes_gdf[nodes_gdf[nodeID_column].isin(to_keep)]
+    nodes_gdf = nodes_gdf[nodes_gdf["nodeID"].isin(to_keep)]
     return nodes_gdf, edges_gdf
 
 
 def clean_duplicate_edges(
     nodes_gdf,
     edges_gdf,
-    nodeID_column="nodeID",
     preserve_direction=False,
 ):
     """
@@ -864,8 +791,6 @@ def clean_duplicate_edges(
         GeoDataFrame containing nodes, must include a 'nodeID' column.
     edges_gdf : GeoDataFrame
         GeoDataFrame containing edges, must include 'u', 'v', and 'geometry' columns.
-    nodeID_column : str, optional
-        Name of the column for unique node IDs in `nodes_gdf`. Default is 'nodeID'.
     preserve_direction : bool, optional
         If True, edge direction is preserved; edges (u,v) and (v,u) are considered distinct.
         If False, edges are treated as undirected and geometric duplicates (with reversed coords) are removed.
@@ -909,7 +834,7 @@ def clean_duplicate_edges(
 
     # only keep nodes which are actually used by the edges in the GeoDataFrame
     to_keep = list(set(list(edges_gdf["u"].unique()) + list(edges_gdf["v"].unique())))
-    nodes_gdf = nodes_gdf[nodes_gdf[nodeID_column].isin(to_keep)]
+    nodes_gdf = nodes_gdf[nodes_gdf["nodeID"].isin(to_keep)]
 
     return nodes_gdf, edges_gdf
 
@@ -955,7 +880,10 @@ def correct_edge_geometries(nodes_gdf, edges_gdf):
 # Node/edge consolidation
 # -----------------------------------------------------------------------------
 def consolidate_nodes(
-    nodes_gdf, edges_gdf, nodeID_column="nodeID", consolidate_edges_too=False, tolerance=20
+    nodes_gdf,
+    edges_gdf,
+    consolidate_edges_too=False,
+    tolerance=20,
 ):
     """
     Consolidates nodes in a spatial network that are within a given distance (tolerance), preserving topology and unclustered nodes.
@@ -970,8 +898,6 @@ def consolidate_nodes(
         GeoDataFrame of nodes, must include columns 'nodeID' and 'geometry'. If present, 'z' is averaged for clusters.
     edges_gdf : GeoDataFrame
         GeoDataFrame of edges for checking network connectivity.
-    nodeID_column : str, optional
-        Column name for node unique identifiers in `nodes_gdf`. Default is 'nodeID'.
     consolidate_edges_too : bool, optional
         If True, also returns the updated edges GeoDataFrame (default: False).
     tolerance : float, optional
@@ -991,10 +917,10 @@ def consolidate_nodes(
         Edges with endpoints mapped to new consolidated node IDs and geometries
     """
 
-    nodes_gdf = nodes_gdf.copy().set_index(nodeID_column, drop=False)
+    nodes_gdf = nodes_gdf.copy().set_index("nodeID", drop=False)
     nodes_gdf.index.name = None
     nodes_gdf.drop(columns=["x", "y"], inplace=True, errors="ignore")
-    graph = graph_fromGDF(nodes_gdf, edges_gdf, nodeID_column=nodeID_column)
+    graph = graph_fromGDF(nodes_gdf, edges_gdf)
 
     # Step 1: Cluster nodes within tolerance
     clusters = nodes_gdf.buffer(tolerance).union_all()
@@ -1004,12 +930,13 @@ def consolidate_nodes(
     clusters["y"] = clusters.geometry.centroid.y
 
     # Step 2: Assign nodes to clusters
+    new_column = "new_nodeID"
     gdf = gpd.sjoin(nodes_gdf, clusters, how="left", predicate="within").drop(columns="geometry")
-    gdf.rename(columns={"index_right": "new_" + nodeID_column}, inplace=True)
-    new_nodeID = gdf.new_nodeID.max() + 1
+    gdf.rename(columns={"index_right": new_column}, inplace=True)
+    new_nodeID = gdf[new_column].max() + 1
 
     # Step 3: Split non-connected components in clusters
-    for _cluster_label, nodes_subset in gdf.groupby("new_nodeID"):
+    for _cluster_label, nodes_subset in gdf.groupby(new_column):
         if len(nodes_subset) > 1:  # Skip unclustered nodes
             wccs = list(nx.connected_components(graph.subgraph(nodes_subset.index)))
             if len(wccs) > 1:
@@ -1017,23 +944,23 @@ def consolidate_nodes(
                     idx = list(wcc)
                     subcluster_centroid = nodes_gdf.loc[idx].geometry.unary_union.centroid
                     gdf.loc[idx, ["x", "y"]] = subcluster_centroid.x, subcluster_centroid.y
-                    gdf.loc[idx, "new_nodeID"] = new_nodeID
+                    gdf.loc[idx, new_column] = new_nodeID
                     new_nodeID += 1
 
     # Step 4: Consolidate nodes, but preserve unclustered ones
     consolidated_nodes = []
     has_z = "z" in nodes_gdf.columns
-    oldIDs_column = "old_" + nodeID_column
+    oldIDs_column = "old_nodeID"
 
-    for new_nodeID, nodes_subset in gdf.groupby("new_nodeID"):
-        old_nodeIDs = nodes_subset[nodeID_column].to_list()
+    for new_nodeID, nodes_subset in gdf.groupby(new_column):
+        old_nodeIDs = nodes_subset["nodeID"].to_list()
         cluster_x, cluster_y = nodes_subset.iloc[0][["x", "y"]]
 
         new_node = {
             oldIDs_column: old_nodeIDs,
             "x": cluster_x,
             "y": cluster_y,
-            nodeID_column: new_nodeID,
+            "nodeID": new_nodeID,
         }
 
         if has_z:
@@ -1060,14 +987,12 @@ def consolidate_nodes(
     )
 
     if consolidate_edges_too:
-        return consolidated_nodes_gdf, consolidate_edges(
-            edges_gdf, consolidated_nodes_gdf, nodeID_column
-        )
+        return consolidated_nodes_gdf, consolidate_edges(edges_gdf, consolidated_nodes_gdf)
 
     return consolidated_nodes_gdf
 
 
-def consolidate_edges(edges_gdf, consolidated_nodes_gdf, nodeID_column):
+def consolidate_edges(edges_gdf, consolidated_nodes_gdf):
     """Consolidate edge geometries after node consolidation.
 
     Parameters
@@ -1090,10 +1015,10 @@ def consolidate_edges(edges_gdf, consolidated_nodes_gdf, nodeID_column):
     geometry consolidation. It is not a generic line-merge wrapper.
     """
 
-    oldIDs_column = "old_" + nodeID_column
+    oldIDs_column = "old_nodeID"
     # Create a mapping from old_nodeIDs to their corresponding nodeID and geometry
     nodes_mapping = consolidated_nodes_gdf.explode(oldIDs_column)[
-        [oldIDs_column, "geometry", nodeID_column]
+        [oldIDs_column, "geometry", "nodeID"]
     ].set_index(oldIDs_column)
 
     def _update_edge(row):
@@ -1101,8 +1026,8 @@ def consolidate_edges(edges_gdf, consolidated_nodes_gdf, nodeID_column):
         old_u, old_v, geom = row["u"], row["v"], row["geometry"]
 
         # Map old_u and old_v to their corresponding new nodeIDs
-        new_u_id = nodes_mapping.loc[old_u, nodeID_column]
-        new_v_id = nodes_mapping.loc[old_v, nodeID_column]
+        new_u_id = nodes_mapping.loc[old_u, "nodeID"]
+        new_v_id = nodes_mapping.loc[old_v, "nodeID"]
 
         # Get the new geometries for u and v
         new_u_geom = nodes_mapping.loc[old_u, "geometry"]

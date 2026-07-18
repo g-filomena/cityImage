@@ -279,6 +279,10 @@ def amend_nodes_membership(
 ) -> gpd.GeoDataFrame:
     """Amend node membership based on connectivity and minimum district size."""
     nodes_gdf = nodes_gdf.copy()
+    # Node look-ups below use .loc by nodeID, so index by nodeID regardless of the caller's index
+    # (a plain RangeIndex would otherwise KeyError once a small/disconnected district is amended).
+    nodes_gdf = nodes_gdf.set_index("nodeID", drop=False)
+    nodes_gdf.index.name = None
     nodes_gdf = _check_disconnected_districts(nodes_gdf, edges_gdf, column, min_size_district)
 
     while INVALID_DISTRICT in nodes_gdf[column].unique():

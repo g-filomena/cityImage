@@ -4,6 +4,32 @@ This module keeps height-related capability outside the lightweight core import
 path. Raster-backed functions import ``rasterio`` and ``rasterstats`` lazily,
 inside the functions that need them, so ``import cityImage`` and
 ``import cityImage.height`` do not require raster extras.
+
+Terminology (this module follows common GIS usage, with one caveat):
+
+- **DTM** (Digital Terrain Model): bare-earth *terrain* elevation — buildings and
+  vegetation stripped. This is what gives observer nodes their ``z`` and building
+  footprints their ground ``base``.
+- **DSM** (Digital Surface Model): first-return *surface* elevation — including
+  rooftops and canopy. Comparing it against the DTM yields above-ground building
+  heights (``height = top-of-surface − ground``).
+- **DEM** (Digital Elevation Model): strictly the umbrella term for both. In
+  :func:`buildings_height_from_dem_dtm` the ``dem_path`` argument plays the **DSM
+  role** (the surface with the roofs on it); the name is kept for backwards
+  compatibility.
+
+What you need for what:
+
+===========================  =========================================
+You have                     You can derive
+===========================  =========================================
+DTM only                     node ``z``, building ``base`` (no heights)
+DTM + DSM/DEM                node ``z``, building ``base`` **and** ``height``
+detailed building layer      building ``height`` (and ``base`` if it carries one)
+===========================  =========================================
+
+:func:`assign_elevations_from_rasters` is the one-stop entry point covering the
+raster rows of that table — useful for cities without any building-height data.
 """
 
 from __future__ import annotations
@@ -167,6 +193,18 @@ def buildings_height_from_dem_dtm(
 ):
     """Compute per-building base elevation and height from DEM and DTM rasters.
 
+    ``dem_path`` must point at a **surface** model (DSM: first-return elevations
+    including rooftops); ``dtm_path`` at the bare-earth **terrain** model. Per
+    building, ``base`` is the ``base_stat`` of the terrain under the footprint and
+    ``height`` is the ``top_stat`` of the surface minus that base — i.e. an
+    above-ground height, not an absolute elevation.
+
+    .. warning::
+       Buildings whose footprint does not intersect the raster extent are **dropped
+       from the returned frame** (and an error is raised when none intersect). Use
+       :func:`assign_elevations_from_rasters` for a non-destructive variant that
+       merges results back onto the full input frame.
+
     Requires the optional ``height`` extra: ``rasterio`` and ``rasterstats``.
     """
     rasterio, zonal_stats = _require_raster_deps()
@@ -251,6 +289,11 @@ def assign_height_from_dtm(
 ):
     """Sample a DTM raster to assign elevation to point nodes.
 
+    The raster must be a bare-earth **terrain** model (DTM): the sampled value is
+    written to ``z_col`` and represents the ground under the node — e.g. the
+    observer elevation used by the 3D sight lines. Values below ``min_valid_elev``
+    (nodata seas, voids) become NaN for the caller to fill.
+
     Requires the optional ``height`` extra: ``rasterio``.
     """
     rasterio, _ = _require_raster_deps()
@@ -284,3 +327,139 @@ def assign_height_from_dtm(
         nodes_gdf_with_data = nodes_gdf_with_data.to_crs(original_crs)
 
     return nodes_gdf_with_data
+
+
+def buildings_base_from_dtm(
+    buildings_gdf,
+    dtm_path,
+    base_stat="mean",
+    all_touched=False,
+    min_valid_elev=-50.0,
+):
+    """Assign per-building ground elevation (``base``) from a bare-earth DTM.
+
+    The DTM-only counterpart of :func:`buildings_height_from_dem_dtm`: it gives every
+    footprint the ``base_stat`` of the terrain under it, without touching ``height``.
+    Use it when a city has building heights from another source (detailed layer, OSM
+    tags) but the terrain relief should still feed the 3D sight lines.
+
+    Non-destructive: buildings outside the raster extent keep their row, with
+    ``base`` left as NaN.
+
+    Requires the optional ``height`` extra: ``rasterio`` and ``rasterstats``.
+    """
+    rasterio, zonal_stats = _require_raster_deps()
+
+    buildings_gdf = buildings_gdf.copy()
+    original_crs = buildings_gdf.crs
+    if original_crs is None:
+        raise ValueError("buildings_gdf has no CRS set.")
+
+    with rasterio.open(dtm_path) as dtm_src:
+        working = buildings_gdf
+        if working.crs != dtm_src.crs:
+            working = working.to_crs(dtm_src.crs)
+
+        raster_geom = box(*dtm_src.bounds)
+        inside = working[working.intersects(raster_geom)]
+        if inside.empty:
+            raise ValueError("No buildings intersect the DTM extent.")
+
+        dtm_data = np.ma.masked_less(dtm_src.read(1, masked=True), min_valid_elev)
+        dtm_transform = dtm_src.transform
+
+    stats = zonal_stats(
+        inside.geometry.buffer(0),
+        dtm_data,
+        affine=dtm_transform,
+        stats=[base_stat],
+        all_touched=all_touched,
+        geojson_out=False,
+        nodata=None,
+    )
+    base_values = pd.Series(
+        [record[base_stat] for record in stats], index=inside.index, dtype=float
+    )
+
+    buildings_gdf["base"] = base_values.reindex(buildings_gdf.index)
+    return buildings_gdf
+
+
+def assign_elevations_from_rasters(
+    nodes_gdf,
+    buildings_gdf,
+    dtm_path,
+    surface_path=None,
+    z_col="z",
+    base_stat="mean",
+    top_stat="max",
+    all_touched=False,
+    min_valid_elev=-50.0,
+):
+    """One-stop elevation assignment from rasters, for cities without height data.
+
+    Given a bare-earth **DTM** (terrain) and optionally a **surface** model
+    (DSM — first-return elevations including rooftops; the raster often shipped
+    under the generic name "DEM"), this assigns:
+
+    - node ``z`` (``z_col``): terrain elevation sampled at each point — the observer
+      elevation used by the 3D sight lines;
+    - building ``base``: terrain elevation under each footprint;
+    - building ``height`` (only when ``surface_path`` is given): above-ground height
+      as top-of-surface minus base.
+
+    With a DTM alone, heights are *not* derivable — only ``z`` and ``base`` are set;
+    supply heights from a detailed layer or OSM tags instead.
+
+    Non-destructive: results are merged back onto the full input frames, so features
+    outside the raster extent keep their rows (with NaN elevations). Either
+    ``nodes_gdf`` or ``buildings_gdf`` may be ``None`` to skip that side.
+
+    Returns
+    -------
+    tuple(GeoDataFrame or None, GeoDataFrame or None)
+        ``(nodes_gdf, buildings_gdf)`` with elevations assigned.
+
+    Requires the optional ``height`` extra: ``rasterio`` and ``rasterstats``.
+    """
+    nodes_out = nodes_gdf
+    if nodes_gdf is not None:
+        nodes_out = assign_height_from_dtm(
+            nodes_gdf, dtm_path, z_col=z_col, min_valid_elev=min_valid_elev
+        )
+
+    buildings_out = buildings_gdf
+    if buildings_gdf is not None:
+        if surface_path is not None:
+            scored = buildings_height_from_dem_dtm(
+                buildings_gdf,
+                surface_path,
+                dtm_path,
+                base_stat=base_stat,
+                top_stat=top_stat,
+                all_touched=all_touched,
+                min_valid_elev=min_valid_elev,
+            )
+            # Merge back onto the full frame: buildings_height_from_dem_dtm drops
+            # footprints outside the raster extent and re-keys its output by
+            # buildingID, so the merge must go through buildingID, not the index.
+            if "buildingID" in buildings_gdf.columns and "buildingID" in scored.columns:
+                buildings_out = buildings_gdf.copy()
+                for column in ("base", "height"):
+                    mapping = pd.Series(
+                        scored[column].values, index=scored["buildingID"].values
+                    )
+                    buildings_out[column] = buildings_out["buildingID"].map(mapping)
+            else:
+                # No stable key to merge back on: return the (filtered) scored frame.
+                buildings_out = scored
+        else:
+            buildings_out = buildings_base_from_dtm(
+                buildings_gdf,
+                dtm_path,
+                base_stat=base_stat,
+                all_touched=all_touched,
+                min_valid_elev=min_valid_elev,
+            )
+
+    return nodes_out, buildings_out

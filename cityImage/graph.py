@@ -74,13 +74,12 @@ def _edge_attributes(row: pd.Series, exclude: set[str]) -> dict[str, Any]:
 def graph_fromGDF(
     nodes_gdf: gpd.GeoDataFrame,
     edges_gdf: gpd.GeoDataFrame,
-    nodeID_column: str = "nodeID",
 ) -> nx.Graph:
     """Create an undirected NetworkX graph from cityImage node/edge GeoDataFrames."""
     nodes = nodes_gdf.copy()
     edges = edges_gdf.copy()
 
-    nodes = nodes.set_index(nodeID_column, drop=False)
+    nodes = nodes.set_index("nodeID", drop=False)
     nodes.index.name = None
 
     graph = nx.Graph()
@@ -96,7 +95,6 @@ def graph_fromGDF(
 def multiGraph_fromGDF(
     nodes_gdf: gpd.GeoDataFrame,
     edges_gdf: gpd.GeoDataFrame,
-    nodeID_column: str = "nodeID",
 ) -> nx.MultiGraph:
     """Create an undirected NetworkX MultiGraph from cityImage graph GeoDataFrames.
 
@@ -106,7 +104,7 @@ def multiGraph_fromGDF(
     nodes = nodes_gdf.copy()
     edges = edges_gdf.copy()
 
-    nodes = nodes.set_index(nodeID_column, drop=False)
+    nodes = nodes.set_index("nodeID", drop=False)
     nodes.index.name = None
 
     multigraph = nx.MultiGraph()
