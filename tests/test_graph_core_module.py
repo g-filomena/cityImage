@@ -33,7 +33,7 @@ def test_multigraph_from_gdf_preserves_parallel_edge_keys_when_present():
     edges["edgeID"] = [1, 2]
     edges["key"] = [0, 1]
 
-    graph = ci.multiGraph_fromGDF(nodes, edges, "nodeID")
+    graph = ci.multiGraph_fromGDF(nodes, edges)
 
     assert isinstance(graph, nx.MultiGraph)
     assert graph.number_of_edges(1, 2) == 2

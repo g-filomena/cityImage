@@ -83,7 +83,11 @@ HARD_REMOVED_PUBLIC_SYMBOLS = {
 OPTIONAL_SYMBOLS_BY_EXTRA = {
     "matplotlib": ["plot_gdf", "rand_cmap", "Plot"],
     "igraph": ["calculate_centrality", "straightness_centrality"],
-    "rasterstats": ["buildings_height_from_dem_dtm"],
+    "rasterstats": [
+        "buildings_height_from_dem_dtm",
+        "buildings_base_from_dtm",
+        "assign_elevations_from_rasters",
+    ],
     "pyvista": ["compute_3d_sight_lines"],
 }
 

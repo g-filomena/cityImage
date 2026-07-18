@@ -104,7 +104,7 @@ def _ensure_graph():
 
     _ensure_osm_network()
     if graph is None:
-        graph = ci.graph_fromGDF(nodes_gdf, edges_gdf, nodeID_column="nodeID")
+        graph = ci.graph_fromGDF(nodes_gdf, edges_gdf)
 
 
 def _ensure_centrality_metrics():
@@ -264,8 +264,8 @@ def test_graph():
     global graph
     global crs_susa
 
-    graph = ci.graph_fromGDF(nodes_gdf, edges_gdf, nodeID_column="nodeID")
-    _ = ci.multiGraph_fromGDF(nodes_gdf, edges_gdf, "nodeID")
+    graph = ci.graph_fromGDF(nodes_gdf, edges_gdf)
+    _ = ci.multiGraph_fromGDF(nodes_gdf, edges_gdf)
     nodes_dual, edges_dual = ci.dual_gdf(
         nodes_gdf, edges_gdf, crs=crs_susa, oneway=False, angle="degree"
     )
@@ -311,7 +311,7 @@ def test_regions():
         self_loops=False,
         fix_topology=False,
     )
-    graph_susa = ci.graph_fromGDF(nodes_gdf, edges_gdf, nodeID_column="nodeID")
+    graph_susa = ci.graph_fromGDF(nodes_gdf, edges_gdf)
     nodes_dual, edges_dual = ci.dual_gdf(
         nodes_gdf, edges_gdf, crs=crs_susa, oneway=False, angle="degree"
     )
