@@ -27,16 +27,19 @@ ORIENTATIONS = {
 @pytest.mark.parametrize("calc", ["vectors", "angular_change", "deflection"])
 @pytest.mark.parametrize("name", list(ORIENTATIONS))
 def test_angle_line_geometries_handles_every_endpoint_orientation(name, calc):
+    # LINE_A is vertical and every B geometry is horizontal, so the two lines are
+    # perpendicular in every orientation and calculation type: the exact answer is 90 degrees.
     angle = ci.angle_line_geometries(LINE_A, ORIENTATIONS[name], degree=True, calculation_type=calc)
-    assert 0.0 <= angle < 360.0
-
-
-def test_angle_line_geometries_perpendicular_is_90_degrees():
-    # A points up, B points right; they meet at (0, 0).
-    angle = ci.angle_line_geometries(
-        LINE_A, ORIENTATIONS["end_a_eq_start_b"], degree=True, calculation_type="vectors"
-    )
     assert angle == pytest.approx(90.0)
+
+
+def test_angle_line_geometries_collinear_lines_are_180_degrees():
+    # Two straight, co-linear segments meeting end-to-start read as a 180-degree (straight) turn,
+    # proving the function is not simply returning 90 for everything.
+    up_a = LineString([(0, 0), (0, 10)])
+    up_b = LineString([(0, 10), (0, 20)])
+    angle = ci.angle_line_geometries(up_a, up_b, degree=True, calculation_type="vectors")
+    assert angle == pytest.approx(180.0)
 
 
 def test_angle_line_geometries_rejects_non_linestrings():

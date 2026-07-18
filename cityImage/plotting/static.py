@@ -946,7 +946,7 @@ def _generate_legend_fig(ax, plot, gdf, unique_categories=None, cmap=None):
         labels = []
         geometry_type = gdf.iloc[0].geometry.geom_type
         for i, cat in enumerate(unique_categories):
-            color = cm.get_cmap(cmap)(i / len(unique_categories))
+            color = plt.get_cmap(cmap)(i / len(unique_categories))
             if geometry_type in ["Polygon", "MultiPolygon"]:
                 patch = mpatches.Patch(color=color, label=str(cat))
             elif geometry_type in ["LineString", "MultiLineString"]:

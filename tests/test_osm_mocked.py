@@ -10,8 +10,9 @@ from __future__ import annotations
 import types
 
 import geopandas as gpd
+import pandas as pd
 import pytest
-from shapely.geometry import Polygon
+from shapely.geometry import LineString, Point, Polygon
 
 import cityImage.osm as osm
 from cityImage.osm import (
@@ -156,3 +157,102 @@ def test_network_from_osm_validates_arguments(monkeypatch):
         network_from_osm("X", download_method="bogus")
     with pytest.raises(ValueError, match="distance is required"):
         network_from_osm("X", download_method="distance_from_address")
+
+
+# --------------------------------------------------------------------------- graph conversion
+
+
+def _fake_network_ox():
+    """Fake OSMnx exposing a graph pipeline over a tiny 3-node / 2-edge network."""
+    nodes = gpd.GeoDataFrame(
+        {"x": [0.0, 10.0, 20.0], "y": [0.0, 0.0, 10.0]},
+        geometry=[Point(0, 0), Point(10, 0), Point(20, 10)],
+        index=[10, 20, 30],  # OSM node ids
+        crs=UTM,
+    )
+    edge_idx = pd.MultiIndex.from_tuples([(10, 20, 0), (20, 30, 0)], names=["u", "v", "key"])
+    edges = gpd.GeoDataFrame(
+        {"length": [10.0, 14.14], "highway": ["residential", "primary"], "name": ["A", "B"]},
+        geometry=[LineString([(0, 0), (10, 0)]), LineString([(10, 0), (20, 10)])],
+        index=edge_idx,
+        crs=UTM,
+    )
+    graph = types.SimpleNamespace(graph={"crs": UTM})
+
+    def graph_to_gdfs(g, nodes=False, edges=False, **_):
+        return nodes_frame.copy() if nodes else edges_frame.copy()
+
+    nodes_frame, edges_frame = nodes, edges
+
+    def graph_from(*_a, **_k):
+        return graph
+
+    return types.SimpleNamespace(
+        graph_from_place=graph_from,
+        graph_from_address=graph_from,
+        graph_from_point=graph_from,
+        graph_from_polygon=graph_from,
+        project_graph=lambda g, to_crs=None: g,
+        graph_to_gdfs=graph_to_gdfs,
+        projection=types.SimpleNamespace(project_gdf=lambda gdf, **_: gdf),
+        features_from_place=lambda q, tags=None: _building_features(tags),
+    )
+
+
+def test_network_from_osm_converts_graph_to_cityimage_schema(monkeypatch):
+    monkeypatch.setattr(osm, "ox", _fake_network_ox())
+    nodes, edges = network_from_osm("Place", crs=UTM, dict_columns={"road_type": "highway"})
+
+    assert {"nodeID", "x", "y", "geometry"}.issubset(nodes.columns)
+    assert {"u", "v", "edgeID", "length", "road_type"}.issubset(edges.columns)
+    node_ids = set(nodes["nodeID"])
+    assert set(edges["u"]).issubset(node_ids) and set(edges["v"]).issubset(node_ids)
+    assert edges["road_type"].tolist() == ["residential", "primary"]  # dict_columns mapping applied
+
+
+@pytest.mark.parametrize(
+    "download_method,query,distance",
+    [
+        ("distance_from_address", "Addr", 500),
+        ("distance_from_point", (0.0, 0.0), 500),
+        ("polygon", Polygon([(0, 0), (1, 0), (1, 1), (0, 1)]), None),
+    ],
+)
+def test_network_from_osm_dispatches_each_graph_method(
+    monkeypatch, download_method, query, distance
+):
+    monkeypatch.setattr(osm, "ox", _fake_network_ox())
+    nodes, edges = network_from_osm(
+        query, crs=UTM, download_method=download_method, distance=distance
+    )
+    assert not nodes.empty and not edges.empty
+
+
+def test_network_from_osm_dict_columns_missing_column_raises(monkeypatch):
+    monkeypatch.setattr(osm, "ox", _fake_network_ox())
+    with pytest.raises(ValueError, match="missing column"):
+        network_from_osm("Place", crs=UTM, dict_columns={"road_type": "does_not_exist"})
+
+
+def test_buildings_from_osm_projects_when_crs_is_none(monkeypatch):
+    monkeypatch.setattr(osm, "ox", _fake_network_ox())
+    buildings = buildings_from_osm(
+        "Place", crs=None, min_area=200
+    )  # triggers projection.project_gdf
+    assert "buildingID" in buildings.columns and len(buildings) == 1
+
+
+def test_buildings_from_osm_drops_below_min_area(monkeypatch):
+    def _two_buildings(tags=None, **_):
+        return gpd.GeoDataFrame(
+            {"building": ["yes", "yes"]},
+            geometry=[
+                Polygon([(0, 0), (20, 0), (20, 20), (0, 20)]),  # 400 m^2 -> kept
+                Polygon([(100, 100), (101, 100), (101, 101), (100, 101)]),  # 1 m^2 -> dropped
+            ],
+            crs=UTM,
+        )
+
+    monkeypatch.setattr(osm, "ox", _fake_ox(_two_buildings))
+    buildings = buildings_from_osm("Place", crs=UTM, min_area=200)
+    assert len(buildings) == 1  # the 1 m^2 footprint is filtered out

@@ -69,7 +69,7 @@ def test_structural_score_computes_distance_visibility_and_neighbours():
     out = ci.structural_score(buildings, obstructions_gdf=None, edges_gdf=edges)
     assert (out["road"] > 0).all()  # all buildings sit above the street line
     assert (out["neigh"] >= 1).all()  # a building is its own neighbour at minimum
-    assert out["2dvis"].notna().all()
+    assert (out["2dvis"] > 0).all()  # each building has a non-degenerate advance-visibility area
 
 
 def test_visibility_score_uses_sight_lines_and_height():

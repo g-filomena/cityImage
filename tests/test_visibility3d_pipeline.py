@@ -99,6 +99,35 @@ def test_compute_3d_sight_lines_with_consolidation(monkeypatch, tmp_path):
     assert out.geometry.iloc[0].has_z
 
 
+def test_compute_3d_sight_lines_with_simplified_targets(monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    buildings = _buildings()
+    # A single simplified outline enclosing both detailed target buildings, which routes the
+    # pipeline through _use_simplified_buildings (detailed targets mapped onto simplified geometry).
+    simplified = gpd.GeoDataFrame(
+        {"simplifiedID": [1]},
+        geometry=[Polygon([(-1, -1), (11, -1), (11, 31), (-1, 31)])],
+        crs=CRS,
+    )
+
+    out = ci.compute_3d_sight_lines(
+        nodes_gdf=_nodes(),
+        target_buildings_gdf=buildings.copy(),
+        obstructions_buildings_gdf=buildings.copy(),
+        simplified_target_buildings=simplified,
+        edges_gdf=_edges(),
+        city_name="TestSimplified",
+        distance_along=5,
+        min_observer_target_distance=100,
+        num_workers=1,
+    )
+
+    assert isinstance(out, gpd.GeoDataFrame)
+    assert len(out) > 0
+    assert (out.geometry.geom_type == "LineString").all()
+    assert out.geometry.iloc[0].has_z
+
+
 def test_compute_3d_sight_lines_no_visible_returns_empty(monkeypatch, tmp_path):
     monkeypatch.chdir(tmp_path)
     buildings = _buildings()
