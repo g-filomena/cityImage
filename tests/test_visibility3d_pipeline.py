@@ -99,6 +99,32 @@ def test_compute_3d_sight_lines_with_consolidation(monkeypatch, tmp_path):
     assert out.geometry.iloc[0].has_z
 
 
+def test_compute_3d_sight_lines_splits_into_multiple_chunks(monkeypatch, tmp_path):
+    # Regression: a small sight_lines_chunk_size forces the multi-chunk branch, which used to
+    # np.array_split the observers GeoDataFrame into bare ndarrays and crash in _prepare_chunk_data
+    # ("'numpy.ndarray' object has no attribute 'drop'"). Real cities always hit this branch.
+    monkeypatch.chdir(tmp_path)
+    buildings = _buildings()
+
+    out = ci.compute_3d_sight_lines(
+        nodes_gdf=_nodes(),  # 2 observers
+        target_buildings_gdf=buildings.copy(),
+        obstructions_buildings_gdf=buildings.copy(),
+        simplified_target_buildings=None,
+        edges_gdf=_edges(),
+        city_name="TestChunked",
+        distance_along=5,
+        min_observer_target_distance=100,
+        sight_lines_chunk_size=1,  # << projected lines (2 x n_targets) exceeds this -> chunking
+        num_workers=1,
+    )
+
+    assert isinstance(out, gpd.GeoDataFrame)
+    assert len(out) > 0
+    assert (out.geometry.geom_type == "LineString").all()
+    assert out.geometry.iloc[0].has_z
+
+
 def test_compute_3d_sight_lines_with_simplified_targets(monkeypatch, tmp_path):
     monkeypatch.chdir(tmp_path)
     buildings = _buildings()

@@ -165,7 +165,13 @@ def compute_3d_sight_lines(
     else:
         observers_per_chunk = max(1, sight_lines_chunk_size // num_targets)
         num_chunks = int(np.ceil(num_observers / observers_per_chunk))
-        observer_chunks = np.array_split(observers, num_chunks)
+        # Split by row position and index back with .iloc so each chunk stays a GeoDataFrame.
+        # np.array_split(observers, ...) would coerce the frame to bare ndarrays, which later
+        # break in _prepare_chunk_data (chunk.drop("geometry")).
+        observer_chunks = [
+            observers.iloc[positions]
+            for positions in np.array_split(np.arange(num_observers), num_chunks)
+        ]
 
     out_prefix = "chunk_sight_lines"
     out_files = []
