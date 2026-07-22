@@ -48,7 +48,7 @@ _STRUCTURAL_OBSTRUCTIONS = None
 def _init_structural_worker(obstructions_gdf):
     global _STRUCTURAL_OBSTRUCTIONS
     _STRUCTURAL_OBSTRUCTIONS = obstructions_gdf
-    obstructions_gdf.sindex  # build the (cached) index once per worker
+    _ = obstructions_gdf.sindex  # build the (cached) index once per worker
 
 
 def _structural_visibility_task(args):
