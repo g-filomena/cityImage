@@ -229,7 +229,7 @@ def compute_3d_sight_lines(
         target_xy_all = _points_xy(targets["target_geo"])
         span_x = float(np.ptp(target_xy_all[:, 0])) or 1.0
         span_y = float(np.ptp(target_xy_all[:, 1])) or 1.0
-        cap_fraction = min(1.0, np.pi * max_observer_target_distance ** 2 / (span_x * span_y))
+        cap_fraction = min(1.0, np.pi * max_observer_target_distance**2 / (span_x * span_y))
         est_pairs_per_observer = max(1, int(num_targets * cap_fraction))
     projected_nr_sight_lines = num_observers * est_pairs_per_observer
     obstructions_sindex = obstructions_gdf.sindex  # GeoPandas SpatialIndex wrapper
@@ -306,9 +306,7 @@ def compute_3d_sight_lines(
                     errors="ignore",
                 )
             chunk_sight_lines = pd.concat(visibles, ignore_index=True)
-            chunk_sight_lines = _finalize_sight_lines(
-                chunk_sight_lines, nodes_gdf, consolidate
-            )
+            chunk_sight_lines = _finalize_sight_lines(chunk_sight_lines, nodes_gdf, consolidate)
             n_records = len(chunk_sight_lines)
             chunk_file = chunk_dir / f"{city_name}_{out_prefix}_{n}.gpkg"
             chunk_sight_lines.to_file(chunk_file)
@@ -723,9 +721,7 @@ def _define_batches(
         yield potential_sight_lines.iloc[start : start + rows_per_batch]
 
 
-def _obstruction_candidates_slice(
-    endpoint_xyz, obstructions_sindex, bounds, tops, poly_ids
-):
+def _obstruction_candidates_slice(endpoint_xyz, obstructions_sindex, bounds, tops, poly_ids):
     """Candidate obstruction building IDs per sight line, for one slice of lines.
 
     A fully vectorised bounding-box broad phase: for each line we keep the buildings whose

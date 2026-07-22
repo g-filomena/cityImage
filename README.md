@@ -3,7 +3,7 @@
 [![Documentation Status](https://readthedocs.org/projects/cityimage/badge/?version=latest)](https://cityimage.readthedocs.io/en/latest/?badge=latest)
 [![codecov](https://codecov.io/gh/g-filomena/cityImage/branch/master/graph/badge.svg)](https://codecov.io/gh/g-filomena/cityImage)
 
-<img src="docs/_static/logo.png" alt="cityImage logo" width="33%">
+<img src="https://raw.githubusercontent.com/g-filomena/cityImage/master/docs/_static/logo.png" alt="cityImage logo" width="33%">
 
 # cityImage
 

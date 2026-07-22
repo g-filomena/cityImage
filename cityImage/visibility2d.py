@@ -104,9 +104,7 @@ def visibility_polygon2d(
 
     if len(obstacles) > 0:
         obstruction_union = unary_union(obstacles.geometry)
-        clipped_lines = [
-            _clip_to_nearest_obstruction(line, obstruction_union) for line in lines
-        ]
+        clipped_lines = [_clip_to_nearest_obstruction(line, obstruction_union) for line in lines]
     else:
         clipped_lines = lines
 
