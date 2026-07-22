@@ -390,12 +390,8 @@ def test_landmarks():
 
     # testing with only 5 nodes, to avoid time issues
     sight_lines_pars = {"distance_along": 300, "min_observer_target_distance": 400}
-    simplification_pars = {
-        "simplified_target_buildings": gpd.GeoDataFrame,
-        "consolidate": True,
-        "consolidate_tolerance": 15,
-    }
-    processing_pars = {"sight_lines_chunk_size": 1000000, "num_workers": 1, "with_pyvista": False}
+    consolidation_pars = {"consolidate": True, "consolidate_tolerance": 15}
+    processing_pars = {"sight_lines_chunk_size": 1000000, "num_workers": 1}
 
     sight_lines = ci.compute_3d_sight_lines(
         nodes_gdf=nodes_gdf.iloc[:7],
@@ -404,18 +400,7 @@ def test_landmarks():
         edges_gdf=edges_gdf,
         city_name="York",
         **sight_lines_pars,
-        **simplification_pars,
-        **processing_pars,
-    )
-    processing_pars = {"sight_lines_chunk_size": 1000000, "num_workers": 1, "with_pyvista": True}
-    sight_lines = ci.compute_3d_sight_lines(
-        nodes_gdf=nodes_gdf.iloc[:7],
-        target_buildings_gdf=buildings_gdf,
-        obstructions_buildings_gdf=buildings_gdf,
-        edges_gdf=edges_gdf,
-        city_name="York",
-        **sight_lines_pars,
-        **simplification_pars,
+        **consolidation_pars,
         **processing_pars,
     )
     # historical elements
