@@ -1,0 +1,20 @@
+# Automatic code hygiene, run on every `git commit`.
+#
+# One-time setup per clone:
+#     pip install pre-commit   # (also available via the project's [dev] extra)
+#     pre-commit install
+#
+# After that, each commit runs ruff on the staged files: the formatter rewrites
+# them in place and the linter auto-fixes what it can. If a hook changes a file,
+# the commit is aborted so you can review and re-stage — so code that reaches a
+# push is always formatted, and the CI `ruff format --check` / `ruff check`
+# gates pass. Run against everything once with: pre-commit run --all-files
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.13 # keep in sync with the ruff used in CI; `pre-commit autoupdate` bumps it
+    hooks:
+      # Linter — mirrors the CI `ruff check` gate; --fix applies safe autofixes.
+      - id: ruff
+        args: [--fix]
+      # Formatter — mirrors the CI `ruff format --check` gate.
+      - id: ruff-format

@@ -89,7 +89,7 @@ base environment. Use extras for those:
 ```bash
 pip install "cityImage[plot]"         # plotting helpers (matplotlib, mapclassify)
 pip install "cityImage[height]"       # DEM/DTM height helpers
-pip install "cityImage[visibility3d]" # 3D sight-line workflow
+pip install "cityImage[visibility3d]" # 3D sight-line workflow (adds dask + psutil)
 pip install "cityImage[all]"          # all optional runtime dependencies
 ```
 
@@ -98,19 +98,6 @@ For development:
 ```bash
 pip install -e ".[all,test,docs,dev]"
 ```
-
-### Why 3D visibility is optional
-
-The 3D visibility workflow depends on additional libraries — Dask for parallel
-batching and psutil for memory-aware chunking. These are useful for
-line-of-sight and obstruction workflows, but they are not required for core
-network construction, land-use assignment, barriers, districts, landmark
-scoring, or 2D visibility. For that reason, `cityImage.visibility3d` should
-remain an optional extra.
-
-This keeps the default installation lighter and makes it possible to use
-cityImage in environments where the 3D sight-line extras are unnecessary or
-difficult to install.
 
 ## Main API areas
 
@@ -173,6 +160,7 @@ barriers = ci.barriers_from_osm(
 
 ```bash
 ruff check cityImage tests scripts
+ruff format --check cityImage tests scripts
 pytest -m "not network" -ra
 python -m build
 twine check dist/*
