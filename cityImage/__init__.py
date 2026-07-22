@@ -1,7 +1,7 @@
 """Top-level public API for cityImage.
 
 The package uses lazy attribute loading: importing ``cityImage`` no longer
-eagerly imports heavy dependencies such as PyVista, rasterstats, igraph,
+eagerly imports heavy dependencies such as rasterstats, igraph,
 python-louvain, or matplotlib. Public functions/classes are loaded from their
 implementation modules only when first accessed, preserving the historical
 ``import cityImage as ci`` style for most workflows.
@@ -12,7 +12,7 @@ from __future__ import annotations
 from importlib import import_module
 from typing import Any
 
-__version__ = "2.0.1"
+__version__ = "2.1.0"
 
 _PUBLIC_SYMBOLS: dict[str, str] = {
     "AMENITY_GROUPS": "landuse",
@@ -146,14 +146,12 @@ _PUBLIC_SYMBOLS: dict[str, str] = {
     "nodes_degree": "graph",
     "normalize": "plotting",
     "obstructions_2d": "visibility3d",
-    "obstructions_3d": "visibility3d",
     "filter_pedestrian_osm_features": "pedestrian",
     "pedestrian_network_from_osm": "pedestrian",
     "pedestrian_network_from_osm_features": "pedestrian",
     "plot_gdf": "plotting",
     "plot_grid_gdf_columns": "plotting",
     "plot_grid_gdfs_column": "plotting",
-    "polygon_2d_to_3d": "visibility3d",
     "polygonise_partitions": "regions",
     "pragmatic_score": "landmarks",
     "rand_cmap": "plotting",

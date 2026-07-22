@@ -37,12 +37,77 @@ def _clean_height(x):
     return float(m.group()) if m else None
 
 
+# Process-pool workers for the 2D advance-visibility isovist. The per-building isovist is
+# CPU-bound and GIL-limited (threads plateau at ~4x), so real speed-up needs processes.
+# Each worker keeps one copy of the obstruction set (shipped once when the pool starts) and
+# builds its spatial index once; building geometries stream in as small tasks. Kept at
+# module level and picklable so the "spawn" start method works on every platform.
+_STRUCTURAL_OBSTRUCTIONS = None
+
+
+def _init_structural_worker(obstructions_gdf):
+    global _STRUCTURAL_OBSTRUCTIONS
+    _STRUCTURAL_OBSTRUCTIONS = obstructions_gdf
+    obstructions_gdf.sindex  # build the (cached) index once per worker
+
+
+def _structural_visibility_task(args):
+    from .visibility2d import visibility_polygon2d
+
+    geometry, max_expansion_distance = args
+    return visibility_polygon2d(geometry, _STRUCTURAL_OBSTRUCTIONS, None, max_expansion_distance)
+
+
+def _advance_visibility_areas(
+    geometries, obstructions_gdf, sindex, max_expansion_distance, workers
+):
+    """2D advance-visibility area per building geometry, in insertion order.
+
+    Runs across a ``spawn`` process pool when ``workers > 1``; falls back to a serial pass
+    for a single worker, a trivial input, or if the pool cannot start (the result is
+    identical either way — only the execution changes).
+    """
+    from .visibility2d import visibility_polygon2d
+
+    def _serial():
+        return [
+            visibility_polygon2d(geometry, obstructions_gdf, sindex, max_expansion_distance)
+            for geometry in geometries
+        ]
+
+    if not workers or workers <= 1 or len(geometries) <= 1:
+        return _serial()
+
+    import multiprocessing as mp
+
+    tasks = [(geometry, max_expansion_distance) for geometry in geometries]
+    chunksize = max(1, len(tasks) // (workers * 10))
+    try:
+        with concurrent.futures.ProcessPoolExecutor(
+            max_workers=workers,
+            mp_context=mp.get_context("spawn"),
+            initializer=_init_structural_worker,
+            initargs=(obstructions_gdf,),
+        ) as executor:
+            return list(executor.map(_structural_visibility_task, tasks, chunksize=chunksize))
+    except Exception as exc:  # environment-dependent; never fail the whole stage over it
+        import warnings
+
+        warnings.warn(
+            f"structural_score: parallel visibility failed ({exc!r}); running serially.",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+        return _serial()
+
+
 def structural_score(
     buildings_gdf,
     obstructions_gdf,
     edges_gdf,
     advance_vis_expansion_distance=300,
     neighbours_radius=150,
+    workers=1,
 ):
     """
     The function computes the "Structural Landmark Component" sub-scores of each building.
@@ -63,14 +128,16 @@ def structural_score(
         2d advance visibility - it indicates up to which distance from the building boundaries the 2dvisibility polygon can expand.
     neighbours_radius: float
         Neighbours - search radius for other adjacent buildings.
+    workers: int
+        Number of processes used for the (CPU-bound) 2D advance-visibility computation.
+        ``1`` runs serially; higher values parallelise it across a process pool. The result
+        is identical regardless of the worker count.
 
     Returns
     -------
     buildings_gdf: Polygon GeoDataFrame
         The updated buildings GeoDataFrame.
     """
-    from .visibility2d import visibility_polygon2d
-
     buildings_gdf = buildings_gdf.copy()
     assert_all_polygons(buildings_gdf)
     if buildings_gdf.empty:
@@ -90,10 +157,12 @@ def structural_score(
     street_network = edges_gdf.geometry.union_all()
 
     buildings_gdf["road"] = buildings_gdf.geometry.distance(street_network)
-    buildings_gdf["2dvis"] = buildings_gdf.geometry.apply(
-        lambda row: visibility_polygon2d(
-            row, obstructions_gdf, sindex, max_expansion_distance=advance_vis_expansion_distance
-        )
+    buildings_gdf["2dvis"] = _advance_visibility_areas(
+        list(buildings_gdf.geometry),
+        obstructions_gdf,
+        sindex,
+        advance_vis_expansion_distance,
+        workers,
     )
     buildings_gdf["neigh"] = buildings_gdf.geometry.apply(
         lambda row: _number_neighbours(row, obstructions_gdf, sindex, radius=neighbours_radius)

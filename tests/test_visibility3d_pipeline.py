@@ -1,8 +1,8 @@
 """End-to-end offline test for ``compute_3d_sight_lines``.
 
 Drives the full 3D sight-line orchestrator (distance filter -> 2D obstruction
-split via dask -> 3D PyVista ray casting -> chunked GeoPackage merge) on a tiny
-synthetic city. No live data; the chunk temp dir is redirected into tmp_path.
+split via dask -> analytic 3D visibility test -> chunked GeoPackage merge) on a
+tiny synthetic city. No live data; the chunk temp dir is redirected into tmp_path.
 """
 
 from __future__ import annotations
@@ -13,7 +13,6 @@ from shapely.geometry import LineString, Point, Polygon
 
 import cityImage as ci
 
-pytest.importorskip("pyvista")
 pytest.importorskip("dask")
 pytest.importorskip("psutil")
 
@@ -56,7 +55,6 @@ def test_compute_3d_sight_lines_end_to_end(monkeypatch, tmp_path):
         nodes_gdf=_nodes(),
         target_buildings_gdf=buildings.copy(),
         obstructions_buildings_gdf=buildings.copy(),
-        simplified_target_buildings=None,
         edges_gdf=_edges(),
         city_name="Test",
         distance_along=5,
@@ -80,7 +78,6 @@ def test_compute_3d_sight_lines_with_consolidation(monkeypatch, tmp_path):
         nodes_gdf=_nodes(),
         target_buildings_gdf=buildings.copy(),
         obstructions_buildings_gdf=buildings.copy(),
-        simplified_target_buildings=None,
         edges_gdf=_edges(),
         city_name="TestC",
         distance_along=5,
@@ -110,41 +107,11 @@ def test_compute_3d_sight_lines_splits_into_multiple_chunks(monkeypatch, tmp_pat
         nodes_gdf=_nodes(),  # 2 observers
         target_buildings_gdf=buildings.copy(),
         obstructions_buildings_gdf=buildings.copy(),
-        simplified_target_buildings=None,
         edges_gdf=_edges(),
         city_name="TestChunked",
         distance_along=5,
         min_observer_target_distance=100,
         sight_lines_chunk_size=1,  # << projected lines (2 x n_targets) exceeds this -> chunking
-        num_workers=1,
-    )
-
-    assert isinstance(out, gpd.GeoDataFrame)
-    assert len(out) > 0
-    assert (out.geometry.geom_type == "LineString").all()
-    assert out.geometry.iloc[0].has_z
-
-
-def test_compute_3d_sight_lines_with_simplified_targets(monkeypatch, tmp_path):
-    monkeypatch.chdir(tmp_path)
-    buildings = _buildings()
-    # A single simplified outline enclosing both detailed target buildings, which routes the
-    # pipeline through _use_simplified_buildings (detailed targets mapped onto simplified geometry).
-    simplified = gpd.GeoDataFrame(
-        {"simplifiedID": [1]},
-        geometry=[Polygon([(-1, -1), (11, -1), (11, 31), (-1, 31)])],
-        crs=CRS,
-    )
-
-    out = ci.compute_3d_sight_lines(
-        nodes_gdf=_nodes(),
-        target_buildings_gdf=buildings.copy(),
-        obstructions_buildings_gdf=buildings.copy(),
-        simplified_target_buildings=simplified,
-        edges_gdf=_edges(),
-        city_name="TestSimplified",
-        distance_along=5,
-        min_observer_target_distance=100,
         num_workers=1,
     )
 
@@ -163,7 +130,6 @@ def test_compute_3d_sight_lines_no_visible_returns_empty(monkeypatch, tmp_path):
         nodes_gdf=_nodes(),
         target_buildings_gdf=buildings.copy(),
         obstructions_buildings_gdf=buildings.copy(),
-        simplified_target_buildings=None,
         edges_gdf=_edges(),
         city_name="TestEmpty",
         distance_along=5,

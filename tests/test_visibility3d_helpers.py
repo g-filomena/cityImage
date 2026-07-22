@@ -1,16 +1,15 @@
 """Offline tests for the tractable helpers in ``cityImage.visibility3d``.
 
-The heavy orchestrators (``compute_3d_sight_lines``, ``obstructions_3d``) drive
-dask/pyvista/multiprocessing and are covered by the network-marked integration
-run. These tests target the pure/geometry helpers that can run deterministically
-offline.
+The heavy orchestrator (``compute_3d_sight_lines``) drives dask and is covered by
+the network-marked integration run. These tests target the pure/geometry helpers
+that can run deterministically offline.
 """
 
 from __future__ import annotations
 
 import geopandas as gpd
 import pytest
-from shapely.geometry import LineString, Point, Polygon
+from shapely.geometry import LineString, Point
 
 import cityImage as ci
 
@@ -59,42 +58,3 @@ def test_merge_gpkg_chunks_to_gdf(tmp_path):
     merged = ci.merge_gpkg_chunks_to_gdf([str(fa), str(fb)], potential_obstructions_column="obs")
     assert len(merged) == 3
     assert sorted(merged["v"]) == [1, 2, 3]
-
-
-def test_polygon_2d_to_3d_extrusion_flags():
-    pv = pytest.importorskip("pyvista")
-    footprint = Polygon([(0, 0), (10, 0), (10, 10), (0, 10)])
-
-    # From sea level, height measured from base -> z spans [0, base + height].
-    solid = ci.polygon_2d_to_3d(
-        footprint,
-        base=5.0,
-        height=20.0,
-        extrude_from_sealevel=True,
-        height_relative_to_ground=False,
-    )
-    assert isinstance(solid, pv.PolyData) and solid.n_points > 0
-    assert solid.bounds[4] == pytest.approx(0.0)
-    assert solid.bounds[5] == pytest.approx(25.0)
-
-    # From the given base, height measured from base -> z spans [base, base + height].
-    solid2 = ci.polygon_2d_to_3d(
-        footprint,
-        base=5.0,
-        height=20.0,
-        extrude_from_sealevel=False,
-        height_relative_to_ground=False,
-    )
-    assert solid2.bounds[4] == pytest.approx(5.0)
-    assert solid2.bounds[5] == pytest.approx(25.0)
-
-    # From the given base, absolute height -> z spans [base, height].
-    solid3 = ci.polygon_2d_to_3d(
-        footprint,
-        base=5.0,
-        height=20.0,
-        extrude_from_sealevel=False,
-        height_relative_to_ground=True,
-    )
-    assert solid3.bounds[4] == pytest.approx(5.0)
-    assert solid3.bounds[5] == pytest.approx(20.0)

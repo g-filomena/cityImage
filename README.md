@@ -13,7 +13,7 @@ computational version of Kevin Lynch's *Image of the City* from geospatial data.
 The package works with user-provided GeoPandas datasets and with OpenStreetMap
 data acquired through OSMnx. The refactored API keeps cityImage-specific schema,
 topology, barrier, district, landmark, and scoring semantics while delegating
-generic acquisition, spatial joins, plotting, graph algorithms, and raster/mesh
+generic acquisition, spatial joins, plotting, graph algorithms, and raster
 operations to established libraries.
 
 For full documentation and examples, see the
@@ -45,7 +45,7 @@ cityImage deliberately delegates generic operations to specialised libraries:
 - **NetworkX/iGraph** handle graph representation and graph algorithms.
 - **python-louvain** handles modularity-based community detection.
 - **Rasterio/rasterstats** handle raster sampling and zonal statistics.
-- **PyVista/Dask** handle optional 3D mesh/ray workflows.
+- **Dask** parallelises batching in the optional 3D sight-line workflow.
 
 The specificity of cityImage is different: it defines the **urban-image
 semantics** that sit on top of those tools. In practice this means cityImage
@@ -101,16 +101,16 @@ pip install -e ".[all,test,docs,dev]"
 
 ### Why 3D visibility is optional
 
-The 3D visibility workflow depends on heavier scientific/mesh-processing
-libraries such as PyVista and Dask. These dependencies are useful for
+The 3D visibility workflow depends on additional libraries — Dask for parallel
+batching and psutil for memory-aware chunking. These are useful for
 line-of-sight and obstruction workflows, but they are not required for core
 network construction, land-use assignment, barriers, districts, landmark
 scoring, or 2D visibility. For that reason, `cityImage.visibility3d` should
 remain an optional extra.
 
 This keeps the default installation lighter and makes it possible to use
-cityImage in environments where 3D mesh tooling is unnecessary or difficult to
-install.
+cityImage in environments where the 3D sight-line extras are unnecessary or
+difficult to install.
 
 ## Main API areas
 
