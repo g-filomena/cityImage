@@ -11,7 +11,7 @@ specialised libraries:
 - OpenStreetMap acquisition to OSMnx;
 - graph algorithms to NetworkX, iGraph, and python-louvain;
 - raster/zonal-statistics operations to rasterio/rasterstats;
-- optional 3D mesh/ray operations to PyVista and Dask;
+- optional parallel 3D sight-line computation to Dask;
 - optional static plotting to Matplotlib and mapclassify.
 
 The public API therefore focuses on stable cityImage schemas and computational

@@ -19,10 +19,8 @@ OPTIONAL_IMPORT_ROOTS = {
     "matplotlib",
     "mpl_toolkits",
     "psutil",
-    "pyvista",
     "rasterio",
     "rasterstats",
-    "tqdm",
 }
 
 ALLOWED_BY_ROOT = {
@@ -31,10 +29,8 @@ ALLOWED_BY_ROOT = {
     "matplotlib": {"cityImage/plotting/colors.py", "cityImage/plotting/static.py"},
     "mpl_toolkits": {"cityImage/plotting/static.py"},
     "psutil": {"cityImage/visibility3d.py"},
-    "pyvista": {"cityImage/visibility3d.py"},
     "rasterio": {"cityImage/height.py"},
     "rasterstats": {"cityImage/height.py"},
-    "tqdm": {"cityImage/visibility3d.py"},
 }
 
 

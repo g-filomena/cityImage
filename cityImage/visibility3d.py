@@ -100,7 +100,12 @@ class _ProgressLogger:
         print(f"{label} [{elapsed}]", flush=True)
 
     def chunk(self, done, n_lines, n_records, t_2d, t_3d):
-        """One compact status line per observer chunk: progress bar, per-step times, ETA."""
+        """A single in-place status line for the whole chunk loop: progress bar, times, ETA.
+
+        Updates one line via a carriage return instead of printing one line per chunk, so the
+        console — and a tailed detached log — shows a compact live bar rather than hundreds of
+        lines. The final chunk commits the line with a newline so later output starts fresh.
+        """
         if not self.enabled:
             return
         elapsed = time.perf_counter() - self.total_start
@@ -110,12 +115,15 @@ class _ProgressLogger:
         eta = ""
         if 0 < done < self.n_chunks:
             eta = f" ETA {self.format_wall_time(elapsed / done * (self.n_chunks - done))}"
-        print(
+        line = (
             f"chunk {done:>3}/{self.n_chunks} [{bar}] {n_lines:>8,} lines  "
             f"2d {t_2d:4.0f}s 3d {t_3d:4.0f}s -> {n_records:>6,} sight lines  "
-            f"| elapsed {self.format_wall_time(elapsed)}{eta}",
-            flush=True,
+            f"| elapsed {self.format_wall_time(elapsed)}{eta}"
         )
+        # \r keeps it on one line; the final chunk ends with \n to commit it. Pad so a shorter
+        # update fully overwrites a previous longer one (no leftover trailing characters).
+        end = "\n" if self.n_chunks and done >= self.n_chunks else "\r"
+        print(f"{line:<130}", end=end, flush=True)
 
     def total(self):
         """Print the total wall time since the run started."""

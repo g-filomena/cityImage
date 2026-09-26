@@ -16,7 +16,7 @@ def test_visibility_polygon2d_lives_in_lightweight_visibility2d_module():
 
 
 def test_visibility_polygon2d_does_not_import_heavy_3d_stack():
-    for module_name in ["pyvista", "dask", "psutil"]:
+    for module_name in ["dask", "psutil"]:
         sys.modules.pop(module_name, None)
 
     building = Polygon([(0, 0), (2, 0), (2, 2), (0, 2)])
@@ -28,6 +28,5 @@ def test_visibility_polygon2d_does_not_import_heavy_3d_stack():
     area = ci.visibility_polygon2d(building, obstructions, obstructions.sindex, 20)
 
     assert area > 0
-    assert "pyvista" not in sys.modules
     assert "dask" not in sys.modules
     assert "psutil" not in sys.modules

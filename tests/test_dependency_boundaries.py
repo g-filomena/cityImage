@@ -34,7 +34,7 @@ def test_import_cityimage_does_not_eagerly_import_heavy_optional_modules():
             "cityImage.plotting",
             "cityImage.plotting.static",
             "cityImage.plotting.colors",
-            "pyvista",
+            "dask",
             "rasterstats",
             "igraph",
             "community",
@@ -92,7 +92,7 @@ def test_refactor_boundary_static_audit_passes():
     assert findings == []
 
 
-def test_core_import_does_not_import_visibility3d_or_pyvista():
+def test_core_import_does_not_import_visibility3d_or_dask():
     repo_root = Path(__file__).resolve().parents[1]
     code = textwrap.dedent(
         """
@@ -101,7 +101,6 @@ def test_core_import_does_not_import_visibility3d_or_pyvista():
 
         forbidden = [
             "cityImage.visibility3d",
-            "pyvista",
             "dask",
         ]
         loaded = [name for name in forbidden if name in sys.modules]
@@ -115,7 +114,7 @@ def test_core_import_does_not_import_visibility3d_or_pyvista():
 
 def test_visibility3d_symbol_resolves_only_when_optional_dependency_is_available():
     pytest = __import__("pytest")
-    pytest.importorskip("pyvista")
+    pytest.importorskip("dask")
 
     import cityImage as ci
 

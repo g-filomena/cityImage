@@ -14,7 +14,7 @@ The package originated from research on the computational formulation of Kevin L
 - landmarks from structural, visual, cultural, and pragmatic salience;
 - imageability scores from composable cityImage indicators.
 
-The package is not a replacement for GeoPandas, Shapely, OSMnx, NetworkX, iGraph, rasterio, or PyVista. Instead, it defines a semantic layer on top of those libraries. Generic data acquisition, spatial operations, graph algorithms, raster processing, and mesh/ray operations are delegated to specialised packages; cityImage keeps the schema, topology, Lynchian classification, and scoring semantics consistent across workflows.
+The package is not a replacement for GeoPandas, Shapely, OSMnx, NetworkX, iGraph, or rasterio. Instead, it defines a semantic layer on top of those libraries. Generic data acquisition, spatial operations, graph algorithms, and raster processing are delegated to specialised packages; cityImage keeps the schema, topology, Lynchian classification, and scoring semantics consistent across workflows.
 
 ## Design after the refactor
 

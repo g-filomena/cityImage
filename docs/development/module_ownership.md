@@ -27,7 +27,7 @@ Status meanings:
 | `cityImage/scoring.py` | imageability scoring | keep | none | NumPy/Pandas | Combines Lynchian/imageability indicators into score outputs. |
 | `cityImage/height.py` | building height | keep thin | rasterio/rasterstats | rasterstats/rasterio | Thin raster/zonal-stat boundary plus cityImage building-height schema. |
 | `cityImage/visibility2d.py` | 2D visibility | keep | none | Shapely/GeoPandas | Preserves 2D visibility semantics. |
-| `cityImage/visibility3d.py` | 3D visibility | keep | pyvista/dask/psutil/tqdm | PyVista/Dask | Owns 3D sight-line workflow and output schema; delegates mesh/ray operations. |
+| `cityImage/visibility3d.py` | 3D visibility | keep | dask/psutil | Dask | Owns 3D sight-line workflow and output schema; delegates parallel chunking to Dask. |
 | `cityImage/geometry.py` | geometry helpers | keep small | none | Shapely/GeoPandas | Small custom helpers used by topology/visibility/regions. |
 | `cityImage/data_utils.py` | data helpers | keep small | none | Pandas/NumPy | Small scaling/conversion helpers used internally. |
 | `cityImage/landuse/` | land-use package | keep | none | GeoPandas/Pandas | Derivation, classification, sparse representation, and assignment of land-use semantics. |

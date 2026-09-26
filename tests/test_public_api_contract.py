@@ -88,7 +88,7 @@ OPTIONAL_SYMBOLS_BY_EXTRA = {
         "buildings_base_from_dtm",
         "assign_elevations_from_rasters",
     ],
-    "pyvista": ["compute_3d_sight_lines"],
+    "dask": ["compute_3d_sight_lines"],
 }
 
 PLOTTING_INTERNALS_NOT_TOP_LEVEL = {

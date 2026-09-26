@@ -262,6 +262,109 @@ def test_consolidate_nodes_merges_close_nodes_and_returns_edges_when_requested()
     assert (cons_edges["u"] != cons_edges["v"]).all()  # the 2-3 edge collapsed and was dropped
 
 
+def _line_network(n, spacing):
+    """n nodes along the x axis, `spacing` metres apart, each joined to the next."""
+    nodes = _nodes([{"nodeID": i, "x": i * spacing, "y": 0.0} for i in range(n)])
+    edges = _edges(
+        [
+            {
+                "edgeID": i,
+                "u": i,
+                "v": i + 1,
+                "geometry": LineString([(i * spacing, 0), ((i + 1) * spacing, 0)]),
+            }
+            for i in range(n - 1)
+        ]
+    )
+    return nodes, edges
+
+
+def _max_cluster_span(cons_nodes, nodes):
+    """Largest distance between two original nodes merged into the same consolidated node."""
+    span = 0.0
+    for old_ids in cons_nodes["old_nodeID"]:
+        points = list(nodes.loc[old_ids].geometry)
+        for a in points:
+            for b in points:
+                span = max(span, a.distance(b))
+    return span
+
+
+def test_consolidate_nodes_does_not_chain_along_closely_spaced_nodes():
+    # 21 nodes 10 m apart span 200 m. With a 15 m tolerance only neighbours may merge; the
+    # whole line must not collapse into one node through a chain of short gaps.
+    nodes, edges = _line_network(21, 10.0)
+
+    cons_nodes, cons_edges = nt.consolidate_nodes(
+        nodes, edges, consolidate_edges_too=True, tolerance=15
+    )
+
+    assert _max_cluster_span(cons_nodes, nodes) <= 15
+    assert len(cons_nodes) >= 11
+    assert set(cons_edges["u"]) | set(cons_edges["v"]) <= set(cons_nodes["nodeID"])
+
+
+def test_consolidate_nodes_tolerance_is_a_distance_not_a_buffer_radius():
+    # Two nodes 20 m apart are farther than a 15 m tolerance and must stay separate.
+    nodes, edges = _line_network(2, 20.0)
+
+    cons_nodes = nt.consolidate_nodes(nodes, edges, tolerance=15)
+
+    assert len(cons_nodes) == 2
+
+
+def test_consolidate_nodes_every_cluster_fits_within_tolerance():
+    # A dense 12 x 12 grid at 7 m spacing: every merged cluster must have all its members within
+    # the tolerance of one another, whatever the density.
+    spacing, size = 7.0, 12
+    rows = [
+        {"nodeID": i * size + j, "x": i * spacing, "y": j * spacing}
+        for i in range(size)
+        for j in range(size)
+    ]
+    edge_rows = [
+        {
+            "edgeID": i * size + j,
+            "u": i * size + j,
+            "v": i * size + j + 1,
+            "geometry": LineString([(i * spacing, j * spacing), (i * spacing, (j + 1) * spacing)]),
+        }
+        for i in range(size)
+        for j in range(size - 1)
+    ]
+    nodes, edges = _nodes(rows), _edges(edge_rows)
+
+    cons_nodes = nt.consolidate_nodes(nodes, edges, tolerance=10)
+
+    assert _max_cluster_span(cons_nodes, nodes) <= 10
+    assert 1 < len(cons_nodes) < len(nodes)
+
+
+def test_consolidate_nodes_with_z_column_keeps_2d_edges():
+    # Nodes with a 'z' column consolidate to 3D points; edges drawn in 2D must stay 2D.
+    nodes, edges = _line_network(6, 20.0)
+    nodes["z"] = 10.0
+    nodes.loc[2, "geometry"] = Point(22.0, 0.0)  # 2 m from node 1, so the two merge
+    cons_nodes, cons_edges = nt.consolidate_nodes(
+        nodes, edges, consolidate_edges_too=True, tolerance=5
+    )
+
+    assert len(cons_nodes) == 5
+    assert not cons_edges.geometry.has_z.any()
+
+
+def test_consolidate_nodes_does_not_depend_on_row_order():
+    nodes, edges = _line_network(21, 10.0)
+
+    first = nt.consolidate_nodes(nodes, edges, tolerance=15)
+    second = nt.consolidate_nodes(nodes.sample(frac=1, random_state=1), edges, tolerance=15)
+
+    def groups(cons):
+        return sorted(sorted(ids) for ids in cons["old_nodeID"])
+
+    assert groups(first) == groups(second)
+
+
 def test_clean_network_full_pass_yields_consistent_topology():
     # Run the full clean_network pass over a central subset of the real York street network. It must
     # dedupe, drop dead ends/islands, and leave a valid topology: every edge endpoint resolves to a

@@ -24,6 +24,7 @@ import geopandas as gpd
 import networkx as nx
 import numpy as np
 import pandas as pd
+from shapely import STRtree
 from shapely.geometry import LineString, Point
 
 from .data_utils import convert_numeric_columns
@@ -879,6 +880,43 @@ def correct_edge_geometries(nodes_gdf, edges_gdf):
 # -----------------------------------------------------------------------------
 # Node/edge consolidation
 # -----------------------------------------------------------------------------
+def _clusters_within_tolerance(nodes_gdf, tolerance):
+    """Cluster labels, one per node, such that all nodes sharing a label lie within `tolerance`
+    of each other.
+
+    Nodes are taken as seeds in decreasing order of how many neighbours they have within
+    `tolerance` (ties broken by nodeID), so dense junction cores seed first. Each seed collects
+    its unassigned neighbours, nearest first, admitting one only if it is within `tolerance` of
+    every member already admitted. The result does not depend on row order.
+    """
+    geometries = nodes_gdf.geometry.to_numpy()
+    xy = np.column_stack([nodes_gdf.geometry.x.to_numpy(), nodes_gdf.geometry.y.to_numpy()])
+    node_ids = nodes_gdf["nodeID"].to_numpy()
+
+    tree = STRtree(geometries)
+    left, right = tree.query(geometries, predicate="dwithin", distance=tolerance)
+    neighbours = defaultdict(list)
+    for i, j in zip(left, right, strict=True):
+        if i != j:
+            neighbours[i].append(j)
+
+    order = sorted(range(len(xy)), key=lambda i: (-len(neighbours[i]), node_ids[i]))
+    labels = np.full(len(xy), -1, dtype=int)
+    next_label = 0
+    for seed in order:
+        if labels[seed] >= 0:
+            continue
+        members = [seed]
+        candidates = [j for j in neighbours[seed] if labels[j] < 0]
+        candidates.sort(key=lambda j: (np.hypot(*(xy[j] - xy[seed])), node_ids[j]))
+        for j in candidates:
+            if np.all(np.hypot(*(xy[members] - xy[j]).T) <= tolerance):
+                members.append(j)
+        labels[members] = next_label
+        next_label += 1
+    return labels
+
+
 def consolidate_nodes(
     nodes_gdf,
     edges_gdf,
@@ -888,7 +926,8 @@ def consolidate_nodes(
     """
     Consolidates nodes in a spatial network that are within a given distance (tolerance), preserving topology and unclustered nodes.
 
-    Nodes within `tolerance` distance are clustered together and represented by a single consolidated node at the cluster centroid.
+    Nodes are clustered so that every pair in a cluster lies within `tolerance` of each other,
+    and each cluster is represented by a single consolidated node at the mean of its members.
     For clusters containing disconnected components, each connected component is further split into its own consolidated node.
     Optionally, edges can be updated to reference the new consolidated node IDs and geometries.
 
@@ -901,7 +940,8 @@ def consolidate_nodes(
     consolidate_edges_too : bool, optional
         If True, also returns the updated edges GeoDataFrame (default: False).
     tolerance : float, optional
-        Distance threshold for clustering nodes (in CRS units). Nodes within this distance are merged (default: 20).
+        Distance threshold for clustering nodes (in CRS units): the largest distance between any
+        two nodes merged into one (default: 20).
 
     Returns
     -------
@@ -922,17 +962,21 @@ def consolidate_nodes(
     nodes_gdf.drop(columns=["x", "y"], inplace=True, errors="ignore")
     graph = graph_fromGDF(nodes_gdf, edges_gdf)
 
-    # Step 1: Cluster nodes within tolerance
-    clusters = nodes_gdf.buffer(tolerance).union_all()
-    clusters = clusters.geoms if hasattr(clusters, "geoms") else [clusters]
-    clusters = gpd.GeoDataFrame(geometry=gpd.GeoSeries(clusters, crs=nodes_gdf.crs))
-    clusters["x"] = clusters.geometry.centroid.x
-    clusters["y"] = clusters.geometry.centroid.y
-
-    # Step 2: Assign nodes to clusters
+    # Steps 1-2: Cluster nodes so that every pair in a cluster lies within tolerance
     new_column = "new_nodeID"
-    gdf = gpd.sjoin(nodes_gdf, clusters, how="left", predicate="within").drop(columns="geometry")
-    gdf.rename(columns={"index_right": new_column}, inplace=True)
+    labels = _clusters_within_tolerance(nodes_gdf, tolerance)
+    gdf = pd.DataFrame(nodes_gdf.drop(columns="geometry"))
+    gdf[new_column] = labels
+    centroids = (
+        pd.DataFrame(
+            {"x": nodes_gdf.geometry.x.to_numpy(), "y": nodes_gdf.geometry.y.to_numpy()},
+            index=nodes_gdf.index,
+        )
+        .groupby(labels)
+        .mean()
+    )
+    gdf["x"] = gdf[new_column].map(centroids["x"])
+    gdf["y"] = gdf[new_column].map(centroids["y"])
     new_nodeID = gdf[new_column].max() + 1
 
     # Step 3: Split non-connected components in clusters
@@ -1033,9 +1077,15 @@ def consolidate_edges(edges_gdf, consolidated_nodes_gdf):
         new_u_geom = nodes_mapping.loc[old_u, "geometry"]
         new_v_geom = nodes_mapping.loc[old_v, "geometry"]
 
-        # Update the geometry (replace first and last coordinates)
+        # Update the geometry (replace first and last coordinates), keeping the edge's own
+        # dimensionality: consolidated nodes carry z when the input nodes had a 'z' column.
         if isinstance(geom, LineString):
-            new_coords = [new_u_geom.coords[0]] + list(geom.coords[1:-1]) + [new_v_geom.coords[0]]
+            dims = 3 if geom.has_z else 2
+            new_coords = (
+                [new_u_geom.coords[0][:dims]]
+                + list(geom.coords[1:-1])
+                + [new_v_geom.coords[0][:dims]]
+            )
             geom = LineString(new_coords)
 
         return pd.Series({"u": new_u_id, "v": new_v_id, "geometry": geom})

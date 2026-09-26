@@ -172,9 +172,9 @@ OWNERSHIP: dict[str, ModuleOwner] = {
         "cityImage/visibility3d.py",
         "3D visibility",
         "keep",
-        "pyvista/dask/psutil/tqdm",
-        "pyvista/dask",
-        "Owns 3D sight-line workflow and output schema; delegates mesh/ray operations.",
+        "dask/psutil",
+        "dask",
+        "Owns 3D sight-line workflow and output schema; delegates parallel chunking to Dask.",
     ),
     "cityImage/visibility2d.py": ModuleOwner(
         "cityImage/visibility2d.py",
