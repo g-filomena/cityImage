@@ -135,6 +135,14 @@ def _features_gdf(geometries: list[Any], crs: Any, barrier_type: str) -> gpd.Geo
     )
 
 
+def _drop_tunnels(gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """Drop features tagged as tunnels; an absent tag or ``tunnel=no`` is not a tunnel."""
+    if "tunnel" not in gdf.columns:
+        return gdf
+    tunnel = gdf["tunnel"]
+    return gdf[tunnel.isna() | tunnel.isin(["no", 0, "0"])].copy()
+
+
 def _geometries_to_lines(gdf: gpd.GeoDataFrame, barrier_type: str, crs: Any) -> gpd.GeoDataFrame:
     """Union and simplify a set of geometries into barrier line features."""
     if gdf.empty:
@@ -165,9 +173,7 @@ def road_barriers_from_osm_features(
 
     roads = roads[roads["highway"].isin(to_keep)].copy()
 
-    if "tunnel" in roads.columns:
-        roads["tunnel"] = roads["tunnel"].fillna(0)
-        roads = roads[roads["tunnel"] == 0].copy()
+    roads = _drop_tunnels(roads)
 
     return _geometries_to_lines(roads, barrier_type="road", crs=crs)
 
@@ -232,9 +238,7 @@ def railway_barriers_from_osm_features(
 
     railways = railways[railways["railway"].isin(to_keep)].copy()
 
-    if "tunnel" in railways.columns:
-        railways["tunnel"] = railways["tunnel"].fillna(0)
-        railways = railways[railways["tunnel"] == 0].copy()
+    railways = _drop_tunnels(railways)
 
     if railways.empty:
         return _empty_barriers(crs=crs, barrier_type="railway")
@@ -266,7 +270,8 @@ def park_barriers_from_osm_features(
 
     park_union = _union_all(parks.geometry)
     polygons = polygonize_full(park_union)
-    park_boundary = unary_union(polygons).buffer(10).boundary
+    # A closing: parks less than 20 m apart merge, and the outline stays on the park's edge.
+    park_boundary = unary_union(polygons).buffer(10).buffer(-10).boundary
     return _features_gdf(_simplify_barrier(park_boundary), crs=crs, barrier_type="park")
 
 

@@ -26,6 +26,7 @@ import numpy as np
 import pandas as pd
 from shapely import STRtree
 from shapely.geometry import LineString, Point
+from shapely.ops import substring
 
 from .data_utils import convert_numeric_columns
 from .geometry import center_line, split_line_at_MultiPoint
@@ -270,9 +271,9 @@ def clean_network(
     remove_islands : bool, optional
         If True, removes disconnected components ("islands") in the network. Default is True.
     same_vertexes_edges : bool, optional
-        If True, treats multiple edges between the same pair of nodes as duplicates. Keeps only the
-        longest edge when it is at least 10% longer than the others, otherwise replaces them with a
-        center line. Default is True.
+        If True, resolves multiple edges between the same pair of nodes: edges within 10% of the
+        shortest collapse into a center line, and longer ones are kept and split at their midpoint
+        (see clean_same_vertexes_edges). Default is True.
     self_loops : bool, optional
         If True, removes self-loop edges (where start and end node are the same). Default is False.
     fix_topology : bool, optional
@@ -299,12 +300,14 @@ def clean_network(
     # removes fake self-loops wrongly coded by the data source
     nodes_gdf, edges_gdf = fix_fake_self_loops(nodes_gdf, edges_gdf)
 
+    # Topology first: ways that cross at a shared vertex without either ending there are not joined
+    # until it is fixed, so a dead-end or island test before it sees streets as cut off that are not.
+    if fix_topology:
+        nodes_gdf, edges_gdf = fix_network_topology(nodes_gdf, edges_gdf)
     if dead_ends:
         nodes_gdf, edges_gdf = fix_dead_ends(nodes_gdf, edges_gdf)
     if remove_islands:
         nodes_gdf, edges_gdf = remove_disconnected_islands(nodes_gdf, edges_gdf)
-    if fix_topology:
-        nodes_gdf, edges_gdf = fix_network_topology(nodes_gdf, edges_gdf)
 
     cycle = 0
     while (
@@ -444,8 +447,21 @@ def _are_nodes_simplified(nodes_gdf, edges_gdf, nodes_to_keep_regardless=None):
     # Exclude nodes to keep regardless
     if nodes_to_keep_regardless:
         to_edit = [node for node in to_edit if node not in nodes_to_keep_regardless]
+    if not to_edit:
+        return True
 
-    return len(to_edit) == 0
+    # A pseudo-node whose two neighbours are already joined stays: merging it would duplicate
+    # that pair (see simplify_graph).
+    pairs = {frozenset(pair) for pair in zip(edges_gdf["u"], edges_gdf["v"], strict=False)}
+    neighbours = defaultdict(list)
+    for u, v in zip(edges_gdf["u"], edges_gdf["v"], strict=False):
+        neighbours[u].append(v)
+        neighbours[v].append(u)
+    for node in to_edit:
+        a, b = neighbours[node]
+        if a == b or frozenset((a, b)) not in pairs:
+            return False
+    return True
 
 
 def _are_edges_simplified(edges_gdf, preserve_direction):
@@ -537,6 +553,9 @@ def simplify_graph(
 
     The function identify pseudo-nodes, namely nodes that represent intersection between only 2 segments.
     The segments geometries are merged and the node is removed from the nodes_gdf GeoDataFrame.
+    A pseudo-node is kept when its two neighbours are already joined by another segment, so that
+    every pair of nodes is joined by one segment at most. Each attribute of a merged segment takes
+    the non-null value covering the greatest length among the segments merged into it.
 
     Parameters
     ----------
@@ -586,6 +605,7 @@ def simplify_graph(
 
     dropped_edges: set = set()
     dropped_nodes: set = set()
+    pieces = {eid: [eid] for eid in edges_gdf.index}
 
     def _coord_key(coord, ndigits=10):
         return tuple(round(float(value), ndigits) for value in coord[:2])
@@ -617,6 +637,13 @@ def simplify_graph(
             new_u, new_v = u1, u2
             line_a, line_b = coords_first, coords_second[::-1]
 
+        if new_u != new_v and any(
+            new_v in (u_of[e], v_of[e])
+            for e in incidence[new_u]
+            if e not in (first, second) and e not in dropped_edges
+        ):
+            continue  # the two neighbours are already joined
+
         # detach both edges from their endpoints and remove the pseudo-node and second segment
         incidence[u1].discard(first)
         incidence[v1].discard(first)
@@ -639,12 +666,17 @@ def simplify_graph(
         geom_of[first] = LineString(merged_line)
         incidence[new_u].add(first)
         incidence[new_v].add(first)
+        pieces[first] += pieces.pop(second)
 
+    original = edges_gdf
     surviving = [eid for eid in edges_gdf.index if eid not in dropped_edges]
     edges_gdf = edges_gdf.loc[surviving].copy()
     edges_gdf["u"] = edges_gdf.index.map(u_of)
     edges_gdf["v"] = edges_gdf.index.map(v_of)
     edges_gdf["geometry"] = edges_gdf.index.map(geom_of)
+    merged = {eid: pieces[eid] for eid in surviving if len(pieces[eid]) > 1}
+    if merged:
+        edges_gdf = _merge_attributes(edges_gdf, original, merged)
     edges_gdf = edges_gdf[edges_gdf["u"] != edges_gdf["v"]]  # eliminate node-lines
 
     if dropped_nodes:
@@ -655,10 +687,57 @@ def simplify_graph(
     return nodes_gdf, edges_gdf
 
 
+_STRUCTURAL_EDGE_COLUMNS = frozenset(
+    {"edgeID", "u", "v", "geometry", "length", "coords", "code", "tmp", "wkt", "fixing", "to_fix"}
+)
+
+
+def _is_missing(value):
+    return value is None or value is pd.NA or (isinstance(value, float) and np.isnan(value))
+
+
+def _merge_attributes(edges_gdf, original, merged):
+    """Give each merged edge, per attribute, the non-null value covering the most length.
+
+    ``merged`` maps a surviving edgeID to the edgeIDs of ``original`` merged into it. Ties go to
+    the value met first along that list.
+    """
+    lengths = original.geometry.length
+    long = pd.DataFrame(
+        [(target, piece) for target, group in merged.items() for piece in group],
+        columns=["_target", "_piece"],
+    )
+    long["_w"] = lengths.reindex(long["_piece"]).to_numpy()
+    edges_gdf = edges_gdf.copy()
+    for column in original.columns:
+        if column in _STRUCTURAL_EDGE_COLUMNS or column == original.geometry.name:
+            continue
+        values = original[column].reindex(long["_piece"]).to_numpy(dtype=object)
+        present = np.array([not _is_missing(value) for value in values], dtype=bool)
+        frame = long[present].assign(_v=values[present])
+        chosen = dict.fromkeys(merged)
+        if not frame.empty:
+            frame["_k"] = [repr(value) for value in frame["_v"]]
+            weight = frame.groupby(["_target", "_k"], sort=False)["_w"].sum()
+            best = weight.groupby(level=0, sort=False).idxmax()
+            first_value = frame.drop_duplicates(["_target", "_k"]).set_index(["_target", "_k"])[
+                "_v"
+            ]
+            chosen.update({target: first_value.loc[key] for target, key in best.items()})
+        current = edges_gdf[column].to_dict()
+        current.update(chosen)
+        edges_gdf[column] = pd.Series(
+            [current[eid] for eid in edges_gdf.index], index=edges_gdf.index, dtype=object
+        ).infer_objects()
+    return edges_gdf
+
+
 def fix_dead_ends(nodes_gdf, edges_gdf):
     """
 
-    The function removes dead-ends. In other words, it eliminates nodes from where only one segment originates, and the relative segment.
+    The function removes dead-ends: nodes from where only one segment originates, and that segment.
+    It repeats until none is left, so a street ending in a dead end is removed back to the junction
+    where it meets a node of degree three or more. Nodes no segment references are dropped.
 
     Parameters
     ----------
@@ -675,30 +754,31 @@ def fix_dead_ends(nodes_gdf, edges_gdf):
 
     nodes_gdf, edges_gdf = nodes_gdf.copy(), edges_gdf.copy()
 
-    # Find dead-end nodes
-    degree = nodes_degree(edges_gdf)
-    dead_end_nodes = [node for node, deg in degree.items() if deg == 1]
+    while True:
+        degree = nodes_degree(edges_gdf)
+        dead_end_nodes = [node for node, deg in degree.items() if deg == 1]
+        if not dead_end_nodes:
+            break
+        edges_gdf = edges_gdf[
+            ~edges_gdf["u"].isin(dead_end_nodes) & ~edges_gdf["v"].isin(dead_end_nodes)
+        ]
 
-    if not dead_end_nodes:
-        return nodes_gdf, edges_gdf
-
-    # Drop dead-end nodes and their edges
-    nodes_gdf = nodes_gdf.drop(dead_end_nodes)
-    edges_gdf = edges_gdf[
-        ~edges_gdf["u"].isin(dead_end_nodes) & ~edges_gdf["v"].isin(dead_end_nodes)
-    ]
-
+    used = set(edges_gdf["u"]).union(edges_gdf["v"])
+    nodes_gdf = nodes_gdf[nodes_gdf["nodeID"].isin(used)]
     return nodes_gdf, edges_gdf
 
 
 def clean_same_vertexes_edges(nodes_gdf, edges_gdf, preserve_direction=False):
     """
-    Removes duplicate edges with the same start and end nodes (same vertexes) in a network GeoDataFrame.
+    Resolves edges that share the same start and end nodes (same vertexes).
 
-    For each pair of edges with the same node pair ('u', 'v'), the function:
-      - Keeps only the longest edge if one is at least 10% longer than the other(s).
-      - If their lengths are similar, generates a center line geometry to represent both and assigns it to one edge.
-      - Drops all other duplicate edges.
+    For each group of edges with the same node pair ('u', 'v'), the function:
+      - Keeps the shortest edge.
+      - Collapses into it, as a center line, the edges less than 10% longer than it: the same
+        street mapped twice.
+      - Keeps every longer edge, a different street between the same two junctions (a crescent,
+        a loop round a block), splitting it at its midpoint with a new node so that each node
+        pair is joined by one edge.
       - Updates the node GeoDataFrame to retain only nodes still referenced by any edge.
 
     If `preserve_direction` is False, treats edges as undirected (edges (u,v) and (v,u) are considered duplicates).
@@ -716,12 +796,10 @@ def clean_same_vertexes_edges(nodes_gdf, edges_gdf, preserve_direction=False):
     Returns
     -------
     nodes_gdf : GeoDataFrame
-        Filtered nodes, only those referenced by remaining edges.
+        Filtered nodes, only those referenced by remaining edges, plus the midpoint nodes added.
     edges_gdf : GeoDataFrame
         Deduplicated edges with updated geometry where applicable.
     """
-    to_drop = set()
-
     if not preserve_direction:
         edges_gdf["code"] = np.where(
             edges_gdf["v"] >= edges_gdf["u"],
@@ -730,42 +808,64 @@ def clean_same_vertexes_edges(nodes_gdf, edges_gdf, preserve_direction=False):
         )
     else:
         edges_gdf["code"] = edges_gdf.u.astype(str) + "-" + edges_gdf.v.astype(str)
-    if not edges_gdf.duplicated("code").any():
+    duplicated = edges_gdf["code"].duplicated(keep=False)
+    if not duplicated.any():
         return nodes_gdf, edges_gdf
 
-    groups = (
-        edges_gdf.groupby("code")
-        .filter(lambda x: len(x) > 1)[["code", "length", "edgeID"]]
-        .sort_values(by=["code", "length"])
+    edges_gdf = edges_gdf.copy()
+    edges_gdf["length"] = edges_gdf.geometry.length
+    node_geometry = dict(zip(nodes_gdf["nodeID"], nodes_gdf.geometry, strict=False))
+    node_z = (
+        dict(zip(nodes_gdf["nodeID"], nodes_gdf["z"], strict=False)) if "z" in nodes_gdf else None
     )
-    max_lengths = edges_gdf.groupby("code").agg({"length": "max"}).to_dict()["length"]
+    next_node = int(nodes_gdf["nodeID"].max()) + 1
+    next_edge = int(edges_gdf["edgeID"].max()) + 1
+    to_drop, new_nodes, new_edges = [], [], []
 
-    for code, g in edges_gdf.groupby("code"):
-        if g[g.length < max_lengths[code] * 0.9].shape[0] > 0:
-            to_drop.update(list(g[g.length < max_lengths[code] * 0.9]["edgeID"]))
+    for _, group in edges_gdf[duplicated].groupby("code", sort=True):
+        group = group.iloc[np.lexsort((group["edgeID"].to_numpy(), group["length"].to_numpy()))]
+        shortest = group.index[0]
+        same = group[group["length"] * 0.9 <= group["length"].iloc[0]]
+        if len(same) > 1:
+            edges_gdf.at[shortest, "geometry"] = center_line(list(same.geometry))
+            to_drop.extend(same.index[1:])
 
-    groups = groups.drop(list(to_drop), axis=0)
-    groups_filtered = (
-        groups.groupby("code")
-        .filter(lambda x: len(x) > 1)[["code", "length", "edgeID"]]
-        .sort_values(by=["code", "length"])
-    )
-    first_indexes = list(groups_filtered.groupby("code")[["edgeID"]].first()["edgeID"])
-    others = set(groups_filtered["edgeID"].to_list()) - set(first_indexes)
-    to_drop.update(others)
+        for index, row in group.drop(same.index).iterrows():
+            line = row.geometry
+            start = Point(line.coords[0])
+            u, v = row["u"], row["v"]
+            if start.distance(node_geometry[v]) < start.distance(node_geometry[u]):
+                u, v = v, u  # the geometry runs from v to u
+            midpoint = line.interpolate(0.5, normalized=True)
+            node = {"nodeID": next_node, "x": midpoint.x, "y": midpoint.y, "geometry": midpoint}
+            if node_z is not None:
+                node["z"] = (node_z[u] + node_z[v]) / 2.0
+            new_nodes.append(node)
 
-    # Update the geometry of the first edge in each group to the center line of the edge to update
-    for index in first_indexes:
-        code = edges_gdf.loc[index]["code"]
-        geometryA = edges_gdf.loc[index].geometry
-        geometryB = edges_gdf.query("code == @code").iloc[1].geometry
-        cl = center_line([geometryA, geometryB])
-        edges_gdf.at[index, "geometry"] = cl
+            first_half = substring(line, 0.0, 0.5, normalized=True)
+            second_half = substring(line, 0.5, 1.0, normalized=True)
+            edges_gdf.at[index, "u"], edges_gdf.at[index, "v"] = u, next_node
+            edges_gdf.at[index, "geometry"] = first_half
+            edges_gdf.at[index, "length"] = first_half.length
+            second = row.copy()
+            second["edgeID"], second["u"], second["v"] = next_edge, next_node, v
+            second["geometry"], second["length"] = second_half, second_half.length
+            second.name = next_edge
+            new_edges.append(second)
+            next_node += 1
+            next_edge += 1
 
-    edges_gdf = edges_gdf.drop(list(to_drop), axis=0)
+    edges_gdf = edges_gdf.drop(to_drop, axis=0)
+    if new_edges:
+        added = gpd.GeoDataFrame(new_edges, geometry="geometry", crs=edges_gdf.crs)
+        edges_gdf = pd.concat([edges_gdf, added])
+        added_nodes = gpd.GeoDataFrame(new_nodes, geometry="geometry", crs=nodes_gdf.crs)
+        added_nodes.index = added_nodes["nodeID"].to_numpy()
+        nodes_gdf = pd.concat([nodes_gdf, added_nodes])
+    edges_gdf["length"] = edges_gdf.geometry.length
 
     # only keep nodes which are actually used by the edges in the GeoDataFrame
-    to_keep = list(set(list(edges_gdf["u"].unique()) + list(edges_gdf["v"].unique())))
+    to_keep = set(edges_gdf["u"]).union(edges_gdf["v"])
     nodes_gdf = nodes_gdf[nodes_gdf["nodeID"].isin(to_keep)]
     return nodes_gdf, edges_gdf
 

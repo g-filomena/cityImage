@@ -42,6 +42,54 @@ def test_road_barriers_from_osm_features_filters_major_roads_and_tunnels():
     assert len(barriers) == 2
 
 
+def test_tunnel_no_is_not_a_tunnel():
+    # OSM tags are strings: tunnel=no is an explicit "not a tunnel" and must be kept.
+    roads = gpd.GeoDataFrame(
+        {"highway": ["motorway", "motorway", "motorway"], "tunnel": [None, "no", "yes"]},
+        geometry=[
+            LineString([(0, 0), (1, 0)]),
+            LineString([(0, 100), (1, 100)]),
+            LineString([(0, 200), (1, 200)]),
+        ],
+        crs=CRS,
+    )
+    railways = roads.rename(columns={"highway": "railway"}).assign(railway="rail")
+
+    assert len(ci.road_barriers_from_osm_features(roads, crs=CRS)) == 2
+    railway = ci.railway_barriers_from_osm_features(railways, crs=CRS).geometry.unary_union
+    assert railway.distance(LineString([(0, 100), (1, 100)])) < 11
+    assert railway.distance(LineString([(0, 200), (1, 200)])) > 11
+
+
+def test_park_barrier_stays_on_the_park_edge():
+    # A street running 5 m outside a park is along it, not within it.
+    park = Polygon([(0, 0), (500, 0), (500, 500), (0, 500)])
+    parks = gpd.GeoDataFrame({"leisure": ["park"]}, geometry=[park], crs=CRS)
+    barriers = ci.park_barriers_from_osm_features(parks, crs=CRS, min_area=100)
+    barriers["barrierID"] = range(len(barriers))
+    edges = gpd.GeoDataFrame(
+        {"edgeID": [1, 2]},
+        geometry=[LineString([(100, -5), (400, -5)]), LineString([(100, 100), (400, 100)])],
+        crs=CRS,
+    )
+
+    edges = ci.along_within_parks(edges, barriers)
+
+    assert edges["w_parks"].tolist() == [[], [0]]
+
+
+def test_parks_closer_than_twenty_metres_merge_into_one_barrier():
+    halves = [
+        Polygon([(0, 0), (240, 0), (240, 500), (0, 500)]),
+        Polygon([(250, 0), (500, 0), (500, 500), (250, 500)]),
+    ]
+    parks = gpd.GeoDataFrame({"leisure": ["park", "park"]}, geometry=halves, crs=CRS)
+
+    barriers = ci.park_barriers_from_osm_features(parks, crs=CRS, min_area=100)
+
+    assert len(barriers) == 1
+
+
 def test_water_barriers_from_osm_features_combines_rivers_and_large_lakes():
     waterways = gpd.GeoDataFrame(
         {"waterway": ["river", "stream", "canal"]},

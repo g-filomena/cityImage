@@ -137,6 +137,31 @@ def test_ambiguous_highway_kept_only_with_sidewalk_evidence(sidewalk_tags, expec
     assert _is_pedestrian_row(row) is expected
 
 
+def test_service_alley_is_kept_and_flagged_like_a_residential_street():
+    # A laneway: kept without evidence, flagged as uncertain; evidence makes it walkable.
+    assert _pedestrian_status(pd.Series({"highway": "service", "service": "alley"})) == "noEvidence"
+    assert (
+        _pedestrian_status(pd.Series({"highway": "service", "service": "alley", "sidewalk": "yes"}))
+        == "yes"
+    )
+    # Access restrictions and foot=no still drop it.
+    assert (
+        _pedestrian_status(pd.Series({"highway": "service", "service": "alley", "foot": "no"}))
+        is None
+    )
+    assert (
+        _pedestrian_status(
+            pd.Series({"highway": "service", "service": "alley", "access": "private"})
+        )
+        is None
+    )
+
+
+@pytest.mark.parametrize("service", ["driveway", "parking_aisle", "drive-through", None])
+def test_other_service_ways_stay_evidence_gated(service):
+    assert _pedestrian_status(pd.Series({"highway": "service", "service": service})) is None
+
+
 @pytest.mark.parametrize("highway", ["track", "bridleway"])
 def test_track_and_bridleway_are_always_footable(highway):
     assert _pedestrian_status(pd.Series({"highway": highway})) == "yes"

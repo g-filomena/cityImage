@@ -88,6 +88,17 @@ def test_identify_regions_convenience_delegates_to_python_louvain_when_available
     assert len(regions) == len(edges_gdf)
 
 
+def test_identify_regions_is_reproducible_by_default():
+    pytest.importorskip("community")
+    nodes_gdf, edges_gdf = york_network()
+    graph = ci.graph_fromGDF(nodes_gdf.copy(), edges_gdf.copy())
+
+    first = ci.identify_regions_primal(graph, nodes_gdf.copy(), weight="length")
+    second = ci.identify_regions_primal(graph, nodes_gdf.copy(), weight="length")
+
+    assert first["p_length"].tolist() == second["p_length"].tolist()
+
+
 def test_amend_nodes_membership_reassigns_small_district_and_survives_connectivity_check():
     # Regression: amend_nodes_membership must run the connectivity check (which builds a graph via
     # _graph_from_gdfs -> graph_fromGDF) for a large-enough district and reassign a too-small one to

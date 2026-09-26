@@ -30,11 +30,15 @@ pd.set_option("display.precision", 3)
 INVALID_DISTRICT = 999999
 
 
-def _best_partition(graph: Any, weight: str) -> dict[Any, int]:
-    """Delegate modularity/community detection to python-louvain (imported lazily)."""
+def _best_partition(graph: Any, weight: str, random_state: int | None = 0) -> dict[Any, int]:
+    """Delegate modularity/community detection to python-louvain (imported lazily).
+
+    Louvain visits nodes in random order, so the partition is fixed by ``random_state``;
+    ``None`` draws a different one on each call.
+    """
     import community
 
-    return community.best_partition(graph, weight=weight)
+    return community.best_partition(graph, weight=weight, random_state=random_state)
 
 
 def _graph_from_gdfs(
@@ -111,17 +115,21 @@ def regions_from_primal_partition(
 
 
 def identify_regions(
-    dual_graph: Any, edges_gdf: gpd.GeoDataFrame, weight: str | None = None
+    dual_graph: Any,
+    edges_gdf: gpd.GeoDataFrame,
+    weight: str | None = None,
+    random_state: int | None = 0,
 ) -> gpd.GeoDataFrame:
     """Identify edge-based regions using delegated python-louvain partitioning.
 
     This convenience function preserves the old cityImage behaviour but the
     community-detection algorithm itself is delegated to python-louvain.
+    The partition is fixed by ``random_state``; ``None`` draws a different one on each call.
     """
     if weight is None:
         weight = "topo"
 
-    partition = _best_partition(dual_graph, weight=weight)
+    partition = _best_partition(dual_graph, weight=weight, random_state=random_state)
     return regions_from_dual_partition(
         partition,
         dual_graph,
@@ -131,13 +139,19 @@ def identify_regions(
 
 
 def identify_regions_primal(
-    graph: Any, nodes_gdf: gpd.GeoDataFrame, weight: str | None = None
+    graph: Any,
+    nodes_gdf: gpd.GeoDataFrame,
+    weight: str | None = None,
+    random_state: int | None = 0,
 ) -> gpd.GeoDataFrame:
-    """Identify node-based regions using delegated python-louvain partitioning."""
+    """Identify node-based regions using delegated python-louvain partitioning.
+
+    The partition is fixed by ``random_state``; ``None`` draws a different one on each call.
+    """
     if weight is None:
         weight = "topo"
 
-    partition = _best_partition(graph, weight=weight)
+    partition = _best_partition(graph, weight=weight, random_state=random_state)
     return regions_from_primal_partition(partition, nodes_gdf, column=f"p_{weight}")
 
 

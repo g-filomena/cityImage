@@ -108,6 +108,14 @@ KEEP_WITH_EVIDENCE_FLAG = {
     "tertiary",
 }
 
+# ``service=*`` values of ``highway=service`` ways kept like the flagged highways above. An alley
+# is a lane between buildings, walkable by OSM's default access and, in cities such as Melbourne,
+# some of the busiest pedestrian space there is. Other service ways (driveways, parking aisles,
+# drive-throughs, untyped ones) stay evidence-gated.
+WALKABLE_SERVICE_VALUES = {
+    "alley",
+}
+
 # Values written to the ``ped`` column of the resulting edges.
 PED_YES = "yes"
 PED_NO_EVIDENCE = "noEvidence"
@@ -256,6 +264,12 @@ def _pedestrian_status(
         return PED_YES
 
     if highway_tokens & KEEP_WITH_EVIDENCE_FLAG:
+        return PED_YES if has_evidence else PED_NO_EVIDENCE
+
+    if (
+        "service" in highway_tokens
+        and set(_as_tokens(row.get("service"))) & WALKABLE_SERVICE_VALUES
+    ):
         return PED_YES if has_evidence else PED_NO_EVIDENCE
 
     # Ambiguous ways (service, unclassified, road) and any unrecognised highway
