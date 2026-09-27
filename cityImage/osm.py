@@ -235,8 +235,8 @@ def network_from_osm(
 
     if network_type in {"walk", "foot", "pedestrian"}:
         _validate_download_method(download_method)
-        # Validated as for the other network types, then passed on only when given: passing
-        # None through overrode the pedestrian default and reached OSMnx as dist=None.
+        # Validated as for the other network types, then passed on only when given, so the
+        # pedestrian default applies otherwise.
         pedestrian_kwargs = {}
         if _distance_arg(distance, download_method) is not None:
             pedestrian_kwargs["distance"] = distance

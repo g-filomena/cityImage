@@ -1086,7 +1086,7 @@ def correct_edge_geometries(nodes_gdf, edges_gdf):
         """
         line_coords = list(line_geometry.coords)
         # Only x and y are moved to the node: a 3D line keeps its own z at each end, so every
-        # vertex keeps the same number of dimensions (mixing 2D ends with 3D vertices raised).
+        # vertex keeps the same number of dimensions: a line cannot mix 2D and 3D vertices.
         line_coords[0] = (nodes_gdf.loc[u]["x"], nodes_gdf.loc[u]["y"], *line_coords[0][2:])
         line_coords[-1] = (nodes_gdf.loc[v]["x"], nodes_gdf.loc[v]["y"], *line_coords[-1][2:])
         new_line_geometry = LineString([coor for coor in line_coords])

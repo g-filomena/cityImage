@@ -274,7 +274,7 @@ def compute_3d_sight_lines(
         ]
 
     # Chunks are written to a private temporary folder, removed once they are merged (or on
-    # error): they used to be left behind in ./sight_lines_tmp in the working directory.
+    # error), so nothing is left in the working directory.
     chunk_dir = Path(tempfile.mkdtemp(prefix=f"{city_name}_sight_lines_"))
     try:
         out_prefix = "chunk_sight_lines"
@@ -478,7 +478,7 @@ def _prepare_buildings_gdf(buildings_gdf):
         Building table indexed by ``buildingID`` with non-null heights and a
         minimum base elevation of 1.0.
     """
-    # A copy first: the base default and floor below were written into the caller's frame.
+    # A copy first, so the base default and floor below stay out of the caller's frame.
     buildings_gdf = buildings_gdf.copy()
     # add a 'base' column to the buildings GeoDataFrame with a default value of 1.0, if not provided
     if "base" not in buildings_gdf.columns:

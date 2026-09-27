@@ -190,8 +190,8 @@ def gdf_multipolygon_to_polygon(
         out = out.explode(index_parts=False, ignore_index=True)
 
     out = out.reset_index(drop=True)
-    # Renumbered only when rows were split: renumbering every time replaced the IDs a file or
-    # caller supplied (buildings_from_file lost them) even though they were still unique.
+    # Renumbered only when rows were split, as the parts would share one ID; otherwise the IDs a
+    # file or caller supplied are kept.
     if split and columnID in out.columns:
         out[columnID] = out.index
 

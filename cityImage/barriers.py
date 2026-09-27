@@ -93,10 +93,10 @@ def _empty_barriers(crs: Any = None, barrier_type: str | None = None) -> gpd.Geo
 def _resolve_crs(crs: Any, *frames: gpd.GeoDataFrame | None) -> Any:
     """Return ``crs``, or a local projected CRS when none is given and the input is not projected.
 
-    The barrier rules measure areas, lengths and buffers in CRS units, so on longitude/latitude
-    input they were applied in degrees: lakes and parks fell below every area threshold and a
-    10-unit buffer spread a railway over 20 degrees. Such input is projected to its UTM zone, as
-    ``buildings_from_osm`` and ``network_from_osm`` already do.
+    The barrier rules measure areas, lengths and buffers in CRS units, which on longitude/latitude
+    input are degrees: lakes and parks would fall below every area threshold and a 10-unit buffer
+    would spread a railway over 20 degrees. Such input is projected to its UTM zone, as
+    ``buildings_from_osm`` and ``network_from_osm`` do.
     """
     if crs is not None:
         return crs
@@ -405,7 +405,7 @@ def along_within_parks(
     edges_gdf: gpd.GeoDataFrame, barriers_gdf: gpd.GeoDataFrame
 ) -> gpd.GeoDataFrame:
     """Assign park barrier IDs lying along or containing each street segment."""
-    edges_gdf = edges_gdf.copy()  # w_parks used to be written into the caller's frame
+    edges_gdf = edges_gdf.copy()  # so w_parks is not written into the caller's frame
     park_polygons = barriers_gdf[barriers_gdf["barrier_type"] == "park"].copy()
     if park_polygons.empty:
         edges_gdf["w_parks"] = [[] for _ in range(len(edges_gdf))]

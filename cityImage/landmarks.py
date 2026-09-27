@@ -238,8 +238,7 @@ def visibility_score(buildings_gdf, sight_lines=None, method="longest"):
     else:
         raise ValueError("method must be either 'longest' or 'combined'")
 
-    # Mapped by buildingID rather than merged: a merge replaced the caller's index with a new
-    # RangeIndex, so the scored frame no longer lined up with the one passed in.
+    # Mapped by buildingID rather than merged, so the scored frame keeps the caller's index.
     buildings_gdf["3dvis"] = buildings_gdf["buildingID"].map(stats["3dvis"]).fillna(0.0)
 
     return buildings_gdf

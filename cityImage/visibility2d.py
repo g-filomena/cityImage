@@ -108,8 +108,8 @@ def visibility_polygon2d(
     else:
         clipped_lines = lines
 
-    # The ring runs through the ray tips only. Starting and ending it at the origin, as before,
-    # closed it along the first and last rays and left out the slice between them (1/36 of it).
+    # The ring runs through the ray tips only: closing it through the origin would cut it along
+    # the first and last rays and leave out the slice between them.
     polygon = Polygon([line.coords[1] for line in clipped_lines])
     visible_polygon = polygon.difference(building_geometry)
     if visible_polygon.is_empty:

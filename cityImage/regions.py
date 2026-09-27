@@ -231,7 +231,7 @@ def districts_to_edges_from_nodes(
     """
     edges_gdf = edges_gdf.copy()
     # Look nodes up by nodeID, not by index label: a frame whose index is not its nodeIDs (after a
-    # filter and reset_index, say) otherwise read another node's district without any error.
+    # filter and reset_index, say) would otherwise read another node's district without error.
     district_of = pd.Series(nodes_gdf[column].to_numpy(), index=nodes_gdf["nodeID"].to_numpy())
     district_u = edges_gdf["u"].map(district_of).astype(int)
     district_v = edges_gdf["v"].map(district_of).astype(int)

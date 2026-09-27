@@ -132,7 +132,7 @@ def join_nodes_edges_by_coordinates(
         nodes["nodeID"] = nodes.index.to_numpy(dtype="int64")
 
     # Match on as many dimensions as the lines carry: nodes built from 3D lines are unique by
-    # (x, y, z), and keying them by (x, y) alone matched no endpoint at all.
+    # (x, y, z), and keying them by (x, y) alone would match no endpoint.
     three_d = "z" in nodes.columns and not edges.empty and len(edges.geometry.iloc[0].coords[0]) > 2
     if three_d:
         nodes["coordinates"] = list(zip(nodes.x, nodes.y, nodes.z, strict=False))

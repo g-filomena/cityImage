@@ -181,9 +181,9 @@ def assign_building_heights_from_other_gdf(
 def _best_match_per_source(matches):
     """Keep, per index label of ``matches`` (a spatial join), only its highest-overlap row.
 
-    The join repeats a label once per match, so selecting ``idxmax`` labels with ``.loc`` returned
-    every match of that label, not the best one: a detailed building overlapping two buildings
-    gave its height to both. Rows are picked by position instead.
+    The join repeats a label once per match, and selecting ``idxmax`` labels with ``.loc`` would
+    return every match of that label. Rows are picked by position, so a detailed building
+    overlapping two buildings gives its height to its best match only.
     """
     if matches.empty:
         return matches

@@ -1,7 +1,7 @@
-"""Regression tests for the bugs fixed after the September 2026 code review.
+"""Behaviours that are easy to get wrong: districts, visibility, networks, centrality, barriers,
+buildings and heights.
 
-Each test reproduces one defect with the smallest realistic input and fails on the code before
-the fix.
+Each test pins one behaviour with the smallest realistic input.
 """
 
 from __future__ import annotations
@@ -92,7 +92,7 @@ def test_amend_nodes_membership_refuses_when_no_district_is_large_enough():
 
 
 @pytest.mark.timeout(30)
-def test_amend_nodes_membership_still_amends_a_small_district():
+def test_amend_nodes_membership_amends_a_small_district():
     nodes, edges = ci.network_from_lines(_grid_lines(6), CRS)  # 36 nodes
     nodes["d"] = 0
     corner = (nodes.geometry.x == 0) & (nodes.geometry.y == 0)
