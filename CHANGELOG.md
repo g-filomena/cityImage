@@ -20,9 +20,10 @@ Entries marked **⚠ behaviour** change the output of an existing call with the 
 - **⚠ behaviour** `score_buildings_global` / `score_buildings_local` (and `compute_global_scores` /
   `compute_local_scores`) leave out, with a logged warning, the buildings without a height when
   others have one; those buildings received NaN scores.
-- **⚠ behaviour** `dual_gdf(oneway=True)` returns directed dual edges and `dual_graph_fromGDF`
-  builds a `networkx.DiGraph` from them (new `directed` argument), so routes respect one-way
-  streets. Without `oneway` the dual graph stays undirected.
+- **⚠ behaviour** `dual_gdf(oneway=True)` returns directed dual edges, and
+  `dual_graph_fromGDF(..., directed=True)` (new argument, default False) builds a
+  `networkx.DiGraph` from them, so routes respect one-way streets. By default the dual graph is
+  undirected.
 - **⚠ behaviour** `amend_nodes_membership` raises a `ValueError`, instead of looping forever, when
   the network is not connected (remove its islands first), is smaller than `min_size_district`,
   has no district of that size, or has nodes that cannot be amended.

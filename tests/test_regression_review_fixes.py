@@ -225,9 +225,10 @@ def test_dual_graph_respects_one_way_streets():
     )
 
     nodes_dual, edges_dual = ci.dual_gdf(nodes, edges, CRS, oneway=True)
-    dual_graph = ci.dual_graph_fromGDF(nodes_dual, edges_dual)
+    dual_graph = ci.dual_graph_fromGDF(nodes_dual, edges_dual, directed=True)
 
     assert dual_graph.is_directed()
+    assert not ci.dual_graph_fromGDF(nodes_dual, edges_dual).is_directed()
     assert nx.has_path(dual_graph, 0, 1)
     assert not nx.has_path(dual_graph, 1, 0)
 
