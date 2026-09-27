@@ -26,11 +26,10 @@ import numpy as np
 import pandas as pd
 from shapely import STRtree
 from shapely.geometry import LineString, Point
-from shapely.ops import substring
 
 from .data_utils import convert_numeric_columns
-from .geometry import center_line, split_line_at_MultiPoint
-from .graph import graph_fromGDF, nodes_degree
+from .geometry import split_line_at_MultiPoint
+from .graph import _is_missing_scalar, graph_fromGDF, nodes_degree
 from .network import join_nodes_edges_by_coordinates, obtain_nodes_gdf
 
 pd.set_option("display.precision", 3)
@@ -246,6 +245,7 @@ def clean_network(
     fix_topology=False,
     preserve_direction=False,
     nodes_to_keep_regardless=None,
+    same_vertexes_tolerance=5.0,
 ):
     """
     Cleans a street network by applying a series of topology and geometry corrections to nodes and edges GeoDataFrames.
@@ -271,9 +271,13 @@ def clean_network(
     remove_islands : bool, optional
         If True, removes disconnected components ("islands") in the network. Default is True.
     same_vertexes_edges : bool, optional
-        If True, resolves multiple edges between the same pair of nodes: edges within 10% of the
-        shortest collapse into a center line, and longer ones are kept and split at their midpoint
-        (see clean_same_vertexes_edges). Default is True.
+        If True, resolves multiple edges between the same pair of nodes: a street mapped more
+        than once (within 10% in length and `same_vertexes_tolerance` in distance) is reduced to
+        its most central edge, and different streets are kept as parallel edges (see
+        clean_same_vertexes_edges). Default is True.
+    same_vertexes_tolerance : float, optional
+        Largest distance, in CRS units, between two edges joining the same nodes for them to be
+        taken as one street mapped twice (see clean_same_vertexes_edges). Default is 5.
     self_loops : bool, optional
         If True, removes self-loop edges (where start and end node are the same). Default is False.
     fix_topology : bool, optional
@@ -305,13 +309,16 @@ def clean_network(
     if fix_topology:
         nodes_gdf, edges_gdf = fix_network_topology(nodes_gdf, edges_gdf)
     if dead_ends:
-        nodes_gdf, edges_gdf = fix_dead_ends(nodes_gdf, edges_gdf)
+        nodes_gdf, edges_gdf = fix_dead_ends(nodes_gdf, edges_gdf, nodes_to_keep_regardless)
     if remove_islands:
         nodes_gdf, edges_gdf = remove_disconnected_islands(nodes_gdf, edges_gdf)
 
     cycle = 0
     while (
-        (not _are_edges_simplified(edges_gdf, preserve_direction) and same_vertexes_edges)
+        (
+            same_vertexes_edges
+            and not _are_edges_simplified(edges_gdf, preserve_direction, same_vertexes_tolerance)
+        )
         | (not _are_nodes_simplified(nodes_gdf, edges_gdf, nodes_to_keep_regardless))
         | (cycle == 0)
     ):
@@ -325,14 +332,14 @@ def clean_network(
         if self_loops:
             edges_gdf = edges_gdf[edges_gdf["u"] != edges_gdf["v"]]
         if dead_ends:
-            nodes_gdf, edges_gdf = fix_dead_ends(nodes_gdf, edges_gdf)
+            nodes_gdf, edges_gdf = fix_dead_ends(nodes_gdf, edges_gdf, nodes_to_keep_regardless)
 
         nodes_gdf, edges_gdf = clean_duplicate_edges(nodes_gdf, edges_gdf, preserve_direction)
 
         # edges with different geometries but same u-v nodes pairs
         if same_vertexes_edges:
             nodes_gdf, edges_gdf = clean_same_vertexes_edges(
-                nodes_gdf, edges_gdf, preserve_direction
+                nodes_gdf, edges_gdf, preserve_direction, same_vertexes_tolerance
             )
 
         # simplify the graph
@@ -342,7 +349,7 @@ def clean_network(
         if self_loops:
             edges_gdf = edges_gdf[edges_gdf["u"] != edges_gdf["v"]]
         if dead_ends:
-            nodes_gdf, edges_gdf = fix_dead_ends(nodes_gdf, edges_gdf)
+            nodes_gdf, edges_gdf = fix_dead_ends(nodes_gdf, edges_gdf, nodes_to_keep_regardless)
 
     # No second island removal here: the loop (node/edge de-duplication, dead-end and pseudo-node
     # removal) can only merge or peel, never split a component, so any islands were already removed
@@ -450,29 +457,34 @@ def _are_nodes_simplified(nodes_gdf, edges_gdf, nodes_to_keep_regardless=None):
     if not to_edit:
         return True
 
-    # A pseudo-node whose two neighbours are already joined stays: merging it would duplicate
-    # that pair (see simplify_graph).
-    pairs = {frozenset(pair) for pair in zip(edges_gdf["u"], edges_gdf["v"], strict=False)}
+    # A pseudo-node whose two segments both lead to the same node is the far end of a loop street:
+    # merging it would turn the street into a self-loop, so it stays (see simplify_graph).
     neighbours = defaultdict(list)
     for u, v in zip(edges_gdf["u"], edges_gdf["v"], strict=False):
         neighbours[u].append(v)
         neighbours[v].append(u)
     for node in to_edit:
         a, b = neighbours[node]
-        if a == b or frozenset((a, b)) not in pairs:
+        if a != b:
             return False
     return True
 
 
-def _are_edges_simplified(edges_gdf, preserve_direction):
+def _are_edges_simplified(edges_gdf, preserve_direction, same_vertexes_tolerance=5.0):
     """
 
-    The function checks the presence of possible duplicate geometries in the edges_gdf GeoDataFrame.
+    The function checks whether any street is mapped more than once between the same two nodes,
+    by the rule of clean_same_vertexes_edges. Parallel edges that are different streets are
+    simplified.
 
     Parameters
     ----------
     edges_gdf: LineString GeoDataFrame
         The street segments GeoDataFrame.
+    preserve_direction: bool
+        Whether edges (u, v) and (v, u) are distinct.
+    same_vertexes_tolerance: float
+        See clean_same_vertexes_edges.
 
     Returns
     -------
@@ -481,17 +493,8 @@ def _are_edges_simplified(edges_gdf, preserve_direction):
     """
 
     edges_gdf = edges_gdf.copy()
-    if not preserve_direction:
-        edges_gdf["code"] = np.where(
-            edges_gdf["v"] >= edges_gdf["u"],
-            edges_gdf["u"].astype(str) + "-" + edges_gdf["v"].astype(str),
-            edges_gdf["v"].astype(str) + "-" + edges_gdf["u"].astype(str),
-        )
-    else:
-        edges_gdf["code"] = edges_gdf["u"].astype(str) + "-" + edges_gdf["v"].astype(str)
-
-    duplicates = edges_gdf.duplicated("code")
-    return not duplicates.any()
+    edges_gdf["code"] = _pair_codes(edges_gdf, preserve_direction)
+    return not _same_streets(edges_gdf, same_vertexes_tolerance)
 
 
 def clean_duplicate_nodes(nodes_gdf, edges_gdf):
@@ -553,9 +556,11 @@ def simplify_graph(
 
     The function identify pseudo-nodes, namely nodes that represent intersection between only 2 segments.
     The segments geometries are merged and the node is removed from the nodes_gdf GeoDataFrame.
-    A pseudo-node is kept when its two neighbours are already joined by another segment, so that
-    every pair of nodes is joined by one segment at most. Each attribute of a merged segment takes
-    the non-null value covering the greatest length among the segments merged into it.
+    The merged segment may join two nodes already joined by another segment: parallel segments
+    are kept (see clean_same_vertexes_edges). A pseudo-node whose two segments both lead to the
+    same node, the far end of a loop street, is kept, since merging would leave a self-loop. Each
+    attribute of a merged segment takes the non-null value covering the greatest length among the
+    segments merged into it.
 
     Parameters
     ----------
@@ -637,12 +642,8 @@ def simplify_graph(
             new_u, new_v = u1, u2
             line_a, line_b = coords_first, coords_second[::-1]
 
-        if new_u != new_v and any(
-            new_v in (u_of[e], v_of[e])
-            for e in incidence[new_u]
-            if e not in (first, second) and e not in dropped_edges
-        ):
-            continue  # the two neighbours are already joined
+        if new_u == new_v:
+            continue  # the far end of a loop street: merging would leave a self-loop
 
         # detach both edges from their endpoints and remove the pseudo-node and second segment
         incidence[u1].discard(first)
@@ -651,11 +652,6 @@ def simplify_graph(
         incidence[v2].discard(second)
         dropped_edges.add(second)
         dropped_nodes.add(nodeID)
-
-        # if the merge would create a node-line (u == v), drop the first segment too
-        if new_u == new_v:
-            dropped_edges.add(first)
-            continue
 
         if _coord_key(line_a[-1]) == _coord_key(line_b[0]):
             merged_line = line_a + line_b[1:]
@@ -692,15 +688,12 @@ _STRUCTURAL_EDGE_COLUMNS = frozenset(
 )
 
 
-def _is_missing(value):
-    return value is None or value is pd.NA or (isinstance(value, float) and np.isnan(value))
-
-
 def _merge_attributes(edges_gdf, original, merged):
     """Give each merged edge, per attribute, the non-null value covering the most length.
 
     ``merged`` maps a surviving edgeID to the edgeIDs of ``original`` merged into it. Ties go to
-    the value met first along that list.
+    the value met first along that list. Only the merged rows are written, so the other rows and
+    each column's dtype are left as they are.
     """
     lengths = original.geometry.length
     long = pd.DataFrame(
@@ -713,31 +706,29 @@ def _merge_attributes(edges_gdf, original, merged):
         if column in _STRUCTURAL_EDGE_COLUMNS or column == original.geometry.name:
             continue
         values = original[column].reindex(long["_piece"]).to_numpy(dtype=object)
-        present = np.array([not _is_missing(value) for value in values], dtype=bool)
+        present = np.array([not _is_missing_scalar(value) for value in values], dtype=bool)
         frame = long[present].assign(_v=values[present])
-        chosen = dict.fromkeys(merged)
-        if not frame.empty:
-            frame["_k"] = [repr(value) for value in frame["_v"]]
-            weight = frame.groupby(["_target", "_k"], sort=False)["_w"].sum()
-            best = weight.groupby(level=0, sort=False).idxmax()
-            first_value = frame.drop_duplicates(["_target", "_k"]).set_index(["_target", "_k"])[
-                "_v"
-            ]
-            chosen.update({target: first_value.loc[key] for target, key in best.items()})
-        current = edges_gdf[column].to_dict()
-        current.update(chosen)
-        edges_gdf[column] = pd.Series(
-            [current[eid] for eid in edges_gdf.index], index=edges_gdf.index, dtype=object
-        ).infer_objects()
+        if frame.empty:
+            continue  # no merged edge has a value; each already carries a missing one
+        frame["_k"] = [repr(value) for value in frame["_v"]]
+        weight = frame.groupby(["_target", "_k"], sort=False)["_w"].sum()
+        best = weight.groupby(level=0, sort=False).idxmax()
+        first_value = frame.drop_duplicates(["_target", "_k"]).set_index(["_target", "_k"])["_v"]
+        targets = list(best.index)
+        edges_gdf.loc[targets, column] = pd.Series(
+            [first_value.loc[key] for key in best], index=targets
+        )
     return edges_gdf
 
 
-def fix_dead_ends(nodes_gdf, edges_gdf):
+def fix_dead_ends(nodes_gdf, edges_gdf, nodes_to_keep_regardless=None):
     """
 
     The function removes dead-ends: nodes from where only one segment originates, and that segment.
     It repeats until none is left, so a street ending in a dead end is removed back to the junction
-    where it meets a node of degree three or more. Nodes no segment references are dropped.
+    where it meets the rest of the network. Removal stops at a node in `nodes_to_keep_regardless`,
+    which is kept together with the segments leading from it back to that junction. A component
+    with no loop has no such junction and is left as it is. Nodes no segment references are dropped.
 
     Parameters
     ----------
@@ -745,41 +736,80 @@ def fix_dead_ends(nodes_gdf, edges_gdf):
         The nodes (junctions) GeoDataFrame.
     edges_gdf: LineString GeoDataFrame
         The street segments GeoDataFrame
+    nodes_to_keep_regardless: list
+        List of nodeIDs never removed as dead ends (e.g. stations, when modelling transport
+        networks).
 
     Returns
     -------
     nodes_gdf, edges_gdf: tuple of GeoDataFrames
         The cleaned junctions and street segments GeoDataFrames.
     """
+    keep = set(nodes_to_keep_regardless or [])
+    edge_ids = edges_gdf.index.to_list()
+    us, vs = edges_gdf["u"].to_list(), edges_gdf["v"].to_list()
 
-    nodes_gdf, edges_gdf = nodes_gdf.copy(), edges_gdf.copy()
+    # Peel dead ends from a queue, updating degrees as each segment goes: O(edges) in all.
+    degree = defaultdict(int)
+    incident = defaultdict(list)
+    for pos, (u, v) in enumerate(zip(us, vs, strict=True)):
+        degree[u] += 1
+        degree[v] += 1
+        incident[u].append(pos)
+        incident[v].append(pos)
 
-    while True:
-        degree = nodes_degree(edges_gdf)
-        dead_end_nodes = [node for node, deg in degree.items() if deg == 1]
-        if not dead_end_nodes:
-            break
-        edges_gdf = edges_gdf[
-            ~edges_gdf["u"].isin(dead_end_nodes) & ~edges_gdf["v"].isin(dead_end_nodes)
-        ]
+    removed = [False] * len(edge_ids)
+    queue = [node for node, deg in degree.items() if deg == 1 and node not in keep]
+    while queue:
+        node = queue.pop()
+        if degree[node] != 1:
+            continue
+        pos = next(p for p in incident[node] if not removed[p])
+        removed[pos] = True
+        other = vs[pos] if us[pos] == node else us[pos]
+        degree[node] -= 1
+        degree[other] -= 1
+        if degree[other] == 1 and other not in keep:
+            queue.append(other)
 
+    # A component whose segments all went is loop-free: restore it rather than delete it.
+    if any(removed):
+        component = nx.Graph()
+        component.add_edges_from(zip(us, vs, strict=True))
+        survivors = {us[pos] for pos, gone in enumerate(removed) if not gone}
+        for nodes in nx.connected_components(component):
+            if nodes.isdisjoint(survivors):
+                for pos in (p for node in nodes for p in incident[node]):
+                    removed[pos] = False
+
+    edges_gdf = edges_gdf[[not gone for gone in removed]].copy()
+    return _drop_unused_nodes(nodes_gdf.copy(), edges_gdf), edges_gdf
+
+
+def _drop_unused_nodes(nodes_gdf, edges_gdf):
+    """Keep only the nodes that some edge references as its u or v."""
     used = set(edges_gdf["u"]).union(edges_gdf["v"])
-    nodes_gdf = nodes_gdf[nodes_gdf["nodeID"].isin(used)]
-    return nodes_gdf, edges_gdf
+    return nodes_gdf[nodes_gdf["nodeID"].isin(used)]
 
 
-def clean_same_vertexes_edges(nodes_gdf, edges_gdf, preserve_direction=False):
+def clean_same_vertexes_edges(
+    nodes_gdf, edges_gdf, preserve_direction=False, same_vertexes_tolerance=5.0
+):
     """
     Resolves edges that share the same start and end nodes (same vertexes).
 
-    For each group of edges with the same node pair ('u', 'v'), the function:
-      - Keeps the shortest edge.
-      - Collapses into it, as a center line, the edges less than 10% longer than it: the same
-        street mapped twice.
-      - Keeps every longer edge, a different street between the same two junctions (a crescent,
-        a loop round a block), splitting it at its midpoint with a new node so that each node
-        pair is joined by one edge.
-      - Updates the node GeoDataFrame to retain only nodes still referenced by any edge.
+    Edges joining the same pair of nodes are either one street mapped more than once, or different
+    streets between the same two junctions (a crescent, a loop round a block). Two edges are taken
+    as the same street when the longer is at most 10% longer than the shorter and they lie within
+    `same_vertexes_tolerance` of each other (Hausdorff distance). A street is every edge linked to
+    another through a chain of such matches, so the grouping does not depend on edge order.
+
+    Of each street mapped more than once, only its most central edge is kept: the one with the
+    smallest total distance to the others (of two, the shorter). Different streets are all kept,
+    as parallel edges between the same nodes; no node is added.
+
+    Self-loops (u equal to v) are left as they are: removing them is up to clean_duplicate_edges
+    or the `self_loops` option of clean_network.
 
     If `preserve_direction` is False, treats edges as undirected (edges (u,v) and (v,u) are considered duplicates).
     If True, edges in opposite directions are not treated as duplicates.
@@ -792,82 +822,79 @@ def clean_same_vertexes_edges(nodes_gdf, edges_gdf, preserve_direction=False):
         GeoDataFrame of street segments (edges), must include 'u', 'v', 'geometry', and 'length' columns.
     preserve_direction : bool
         Whether to preserve edge direction (see above).
+    same_vertexes_tolerance : float
+        Largest distance, in CRS units, between two edges taken as the same street (default: 5).
+        It keeps apart distinct streets of similar length, such as the two sides of a block.
 
     Returns
     -------
     nodes_gdf : GeoDataFrame
-        Filtered nodes, only those referenced by remaining edges, plus the midpoint nodes added.
+        Filtered nodes, only those referenced by remaining edges.
     edges_gdf : GeoDataFrame
-        Deduplicated edges with updated geometry where applicable.
+        The edges, with each street mapped more than once reduced to one edge.
     """
-    if not preserve_direction:
-        edges_gdf["code"] = np.where(
-            edges_gdf["v"] >= edges_gdf["u"],
-            edges_gdf.u.astype(str) + "-" + edges_gdf.v.astype(str),
-            edges_gdf.v.astype(str) + "-" + edges_gdf.u.astype(str),
-        )
-    else:
-        edges_gdf["code"] = edges_gdf.u.astype(str) + "-" + edges_gdf.v.astype(str)
-    duplicated = edges_gdf["code"].duplicated(keep=False)
-    if not duplicated.any():
-        return nodes_gdf, edges_gdf
-
     edges_gdf = edges_gdf.copy()
+    edges_gdf["code"] = _pair_codes(edges_gdf, preserve_direction)
     edges_gdf["length"] = edges_gdf.geometry.length
-    node_geometry = dict(zip(nodes_gdf["nodeID"], nodes_gdf.geometry, strict=False))
-    node_z = (
-        dict(zip(nodes_gdf["nodeID"], nodes_gdf["z"], strict=False)) if "z" in nodes_gdf else None
-    )
-    next_node = int(nodes_gdf["nodeID"].max()) + 1
-    next_edge = int(edges_gdf["edgeID"].max()) + 1
-    to_drop, new_nodes, new_edges = [], [], []
-
-    for _, group in edges_gdf[duplicated].groupby("code", sort=True):
-        group = group.iloc[np.lexsort((group["edgeID"].to_numpy(), group["length"].to_numpy()))]
-        shortest = group.index[0]
-        same = group[group["length"] * 0.9 <= group["length"].iloc[0]]
-        if len(same) > 1:
-            edges_gdf.at[shortest, "geometry"] = center_line(list(same.geometry))
-            to_drop.extend(same.index[1:])
-
-        for index, row in group.drop(same.index).iterrows():
-            line = row.geometry
-            start = Point(line.coords[0])
-            u, v = row["u"], row["v"]
-            if start.distance(node_geometry[v]) < start.distance(node_geometry[u]):
-                u, v = v, u  # the geometry runs from v to u
-            midpoint = line.interpolate(0.5, normalized=True)
-            node = {"nodeID": next_node, "x": midpoint.x, "y": midpoint.y, "geometry": midpoint}
-            if node_z is not None:
-                node["z"] = (node_z[u] + node_z[v]) / 2.0
-            new_nodes.append(node)
-
-            first_half = substring(line, 0.0, 0.5, normalized=True)
-            second_half = substring(line, 0.5, 1.0, normalized=True)
-            edges_gdf.at[index, "u"], edges_gdf.at[index, "v"] = u, next_node
-            edges_gdf.at[index, "geometry"] = first_half
-            edges_gdf.at[index, "length"] = first_half.length
-            second = row.copy()
-            second["edgeID"], second["u"], second["v"] = next_edge, next_node, v
-            second["geometry"], second["length"] = second_half, second_half.length
-            second.name = next_edge
-            new_edges.append(second)
-            next_node += 1
-            next_edge += 1
-
+    to_drop = [
+        index
+        for street in _same_streets(edges_gdf, same_vertexes_tolerance)
+        for index in street[1:]
+    ]
+    if not to_drop:
+        return nodes_gdf, edges_gdf
     edges_gdf = edges_gdf.drop(to_drop, axis=0)
-    if new_edges:
-        added = gpd.GeoDataFrame(new_edges, geometry="geometry", crs=edges_gdf.crs)
-        edges_gdf = pd.concat([edges_gdf, added])
-        added_nodes = gpd.GeoDataFrame(new_nodes, geometry="geometry", crs=nodes_gdf.crs)
-        added_nodes.index = added_nodes["nodeID"].to_numpy()
-        nodes_gdf = pd.concat([nodes_gdf, added_nodes])
-    edges_gdf["length"] = edges_gdf.geometry.length
+    return _drop_unused_nodes(nodes_gdf, edges_gdf), edges_gdf
 
-    # only keep nodes which are actually used by the edges in the GeoDataFrame
-    to_keep = set(edges_gdf["u"]).union(edges_gdf["v"])
-    nodes_gdf = nodes_gdf[nodes_gdf["nodeID"].isin(to_keep)]
-    return nodes_gdf, edges_gdf
+
+def _same_streets(edges_gdf, tolerance):
+    """Groups of edges that are one street mapped more than once, the edge to keep first.
+
+    Edges are compared only within the same ``code`` (node pair); self-loops are skipped. Two
+    edges match when the longer is at most 10% longer than the shorter and their Hausdorff distance
+    is within ``tolerance``; a group is a connected set of matches. Only groups of two or more are
+    returned, each led by its most central edge (smallest total Hausdorff distance to the others,
+    then the shortest, then the lowest edgeID).
+    """
+    candidates = edges_gdf[
+        edges_gdf["code"].duplicated(keep=False) & (edges_gdf["u"] != edges_gdf["v"])
+    ]
+    streets = []
+    for _, group in candidates.groupby("code", sort=True):
+        ids = list(group.index)
+        lengths = group.geometry.length.to_numpy()
+        lines = list(group.geometry)
+        distance = np.zeros((len(ids), len(ids)))
+        matches = nx.Graph()
+        matches.add_nodes_from(range(len(ids)))
+        for i in range(len(ids)):
+            for j in range(i + 1, len(ids)):
+                distance[i, j] = distance[j, i] = lines[i].hausdorff_distance(lines[j])
+                short, long = sorted((lengths[i], lengths[j]))
+                if long <= short * 1.1 and distance[i, j] <= tolerance:
+                    matches.add_edge(i, j)
+
+        for component in nx.connected_components(matches):
+            if len(component) < 2:
+                continue
+            group_members = sorted(component)
+            order = sorted(
+                group_members,
+                key=lambda i: (distance[i, group_members].sum(), lengths[i], ids[i]),
+            )
+            streets.append([ids[i] for i in order])
+    return streets
+
+
+def _pair_codes(edges_gdf, preserve_direction):
+    """A 'u-v' code per edge, with the lower nodeID first unless direction is preserved."""
+    if preserve_direction:
+        return edges_gdf["u"].astype(str) + "-" + edges_gdf["v"].astype(str)
+    return np.where(
+        edges_gdf["v"] >= edges_gdf["u"],
+        edges_gdf["u"].astype(str) + "-" + edges_gdf["v"].astype(str),
+        edges_gdf["v"].astype(str) + "-" + edges_gdf["u"].astype(str),
+    )
 
 
 def clean_duplicate_edges(
@@ -904,14 +931,8 @@ def clean_duplicate_edges(
     edges_gdf : GeoDataFrame
         Cleaned edges GeoDataFrame, deduplicated and without self-loops.
     """
-    if not preserve_direction:
-        edges_gdf["code"] = np.where(
-            edges_gdf["v"] >= edges_gdf["u"],
-            edges_gdf.u.astype(str) + "-" + edges_gdf.v.astype(str),
-            edges_gdf.v.astype(str) + "-" + edges_gdf.u.astype(str),
-        )
-    else:
-        edges_gdf["code"] = edges_gdf.u.astype(str) + "-" + edges_gdf.v.astype(str)
+    edges_gdf = edges_gdf.copy()
+    edges_gdf["code"] = _pair_codes(edges_gdf, preserve_direction)
 
     # eliminate node-lines
     edges_gdf = edges_gdf[edges_gdf["u"] != edges_gdf["v"]]
@@ -933,11 +954,7 @@ def clean_duplicate_edges(
     edges_gdf["tmp"] = edges_gdf["coords"].apply(tuple)
     edges_gdf.drop_duplicates(["tmp"], keep="first", inplace=True)
 
-    # only keep nodes which are actually used by the edges in the GeoDataFrame
-    to_keep = list(set(list(edges_gdf["u"].unique()) + list(edges_gdf["v"].unique())))
-    nodes_gdf = nodes_gdf[nodes_gdf["nodeID"].isin(to_keep)]
-
-    return nodes_gdf, edges_gdf
+    return _drop_unused_nodes(nodes_gdf, edges_gdf), edges_gdf
 
 
 def correct_edge_geometries(nodes_gdf, edges_gdf):
