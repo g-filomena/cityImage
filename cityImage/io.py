@@ -12,7 +12,7 @@ from typing import Any
 import geopandas as gpd
 
 from .adapters import standardize_buildings_gdf
-from .buildings import filter_buildings_by_height, select_buildings_by_study_area
+from .buildings import _drop_buildings_below_height, select_buildings_by_study_area
 from .geometry import gdf_multipolygon_to_polygon
 from .network import network_from_lines
 from .schema import LAND_USES_RAW
@@ -85,10 +85,9 @@ def buildings_from_file(
     identifiers, area, height/base defaults, and source/provenance land-use
     columns.
 
-    Heights come from ``height_field`` (or an existing ``height`` column). When the layer carries
-    real heights (mean above ``min_height``), buildings lower than ``min_height`` are dropped,
-    those with a missing or zero height included; see ``filter_buildings_by_height``. A file
-    without heights gets ``min_height`` for every building.
+    Heights come from ``height_field``, or from an existing ``height`` column; buildings lower
+    than ``min_height`` or without a height are dropped. A file without heights gets
+    ``min_height`` for every building.
     """
     crs = _normalise_crs(crs)
     buildings = gpd.read_file(input_path).to_crs(crs).copy()
@@ -108,9 +107,7 @@ def buildings_from_file(
         buildings["height"] = buildings[height_field]
     elif "height" not in buildings.columns:
         buildings["height"] = min_height
-    # When the file carries real heights, buildings below min_height - missing or zero heights
-    # included - are dropped, so no building reaches the scores with a NaN height.
-    buildings = filter_buildings_by_height(buildings, min_height=min_height)
+    buildings = _drop_buildings_below_height(buildings, min_height)
 
     if base_field is not None:
         buildings["base"] = buildings[base_field]

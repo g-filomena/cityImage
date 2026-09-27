@@ -11,15 +11,15 @@ Entries marked **⚠ behaviour** change the output of an existing call with the 
 ### Fixed — code review, September 2026
 
 #### Changed
-- **⚠ behaviour** `buildings_from_file` drops buildings lower than `min_height` (missing and zero
-  heights included) when the layer carries real heights (mean above `min_height`), as the loader
-  did before the 2.x API refactor. Buildings without a height otherwise received a NaN landmark
-  score. The rule is available as `filter_buildings_by_height`.
-- **⚠ behaviour** `buildings_from_osm` no longer keeps OSM `height` tags. They cover only some
-  buildings, so every untagged building scored NaN; without heights the visual component is left
-  out for all buildings, as before the refactor.
-- **⚠ behaviour** `score_buildings_global` / `score_buildings_local` raise a `ValueError` when some
-  buildings have a height and others have none, instead of returning NaN scores for the latter.
+- **⚠ behaviour** `buildings_from_file` drops buildings lower than `min_height` or without a
+  height (missing or zero), as the loader did before the 2.x API refactor. A file without heights
+  gets `min_height` for every building.
+- **⚠ behaviour** `buildings_from_osm` keeps OSM `height` tags only with the new
+  `keep_osm_heights=True`, read as metres (`"12 m"`, `"12,5"`). By default the layer has no
+  heights and the visual component is left out for every building, as before the refactor.
+- **⚠ behaviour** `score_buildings_global` / `score_buildings_local` (and `compute_global_scores` /
+  `compute_local_scores`) leave out, with a logged warning, the buildings without a height when
+  others have one; those buildings received NaN scores.
 - **⚠ behaviour** `dual_gdf(oneway=True)` returns directed dual edges and `dual_graph_fromGDF`
   builds a `networkx.DiGraph` from them (new `directed` argument), so routes respect one-way
   streets. Without `oneway` the dual graph stays undirected.

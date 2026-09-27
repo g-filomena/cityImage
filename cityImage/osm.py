@@ -19,6 +19,7 @@ from shapely.geometry import Point
 
 from .adapters import standardize_buildings_gdf
 from .barriers import barrier_osm_feature_tags, barriers_from_osm_features
+from .buildings import _clean_height
 from .geometry import gdf_multipolygon_to_polygon
 from .landuse import classify_land_uses_raws_into_OSMgroups, derive_land_uses_raw_fromOSM
 from .network import _resolve_list_edges_gdf, reset_index_graph_gdfs
@@ -310,6 +311,7 @@ def buildings_from_osm(
     distance: float | None = 1000,
     min_area: float | None = 200,
     default_land_use: str = "residential",
+    keep_osm_heights: bool = False,
 ) -> gpd.GeoDataFrame:
     """Download OSM buildings and convert them to cityImage building schema.
 
@@ -317,9 +319,11 @@ def buildings_from_osm(
     cityImage land-use groups, removes very small polygons, and standardises
     building identifiers and area.
 
-    OSM ``height`` tags are not kept: they cover only some buildings, so the layer is returned
-    without heights and the visual score component is left out for every building. Assign
-    heights from another source (``assign_building_heights_from_other_gdf``, rasters) to use it.
+    OSM ``height`` tags are kept only with ``keep_osm_heights=True``, read as metres (``"12 m"``,
+    ``"12,5"``). They usually cover only some buildings, and the landmark scores leave out the
+    buildings without a height when others have one. By default the layer has no heights and
+    the visual score component is left out for every building; heights from another source
+    (``assign_building_heights_from_other_gdf``, rasters) can be assigned instead.
     """
     crs = _normalise_crs(crs)
     buildings = features_from_osm(
@@ -330,10 +334,10 @@ def buildings_from_osm(
         crs=crs,
     )
     buildings = _polygonal_buildings(buildings)
-    # OSM height tags are left out: only a minority of buildings carry one, and keeping them
-    # gave every untagged building a NaN landmark score. Without heights, the visual component
-    # is left out of the scores for all buildings alike.
-    buildings = buildings.drop(columns=["height"], errors="ignore")
+    if keep_osm_heights and "height" in buildings.columns:
+        buildings["height"] = buildings["height"].apply(_clean_height)
+    else:
+        buildings = buildings.drop(columns=["height"], errors="ignore")
 
     if crs is None:
         buildings = ox.projection.project_gdf(buildings)

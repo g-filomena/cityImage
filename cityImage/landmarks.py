@@ -8,7 +8,7 @@ External libraries should prepare/download data; cityImage should score already-
 from __future__ import annotations
 
 import concurrent.futures
-import re
+import logging
 from typing import Any
 
 import geopandas as gpd
@@ -16,25 +16,12 @@ import numpy as np
 import pandas as pd
 from shapely.geometry import Point, Polygon, mapping
 
+from .buildings import _clean_height
 from .data_utils import scaling_columnDF
 
+LOGGER = logging.getLogger(__name__)
+
 pd.set_option("display.precision", 3)
-
-
-def _clean_height(x):
-    if isinstance(x, (list, tuple, set)):
-        x = next(iter(x), None)
-
-    if pd.isna(x):
-        return None
-
-    if isinstance(x, (int, float)):
-        return float(x)
-
-    s = str(x).replace(",", ".")
-    m = re.search(r"\d+(\.\d+)?", s)
-
-    return float(m.group()) if m else None
 
 
 # Process-pool workers for the 2D advance-visibility isovist. The per-building isovist is
@@ -477,34 +464,30 @@ def pragmatic_score(
     return gdf.drop(columns=["_ci_row_id", "_w_list", "_lu_w"], errors="ignore")
 
 
-def _require_complete_heights(buildings_gdf):
-    """Raise if some buildings have a height and others have none.
+def _drop_buildings_without_height(buildings_gdf):
+    """Leave out the buildings without a height when others have one.
 
-    The visual component is computed when the layer has heights, and a building without one then
-    gets a NaN score. Drop such buildings first (``filter_buildings_by_height``); a layer with no
-    heights at all is fine, as the visual component is then left out for every building.
+    The visual component is computed when the layer has heights, and a building without one would
+    get a NaN score. A layer where no building has a height keeps every building, and the visual
+    component is then left out of the scores.
     """
     if "height" not in buildings_gdf.columns:
-        return
-    heights = pd.to_numeric(buildings_gdf["height"], errors="coerce")
+        return buildings_gdf
+    heights = buildings_gdf["height"].apply(_clean_height).astype(float)
     missing = heights.isna()
-    if missing.any() and heights.max() > 0.0:
-        raise ValueError(
-            f"{int(missing.sum())} building(s) have no height while others have one, which "
-            "would give them a NaN score: drop them first with filter_buildings_by_height"
-        )
+    if not missing.any() or not (heights > 0.0).any():
+        return buildings_gdf
+    LOGGER.warning("Left out %d building(s) without a height from the scores", int(missing.sum()))
+    return buildings_gdf[~missing].copy()
 
 
 def compute_global_scores(buildings_gdf, global_indexes_weights, global_components_weights):
     """Compute component and global landmarkness scores.
 
-    Raises
-    ------
-    ValueError
-        If some buildings have a height and others have none (see ``filter_buildings_by_height``).
+    When some buildings have a height and others have none, the ones without are left out of the
+    result, as they would get a NaN visual score.
     """
-    buildings_gdf = buildings_gdf.copy()
-    _require_complete_heights(buildings_gdf)
+    buildings_gdf = _drop_buildings_without_height(buildings_gdf.copy())
 
     cols = {
         "direct": ["3dvis", "fac", "height", "area", "2dvis", "cult", "prag"],
@@ -584,7 +567,8 @@ def compute_local_scores(
     Returns
     -------
     buildings_gdf: Polygon GeoDataFrame
-        The updated buildings GeoDataFrame.
+        The updated buildings GeoDataFrame. When some buildings have a height and others have
+        none, the ones without are left out, as they would get a NaN visual score.
 
     Examples
     --------
@@ -602,9 +586,8 @@ def compute_local_scores(
     >>> local_components_weights = {"vScore": 0.25, "sScore": 0.35, "cScore": 0.10, "pScore": 0.30}
     """
 
-    # A copy: the score columns used to be added to the caller's own frame.
-    buildings_gdf = buildings_gdf.copy()
-    _require_complete_heights(buildings_gdf)
+    # A copy, so the score columns are not added to the caller's frame.
+    buildings_gdf = _drop_buildings_without_height(buildings_gdf.copy())
     sindex = buildings_gdf.sindex  # spatial index
 
     # Validate that local_components_weights sum to 1.0

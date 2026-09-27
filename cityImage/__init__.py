@@ -112,7 +112,6 @@ _PUBLIC_SYMBOLS: dict[str, str] = {
     "dual_id_dict": "graph",
     "ensure_building_schema_defaults": "schema",
     "filter_distance": "visibility3d",
-    "filter_buildings_by_height": "buildings",
     "find_gateways": "regions",
     "find_land_use_values_matching": "landuse",
     "find_unclassified_tokens_OSM_groups": "landuse",

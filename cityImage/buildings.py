@@ -7,10 +7,14 @@ cityImage's downstream semantics.
 
 from __future__ import annotations
 
+import logging
+import re
 from typing import Any
 
 import geopandas as gpd
 import pandas as pd
+
+LOGGER = logging.getLogger(__name__)
 
 
 def _geometry_union(geometry: gpd.GeoSeries) -> Any:
@@ -60,39 +64,36 @@ def select_buildings_by_study_area(
     return larger_buildings_gdf[larger_buildings_gdf.geometry.within(study_area)].copy()
 
 
-def filter_buildings_by_height(
-    buildings_gdf: gpd.GeoDataFrame,
-    min_height: float = 5,
-    height_column: str = "height",
-) -> gpd.GeoDataFrame:
-    """Drop buildings below ``min_height`` when the layer carries real heights.
+def _clean_height(value: Any) -> float | None:
+    """Read a height in metres: the first number in the value, or None when it holds none.
 
-    When the layer's mean known height is above ``min_height``, buildings with a height below it
-    are dropped, and so are buildings whose height is missing or zero: a layer mixing known and
-    unknown heights would otherwise give the unknown ones a NaN landmark score. A layer without
-    heights (no column, all missing, or values that look like floor counts, with a mean at or
-    below ``min_height``) is returned unchanged, and the visual component is then left out of the
-    scores for every building.
-
-    Parameters
-    ----------
-    buildings_gdf : geopandas.GeoDataFrame
-        Buildings table.
-    min_height : float, default 5
-        Minimum height, in metres, of a building kept when the layer has heights.
-    height_column : str, default "height"
-        Column holding the heights; values are read as numbers, unparseable ones as missing.
-
-    Returns
-    -------
-    geopandas.GeoDataFrame
-        The kept buildings, a copy of the input rows.
+    Accepts numbers, strings such as ``"12 m"`` or ``"12,5"`` (as OSM tags carry them), and
+    list-like values, of which the first item is read.
     """
-    buildings = buildings_gdf.copy()
-    if height_column not in buildings.columns:
-        return buildings
-    heights = pd.to_numeric(buildings[height_column], errors="coerce")
-    mean_height = heights.mean(skipna=True)
-    if pd.isna(mean_height) or mean_height <= min_height:
-        return buildings
-    return buildings[heights.notna() & (heights >= min_height)].copy()
+    if isinstance(value, (list, tuple, set)):
+        value = next(iter(value), None)
+    if pd.isna(value):
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    match = re.search(r"\d+(\.\d+)?", str(value).replace(",", "."))
+    return float(match.group()) if match else None
+
+
+def _drop_buildings_below_height(
+    buildings_gdf: gpd.GeoDataFrame, min_height: float
+) -> gpd.GeoDataFrame:
+    """Keep the buildings at least ``min_height`` tall; a building without a height is dropped.
+
+    The ``height`` column of the kept rows is read as numbers (see ``_clean_height``).
+    """
+    heights = buildings_gdf["height"].apply(_clean_height).astype(float)
+    keep = heights >= min_height
+    dropped = int((~keep).sum())
+    if dropped:
+        LOGGER.info(
+            "Dropped %d building(s) lower than %s m or without a height", dropped, min_height
+        )
+    kept = buildings_gdf[keep].copy()
+    kept["height"] = heights[keep]
+    return kept

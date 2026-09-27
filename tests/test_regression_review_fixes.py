@@ -386,21 +386,46 @@ def test_buildings_from_file_drops_buildings_below_min_height(tmp_path):
     assert out["buildingID"].tolist() == [0, 4]  # missing, zero and 3 m dropped
 
 
-def test_filter_buildings_by_height_leaves_a_layer_without_heights():
-    buildings = _scored_buildings([np.nan, np.nan, np.nan])
-    assert len(ci.filter_buildings_by_height(buildings)) == 3
+def test_buildings_from_file_without_heights_keeps_every_building(tmp_path):
+    path = tmp_path / "b.gpkg"
+    gpd.GeoDataFrame(
+        {"buildingID": [0, 1]}, geometry=[box(0, 0, 20, 20), box(50, 0, 70, 20)], crs=CRS
+    ).to_file(path)
 
-    floors = _scored_buildings([1.0, 2.0, np.nan])  # floor counts, mean below 5
-    assert len(ci.filter_buildings_by_height(floors)) == 3
+    out = ci.buildings_from_file(str(path), CRS, min_height=5)
+
+    assert out["buildingID"].tolist() == [0, 1]
+    assert out["height"].tolist() == [5.0, 5.0]
 
 
-def test_scores_refuse_mixed_known_and_missing_heights():
+def test_buildings_from_osm_keeps_height_tags_only_when_asked(monkeypatch):
+    from cityImage import osm
+
+    features = gpd.GeoDataFrame(
+        {"building": ["yes", "yes"], "height": ["12 m", None]},
+        geometry=[box(0, 0, 20, 20), box(50, 0, 70, 20)],
+        crs=CRS,
+    )
+    monkeypatch.setattr(osm, "features_from_osm", lambda *args, **kwargs: features.copy())
+
+    without = ci.buildings_from_osm("anywhere", crs=CRS)
+    tagged = ci.buildings_from_osm("anywhere", crs=CRS, keep_osm_heights=True)
+
+    assert without["height"].isna().all()
+    assert tagged["height"].iloc[0] == 12.0
+    assert math.isnan(tagged["height"].iloc[1])
+
+
+def test_scores_leave_out_buildings_without_a_height():
     buildings = _scored_buildings([5.0, np.nan, 7.0])
 
-    with pytest.raises(ValueError, match="filter_buildings_by_height"):
-        ci.score_buildings_global(buildings)
-    with pytest.raises(ValueError, match="filter_buildings_by_height"):
-        ci.score_buildings_local(buildings)
+    global_scores = ci.score_buildings_global(buildings)
+    local_scores = ci.score_buildings_local(buildings)
+
+    assert global_scores["buildingID"].tolist() == [0, 2]
+    assert global_scores["gScore"].notna().all()
+    assert local_scores["buildingID"].tolist() == [0, 2]
+    assert local_scores["lScore"].notna().all()
 
 
 def test_scores_without_heights_leave_out_the_visual_component():
