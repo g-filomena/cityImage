@@ -194,6 +194,20 @@ def test_compute_3d_sight_lines_leaves_the_caller_frame_and_no_files(tmp_path):
 # --- Networks -------------------------------------------------------------------------------
 
 
+def test_sight_line_progress_logs_once_per_bar_step(caplog):
+    from cityImage.visibility3d import _ProgressLogger
+
+    progress = _ProgressLogger(enabled=True)
+    progress.n_chunks = 240
+
+    with caplog.at_level("INFO", logger="cityImage.visibility3d"):
+        for done in range(1, 241):
+            progress.chunk(done, 10, 5, 1.0, 1.0)
+
+    assert len(caplog.records) == _ProgressLogger.BAR_WIDTH + 1  # steps 0 to 24
+    assert caplog.records[-1].getMessage().startswith("chunk 240/240")
+
+
 def test_network_from_lines_joins_3d_lines_to_their_nodes():
     lines = gpd.GeoDataFrame(
         geometry=[LineString([(0, 0, 1), (100, 0, 2)]), LineString([(100, 0, 2), (200, 0, 3)])],

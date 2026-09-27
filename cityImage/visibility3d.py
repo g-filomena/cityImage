@@ -11,6 +11,7 @@ so importing :mod:`cityImage` or resolving its public API does not require the
 from __future__ import annotations
 
 import gc
+import logging
 import shutil
 import tempfile
 import time
@@ -26,6 +27,8 @@ from shapely.geometry import LineString, MultiPolygon, Point, Polygon
 from .network_topology import consolidate_nodes
 
 pd.set_option("display.precision", 3)
+
+LOGGER = logging.getLogger(__name__)
 
 _VISIBILITY3D_OPTIONAL_DEPENDENCIES = {
     "dask": "dask",
@@ -68,19 +71,22 @@ def _require_visibility3d_dependencies(*import_names: str) -> None:
 
 
 class _ProgressLogger:
-    """Console progress and timing for :func:`compute_3d_sight_lines`, in one place.
+    """Progress and timing for :func:`compute_3d_sight_lines`, logged at INFO, in one place.
 
     Holds the run's start time and chunk count so callers do not thread them through.
     When ``enabled`` is ``False`` every reporting method is a no-op (``step`` still times
-    the block but prints nothing), so the compute path is silent unless the caller opts in
+    the block but logs nothing), so the compute path is silent unless the caller opts in
     via ``compute_3d_sight_lines(..., verbose=True)``. ``format_wall_time`` stays static and
     usable without an instance; ``chunk`` and ``total`` report against the run start.
     """
+
+    BAR_WIDTH = 24
 
     def __init__(self, enabled: bool = True):
         self.enabled = enabled
         self.total_start = time.perf_counter()
         self.n_chunks = 0
+        self._logged_bar_step = -1
 
     @staticmethod
     def format_wall_time(seconds: float) -> str:
@@ -93,26 +99,29 @@ class _ProgressLogger:
 
     @contextmanager
     def step(self, label):
-        """Time a one-off step, then (when enabled) print its wall time on a single line."""
+        """Time a one-off step, then (when enabled) log its wall time."""
         start = time.perf_counter()
         yield
         if not self.enabled:
             return
         elapsed = self.format_wall_time(time.perf_counter() - start)
-        print(f"{label} [{elapsed}]", flush=True)
+        LOGGER.info("%s [%s]", label, elapsed)
 
     def chunk(self, done, n_lines, n_records, t_2d, t_3d):
-        """A single in-place status line for the whole chunk loop: progress bar, times, ETA.
+        """Log the chunk loop's progress: progress bar, times, ETA.
 
-        Updates one line via a carriage return instead of printing one line per chunk, so the
-        console — and a tailed detached log — shows a compact live bar rather than hundreds of
-        lines. The final chunk commits the line with a newline so later output starts fresh.
+        A line is logged only when the bar advances a step, and for the last chunk, so a run of
+        hundreds of chunks logs at most ``BAR_WIDTH + 1`` lines.
         """
         if not self.enabled:
             return
         elapsed = time.perf_counter() - self.total_start
-        width = 24
+        width = self.BAR_WIDTH
         filled = int(width * done / self.n_chunks) if self.n_chunks else 0
+        last = bool(self.n_chunks) and done >= self.n_chunks
+        if filled == self._logged_bar_step and not last:
+            return
+        self._logged_bar_step = filled
         bar = "#" * filled + "-" * (width - filled)
         eta = ""
         if 0 < done < self.n_chunks:
@@ -122,17 +131,14 @@ class _ProgressLogger:
             f"2d {t_2d:4.0f}s 3d {t_3d:4.0f}s -> {n_records:>6,} sight lines  "
             f"| elapsed {self.format_wall_time(elapsed)}{eta}"
         )
-        # \r keeps it on one line; the final chunk ends with \n to commit it. Pad so a shorter
-        # update fully overwrites a previous longer one (no leftover trailing characters).
-        end = "\n" if self.n_chunks and done >= self.n_chunks else "\r"
-        print(f"{line:<130}", end=end, flush=True)
+        LOGGER.info(line)
 
     def total(self):
-        """Print the total wall time since the run started."""
+        """Log the total wall time since the run started."""
         if not self.enabled:
             return
         elapsed = self.format_wall_time(time.perf_counter() - self.total_start)
-        print(f"compute_3d_sight_lines total wall time: {elapsed}", flush=True)
+        LOGGER.info("compute_3d_sight_lines total wall time: %s", elapsed)
 
 
 def compute_3d_sight_lines(
@@ -204,9 +210,11 @@ def compute_3d_sight_lines(
     num_workers : int, default 20
         Number of parallel Dask workers used for the 2D obstruction check.
     verbose : bool, default False
-        When ``True``, print per-chunk progress (a bar, per-step 2D/3D times, and an ETA)
-        plus step and total wall times to stdout. When ``False`` (the default) the compute
-        path is silent, leaving progress reporting to the caller.
+        When ``True``, log progress at INFO on the ``cityImage.visibility3d`` logger: a bar
+        with per-step 2D/3D times and an ETA, each time the bar advances, plus step and total
+        wall times. INFO is shown once the caller enables it, e.g.
+        ``logging.basicConfig(level=logging.INFO)``. When ``False`` (the default) the compute
+        path is silent.
 
     Returns
     -------
@@ -343,7 +351,7 @@ def compute_3d_sight_lines(
                 tmp_sight_lines = merge_gpkg_chunks_to_gdf(out_files, "matchesIDs")
                 tmp_sight_lines.drop(["visible"], axis=1, errors="ignore", inplace=True)
         else:
-            print("No visible sight-lines")
+            LOGGER.info("No visible sight-lines")
             progress.total()
             return tmp_sight_lines
 

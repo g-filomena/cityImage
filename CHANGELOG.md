@@ -34,6 +34,10 @@ Entries marked **⚠ behaviour** change the output of an existing call with the 
   them with 0. `calculate_centrality` accepts a `MultiGraph` too, and `multiGraph_fromGDF` keeps
   parallel streets that share a `key` (`network_from_lines` keys every edge 0) instead of keeping
   the last one read. The node-and-paths notebooks compute edge betweenness on a `MultiGraph`.
+- **⚠ behaviour** `compute_3d_sight_lines(verbose=True)` logs its progress at INFO on the
+  `cityImage.visibility3d` logger instead of printing it, one line each time the progress bar
+  advances; enable it with `logging.basicConfig(level=logging.INFO)`. "No visible sight-lines" is
+  logged too.
 - **⚠ behaviour** 2D advance visibility (`visibility_polygon2d`, `2dvis`) covers the whole ring
   of rays: the slice between the 350° and 0° rays was left out.
 - `barriers_from_osm`, `barriers_from_osm_features` (and the per-type builders) and
