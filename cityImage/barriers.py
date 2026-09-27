@@ -6,22 +6,11 @@ feature retrieval to external libraries such as OSMnx.
 Preferred workflow:
 
 ```python
-roads = ox.features_from_place(place, tags={"highway": True})
-waterways = ox.features_from_place(place, tags={"waterway": True})
-water = ox.features_from_place(place, tags={"natural": "water"})
-coastline = ox.features_from_place(place, tags={"natural": "coastline"})
-railways = ox.features_from_place(place, tags={"railway": True})
-parks = ox.features_from_place(place, tags={"leisure": True})
-
-barriers = ci.barriers_from_osm_features(
-    roads_gdf=roads,
-    waterways_gdf=waterways,
-    water_gdf=water,
-    coastline_gdf=coastline,
-    railways_gdf=railways,
-    parks_gdf=parks,
-    crs=target_crs,
-)
+features = {
+    name: ox.features_from_place(place, tags=tags)
+    for name, tags in ci.barrier_osm_feature_tags().items()
+}
+barriers = ci.barriers_from_osm_features(**features, crs=target_crs)
 ```
 
 The old live OSM-loading functions were intentionally removed from the core API.
@@ -63,15 +52,33 @@ LIGHT_RAILWAY_BARRIER_VALUES = {"light_rail", "tram"}
 PARK_LEISURE_VALUES = {"park"}
 
 
-def barrier_osm_feature_tags() -> dict[str, dict[str, Any]]:
-    """Return OSM tag queries needed to build the full barrier layer externally."""
+def barrier_osm_feature_tags(
+    *,
+    include_primary: bool = True,
+    include_secondary: bool = False,
+    keep_light_rail: bool = False,
+) -> dict[str, dict[str, Any]]:
+    """Return the OSM tag queries for the features the barrier extractors keep.
+
+    Each query names only the values its extractor retains, so a download fetches
+    motorways rather than every highway feature, parks rather than every leisure
+    feature. Pass the same flags as to :func:`barriers_from_osm_features`.
+    """
+    highways = set(ROAD_BARRIER_HIGHWAYS)
+    if include_primary:
+        highways |= PRIMARY_ROAD_BARRIER_HIGHWAYS
+    if include_secondary:
+        highways |= SECONDARY_ROAD_BARRIER_HIGHWAYS
+    railways = set(RAILWAY_BARRIER_VALUES)
+    if keep_light_rail:
+        railways |= LIGHT_RAILWAY_BARRIER_VALUES
     return {
-        "roads_gdf": {"highway": True},
-        "waterways_gdf": {"waterway": True},
+        "roads_gdf": {"highway": sorted(highways)},
+        "waterways_gdf": {"waterway": sorted(WATERWAY_BARRIER_VALUES)},
         "water_gdf": {"natural": "water"},
         "coastline_gdf": {"natural": "coastline"},
-        "railways_gdf": {"railway": True},
-        "parks_gdf": {"leisure": True},
+        "railways_gdf": {"railway": sorted(railways)},
+        "parks_gdf": {"leisure": sorted(PARK_LEISURE_VALUES)},
     }
 
 
