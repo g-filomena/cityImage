@@ -12,8 +12,10 @@ Entries marked **⚠ behaviour** change the output of an existing call with the 
 
 #### Changed
 - **⚠ behaviour** `buildings_from_file` drops buildings lower than `min_height` or without a
-  height (missing or zero), as the loader did before the 2.x API refactor. A file without heights
-  gets `min_height` for every building.
+  height (missing or zero), as the loader did before the 2.x API refactor. When no building has a
+  height (the height field entirely missing or zero), every building is kept without heights and
+  the landmark scores leave the visual component out. A file with neither a `height_field` nor a
+  `height` column gets `min_height` for every building.
 - **⚠ behaviour** `buildings_from_osm` keeps OSM `height` tags only with the new
   `keep_osm_heights=True`, read as metres (`"12 m"`, `"12,5"`). By default the layer has no
   heights and the visual component is left out for every building, as before the refactor.

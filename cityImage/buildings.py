@@ -85,9 +85,14 @@ def _drop_buildings_below_height(
 ) -> gpd.GeoDataFrame:
     """Keep the buildings at least ``min_height`` tall; a building without a height is dropped.
 
-    The ``height`` column of the kept rows is read as numbers (see ``_clean_height``).
+    The ``height`` column of the kept rows is read as numbers (see ``_clean_height``). When no
+    building has a height (every value missing or zero), the column carries nothing: it is dropped
+    and every building kept, and the landmark scores then leave the visual component out.
     """
     heights = buildings_gdf["height"].apply(_clean_height).astype(float)
+    if not (heights > 0.0).any():
+        LOGGER.info("No building has a height: the height column is dropped")
+        return buildings_gdf.drop(columns=["height"])
     keep = heights >= min_height
     dropped = int((~keep).sum())
     if dropped:

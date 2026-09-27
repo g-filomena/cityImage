@@ -484,6 +484,23 @@ def test_buildings_from_file_drops_buildings_below_min_height(tmp_path):
     assert out["buildingID"].tolist() == [0, 4]  # missing, zero and 3 m dropped
 
 
+def test_buildings_from_file_with_an_empty_height_field_scores_without_heights(tmp_path):
+    path = tmp_path / "b.gpkg"
+    gpd.GeoDataFrame(
+        {"buildingID": [0, 1, 2], "h": [np.nan, 0.0, np.nan]},
+        geometry=[box(i * 50, 0, i * 50 + 20, 20) for i in range(3)],
+        crs=CRS,
+    ).to_file(path)
+
+    out = ci.buildings_from_file(str(path), CRS, height_field="h")
+    scored = ci.score_buildings_global(out)
+
+    assert out["buildingID"].tolist() == [0, 1, 2]
+    assert out["height"].isna().all()
+    assert "vScore" not in scored.columns
+    assert scored["gScore"].notna().all()
+
+
 def test_buildings_from_file_without_heights_keeps_every_building(tmp_path):
     path = tmp_path / "b.gpkg"
     gpd.GeoDataFrame(

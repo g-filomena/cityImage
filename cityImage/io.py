@@ -86,8 +86,9 @@ def buildings_from_file(
     columns.
 
     Heights come from ``height_field``, or from an existing ``height`` column; buildings lower
-    than ``min_height`` or without a height are dropped. A file without heights gets
-    ``min_height`` for every building.
+    than ``min_height`` or without a height are dropped. When no building has a height (every
+    value missing or zero), every building is kept without heights, and the landmark scores leave
+    the visual component out. A file with neither gets ``min_height`` for every building.
     """
     crs = _normalise_crs(crs)
     buildings = gpd.read_file(input_path).to_crs(crs).copy()
