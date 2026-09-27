@@ -410,7 +410,7 @@ def _call_osmnx_features(ox: Any, method_name: str, *args: Any, **kwargs: Any) -
 def pedestrian_network_from_osm(
     query: Any = None,
     *,
-    crs: Any,
+    crs: Any = None,
     download_method: str = "OSMplace",
     distance: float = 500,
     address: str | None = None,
@@ -429,7 +429,8 @@ def pedestrian_network_from_osm(
         Place name for ``download_method="OSMplace"``. For address/point/polygon
         methods, prefer the explicit keyword arguments.
     crs
-        Target projected CRS for the output network.
+        Target projected CRS for the output network. ``None`` projects to the local UTM zone of
+        the downloaded features, as ``network_from_osm`` does for other network types.
     download_method
         One of ``"OSMplace"``, ``"distance_from_address"``,
         ``"distance_from_point"``, or ``"polygon"``.
@@ -474,4 +475,6 @@ def pedestrian_network_from_osm(
             "distance_from_point, polygon"
         )
 
+    if crs is None and not features.empty:
+        crs = features.estimate_utm_crs()
     return pedestrian_network_from_osm_features(features, crs, sidewalk_policy=sidewalk_policy)

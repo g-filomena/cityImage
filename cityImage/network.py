@@ -131,10 +131,17 @@ def join_nodes_edges_by_coordinates(
     if "nodeID" not in nodes.columns:
         nodes["nodeID"] = nodes.index.to_numpy(dtype="int64")
 
-    nodes["coordinates"] = list(zip(nodes.x, nodes.y, strict=False))
+    # Match on as many dimensions as the lines carry: nodes built from 3D lines are unique by
+    # (x, y, z), and keying them by (x, y) alone matched no endpoint at all.
+    three_d = "z" in nodes.columns and not edges.empty and len(edges.geometry.iloc[0].coords[0]) > 2
+    if three_d:
+        nodes["coordinates"] = list(zip(nodes.x, nodes.y, nodes.z, strict=False))
+    else:
+        nodes["coordinates"] = list(zip(nodes.x, nodes.y, strict=False))
+    dims = 3 if three_d else 2
     node_lookup = nodes.set_index("coordinates").nodeID
-    edges["u"] = edges.geometry.apply(lambda row: row.coords[0]).map(node_lookup)
-    edges["v"] = edges.geometry.apply(lambda row: row.coords[-1]).map(node_lookup)
+    edges["u"] = edges.geometry.apply(lambda row: tuple(row.coords[0][:dims])).map(node_lookup)
+    edges["v"] = edges.geometry.apply(lambda row: tuple(row.coords[-1][:dims])).map(node_lookup)
     nodes = nodes.drop(columns="coordinates")
     return nodes, edges
 

@@ -8,6 +8,51 @@ Entries marked **⚠ behaviour** change the output of an existing call with the 
 
 ## [Unreleased]
 
+### Fixed — code review, September 2026
+
+#### Changed
+- **⚠ behaviour** `buildings_from_file` drops buildings lower than `min_height` (missing and zero
+  heights included) when the layer carries real heights (mean above `min_height`), as the loader
+  did before the 2.x API refactor. Buildings without a height otherwise received a NaN landmark
+  score. The rule is available as `filter_buildings_by_height`.
+- **⚠ behaviour** `buildings_from_osm` no longer keeps OSM `height` tags. They cover only some
+  buildings, so every untagged building scored NaN; without heights the visual component is left
+  out for all buildings, as before the refactor.
+- **⚠ behaviour** `score_buildings_global` / `score_buildings_local` raise a `ValueError` when some
+  buildings have a height and others have none, instead of returning NaN scores for the latter.
+- **⚠ behaviour** `dual_gdf(oneway=True)` returns directed dual edges and `dual_graph_fromGDF`
+  builds a `networkx.DiGraph` from them (new `directed` argument), so routes respect one-way
+  streets. Without `oneway` the dual graph stays undirected.
+- **⚠ behaviour** `amend_nodes_membership` raises a `ValueError`, instead of looping forever, when
+  the network is not connected (remove its islands first), is smaller than `min_size_district`,
+  has no district of that size, or has nodes that cannot be amended.
+- **⚠ behaviour** 2D advance visibility (`visibility_polygon2d`, `2dvis`) covers the whole ring
+  of rays: the slice between the 350° and 0° rays was left out.
+- `barriers_from_osm`, `barriers_from_osm_features` (and the per-type builders) and
+  `network_from_osm(network_type="walk")` / `pedestrian_network_from_osm` project to the local UTM
+  zone when `crs` is None; the barrier rules were applied in degrees.
+- `gdf_multipolygon_to_polygon` keeps the ID column unless a MultiPolygon is split, so
+  `buildings_from_file` keeps the file's building IDs.
+
+#### Fixed
+- `network_from_lines` / `network_from_file` join 3D lines to their nodes (u/v were all NaN), and
+  `clean_network` accepts 3D line geometries.
+- `network_from_osm(network_type="walk")` validates `distance` like the other network types
+  instead of passing `None` to OSMnx.
+- `assign_building_heights_from_other_gdf` gives a detailed building's height to its best match
+  only, not to every building it overlaps.
+- Functions no longer write into the caller's frames: `score_buildings_local`,
+  `along_within_parks`, and the building preparation of `compute_3d_sight_lines` (which raised the
+  caller's `base` values to 1.0).
+- `visibility_score` (and so `score_building_components`) keeps the caller's index.
+- `compute_3d_sight_lines` writes its chunk files to a temporary folder removed afterwards,
+  instead of leaving them in `./sight_lines_tmp`.
+- `weight_nodes`, `append_edges_metrics` and `districts_to_edges_from_nodes` match rows by
+  `nodeID`/`edgeID` rather than by index label (a `KeyError`, extra rows, or silently wrong
+  districts when the index was not the IDs).
+- `district_to_nodes_from_edges` falls back to the nearest edge anywhere when none is within
+  100 m, and `remove_disconnected_islands` accepts an empty network.
+
 ## [2.2.0] — 2026-09-27
 
 ### Network cleaning — reworked

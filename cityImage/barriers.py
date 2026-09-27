@@ -90,6 +90,28 @@ def _empty_barriers(crs: Any = None, barrier_type: str | None = None) -> gpd.Geo
     return gpd.GeoDataFrame(data, geometry=gpd.GeoSeries([], crs=crs), crs=crs)
 
 
+def _resolve_crs(crs: Any, *frames: gpd.GeoDataFrame | None) -> Any:
+    """Return ``crs``, or a local projected CRS when none is given and the input is not projected.
+
+    The barrier rules measure areas, lengths and buffers in CRS units, so on longitude/latitude
+    input they were applied in degrees: lakes and parks fell below every area threshold and a
+    10-unit buffer spread a railway over 20 degrees. Such input is projected to its UTM zone, as
+    ``buildings_from_osm`` and ``network_from_osm`` already do.
+    """
+    if crs is not None:
+        return crs
+    present = [frame for frame in frames if isinstance(frame, gpd.GeoDataFrame) and not frame.empty]
+    if not present or all(frame.crs is not None and frame.crs.is_projected for frame in present):
+        return None
+    geographic = [
+        (frame if frame.crs is not None else frame.set_crs("EPSG:4326")).to_crs("EPSG:4326")
+        for frame in present
+    ]
+    return gpd.GeoSeries(
+        pd.concat([frame.geometry for frame in geographic], ignore_index=True), crs="EPSG:4326"
+    ).estimate_utm_crs()
+
+
 def _as_projected(gdf: gpd.GeoDataFrame | None, crs: Any = None) -> gpd.GeoDataFrame:
     """Return a defensive projected copy, or an empty GeoDataFrame."""
     if gdf is None:
@@ -167,6 +189,7 @@ def road_barriers_from_osm_features(
     include_secondary: bool = False,
 ) -> gpd.GeoDataFrame:
     """Build road barrier features from already-downloaded OSM highway features."""
+    crs = _resolve_crs(crs, roads_gdf)
     roads = _as_projected(roads_gdf, crs)
     if roads.empty:
         return _empty_barriers(crs=crs, barrier_type="road")
@@ -195,6 +218,7 @@ def water_barriers_from_osm_features(
     min_lake_boundary_length: float = 500,
 ) -> gpd.GeoDataFrame:
     """Build water barrier features from already-downloaded OSM water features."""
+    crs = _resolve_crs(crs, waterways_gdf, water_gdf, coastline_gdf)
     parts: list[gpd.GeoDataFrame] = []
 
     waterways = _as_projected(waterways_gdf, crs)
@@ -234,6 +258,7 @@ def railway_barriers_from_osm_features(
     keep_light_rail: bool = False,
 ) -> gpd.GeoDataFrame:
     """Build railway barrier features from already-downloaded OSM railway features."""
+    crs = _resolve_crs(crs, railways_gdf)
     railways = _as_projected(railways_gdf, crs)
     if railways.empty:
         return _empty_barriers(crs=crs, barrier_type="railway")
@@ -263,6 +288,7 @@ def park_barriers_from_osm_features(
     min_area: float = 100000,
 ) -> gpd.GeoDataFrame:
     """Build park barrier features from already-downloaded OSM leisure features."""
+    crs = _resolve_crs(crs, parks_gdf)
     parks = _as_projected(parks_gdf, crs)
     if parks.empty:
         return _empty_barriers(crs=crs, barrier_type="park")
@@ -297,7 +323,14 @@ def barriers_from_osm_features(
     parks_min_area: float = 100000,
     keep_light_rail: bool = False,
 ) -> gpd.GeoDataFrame:
-    """Build a combined cityImage barrier layer from already-downloaded OSM features."""
+    """Build a combined cityImage barrier layer from already-downloaded OSM features.
+
+    With ``crs=None``, longitude/latitude input is projected to its local UTM zone, one CRS for
+    every barrier type.
+    """
+    crs = _resolve_crs(
+        crs, roads_gdf, waterways_gdf, water_gdf, coastline_gdf, railways_gdf, parks_gdf
+    )
     parts = [
         road_barriers_from_osm_features(
             roads_gdf,
@@ -372,6 +405,7 @@ def along_within_parks(
     edges_gdf: gpd.GeoDataFrame, barriers_gdf: gpd.GeoDataFrame
 ) -> gpd.GeoDataFrame:
     """Assign park barrier IDs lying along or containing each street segment."""
+    edges_gdf = edges_gdf.copy()  # w_parks used to be written into the caller's frame
     park_polygons = barriers_gdf[barriers_gdf["barrier_type"] == "park"].copy()
     if park_polygons.empty:
         edges_gdf["w_parks"] = [[] for _ in range(len(edges_gdf))]

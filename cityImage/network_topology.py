@@ -316,6 +316,8 @@ def remove_disconnected_islands(nodes_gdf, edges_gdf):
         The updated junctions and street segments GeoDataFrame.
     """
     Ng = graph_fromGDF(nodes_gdf, edges_gdf)
+    if Ng.number_of_nodes() == 0:
+        return nodes_gdf, edges_gdf  # an empty network has no islands (and NetworkX raises)
     if not nx.is_connected(Ng):
         largest_component = max(nx.connected_components(Ng), key=len)
         # Create a subgraph of Ng consisting only of this component:
@@ -1083,8 +1085,10 @@ def correct_edge_geometries(nodes_gdf, edges_gdf):
         It can be necessary to run the function after having cleaned the network.
         """
         line_coords = list(line_geometry.coords)
-        line_coords[0] = (nodes_gdf.loc[u]["x"], nodes_gdf.loc[u]["y"])
-        line_coords[-1] = (nodes_gdf.loc[v]["x"], nodes_gdf.loc[v]["y"])
+        # Only x and y are moved to the node: a 3D line keeps its own z at each end, so every
+        # vertex keeps the same number of dimensions (mixing 2D ends with 3D vertices raised).
+        line_coords[0] = (nodes_gdf.loc[u]["x"], nodes_gdf.loc[u]["y"], *line_coords[0][2:])
+        line_coords[-1] = (nodes_gdf.loc[v]["x"], nodes_gdf.loc[v]["y"], *line_coords[-1][2:])
         new_line_geometry = LineString([coor for coor in line_coords])
         return new_line_geometry
 

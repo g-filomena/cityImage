@@ -246,7 +246,11 @@ def weight_nodes(
     field_name: str,
     radius: float = 400,
 ) -> Any:
-    """Assign local opportunity counts to nodes and to the NetworkX graph."""
+    """Assign local opportunity counts to nodes and to the NetworkX graph.
+
+    Graph nodes are matched by ``nodeID`` (as ``graph_fromGDF`` keys them), whatever the index of
+    ``nodes_gdf``; the counts are also written to ``nodes_gdf[field_name]``.
+    """
     sindex = services_gdf.sindex
 
     for node_id, node in nodes_gdf.iterrows():
@@ -257,7 +261,9 @@ def weight_nodes(
         weight_value = len(precise_matches)
 
         nodes_gdf.at[node_id, field_name] = weight_value
-        nx_graph.nodes[node_id][field_name] = weight_value
+        # By nodeID: the index label is another node's, or none, unless the frame is indexed by it.
+        graph_node = node["nodeID"] if "nodeID" in nodes_gdf.columns else node_id
+        nx_graph.nodes[graph_node][field_name] = weight_value
 
     return nx_graph
 
@@ -278,7 +284,6 @@ def append_edges_metrics(
 ) -> pd.DataFrame:
     """Attach edge-level centrality values to an edges GeoDataFrame."""
     edge_ids = {(u, v): graph[u][v]["edgeID"] for u, v in graph.edges()}
-    missing_values = [item for item in list(edges_gdf.index) if item not in list(edge_ids.values())]
 
     dicts = [*dicts, edge_ids]
     column_names = [*column_names, "edgeID"]
@@ -289,12 +294,11 @@ def append_edges_metrics(
     edges_gdf.index = edges_gdf.edgeID
     edges_gdf.index.name = None
 
-    for metric in column_names:
-        if metric == "edgeID":
-            continue
-        for edge_id in missing_values:
-            edges_gdf.at[edge_id, metric] = 0.0
-
+    # Edges missing from the graph (e.g. the longer of two parallel edges) get 0. Filled after the
+    # merge, by edgeID: filling by the input's index labels added new rows whenever the index was
+    # not the edgeIDs.
+    metrics = [metric for metric in column_names if metric != "edgeID"]
+    edges_gdf[metrics] = edges_gdf[metrics].fillna(0.0)
     return edges_gdf
 
 

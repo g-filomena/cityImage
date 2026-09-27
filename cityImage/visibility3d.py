@@ -11,6 +11,8 @@ so importing :mod:`cityImage` or resolving its public API does not require the
 from __future__ import annotations
 
 import gc
+import shutil
+import tempfile
 import time
 from contextlib import contextmanager
 from importlib import import_module
@@ -263,101 +265,107 @@ def compute_3d_sight_lines(
             for positions in np.array_split(np.arange(num_observers), num_chunks)
         ]
 
-    out_prefix = "chunk_sight_lines"
-    out_files = []
+    # Chunks are written to a private temporary folder, removed once they are merged (or on
+    # error): they used to be left behind in ./sight_lines_tmp in the working directory.
+    chunk_dir = Path(tempfile.mkdtemp(prefix=f"{city_name}_sight_lines_"))
+    try:
+        out_prefix = "chunk_sight_lines"
+        out_files = []
 
-    progress.n_chunks = len(observer_chunks)
-    for n, chunk in enumerate(observer_chunks):
-        visibles = []
+        progress.n_chunks = len(observer_chunks)
+        for n, chunk in enumerate(observer_chunks):
+            visibles = []
 
-        potential_sight_lines = filter_distance(
-            chunk, targets, min_observer_target_distance, max_observer_target_distance
-        )
-        n_lines = len(potential_sight_lines)
-        if potential_sight_lines.empty:
-            progress.chunk(n + 1, 0, 0, 0.0, 0.0)
-            continue
-
-        t0 = time.perf_counter()
-        visible_2d, obstructed_2d = obstructions_2d(
-            potential_sight_lines, obstructions_gdf, obstructions_sindex, num_workers=num_workers
-        )
-        t_2d = time.perf_counter() - t0
-        if not visible_2d.empty:
-            visibles.append(visible_2d)
-
-        t0 = time.perf_counter()
-        visible_3d = pd.DataFrame()
-        if not obstructed_2d.empty:
-            import shapely
-
-            # Vectorised 3D segment construction (observer/target are 3D Points).
-            observer_xyz = shapely.get_coordinates(
-                np.asarray(obstructed_2d["observer_geo"], dtype=object), include_z=True
+            potential_sight_lines = filter_distance(
+                chunk, targets, min_observer_target_distance, max_observer_target_distance
             )
-            target_xyz = shapely.get_coordinates(
-                np.asarray(obstructed_2d["target_geo"], dtype=object), include_z=True
-            )
-            obstructed_2d["geometry"] = shapely.linestrings(
-                np.stack([observer_xyz, target_xyz], axis=1)
-            )
-            visible_3d = _analytic_obstructions_3d(obstructed_2d, occluders, "matchesIDs")
-            if not visible_3d.empty:
-                visibles.append(visible_3d)
-        t_3d = time.perf_counter() - t0
+            n_lines = len(potential_sight_lines)
+            if potential_sight_lines.empty:
+                progress.chunk(n + 1, 0, 0, 0.0, 0.0)
+                continue
 
-        chunk_dir = Path("sight_lines_tmp")
-        chunk_dir.mkdir(parents=True, exist_ok=True)  # create folder if not existing
-
-        # Finalize columns and export
-        n_records = 0
-        if visibles:
-            for df in visibles:
-                df.drop(
-                    columns=[col for col in ("visible", "z") if col in df.columns],
-                    inplace=True,
-                    errors="ignore",
-                )
-            chunk_sight_lines = pd.concat(visibles, ignore_index=True)
-            chunk_sight_lines = _finalize_sight_lines(
-                chunk_sight_lines, nodes_gdf, consolidate, observer_height
-            )
-            n_records = len(chunk_sight_lines)
-            chunk_file = chunk_dir / f"{city_name}_{out_prefix}_{n}.gpkg"
-            chunk_sight_lines.to_file(chunk_file)
-            out_files.append(chunk_file)
-            del chunk_sight_lines
-
-        del visibles, chunk, potential_sight_lines, visible_2d, obstructed_2d, visible_3d
-        gc.collect()
-        progress.chunk(n + 1, n_lines, n_records, t_2d, t_3d)
-    tmp_sight_lines = gpd.GeoDataFrame(geometry=[], crs=obstructions_gdf.crs)
-    if out_files:
-        with progress.step(" -- Merging chunk files"):
-            tmp_sight_lines = merge_gpkg_chunks_to_gdf(out_files, "matchesIDs")
-            tmp_sight_lines.drop(["visible"], axis=1, errors="ignore", inplace=True)
-    else:
-        print("No visible sight-lines")
-        progress.total()
-        return tmp_sight_lines
-
-    if consolidate:
-        with progress.step(" 04 - Final check"):
-            sight_lines = _last_check(
-                tmp_sight_lines,
+            t0 = time.perf_counter()
+            visible_2d, obstructed_2d = obstructions_2d(
+                potential_sight_lines,
                 obstructions_gdf,
                 obstructions_sindex,
-                occluders,
-                nodes_gdf,
-                progress,
                 num_workers=num_workers,
-                observer_height=observer_height,
             )
-    else:
-        sight_lines = tmp_sight_lines
+            t_2d = time.perf_counter() - t0
+            if not visible_2d.empty:
+                visibles.append(visible_2d)
 
-    progress.total()
-    return sight_lines
+            t0 = time.perf_counter()
+            visible_3d = pd.DataFrame()
+            if not obstructed_2d.empty:
+                import shapely
+
+                # Vectorised 3D segment construction (observer/target are 3D Points).
+                observer_xyz = shapely.get_coordinates(
+                    np.asarray(obstructed_2d["observer_geo"], dtype=object), include_z=True
+                )
+                target_xyz = shapely.get_coordinates(
+                    np.asarray(obstructed_2d["target_geo"], dtype=object), include_z=True
+                )
+                obstructed_2d["geometry"] = shapely.linestrings(
+                    np.stack([observer_xyz, target_xyz], axis=1)
+                )
+                visible_3d = _analytic_obstructions_3d(obstructed_2d, occluders, "matchesIDs")
+                if not visible_3d.empty:
+                    visibles.append(visible_3d)
+            t_3d = time.perf_counter() - t0
+
+            # Finalize columns and export
+            n_records = 0
+            if visibles:
+                for df in visibles:
+                    df.drop(
+                        columns=[col for col in ("visible", "z") if col in df.columns],
+                        inplace=True,
+                        errors="ignore",
+                    )
+                chunk_sight_lines = pd.concat(visibles, ignore_index=True)
+                chunk_sight_lines = _finalize_sight_lines(
+                    chunk_sight_lines, nodes_gdf, consolidate, observer_height
+                )
+                n_records = len(chunk_sight_lines)
+                chunk_file = chunk_dir / f"{city_name}_{out_prefix}_{n}.gpkg"
+                chunk_sight_lines.to_file(chunk_file)
+                out_files.append(chunk_file)
+                del chunk_sight_lines
+
+            del visibles, chunk, potential_sight_lines, visible_2d, obstructed_2d, visible_3d
+            gc.collect()
+            progress.chunk(n + 1, n_lines, n_records, t_2d, t_3d)
+        tmp_sight_lines = gpd.GeoDataFrame(geometry=[], crs=obstructions_gdf.crs)
+        if out_files:
+            with progress.step(" -- Merging chunk files"):
+                tmp_sight_lines = merge_gpkg_chunks_to_gdf(out_files, "matchesIDs")
+                tmp_sight_lines.drop(["visible"], axis=1, errors="ignore", inplace=True)
+        else:
+            print("No visible sight-lines")
+            progress.total()
+            return tmp_sight_lines
+
+        if consolidate:
+            with progress.step(" 04 - Final check"):
+                sight_lines = _last_check(
+                    tmp_sight_lines,
+                    obstructions_gdf,
+                    obstructions_sindex,
+                    occluders,
+                    nodes_gdf,
+                    progress,
+                    num_workers=num_workers,
+                    observer_height=observer_height,
+                )
+        else:
+            sight_lines = tmp_sight_lines
+
+        progress.total()
+        return sight_lines
+    finally:
+        shutil.rmtree(chunk_dir, ignore_errors=True)
 
 
 ## Preparation ###########################
@@ -462,6 +470,8 @@ def _prepare_buildings_gdf(buildings_gdf):
         Building table indexed by ``buildingID`` with non-null heights and a
         minimum base elevation of 1.0.
     """
+    # A copy first: the base default and floor below were written into the caller's frame.
+    buildings_gdf = buildings_gdf.copy()
     # add a 'base' column to the buildings GeoDataFrame with a default value of 1.0, if not provided
     if "base" not in buildings_gdf.columns:
         buildings_gdf["base"] = 1.0

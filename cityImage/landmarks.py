@@ -251,17 +251,9 @@ def visibility_score(buildings_gdf, sight_lines=None, method="longest"):
     else:
         raise ValueError("method must be either 'longest' or 'combined'")
 
-    stats.reset_index(inplace=True)
-    buildings_gdf = pd.merge(
-        buildings_gdf,
-        stats[["buildingID", "3dvis"]],
-        on="buildingID",
-        how="left",
-    )
-    buildings_gdf["3dvis"] = buildings_gdf["3dvis"].where(
-        pd.notnull(buildings_gdf["3dvis"]),
-        0.0,
-    )
+    # Mapped by buildingID rather than merged: a merge replaced the caller's index with a new
+    # RangeIndex, so the scored frame no longer lined up with the one passed in.
+    buildings_gdf["3dvis"] = buildings_gdf["buildingID"].map(stats["3dvis"]).fillna(0.0)
 
     return buildings_gdf
 
@@ -485,9 +477,34 @@ def pragmatic_score(
     return gdf.drop(columns=["_ci_row_id", "_w_list", "_lu_w"], errors="ignore")
 
 
+def _require_complete_heights(buildings_gdf):
+    """Raise if some buildings have a height and others have none.
+
+    The visual component is computed when the layer has heights, and a building without one then
+    gets a NaN score. Drop such buildings first (``filter_buildings_by_height``); a layer with no
+    heights at all is fine, as the visual component is then left out for every building.
+    """
+    if "height" not in buildings_gdf.columns:
+        return
+    heights = pd.to_numeric(buildings_gdf["height"], errors="coerce")
+    missing = heights.isna()
+    if missing.any() and heights.max() > 0.0:
+        raise ValueError(
+            f"{int(missing.sum())} building(s) have no height while others have one, which "
+            "would give them a NaN score: drop them first with filter_buildings_by_height"
+        )
+
+
 def compute_global_scores(buildings_gdf, global_indexes_weights, global_components_weights):
-    """Compute component and global landmarkness scores."""
+    """Compute component and global landmarkness scores.
+
+    Raises
+    ------
+    ValueError
+        If some buildings have a height and others have none (see ``filter_buildings_by_height``).
+    """
     buildings_gdf = buildings_gdf.copy()
+    _require_complete_heights(buildings_gdf)
 
     cols = {
         "direct": ["3dvis", "fac", "height", "area", "2dvis", "cult", "prag"],
@@ -585,6 +602,9 @@ def compute_local_scores(
     >>> local_components_weights = {"vScore": 0.25, "sScore": 0.35, "cScore": 0.10, "pScore": 0.30}
     """
 
+    # A copy: the score columns used to be added to the caller's own frame.
+    buildings_gdf = buildings_gdf.copy()
+    _require_complete_heights(buildings_gdf)
     sindex = buildings_gdf.sindex  # spatial index
 
     # Validate that local_components_weights sum to 1.0

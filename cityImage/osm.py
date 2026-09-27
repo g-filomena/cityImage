@@ -233,11 +233,17 @@ def network_from_osm(
     crs = _normalise_crs(crs)
 
     if network_type in {"walk", "foot", "pedestrian"}:
+        _validate_download_method(download_method)
+        # Validated as for the other network types, then passed on only when given: passing
+        # None through overrode the pedestrian default and reached OSMnx as dist=None.
+        pedestrian_kwargs = {}
+        if _distance_arg(distance, download_method) is not None:
+            pedestrian_kwargs["distance"] = distance
         return pedestrian_network_from_osm(
             query,
             crs=crs,
             download_method=download_method,
-            distance=distance,
+            **pedestrian_kwargs,
         )
 
     _validate_download_method(download_method)
@@ -310,6 +316,10 @@ def buildings_from_osm(
     The function derives raw OSM land-use candidates, classifies them into
     cityImage land-use groups, removes very small polygons, and standardises
     building identifiers and area.
+
+    OSM ``height`` tags are not kept: they cover only some buildings, so the layer is returned
+    without heights and the visual score component is left out for every building. Assign
+    heights from another source (``assign_building_heights_from_other_gdf``, rasters) to use it.
     """
     crs = _normalise_crs(crs)
     buildings = features_from_osm(
@@ -320,6 +330,10 @@ def buildings_from_osm(
         crs=crs,
     )
     buildings = _polygonal_buildings(buildings)
+    # OSM height tags are left out: only a minority of buildings carry one, and keeping them
+    # gave every untagged building a NaN landmark score. Without heights, the visual component
+    # is left out of the scores for all buildings alike.
+    buildings = buildings.drop(columns=["height"], errors="ignore")
 
     if crs is None:
         buildings = ox.projection.project_gdf(buildings)

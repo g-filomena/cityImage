@@ -129,9 +129,7 @@ def assign_building_heights_from_other_gdf(
     )
 
     valid_matches = intersections[intersections["overlap_ratio"] >= min_overlap]
-    best_matches = valid_matches.loc[
-        valid_matches.groupby(valid_matches.index)["overlap_ratio"].idxmax()
-    ]
+    best_matches = _best_match_per_source(valid_matches)
     best_matches = best_matches.set_index("ix")
     best_matches.index = best_matches.index.astype(int)
 
@@ -164,9 +162,7 @@ def assign_building_heights_from_other_gdf(
     )
 
     valid_matches = intersections[intersections["overlap_ratio"] >= min_overlap]
-    best_matches = valid_matches.loc[
-        valid_matches.groupby(valid_matches.index)["overlap_ratio"].idxmax()
-    ]
+    best_matches = _best_match_per_source(valid_matches)
 
     intersection_bases = best_matches.groupby(best_matches.index)["base_right"].min()
     intersection_height = best_matches.groupby(best_matches.index)["height_right"].max()
@@ -180,6 +176,22 @@ def assign_building_heights_from_other_gdf(
     buildings_gdf = buildings_gdf.drop(["geo_check", "ix"], axis=1, errors="ignore")
 
     return buildings_gdf
+
+
+def _best_match_per_source(matches):
+    """Keep, per index label of ``matches`` (a spatial join), only its highest-overlap row.
+
+    The join repeats a label once per match, so selecting ``idxmax`` labels with ``.loc`` returned
+    every match of that label, not the best one: a detailed building overlapping two buildings
+    gave its height to both. Rows are picked by position instead.
+    """
+    if matches.empty:
+        return matches
+    order = pd.DataFrame(
+        {"label": matches.index.to_numpy(), "ratio": matches["overlap_ratio"].to_numpy()}
+    )
+    best_positions = order.groupby("label", sort=False)["ratio"].idxmax().to_numpy()
+    return matches.iloc[best_positions]
 
 
 def buildings_height_from_dem_dtm(

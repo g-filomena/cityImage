@@ -171,7 +171,11 @@ def gdf_multipolygon_to_polygon(
     gdf: gpd.GeoDataFrame,
     columnID: str = "buildingID",
 ) -> gpd.GeoDataFrame:
-    """Convert one-part MultiPolygons to Polygons and explode remaining MultiPolygons."""
+    """Convert one-part MultiPolygons to Polygons and explode remaining MultiPolygons.
+
+    ``columnID`` keeps its values unless a MultiPolygon is split into several rows; only then is
+    it renumbered from 0, since the parts would otherwise share one ID.
+    """
 
     def convert_multipolygon_to_polygon(geometry: Any) -> Any:
         if isinstance(geometry, MultiPolygon) and len(geometry.geoms) == 1:
@@ -181,11 +185,14 @@ def gdf_multipolygon_to_polygon(
     out = gdf.copy()
     out["geometry"] = out["geometry"].apply(convert_multipolygon_to_polygon)
 
-    if out["geometry"].apply(lambda geom: isinstance(geom, MultiPolygon)).any():
+    split = out["geometry"].apply(lambda geom: isinstance(geom, MultiPolygon)).any()
+    if split:
         out = out.explode(index_parts=False, ignore_index=True)
 
     out = out.reset_index(drop=True)
-    if columnID in out.columns:
+    # Renumbered only when rows were split: renumbering every time replaced the IDs a file or
+    # caller supplied (buildings_from_file lost them) even though they were still unique.
+    if split and columnID in out.columns:
         out[columnID] = out.index
 
     out["area"] = out.geometry.area

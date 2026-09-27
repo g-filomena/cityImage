@@ -59,7 +59,7 @@ def test_multipolygon_to_polygon_preserves_polygon_output_and_area():
 
     out = ci.gdf_multipolygon_to_polygon(gdf)
 
-    assert out["buildingID"].tolist() == [0]
+    assert out["buildingID"].tolist() == [10]  # nothing split, so the ID is kept
     assert out.geometry.iloc[0].geom_type == "Polygon"
     assert out["area"].tolist() == pytest.approx([1.0])
 

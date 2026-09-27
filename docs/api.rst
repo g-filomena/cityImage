@@ -69,6 +69,7 @@ Buildings
    :toctree: api/
 
    select_buildings_by_study_area
+   filter_buildings_by_height
 
 Angles and graph semantics
 --------------------------

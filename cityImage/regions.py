@@ -211,6 +211,10 @@ def _assign_district_to_node(
     search_area = node_geometry.buffer(100)
     possible_matches_index = list(sindex.intersection(search_area.bounds))
     possible_matches = edges_gdf.iloc[possible_matches_index].copy()
+    if possible_matches.empty:
+        # No edge within 100 m: the nearest one is further away, so search them all rather than
+        # fail on an empty candidate set.
+        possible_matches = edges_gdf
     _, nearest_index = _min_distance_geometry_gdf(node_geometry, possible_matches)
     return int(edges_gdf.loc[nearest_index][column])
 
@@ -226,31 +230,15 @@ def districts_to_edges_from_nodes(
     ``{column}_uv``, ``{column}_u``, and ``{column}_v``.
     """
     edges_gdf = edges_gdf.copy()
-    edges_gdf[f"{column}_uv"] = INVALID_DISTRICT
-    edges_gdf[f"{column}_u"] = INVALID_DISTRICT
-    edges_gdf[f"{column}_v"] = INVALID_DISTRICT
-
-    edges_gdf[[f"{column}_uv", f"{column}_u", f"{column}_v"]] = edges_gdf.apply(
-        lambda row: _assign_district_to_edge(row["edgeID"], nodes_gdf, edges_gdf, column),
-        axis=1,
-        result_type="expand",
-    )
-
+    # Look nodes up by nodeID, not by index label: a frame whose index is not its nodeIDs (after a
+    # filter and reset_index, say) otherwise read another node's district without any error.
+    district_of = pd.Series(nodes_gdf[column].to_numpy(), index=nodes_gdf["nodeID"].to_numpy())
+    district_u = edges_gdf["u"].map(district_of).astype(int)
+    district_v = edges_gdf["v"].map(district_of).astype(int)
+    edges_gdf[f"{column}_uv"] = district_u.where(district_u == district_v, INVALID_DISTRICT)
+    edges_gdf[f"{column}_u"] = district_u
+    edges_gdf[f"{column}_v"] = district_v
     return edges_gdf
-
-
-def _assign_district_to_edge(
-    edge_id: Any,
-    nodes_gdf: gpd.GeoDataFrame,
-    edges_gdf: gpd.GeoDataFrame,
-    column: str,
-) -> tuple[int, int, int]:
-    """Return edge district assignment from the districts of endpoint nodes."""
-    edge = edges_gdf.loc[edge_id]
-    district_u = int(nodes_gdf.loc[edge.u][column])
-    district_v = int(nodes_gdf.loc[edge.v][column])
-    district_uv = district_u if district_u == district_v else INVALID_DISTRICT
-    return district_uv, district_u, district_v
 
 
 def district_to_nodes_from_polygons(
@@ -285,16 +273,45 @@ def amend_nodes_membership(
     column: str,
     min_size_district: int = 10,
 ) -> gpd.GeoDataFrame:
-    """Amend node membership based on connectivity and minimum district size."""
+    """Amend node membership based on connectivity and minimum district size.
+
+    Nodes of districts smaller than ``min_size_district``, or cut off from the rest of their
+    district, are reassigned to a neighbouring district, pass after pass, until every node belongs
+    to a valid one.
+
+    The network must be connected: run ``remove_disconnected_islands`` first. An island can never
+    reach a valid district, so amending it could not finish.
+
+    Raises
+    ------
+    ValueError
+        If the network is not connected, if it has fewer nodes than ``min_size_district``, if no
+        district reaches ``min_size_district``, or if a pass leaves invalid nodes and amends none.
+        Each of these used to make the amending loop run forever.
+    """
     nodes_gdf = nodes_gdf.copy()
     # Node look-ups below use .loc by nodeID, so index by nodeID regardless of the caller's index
     # (a plain RangeIndex would otherwise KeyError once a small/disconnected district is amended).
     nodes_gdf = nodes_gdf.set_index("nodeID", drop=False)
     nodes_gdf.index.name = None
+
+    if min_size_district > len(nodes_gdf):
+        raise ValueError(
+            f"min_size_district ({min_size_district}) is larger than the network "
+            f"({len(nodes_gdf)} nodes): no district can be valid"
+        )
+    _require_connected(nodes_gdf, edges_gdf)
+
     nodes_gdf = _check_disconnected_districts(nodes_gdf, edges_gdf, column, min_size_district)
+    if (nodes_gdf[column] == INVALID_DISTRICT).all():
+        raise ValueError(
+            f"No district reaches min_size_district ({min_size_district}): "
+            "there is no valid district to amend the nodes into"
+        )
 
     while INVALID_DISTRICT in nodes_gdf[column].unique():
         current_nodes_gdf = nodes_gdf
+        previous = nodes_gdf[column].copy()
         nodes_gdf[column] = nodes_gdf.apply(
             lambda row, current_nodes_gdf=current_nodes_gdf: _amend_node_membership(
                 row["nodeID"], current_nodes_gdf, edges_gdf, column
@@ -302,8 +319,24 @@ def amend_nodes_membership(
             axis=1,
         )
         nodes_gdf = _check_disconnected_districts(nodes_gdf, edges_gdf, column, min_size_district)
-
+        if nodes_gdf[column].equals(previous):
+            stuck = nodes_gdf.loc[nodes_gdf[column] == INVALID_DISTRICT, "nodeID"].tolist()
+            raise ValueError(
+                f"{len(stuck)} node(s) cannot be amended into a valid district: {stuck[:20]}"
+            )
     return nodes_gdf
+
+
+def _require_connected(nodes_gdf: gpd.GeoDataFrame, edges_gdf: gpd.GeoDataFrame) -> None:
+    """Raise if the network is not a single connected component."""
+    import networkx as nx
+
+    graph = _graph_from_gdfs(nodes_gdf, edges_gdf)
+    if graph.number_of_nodes() and not nx.is_connected(graph):
+        raise ValueError(
+            "The network is not connected: remove its islands first "
+            "(remove_disconnected_islands), as they can never join a valid district"
+        )
 
 
 def _amend_node_membership(

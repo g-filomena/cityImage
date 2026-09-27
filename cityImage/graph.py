@@ -178,6 +178,12 @@ def dual_gdf(
     segments sharing a junction. Their length is the mean of the two original
     segment lengths; optional angle values encode deflection between original
     geometries.
+
+    With ``oneway=True`` the dual edges are directed: an edge ``u -> v`` means segment ``v`` can
+    be entered from segment ``u``, respecting one-way streets (``oneway == 1``). The returned
+    ``edges_dual`` is flagged (``edges_dual.attrs["directed"]``) so that ``dual_graph_fromGDF``
+    builds a ``networkx.DiGraph`` from it. Before, the pairs were stored once, undirected, and a
+    route could run against a one-way street.
     """
     nodes = nodes_gdf.copy().set_index("nodeID", drop=False)
     nodes.index.name = None
@@ -216,7 +222,7 @@ def dual_gdf(
             if (
                 row.Index == intersecting
                 or (row.Index, intersecting) in processed
-                or (intersecting, row.Index) in processed
+                or (not oneway and (intersecting, row.Index) in processed)
             ):
                 continue
 
@@ -239,6 +245,7 @@ def dual_gdf(
         crs=crs,
         geometry="geometry",
     )
+    edges_dual.attrs["directed"] = bool(oneway)
 
     if angle != "radians":
         edges_dual["deg"] = edges_dual.apply(
@@ -267,15 +274,24 @@ def dual_gdf(
 def dual_graph_fromGDF(
     nodes_dual: gpd.GeoDataFrame,
     edges_dual: gpd.GeoDataFrame,
+    directed: bool | None = None,
 ) -> nx.Graph:
-    """Create a NetworkX graph from dual-node and dual-edge GeoDataFrames."""
+    """Create a NetworkX graph from dual-node and dual-edge GeoDataFrames.
+
+    ``directed`` selects a ``networkx.DiGraph``; by default it follows the flag ``dual_gdf`` sets
+    on ``edges_dual`` (directed when built with ``oneway=True``). Pass it explicitly for dual
+    edges that lost the flag, e.g. after being saved to file. Community detection
+    (``identify_regions``) needs an undirected graph.
+    """
     nodes = nodes_dual.copy().set_index("edgeID", drop=False)
     nodes.index.name = None
     edges = edges_dual.copy()
     edges["u"] = edges["u"].astype(int)
     edges["v"] = edges["v"].astype(int)
 
-    dual_graph = nx.Graph()
+    if directed is None:
+        directed = bool(edges_dual.attrs.get("directed", False))
+    dual_graph = nx.DiGraph() if directed else nx.Graph()
     dual_graph.add_nodes_from(nodes.index)
     _set_node_attributes_from_gdf(dual_graph, nodes)
 
