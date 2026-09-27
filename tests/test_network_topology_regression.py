@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import geopandas as gpd
+import pandas as pd
 from shapely.geometry import LineString, Point
 
 import cityImage.network_topology as nt
@@ -190,7 +191,7 @@ def test_correct_edge_geometries_forces_linestring_endpoints_to_node_coordinates
     ]
 
 
-def test_clean_same_vertexes_edges_collapses_similar_duplicate_edges_to_center_line():
+def test_clean_same_vertexes_edges_keeps_one_edge_of_a_street_mapped_twice():
     nodes_gdf = _nodes(
         [
             {"nodeID": 1, "x": 0.0, "y": 0.0},
@@ -206,9 +207,10 @@ def test_clean_same_vertexes_edges_collapses_similar_duplicate_edges_to_center_l
 
     clean_nodes, clean_edges = nt.clean_same_vertexes_edges(nodes_gdf.copy(), edges_gdf.copy())
 
+    # Two equally central copies: the shorter, then the lower edgeID, is kept as mapped.
     assert clean_nodes["nodeID"].tolist() == [1, 2]
-    assert len(clean_edges) == 1
-    assert list(clean_edges.iloc[0].geometry.coords) == [(0.0, 1.0), (10.0, 1.0)]
+    assert clean_edges["edgeID"].tolist() == [10]
+    assert list(clean_edges.iloc[0].geometry.coords) == [(0.0, 0.0), (10.0, 0.0)]
 
 
 def _crescent():
@@ -236,21 +238,16 @@ def _crescent():
     return nodes_gdf, edges_gdf
 
 
-def test_clean_same_vertexes_edges_keeps_both_streets_when_lengths_differ():
+def test_clean_same_vertexes_edges_keeps_both_streets_as_parallel_edges():
     nodes_gdf, edges_gdf = _crescent()
 
     clean_nodes, clean_edges = nt.clean_same_vertexes_edges(nodes_gdf.copy(), edges_gdf.copy())
 
-    # The straight street is kept whole; the crescent is kept, split by a node at its midpoint.
-    assert 10 in clean_edges["edgeID"].tolist()
-    assert round(clean_edges.geometry.length.sum(), 6) == round(edges_gdf.geometry.length.sum(), 6)
-    pairs = [frozenset(pair) for pair in zip(clean_edges["u"], clean_edges["v"], strict=False)]
-    assert len(pairs) == len(set(pairs))
-    midpoint = clean_nodes[clean_nodes["nodeID"] == 7].geometry.iloc[0]
-    assert (round(midpoint.x, 6), round(midpoint.y, 6)) == (5.0, 10.0)
-    for _, edge in clean_edges.iterrows():
-        start = clean_nodes.set_index("nodeID").loc[edge["u"]].geometry
-        assert Point(edge.geometry.coords[0]).distance(start) < 1e-9
+    # The straight street and the crescent both join nodes 1 and 2, unchanged; no node is added.
+    assert sorted(clean_edges["edgeID"].tolist()) == [10, 11, 12, 13, 14, 15]
+    assert sorted(clean_nodes["nodeID"].tolist()) == [1, 2, 3, 4, 5, 6]
+    for edge_id in (10, 11):
+        assert clean_edges.loc[edge_id].geometry.equals(edges_gdf.loc[edge_id].geometry)
 
 
 def test_clean_network_keeps_a_crescent_and_terminates():
@@ -262,7 +259,7 @@ def test_clean_network_keeps_a_crescent_and_terminates():
 
     assert round(clean_edges.geometry.length.sum(), 6) == round(edges_gdf.geometry.length.sum(), 6)
     pairs = [frozenset(pair) for pair in zip(clean_edges["u"], clean_edges["v"], strict=False)]
-    assert len(pairs) == len(set(pairs))
+    assert pairs.count(frozenset((1, 2))) == 2  # the straight street and the crescent
 
 
 def test_fix_dead_ends_removes_a_dead_end_street_back_to_its_junction():
@@ -511,3 +508,326 @@ def test_clean_network_keeps_a_street_joined_only_at_an_unnoded_crossing():
     )
 
     assert abs(clean_edges.geometry.length.sum() - 300.0) < 1e-6
+
+
+def _star():
+    # A loop-free network: three streets meeting at node 2.
+    nodes_gdf = _nodes(
+        [
+            {"nodeID": 1, "x": 0.0, "y": 0.0},
+            {"nodeID": 2, "x": 10.0, "y": 0.0},
+            {"nodeID": 3, "x": 20.0, "y": 0.0},
+            {"nodeID": 4, "x": 10.0, "y": 10.0},
+        ]
+    )
+    edges_gdf = _edges(
+        [
+            {"edgeID": 10, "u": 1, "v": 2, "geometry": LineString([(0, 0), (10, 0)])},
+            {"edgeID": 11, "u": 2, "v": 3, "geometry": LineString([(10, 0), (20, 0)])},
+            {"edgeID": 12, "u": 2, "v": 4, "geometry": LineString([(10, 0), (10, 10)])},
+        ]
+    )
+    return nodes_gdf, edges_gdf
+
+
+def test_fix_dead_ends_leaves_a_loop_free_network_as_it_is():
+    nodes_gdf, edges_gdf = _star()
+
+    clean_nodes, clean_edges = nt.fix_dead_ends(nodes_gdf.copy(), edges_gdf.copy())
+
+    assert sorted(clean_edges["edgeID"].tolist()) == [10, 11, 12]
+    assert sorted(clean_nodes["nodeID"].tolist()) == [1, 2, 3, 4]
+
+
+def test_clean_network_with_dead_ends_does_not_empty_a_loop_free_network():
+    for remove_islands in (True, False):
+        nodes_gdf, edges_gdf = _star()
+
+        clean_nodes, clean_edges = nt.clean_network(
+            nodes_gdf, edges_gdf, dead_ends=True, remove_islands=remove_islands
+        )
+
+        assert len(clean_edges) == 3
+        assert len(clean_nodes) == 4
+
+
+def _block_with_branch():
+    # A square block with a two-segment street, 2-5-6, hanging off corner 2.
+    nodes_gdf = _nodes(
+        [
+            {"nodeID": 1, "x": 0.0, "y": 0.0},
+            {"nodeID": 2, "x": 10.0, "y": 0.0},
+            {"nodeID": 3, "x": 10.0, "y": 10.0},
+            {"nodeID": 4, "x": 0.0, "y": 10.0},
+            {"nodeID": 5, "x": 20.0, "y": 0.0},
+            {"nodeID": 6, "x": 30.0, "y": 0.0},
+        ]
+    )
+    edges_gdf = _edges(
+        [
+            {"edgeID": 10, "u": 1, "v": 2, "geometry": LineString([(0, 0), (10, 0)])},
+            {"edgeID": 11, "u": 2, "v": 3, "geometry": LineString([(10, 0), (10, 10)])},
+            {"edgeID": 12, "u": 3, "v": 4, "geometry": LineString([(10, 10), (0, 10)])},
+            {"edgeID": 13, "u": 4, "v": 1, "geometry": LineString([(0, 10), (0, 0)])},
+            {"edgeID": 14, "u": 2, "v": 5, "geometry": LineString([(10, 0), (20, 0)])},
+            {"edgeID": 15, "u": 5, "v": 6, "geometry": LineString([(20, 0), (30, 0)])},
+        ]
+    )
+    return nodes_gdf, edges_gdf
+
+
+def test_fix_dead_ends_stops_at_a_node_to_keep():
+    nodes_gdf, edges_gdf = _block_with_branch()
+
+    clean_nodes, clean_edges = nt.fix_dead_ends(
+        nodes_gdf.copy(), edges_gdf.copy(), nodes_to_keep_regardless=[5]
+    )
+
+    # The segment beyond the kept node goes; the kept node and its way back to the block stay.
+    assert sorted(clean_edges["edgeID"].tolist()) == [10, 11, 12, 13, 14]
+    assert sorted(clean_nodes["nodeID"].tolist()) == [1, 2, 3, 4, 5]
+
+
+def test_clean_network_keeps_a_protected_node_on_a_dead_end_street():
+    nodes_gdf, edges_gdf = _block_with_branch()
+
+    clean_nodes, _ = nt.clean_network(
+        nodes_gdf, edges_gdf, dead_ends=True, nodes_to_keep_regardless=[5]
+    )
+
+    assert 5 in clean_nodes["nodeID"].tolist()
+
+
+def _pair_with_detour(detour_coords, detour_u=1, detour_v=2):
+    # A straight 10 m street from node 1 to node 2, and a second street joining the same pair.
+    nodes_gdf = _nodes(
+        [
+            {"nodeID": 1, "x": 0.0, "y": 0.0},
+            {"nodeID": 2, "x": 10.0, "y": 0.0},
+        ]
+    )
+    edges_gdf = _edges(
+        [
+            {"edgeID": 10, "u": 1, "v": 2, "geometry": LineString([(0, 0), (10, 0)])},
+            {
+                "edgeID": 11,
+                "u": detour_u,
+                "v": detour_v,
+                "geometry": LineString(detour_coords),
+            },
+        ]
+    )
+    return nodes_gdf, edges_gdf
+
+
+def test_clean_same_vertexes_edges_keeps_a_parallel_edge_as_mapped():
+    # Edge 11 runs from node 1 to node 2, its geometry drawn from node 2 to node 1.
+    nodes_gdf, edges_gdf = _pair_with_detour([(10, 0), (5, 10), (0, 0)])
+
+    _, clean_edges = nt.clean_same_vertexes_edges(
+        nodes_gdf.copy(), edges_gdf.copy(), preserve_direction=True
+    )
+
+    assert sorted(clean_edges["edgeID"].tolist()) == [10, 11]
+    parallel = clean_edges.loc[11]
+    assert (parallel["u"], parallel["v"]) == (1, 2)
+    assert parallel.geometry.equals(edges_gdf.loc[11].geometry)
+
+
+def test_clean_same_vertexes_edges_keeps_an_edge_more_than_10_percent_longer():
+    # The detour is about 10.5% longer than the straight street: a different street, kept.
+    nodes_gdf, edges_gdf = _pair_with_detour([(0, 0), (5, 2.35), (10, 0)])
+    assert 1.1 < edges_gdf.geometry.length.loc[11] / 10 < 1.11
+
+    clean_nodes, clean_edges = nt.clean_same_vertexes_edges(nodes_gdf.copy(), edges_gdf.copy())
+
+    assert len(clean_edges) == 2
+    assert len(clean_nodes) == 2
+
+
+def test_clean_same_vertexes_edges_leaves_self_loops_alone():
+    nodes_gdf = _nodes([{"nodeID": 1, "x": 0.0, "y": 0.0}, {"nodeID": 2, "x": 10.0, "y": 0.0}])
+    edges_gdf = _edges(
+        [
+            {"edgeID": 10, "u": 1, "v": 2, "geometry": LineString([(0, 0), (10, 0)])},
+            {
+                "edgeID": 11,
+                "u": 1,
+                "v": 1,
+                "geometry": LineString([(0, 0), (0, 5), (5, 5), (0, 0)]),
+            },
+            {
+                "edgeID": 12,
+                "u": 1,
+                "v": 1,
+                "geometry": LineString([(0, 0), (0, -9), (-9, 0), (0, 0)]),
+            },
+        ]
+    )
+
+    clean_nodes, clean_edges = nt.clean_same_vertexes_edges(nodes_gdf.copy(), edges_gdf.copy())
+
+    assert sorted(clean_edges["edgeID"].tolist()) == [10, 11, 12]
+    assert sorted(clean_nodes["nodeID"].tolist()) == [1, 2]
+
+
+def test_clean_same_vertexes_and_duplicate_edges_do_not_modify_their_input():
+    nodes_gdf, edges_gdf = _crescent()
+    columns = list(edges_gdf.columns)
+
+    nt.clean_same_vertexes_edges(nodes_gdf, edges_gdf)
+    nt.clean_duplicate_edges(nodes_gdf, edges_gdf)
+
+    assert list(edges_gdf.columns) == columns
+
+
+def _two_segments(**columns):
+    # A 10 m segment and a 30 m one meeting at pseudo-node 2, with extra columns per segment.
+    nodes_gdf = _nodes(
+        [
+            {"nodeID": 1, "x": 0.0, "y": 0.0},
+            {"nodeID": 2, "x": 10.0, "y": 0.0},
+            {"nodeID": 3, "x": 40.0, "y": 0.0},
+        ]
+    )
+    edges_gdf = _edges(
+        [
+            {"edgeID": 10, "u": 1, "v": 2, "geometry": LineString([(0, 0), (10, 0)])},
+            {"edgeID": 11, "u": 2, "v": 3, "geometry": LineString([(10, 0), (40, 0)])},
+        ]
+    )
+    for name, values in columns.items():
+        edges_gdf[name] = pd.Series(values, index=edges_gdf.index)
+    return nodes_gdf, edges_gdf
+
+
+def test_simplify_graph_does_not_let_a_missing_date_outvote_a_value():
+    date = pd.Timestamp("2020-01-01")
+    nodes_gdf, edges_gdf = _two_segments(surveyed=[date, pd.NaT])
+
+    _, simplified = nt.simplify_graph(nodes_gdf, edges_gdf)
+
+    assert len(simplified) == 1
+    assert simplified.iloc[0]["surveyed"] == date  # 30 m of NaT does not win
+
+
+def test_simplify_graph_keeps_column_dtypes():
+    nodes_gdf, edges_gdf = _two_segments(
+        highway=pd.Categorical(["primary", "secondary"]), lanes=[1, 2]
+    )
+
+    _, simplified = nt.simplify_graph(nodes_gdf, edges_gdf)
+
+    assert isinstance(simplified["highway"].dtype, pd.CategoricalDtype)
+    assert simplified.iloc[0]["highway"] == "secondary"
+    assert simplified["lanes"].dtype == edges_gdf["lanes"].dtype
+    assert simplified.iloc[0]["lanes"] == 2
+
+
+def test_clean_same_vertexes_edges_collapses_a_longer_street_mapped_twice():
+    # A straight street, and one crescent mapped twice about 1 m apart.
+    nodes_gdf, edges_gdf = _pair_with_detour([(0, 0), (5, 10), (10, 0)])
+    extra = _edges(
+        [{"edgeID": 12, "u": 2, "v": 1, "geometry": LineString([(10, 0), (5, 11), (0, 0)])}]
+    )
+    edges_gdf = pd.concat([edges_gdf, extra])
+
+    clean_nodes, clean_edges = nt.clean_same_vertexes_edges(nodes_gdf.copy(), edges_gdf.copy())
+
+    # The straight street, and the crescent once.
+    assert sorted(clean_edges["edgeID"].tolist()) in ([10, 11], [10, 12])
+    assert len(clean_nodes) == 2
+
+
+def test_clean_same_vertexes_edges_keeps_two_sides_of_a_block_apart():
+    # Two streets of equal length between opposite corners of a block, 10 m apart.
+    nodes_gdf = _nodes([{"nodeID": 1, "x": 0.0, "y": 0.0}, {"nodeID": 2, "x": 10.0, "y": 10.0}])
+    edges_gdf = _edges(
+        [
+            {"edgeID": 10, "u": 1, "v": 2, "geometry": LineString([(0, 0), (0, 10), (10, 10)])},
+            {"edgeID": 11, "u": 1, "v": 2, "geometry": LineString([(0, 0), (10, 0), (10, 10)])},
+        ]
+    )
+
+    clean_nodes, clean_edges = nt.clean_same_vertexes_edges(nodes_gdf.copy(), edges_gdf.copy())
+
+    assert sorted(clean_edges["edgeID"].tolist()) == [10, 11]  # both sides, as parallel edges
+
+    # Within a larger tolerance they are taken as one street.
+    _, merged = nt.clean_same_vertexes_edges(
+        nodes_gdf.copy(), edges_gdf.copy(), same_vertexes_tolerance=15
+    )
+    assert len(merged) == 1
+
+
+def test_clean_same_vertexes_edges_keeps_the_central_of_three_copies():
+    # A centreline with a copy 4 m either side. The outer copies are the shortest and 8 m apart,
+    # so only through the centreline are they the same street; the centreline is what is kept.
+    nodes_gdf = _nodes([{"nodeID": 1, "x": 0.0, "y": 0.0}, {"nodeID": 2, "x": 100.0, "y": 0.0}])
+    centre = [(0, 0), (20, 1), (40, -1), (60, 1), (80, -1), (100, 0)]
+    edges_gdf = _edges(
+        [
+            {"edgeID": 10, "u": 1, "v": 2, "geometry": LineString([(0, 0), (50, 4), (100, 0)])},
+            {"edgeID": 11, "u": 1, "v": 2, "geometry": LineString([(0, 0), (50, -4), (100, 0)])},
+            {"edgeID": 12, "u": 1, "v": 2, "geometry": LineString(centre)},
+        ]
+    )
+    assert edges_gdf.geometry.length.loc[12] > edges_gdf.geometry.length.loc[10]
+
+    _, clean_edges = nt.clean_same_vertexes_edges(nodes_gdf.copy(), edges_gdf.copy())
+
+    assert clean_edges["edgeID"].tolist() == [12]
+
+
+def test_clean_network_merges_a_pseudo_node_into_a_parallel_edge():
+    # Node 3 sits on a crescent between junctions 1 and 2, which a straight street also joins.
+    nodes_gdf = _nodes(
+        [
+            {"nodeID": 1, "x": 0.0, "y": 0.0},
+            {"nodeID": 2, "x": 10.0, "y": 0.0},
+            {"nodeID": 3, "x": 5.0, "y": 10.0},
+            {"nodeID": 4, "x": -10.0, "y": 0.0},
+            {"nodeID": 5, "x": 20.0, "y": 0.0},
+        ]
+    )
+    edges_gdf = _edges(
+        [
+            {"edgeID": 10, "u": 1, "v": 2, "geometry": LineString([(0, 0), (10, 0)])},
+            {"edgeID": 11, "u": 1, "v": 3, "geometry": LineString([(0, 0), (5, 10)])},
+            {"edgeID": 12, "u": 3, "v": 2, "geometry": LineString([(5, 10), (10, 0)])},
+            {"edgeID": 13, "u": 4, "v": 1, "geometry": LineString([(-10, 0), (0, 0)])},
+            {"edgeID": 14, "u": 2, "v": 5, "geometry": LineString([(10, 0), (20, 0)])},
+        ]
+    )
+
+    clean_nodes, clean_edges = nt.clean_network(nodes_gdf, edges_gdf, remove_islands=False)
+
+    assert 3 not in clean_nodes["nodeID"].tolist()
+    pairs = [frozenset(pair) for pair in zip(clean_edges["u"], clean_edges["v"], strict=False)]
+    assert pairs.count(frozenset((1, 2))) == 2
+    assert round(clean_edges.geometry.length.sum(), 6) == round(edges_gdf.geometry.length.sum(), 6)
+
+
+def test_clean_network_keeps_a_loop_street():
+    # A loop street leaves junction 1 and comes back to it through node 2.
+    nodes_gdf = _nodes(
+        [
+            {"nodeID": 1, "x": 0.0, "y": 0.0},
+            {"nodeID": 2, "x": 10.0, "y": 10.0},
+            {"nodeID": 3, "x": -10.0, "y": 0.0},
+            {"nodeID": 4, "x": 0.0, "y": -10.0},
+        ]
+    )
+    edges_gdf = _edges(
+        [
+            {"edgeID": 10, "u": 1, "v": 2, "geometry": LineString([(0, 0), (0, 10), (10, 10)])},
+            {"edgeID": 11, "u": 2, "v": 1, "geometry": LineString([(10, 10), (10, 0), (0, 0)])},
+            {"edgeID": 12, "u": 3, "v": 1, "geometry": LineString([(-10, 0), (0, 0)])},
+            {"edgeID": 13, "u": 1, "v": 4, "geometry": LineString([(0, 0), (0, -10)])},
+        ]
+    )
+
+    clean_nodes, clean_edges = nt.clean_network(nodes_gdf, edges_gdf, remove_islands=False)
+
+    assert 2 in clean_nodes["nodeID"].tolist()
+    assert round(clean_edges.geometry.length.sum(), 6) == round(edges_gdf.geometry.length.sum(), 6)

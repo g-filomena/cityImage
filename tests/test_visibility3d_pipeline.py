@@ -139,3 +139,46 @@ def test_compute_3d_sight_lines_no_visible_returns_empty(monkeypatch, tmp_path):
 
     assert isinstance(out, gpd.GeoDataFrame)
     assert out.empty
+
+
+def test_observer_eye_height_clears_a_wall_ground_level_does_not(monkeypatch, tmp_path):
+    # A 10 m wall halfway to a 20 m building. From the ground (z 0) every sight line
+    # meets the wall below its roof (<= 10.71 against 11.0); from 1.6 m every line
+    # passes above it (>= 11.26).
+    monkeypatch.chdir(tmp_path)
+    nodes = gpd.GeoDataFrame(
+        {"nodeID": [1], "x": [500.0], "y": [5.0], "z": [0.0]},
+        geometry=[Point(500, 5)],
+        crs=CRS,
+    )
+    target = gpd.GeoDataFrame(
+        {"buildingID": [1], "height": [20.0], "base": [1.0]},
+        geometry=[Polygon([(0, 0), (10, 0), (10, 10), (0, 10)])],
+        crs=CRS,
+    )
+    wall = gpd.GeoDataFrame(
+        {"buildingID": [2], "height": [10.0], "base": [1.0]},
+        geometry=[Polygon([(249, -50), (251, -50), (251, 50), (249, 50)])],
+        crs=CRS,
+    )
+    obstructions = gpd.GeoDataFrame(
+        gpd.pd.concat([target, wall], ignore_index=True), geometry="geometry", crs=CRS
+    )
+
+    def run(observer_height):
+        return ci.compute_3d_sight_lines(
+            nodes_gdf=nodes.copy(),
+            target_buildings_gdf=target.copy(),
+            obstructions_buildings_gdf=obstructions.copy(),
+            edges_gdf=_edges(),
+            city_name="Test",
+            distance_along=5,
+            min_observer_target_distance=100,
+            observer_height=observer_height,
+            num_workers=1,
+        )
+
+    assert run(0.0).empty
+    at_eye = run(1.6)
+    assert len(at_eye) > 0
+    assert at_eye.geometry.iloc[0].coords[0][2] == pytest.approx(1.6)

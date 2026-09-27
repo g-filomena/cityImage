@@ -186,3 +186,18 @@ def test_along_water_indexes_edges_by_edgeid_with_non_contiguous_ids():
 
     assert "a_rivers" in out.columns
     assert len(out) == len(edges_gdf)
+
+
+def test_barrier_osm_feature_tags_request_only_the_values_the_extractors_keep():
+    tags = ci.barrier_osm_feature_tags()
+    assert all(value is not True for query in tags.values() for value in query.values())
+    assert set(tags["roads_gdf"]["highway"]) == {"motorway", "trunk", "primary"}
+    assert set(tags["railways_gdf"]["railway"]) == {"rail"}
+    assert set(tags["parks_gdf"]["leisure"]) == {"park"}
+    assert set(tags["waterways_gdf"]["waterway"]) == {"river", "canal"}
+
+    wider = ci.barrier_osm_feature_tags(
+        include_primary=False, include_secondary=True, keep_light_rail=True
+    )
+    assert set(wider["roads_gdf"]["highway"]) == {"motorway", "trunk", "secondary"}
+    assert set(wider["railways_gdf"]["railway"]) == {"rail", "light_rail", "tram"}

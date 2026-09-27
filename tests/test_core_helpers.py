@@ -38,6 +38,16 @@ def test_center_line_averages_and_orients_lines():
     assert list(center.coords) == [(0.0, 1.0), (10.0, 1.0)]
 
 
+def test_center_line_averages_lines_with_different_vertex_counts_whole():
+    a = LineString([(0, 0), (5, 10), (10, 0)])
+    b = LineString([(0, 0), (10, 0)])
+    center = center_line([a, b])
+    coords = list(center.coords)
+    assert coords[0] == (0.0, 0.0)
+    assert coords[-1] == (10.0, 0.0)  # reaches the far end, not cut short
+    assert (5.0, 5.0) in coords  # halfway along both lines
+
+
 def test_center_line_requires_two_lines():
     with pytest.raises(ValueError, match="At least two"):
         center_line([LineString([(0, 0), (1, 1)])])
