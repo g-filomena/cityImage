@@ -142,6 +142,7 @@ def compute_3d_sight_lines(
     distance_along: float = 200,
     min_observer_target_distance: float = 300,
     max_observer_target_distance: float | None = None,
+    observer_height: float = 1.6,
     sight_lines_chunk_size: int = 500000,
     consolidate: bool = False,
     consolidate_tolerance: float = 0.0,
@@ -189,6 +190,9 @@ def compute_3d_sight_lines(
         they are dominated by the (rare, mostly obstructed) long lines that account for
         the bulk of the 2D-obstruction cost. ``None`` reproduces the historical
         unbounded behaviour.
+    observer_height : float, default 1.6
+        Eye height of the observer above the ground, in metres. The sight line starts
+        at node ``z`` plus this height.
     sight_lines_chunk_size : int, default 500000
         Maximum number of candidate sight lines processed per chunk.
     consolidate : bool, default False
@@ -221,6 +225,7 @@ def compute_3d_sight_lines(
             target_buildings_gdf,
             obstructions_buildings_gdf,
             distance_along=distance_along,
+            observer_height=observer_height,
             consolidate=consolidate,
             consolidate_tolerance=consolidate_tolerance,
             edges_gdf=edges_gdf,
@@ -314,7 +319,9 @@ def compute_3d_sight_lines(
                     errors="ignore",
                 )
             chunk_sight_lines = pd.concat(visibles, ignore_index=True)
-            chunk_sight_lines = _finalize_sight_lines(chunk_sight_lines, nodes_gdf, consolidate)
+            chunk_sight_lines = _finalize_sight_lines(
+                chunk_sight_lines, nodes_gdf, consolidate, observer_height
+            )
             n_records = len(chunk_sight_lines)
             chunk_file = chunk_dir / f"{city_name}_{out_prefix}_{n}.gpkg"
             chunk_sight_lines.to_file(chunk_file)
@@ -344,6 +351,7 @@ def compute_3d_sight_lines(
                 nodes_gdf,
                 progress,
                 num_workers=num_workers,
+                observer_height=observer_height,
             )
     else:
         sight_lines = tmp_sight_lines
@@ -358,6 +366,7 @@ def _prepare_3d_sight_lines(
     target_buildings_gdf,
     obstructions_gdf,
     distance_along=200,
+    observer_height=1.6,
     consolidate=False,
     consolidate_tolerance=0.0,
     edges_gdf=None,
@@ -376,6 +385,8 @@ def _prepare_3d_sight_lines(
         Buildings considered as potential obstructions.
     distance_along : float, default 200
         Sampling distance along target-building roof edges.
+    observer_height : float, default 1.6
+        Eye height above node ``z``, in metres.
     consolidate : bool, default False
         Whether to consolidate observer nodes.
     consolidate_tolerance : float, default 0.0
@@ -397,8 +408,7 @@ def _prepare_3d_sight_lines(
         # the caller's frame is never mutated.
         nodes_gdf = nodes_gdf.assign(z=0.0)
     nodes_gdf = nodes_gdf[["geometry", "x", "y", "nodeID", "z"]].copy()
-    nodes_gdf.loc[nodes_gdf["z"] < -50, "z"] = 2
-    nodes_gdf["geometry"] = gpd.points_from_xy(nodes_gdf["x"], nodes_gdf["y"], nodes_gdf["z"])
+    nodes_gdf["geometry"] = _observer_eyes(nodes_gdf, observer_height)
 
     target_buildings_gdf = _prepare_buildings_gdf(target_buildings_gdf)
     obstructions_gdf = _prepare_buildings_gdf(obstructions_gdf)
@@ -422,6 +432,19 @@ def _prepare_3d_sight_lines(
     obstructions_gdf["geometry"] = obstructions_gdf["geometry"].apply(lambda geom: geom.exterior)
 
     return observer_points_gdf, target_points, obstructions_gdf
+
+
+def _observer_eyes(nodes_gdf, observer_height):
+    """Return 3D observer points at node ``z`` plus ``observer_height``.
+
+    ``z`` below -50 is read as DTM nodata and replaced by 2. A frame without ``z``
+    is taken to be at ground level (0).
+    """
+    z = nodes_gdf["z"] if "z" in nodes_gdf.columns else pd.Series(0.0, index=nodes_gdf.index)
+    z = z.where(z >= -50, 2)
+    return gpd.points_from_xy(
+        nodes_gdf.geometry.x, nodes_gdf.geometry.y, z + observer_height, crs=nodes_gdf.crs
+    )
 
 
 def _prepare_buildings_gdf(buildings_gdf):
@@ -1005,6 +1028,7 @@ def _last_check(
     nodes_gdf,
     progress,
     num_workers,
+    observer_height=1.6,
 ):
     """Run a final 2D/3D obstruction check on consolidated sight lines.
 
@@ -1025,6 +1049,8 @@ def _last_check(
         was started with ``verbose=True``.
     num_workers : int
         Unused; kept for signature stability with earlier callers.
+    observer_height : float, default 1.6
+        Eye height above node ``z``, in metres.
 
     Returns
     -------
@@ -1038,10 +1064,10 @@ def _last_check(
     with progress.step("   04b - Re-checking 3d obstructions (consolidated lines)"):
         visible_3d = _analytic_obstructions_3d(obstructed, occluders, "matchesIDs")
     sight_lines_tmp = pd.concat([visible_2d, visible_3d], ignore_index=True)
-    return _finalize_sight_lines(sight_lines_tmp, nodes_gdf, False)
+    return _finalize_sight_lines(sight_lines_tmp, nodes_gdf, False, observer_height)
 
 
-def _finalize_sight_lines(sight_lines_tmp, nodes_gdf, consolidate):
+def _finalize_sight_lines(sight_lines_tmp, nodes_gdf, consolidate, observer_height=1.6):
     """Finalize, clean, and deduplicate visible sight lines.
 
     Parameters
@@ -1053,6 +1079,8 @@ def _finalize_sight_lines(sight_lines_tmp, nodes_gdf, consolidate):
         and defaults to 0 (ground level) when the column is absent.
     consolidate : bool
         Whether observer node consolidation was used.
+    observer_height : float, default 1.6
+        Eye height above node ``z``, in metres, where each sight line starts.
 
     Returns
     -------
@@ -1063,11 +1091,7 @@ def _finalize_sight_lines(sight_lines_tmp, nodes_gdf, consolidate):
     # Work on a copy: this frame is the caller's original nodes GeoDataFrame, and
     # replacing its geometry with 3D points in place would leak out of this function.
     nodes_gdf = nodes_gdf.copy()
-    if "z" not in nodes_gdf.columns:
-        nodes_gdf["z"] = 0.0  # ground level when no observer elevation was supplied
-    nodes_gdf["geometry"] = gpd.points_from_xy(
-        nodes_gdf.geometry.x, nodes_gdf.geometry.y, nodes_gdf["z"]
-    )
+    nodes_gdf["geometry"] = _observer_eyes(nodes_gdf, observer_height)
     oldIDs_column = "old_nodeID"
 
     if consolidate:

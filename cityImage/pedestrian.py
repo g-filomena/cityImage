@@ -197,8 +197,9 @@ def _pedestrian_status(
         - ``"yes"``: confidently walkable — inherently pedestrian, a
           walkable-by-default street, or carrying explicit pedestrian evidence
           (a usable ``foot`` tag or a mapped sidewalk).
-        - ``"noEvidence"``: a residential street or major through-road kept
-          without pedestrian evidence; walkability is uncertain.
+        - ``"noEvidence"``: a residential street, major through-road or alley
+          (``service=alley``) kept without pedestrian evidence; walkability is
+          uncertain.
         - ``None``: the row should be dropped from the network.
     """
     highway_tokens = set(_as_tokens(row.get("highway")))
@@ -305,8 +306,8 @@ def filter_pedestrian_osm_features(
     geopandas.GeoDataFrame
         Line/MultiLine features that remain after pedestrian filtering, with an
         added ``ped`` column: ``"yes"`` for confidently walkable ways and
-        ``"noEvidence"`` for residential/major roads kept without pedestrian
-        evidence.
+        ``"noEvidence"`` for residential/major roads and alleys kept without
+        pedestrian evidence.
     """
     if not isinstance(highways_gdf, gpd.GeoDataFrame):
         raise TypeError("highways_gdf must be a GeoDataFrame")

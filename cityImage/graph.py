@@ -18,6 +18,7 @@ from typing import Any
 
 import geopandas as gpd
 import networkx as nx
+import numpy as np
 import pandas as pd
 from shapely.geometry import LineString
 
@@ -75,12 +76,27 @@ def graph_fromGDF(
     nodes_gdf: gpd.GeoDataFrame,
     edges_gdf: gpd.GeoDataFrame,
 ) -> nx.Graph:
-    """Create an undirected NetworkX graph from cityImage node/edge GeoDataFrames."""
+    """Create an undirected NetworkX graph from cityImage node/edge GeoDataFrames.
+
+    A ``nx.Graph`` holds one edge per pair of nodes. Where parallel edges (different streets
+    between the same two nodes) join a pair, the shortest is the one kept: the only one a
+    shortest path uses, so shortest-path measures are exact. Use ``multiGraph_fromGDF`` to keep
+    all of them.
+    """
     nodes = nodes_gdf.copy()
     edges = edges_gdf.copy()
 
     nodes = nodes.set_index("nodeID", drop=False)
     nodes.index.name = None
+
+    pair = pd.Series(
+        [frozenset((u, v)) for u, v in zip(edges["u"], edges["v"], strict=True)],
+        index=edges.index,
+    )
+    if pair.duplicated().any():
+        order = np.lexsort((np.arange(len(edges)), edges.geometry.length.to_numpy()))
+        edges = edges.iloc[order]
+        edges = edges[~pair.iloc[order].duplicated().to_numpy()]
 
     graph = nx.Graph()
     graph.add_nodes_from(nodes.index)

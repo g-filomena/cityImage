@@ -373,7 +373,9 @@ def barriers_from_osm(
             distance=distance,
             crs=crs,
         )
-        for name, tags in barrier_osm_feature_tags().items()
+        for name, tags in barrier_osm_feature_tags(
+            include_primary=include_primary, include_secondary=include_secondary
+        ).items()
     }
 
     return barriers_from_osm_features(
