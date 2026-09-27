@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import geopandas as gpd
 import pandas as pd
+import pytest
 from shapely.geometry import LineString, Point
 
 import cityImage.network_topology as nt
@@ -808,26 +809,44 @@ def test_clean_network_merges_a_pseudo_node_into_a_parallel_edge():
     assert round(clean_edges.geometry.length.sum(), 6) == round(edges_gdf.geometry.length.sum(), 6)
 
 
-def test_clean_network_keeps_a_loop_street():
-    # A loop street leaves junction 1 and comes back to it through node 2.
-    nodes_gdf = _nodes(
-        [
-            {"nodeID": 1, "x": 0.0, "y": 0.0},
-            {"nodeID": 2, "x": 10.0, "y": 10.0},
-            {"nodeID": 3, "x": -10.0, "y": 0.0},
-            {"nodeID": 4, "x": 0.0, "y": -10.0},
-        ]
-    )
+# A loop street leaves junction 1 and returns to it; 3-1-4 is the street it hangs off.
+_LOOP_MAPPINGS = {
+    "through one node": (
+        {2: (10.0, 10.0)},
+        [(1, 2, [(0, 0), (0, 10), (10, 10)]), (2, 1, [(10, 10), (10, 0), (0, 0)])],
+    ),
+    "through two nodes": (
+        {2: (10.0, 10.0), 5: (10.0, 0.0)},
+        [(1, 2, [(0, 0), (0, 10), (10, 10)]), (2, 5, [(10, 10), (10, 0)]), (5, 1, [(10, 0), (0, 0)])],
+    ),
+    "as one edge": ({}, [(1, 1, [(0, 0), (0, 10), (10, 10), (10, 0), (0, 0)])]),
+}
+
+
+@pytest.mark.parametrize("mapping", sorted(_LOOP_MAPPINGS))
+@pytest.mark.parametrize("self_loops", [True, False])
+def test_clean_network_loop_street_leaves_no_pseudo_node(mapping, self_loops):
+    loop_nodes, loop_edges = _LOOP_MAPPINGS[mapping]
+    coords = {1: (0.0, 0.0), 3: (-10.0, 0.0), 4: (0.0, -10.0), **loop_nodes}
+    nodes_gdf = _nodes([{"nodeID": n, "x": x, "y": y} for n, (x, y) in coords.items()])
+    rows = [(3, 1, [(-10, 0), (0, 0)]), (1, 4, [(0, 0), (0, -10)]), *loop_edges]
     edges_gdf = _edges(
         [
-            {"edgeID": 10, "u": 1, "v": 2, "geometry": LineString([(0, 0), (0, 10), (10, 10)])},
-            {"edgeID": 11, "u": 2, "v": 1, "geometry": LineString([(10, 10), (10, 0), (0, 0)])},
-            {"edgeID": 12, "u": 3, "v": 1, "geometry": LineString([(-10, 0), (0, 0)])},
-            {"edgeID": 13, "u": 1, "v": 4, "geometry": LineString([(0, 0), (0, -10)])},
+            {"edgeID": 10 + i, "u": u, "v": v, "geometry": LineString(line)}
+            for i, (u, v, line) in enumerate(rows)
         ]
     )
 
-    clean_nodes, clean_edges = nt.clean_network(nodes_gdf, edges_gdf, remove_islands=False)
+    clean_nodes, clean_edges = nt.clean_network(
+        nodes_gdf, edges_gdf, remove_islands=False, self_loops=self_loops
+    )
 
-    assert 2 in clean_nodes["nodeID"].tolist()
-    assert round(clean_edges.geometry.length.sum(), 6) == round(edges_gdf.geometry.length.sum(), 6)
+    assert 2 not in nt.nodes_degree(clean_edges).values()
+    loops = clean_edges[clean_edges["u"] == clean_edges["v"]]
+    if self_loops:
+        assert loops.empty
+        assert round(clean_edges.geometry.length.sum(), 6) == 20.0
+    else:
+        assert len(loops) == 1
+        assert round(loops.geometry.length.iloc[0], 6) == 40.0
+        assert round(clean_edges.geometry.length.sum(), 6) == 60.0

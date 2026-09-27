@@ -279,7 +279,9 @@ def clean_network(
         Largest distance, in CRS units, between two edges joining the same nodes for them to be
         taken as one street mapped twice (see clean_same_vertexes_edges). Default is 5.
     self_loops : bool, optional
-        If True, removes self-loop edges (where start and end node are the same). Default is False.
+        If True, removes self-loop edges (where start and end node are the same). A loop street,
+        which leaves a junction and returns to it, is one such edge once its pseudo-nodes are
+        merged, however many nodes it was mapped with. Default is False.
     fix_topology : bool, optional
         If True, breaks lines at intersections with other lines in the streets GeoDataFrame. Default is False.
     preserve_direction : bool, optional
@@ -334,7 +336,9 @@ def clean_network(
         if dead_ends:
             nodes_gdf, edges_gdf = fix_dead_ends(nodes_gdf, edges_gdf, nodes_to_keep_regardless)
 
-        nodes_gdf, edges_gdf = clean_duplicate_edges(nodes_gdf, edges_gdf, preserve_direction)
+        nodes_gdf, edges_gdf = clean_duplicate_edges(
+            nodes_gdf, edges_gdf, preserve_direction, self_loops=self_loops
+        )
 
         # edges with different geometries but same u-v nodes pairs
         if same_vertexes_edges:
@@ -457,17 +461,12 @@ def _are_nodes_simplified(nodes_gdf, edges_gdf, nodes_to_keep_regardless=None):
     if not to_edit:
         return True
 
-    # A pseudo-node whose two segments both lead to the same node is the far end of a loop street:
-    # merging it would turn the street into a self-loop, so it stays (see simplify_graph).
+    # A node whose only edge is a self-loop has degree 2 but nothing to merge with.
     neighbours = defaultdict(list)
     for u, v in zip(edges_gdf["u"], edges_gdf["v"], strict=False):
         neighbours[u].append(v)
         neighbours[v].append(u)
-    for node in to_edit:
-        a, b = neighbours[node]
-        if a != b:
-            return False
-    return True
+    return all(neighbours[node] == [node, node] for node in to_edit)
 
 
 def _are_edges_simplified(edges_gdf, preserve_direction, same_vertexes_tolerance=5.0):
@@ -557,8 +556,8 @@ def simplify_graph(
     The function identify pseudo-nodes, namely nodes that represent intersection between only 2 segments.
     The segments geometries are merged and the node is removed from the nodes_gdf GeoDataFrame.
     The merged segment may join two nodes already joined by another segment: parallel segments
-    are kept (see clean_same_vertexes_edges). A pseudo-node whose two segments both lead to the
-    same node, the far end of a loop street, is kept, since merging would leave a self-loop. Each
+    are kept (see clean_same_vertexes_edges). Merging the last pseudo-node of a loop street leaves
+    a self-loop, which is kept: whether it stays is clean_network's `self_loops`. Each
     attribute of a merged segment takes the non-null value covering the greatest length among the
     segments merged into it.
 
@@ -629,21 +628,21 @@ def simplify_graph(
         u1, v1, u2, v2 = u_of[first], v_of[first], u_of[second], v_of[second]
         coords_first, coords_second = list(geom_of[first].coords), list(geom_of[second].coords)
 
-        if u1 == u2:  # meeting at u
+        # Which end of each segment is the pseudo-node: two segments of a loop street share both
+        # their ends, so the shared end alone does not say where they meet.
+        first_at_u, second_at_u = u1 == nodeID, u2 == nodeID
+        if first_at_u and second_at_u:  # meeting at u
             new_u, new_v = v1, v2
             line_a, line_b = coords_first[::-1], coords_second
-        elif u1 == v2:  # meeting at u and v
+        elif first_at_u:  # meeting at u and v
             new_u, new_v = u2, v1
             line_a, line_b = coords_second, coords_first
-        elif v1 == u2:  # meeting at v and u
+        elif second_at_u:  # meeting at v and u
             new_u, new_v = u1, v2
             line_a, line_b = coords_first, coords_second
         else:  # meeting at v and v
             new_u, new_v = u1, u2
             line_a, line_b = coords_first, coords_second[::-1]
-
-        if new_u == new_v:
-            continue  # the far end of a loop street: merging would leave a self-loop
 
         # detach both edges from their endpoints and remove the pseudo-node and second segment
         incidence[u1].discard(first)
@@ -673,7 +672,6 @@ def simplify_graph(
     merged = {eid: pieces[eid] for eid in surviving if len(pieces[eid]) > 1}
     if merged:
         edges_gdf = _merge_attributes(edges_gdf, original, merged)
-    edges_gdf = edges_gdf[edges_gdf["u"] != edges_gdf["v"]]  # eliminate node-lines
 
     if dropped_nodes:
         nodes_gdf = nodes_gdf.drop(
@@ -901,6 +899,7 @@ def clean_duplicate_edges(
     nodes_gdf,
     edges_gdf,
     preserve_direction=False,
+    self_loops=True,
 ):
     """
     Cleans and deduplicates network edges, and removes unused nodes.
@@ -908,7 +907,7 @@ def clean_duplicate_edges(
 
     The function performs the following:
       - Generates a unique 'code' for each edge, based on node IDs, with or without preserving direction.
-      - Removes self-loop edges (edges from a node to itself).
+      - Removes self-loop edges (edges from a node to itself), when ``self_loops`` is True.
       - Drops duplicate edges based on geometry (including reversal if direction is not preserved).
       - Removes edges that are geometrically duplicates, even if node order is reversed (for undirected graphs).
       - Updates the node GeoDataFrame to keep only those nodes actually used by the remaining edges.
@@ -923,19 +922,21 @@ def clean_duplicate_edges(
         If True, edge direction is preserved; edges (u,v) and (v,u) are considered distinct.
         If False, edges are treated as undirected and geometric duplicates (with reversed coords) are removed.
         Default is False.
+    self_loops : bool, optional
+        If True, removes self-loop edges. Default is True.
 
     Returns
     -------
     nodes_gdf : GeoDataFrame
         Filtered nodes GeoDataFrame, containing only nodes referenced by the cleaned edges.
     edges_gdf : GeoDataFrame
-        Cleaned edges GeoDataFrame, deduplicated and without self-loops.
+        Cleaned edges GeoDataFrame, deduplicated, and without self-loops when ``self_loops``.
     """
     edges_gdf = edges_gdf.copy()
     edges_gdf["code"] = _pair_codes(edges_gdf, preserve_direction)
 
-    # eliminate node-lines
-    edges_gdf = edges_gdf[edges_gdf["u"] != edges_gdf["v"]]
+    if self_loops:
+        edges_gdf = edges_gdf[edges_gdf["u"] != edges_gdf["v"]]
 
     # dropping duplicate-geometries edges
     geometries = edges_gdf["geometry"].apply(lambda geom: geom.wkb)
