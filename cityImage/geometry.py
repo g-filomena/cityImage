@@ -37,7 +37,8 @@ def center_line(line_geometries: list[LineString]) -> LineString:
     Returns
     -------
     shapely.geometry.LineString
-        Average line geometry using the shortest common coordinate sequence.
+        Average line geometry: the lines are sampled at the same fractions of their length (every
+        vertex of every line), so lines with different vertex counts are averaged whole.
     """
     if len(line_geometries) < 2:
         raise ValueError("At least two LineStrings are required to compute a center line.")
@@ -63,16 +64,27 @@ def center_line(line_geometries: list[LineString]) -> LineString:
         if reversed_direction_distance < same_direction_distance:
             all_coords[i] = coords[::-1]
 
-    min_length = min(len(coords) for coords in all_coords)
-    all_coords = [coords[:min_length] for coords in all_coords]
+    # Average points taken at the same fractions of each line's length, whatever its vertex count:
+    # every vertex of every line, as a fraction of its own line, so no line's corners are lost.
+    lines = [LineString(coords) for coords in all_coords]
+    fractions = {0.0, 1.0}
+    for coords, line in zip(all_coords, lines, strict=True):
+        if line.length == 0:
+            continue
+        travelled = 0.0
+        for a, b in zip(coords[:-1], coords[1:], strict=True):
+            travelled += _squared_distance(a, b) ** 0.5
+            fractions.add(round(min(travelled / line.length, 1.0), 12))
 
-    center_line_coords = [
-        (
-            sum(coords[i][0] for coords in all_coords) / len(all_coords),
-            sum(coords[i][1] for coords in all_coords) / len(all_coords),
+    center_line_coords = []
+    for fraction in sorted(fractions):
+        points = [line.interpolate(fraction, normalized=True) for line in lines]
+        center_line_coords.append(
+            (
+                sum(point.x for point in points) / len(points),
+                sum(point.y for point in points) / len(points),
+            )
         )
-        for i in range(min_length)
-    ]
 
     return LineString(center_line_coords)
 
