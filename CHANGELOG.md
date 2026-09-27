@@ -26,7 +26,8 @@ Entries marked **⚠ behaviour** change the output of an existing call with the 
   undirected.
 - **⚠ behaviour** `amend_nodes_membership` raises a `ValueError`, instead of looping forever, when
   the network is not connected (remove its islands first), is smaller than `min_size_district`,
-  has no district of that size, or has nodes that cannot be amended.
+  has no district of that size, has nodes that cannot be amended, or does not settle within one
+  pass per node.
 - **⚠ behaviour** 2D advance visibility (`visibility_polygon2d`, `2dvis`) covers the whole ring
   of rays: the slice between the 350° and 0° rays was left out.
 - `barriers_from_osm`, `barriers_from_osm_features` (and the per-type builders) and

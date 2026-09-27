@@ -286,8 +286,8 @@ def amend_nodes_membership(
     ------
     ValueError
         If the network is not connected, if it has fewer nodes than ``min_size_district``, if no
-        district reaches ``min_size_district``, or if a pass leaves invalid nodes and amends none.
-        Each of these used to make the amending loop run forever.
+        district reaches ``min_size_district``, if a pass leaves invalid nodes and amends none, or
+        if amending does not settle within one pass per node. None of these can finish.
     """
     nodes_gdf = nodes_gdf.copy()
     # Node look-ups below use .loc by nodeID, so index by nodeID regardless of the caller's index
@@ -309,9 +309,19 @@ def amend_nodes_membership(
             "there is no valid district to amend the nodes into"
         )
 
+    # Bounded: a run needing more passes than there are nodes is going round in circles, with
+    # nodes trading districts pass after pass.
+    max_passes = len(nodes_gdf)
+    passes = 0
     while INVALID_DISTRICT in nodes_gdf[column].unique():
+        passes += 1
+        if passes > max_passes:
+            raise ValueError(
+                f"Amending did not settle within {max_passes} passes; "
+                + _describe_invalid_nodes(nodes_gdf, column)
+            )
         current_nodes_gdf = nodes_gdf
-        previous = nodes_gdf[column].copy()
+        previous = nodes_gdf[column].to_numpy(copy=True)
         nodes_gdf[column] = nodes_gdf.apply(
             lambda row, current_nodes_gdf=current_nodes_gdf: _amend_node_membership(
                 row["nodeID"], current_nodes_gdf, edges_gdf, column
@@ -319,12 +329,18 @@ def amend_nodes_membership(
             axis=1,
         )
         nodes_gdf = _check_disconnected_districts(nodes_gdf, edges_gdf, column, min_size_district)
-        if nodes_gdf[column].equals(previous):
-            stuck = nodes_gdf.loc[nodes_gdf[column] == INVALID_DISTRICT, "nodeID"].tolist()
+        # Compared by value, so a change of dtype alone does not count as progress.
+        if np.array_equal(nodes_gdf[column].to_numpy(), previous):
             raise ValueError(
-                f"{len(stuck)} node(s) cannot be amended into a valid district: {stuck[:20]}"
+                "A pass amended no node; " + _describe_invalid_nodes(nodes_gdf, column)
             )
     return nodes_gdf
+
+
+def _describe_invalid_nodes(nodes_gdf: gpd.GeoDataFrame, column: str) -> str:
+    """Name the nodes still without a valid district, the first 20 of them."""
+    invalid = nodes_gdf.loc[nodes_gdf[column] == INVALID_DISTRICT, "nodeID"].tolist()
+    return f"{len(invalid)} node(s) cannot be amended into a valid district: {invalid[:20]}"
 
 
 def _require_connected(nodes_gdf: gpd.GeoDataFrame, edges_gdf: gpd.GeoDataFrame) -> None:

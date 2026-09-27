@@ -66,6 +66,7 @@ all = [
 test = [
   "pytest>=8",
   "pytest-cov>=5",
+  "pytest-timeout>=2.3",
 ]
 docs = [
   "myst-parser>=4",
@@ -80,6 +81,7 @@ dev = [
   "mypy>=1.10",
   "pytest>=8",
   "pytest-cov>=5",
+  "pytest-timeout>=2.3",
   "ruff>=0.6",
   "twine>=5",
 ]

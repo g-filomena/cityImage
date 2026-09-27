@@ -63,6 +63,7 @@ def _scored_buildings(heights):
 # --- Districts ------------------------------------------------------------------------------
 
 
+@pytest.mark.timeout(30)
 def test_amend_nodes_membership_refuses_a_network_with_islands():
     lines = pd.concat([_grid_lines(6), _grid_lines(2, x0=5000)], ignore_index=True)
     nodes, edges = ci.network_from_lines(gpd.GeoDataFrame(lines, crs=CRS), CRS)
@@ -72,6 +73,7 @@ def test_amend_nodes_membership_refuses_a_network_with_islands():
         regions.amend_nodes_membership(nodes, edges, "d", min_size_district=10)
 
 
+@pytest.mark.timeout(30)
 def test_amend_nodes_membership_refuses_a_network_smaller_than_min_size():
     nodes, edges = ci.network_from_lines(_grid_lines(2), CRS)
     nodes["d"] = 0
@@ -80,6 +82,7 @@ def test_amend_nodes_membership_refuses_a_network_smaller_than_min_size():
         regions.amend_nodes_membership(nodes, edges, "d", min_size_district=10)
 
 
+@pytest.mark.timeout(30)
 def test_amend_nodes_membership_refuses_when_no_district_is_large_enough():
     nodes, edges = ci.network_from_lines(_grid_lines(5), CRS)  # 25 nodes
     nodes["d"] = (nodes.geometry.x // 100).astype(int)  # 5 districts of 5 nodes
@@ -88,6 +91,7 @@ def test_amend_nodes_membership_refuses_when_no_district_is_large_enough():
         regions.amend_nodes_membership(nodes, edges, "d", min_size_district=10)
 
 
+@pytest.mark.timeout(30)
 def test_amend_nodes_membership_still_amends_a_small_district():
     nodes, edges = ci.network_from_lines(_grid_lines(6), CRS)  # 36 nodes
     nodes["d"] = 0
@@ -97,6 +101,26 @@ def test_amend_nodes_membership_still_amends_a_small_district():
     out = regions.amend_nodes_membership(nodes, edges, "d", min_size_district=10)
 
     assert set(out["d"]) == {0}
+
+
+@pytest.mark.timeout(30)
+def test_amend_nodes_membership_stops_when_nodes_trade_districts(monkeypatch):
+    nodes, edges = ci.network_from_lines(_grid_lines(6), CRS)  # 36 nodes
+    first, second = nodes["nodeID"].iloc[0], nodes["nodeID"].iloc[1]
+    nodes["d"] = np.where(nodes["nodeID"] == first, regions.INVALID_DISTRICT, 0)
+
+    def trade(node_id, nodes_gdf, edges_gdf, column):
+        # The two nodes swap between a valid district and none, out of phase, on every pass.
+        value = nodes_gdf.loc[node_id, column]
+        if node_id in (first, second):
+            return 0 if value == regions.INVALID_DISTRICT else regions.INVALID_DISTRICT
+        return value
+
+    monkeypatch.setattr(regions, "_amend_node_membership", trade)
+    monkeypatch.setattr(regions, "_check_disconnected_districts", lambda nodes, *args: nodes)
+
+    with pytest.raises(ValueError, match="did not settle within 36 passes"):
+        regions.amend_nodes_membership(nodes, edges, "d", min_size_district=10)
 
 
 def test_district_to_nodes_from_edges_looks_beyond_100_m():
