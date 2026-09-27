@@ -28,6 +28,12 @@ Entries marked **⚠ behaviour** change the output of an existing call with the 
   the network is not connected (remove its islands first), is smaller than `min_size_district`,
   has no district of that size, has nodes that cannot be amended, or does not settle within one
   pass per node.
+- **⚠ behaviour** `append_edges_metrics` takes a `MultiGraph` (`multiGraph_fromGDF`) and gives
+  every street, parallel ones included, its own value. Given a `Graph` that lacks some of the edges
+  (parallel streets, of which it keeps the shortest), it raises a `ValueError` instead of filling
+  them with 0. `calculate_centrality` accepts a `MultiGraph` too, and `multiGraph_fromGDF` keeps
+  parallel streets that share a `key` (`network_from_lines` keys every edge 0) instead of keeping
+  the last one read. The node-and-paths notebooks compute edge betweenness on a `MultiGraph`.
 - **⚠ behaviour** 2D advance visibility (`visibility_polygon2d`, `2dvis`) covers the whole ring
   of rays: the slice between the 350° and 0° rays was left out.
 - `barriers_from_osm`, `barriers_from_osm_features` (and the per-type builders) and

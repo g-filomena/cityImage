@@ -114,8 +114,10 @@ def multiGraph_fromGDF(
 ) -> nx.MultiGraph:
     """Create an undirected NetworkX MultiGraph from cityImage graph GeoDataFrames.
 
-    This function is retained for legacy workflows with parallel edges. New code
-    should usually prefer ``graph_fromGDF`` unless edge multiplicity matters.
+    Every street is an edge, parallel streets between the same two nodes included, so edge
+    measures (``networkx.edge_betweenness_centrality``, ``append_edges_metrics``) give each its
+    own value. An edge takes its ``key`` column value as key, or a fresh key when that one is
+    taken or absent.
     """
     nodes = nodes_gdf.copy()
     edges = edges_gdf.copy()
@@ -128,7 +130,11 @@ def multiGraph_fromGDF(
     _set_node_attributes_from_gdf(multigraph, nodes)
 
     for _, row in edges.iterrows():
-        key = row["key"] if "key" in row.index else 0
+        key = row["key"] if "key" in row.index else None
+        # network_from_lines keys every edge 0, so parallel streets share a key: a fresh one keeps
+        # the second street instead of overwriting the first.
+        if key is not None and multigraph.has_edge(row["u"], row["v"], key):
+            key = None
         multigraph.add_edge(
             row["u"],
             row["v"],

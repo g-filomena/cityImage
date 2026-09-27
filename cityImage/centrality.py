@@ -59,8 +59,13 @@ def _nx_to_igraph(nx_graph: Any, weight: str) -> tuple[Any, list[Any]]:
     original_ids = list(nx_graph.nodes)
     id_to_index = {original_id: index for index, original_id in enumerate(original_ids)}
 
-    edges = [(id_to_index[u], id_to_index[v]) for u, v in nx_graph.edges()]
-    weights = [nx_graph[u][v][weight] for u, v in nx_graph.edges()]
+    # One igraph edge per NetworkX edge, parallel edges of a MultiGraph included; shortest paths
+    # then take the lightest of them.
+    edges = []
+    weights = []
+    for u, v, value in nx_graph.edges(data=weight):
+        edges.append((id_to_index[u], id_to_index[v]))
+        weights.append(value)
 
     ig_graph = ig.Graph(edges=edges, directed=nx_graph.is_directed())
     ig_graph.es["weight"] = weights
@@ -106,7 +111,8 @@ def calculate_centrality(
     Parameters
     ----------
     nx_graph
-        Input NetworkX graph.
+        Input NetworkX graph: a ``Graph``, ``DiGraph`` or ``MultiGraph``. A directed graph gives
+        directed measures; parallel edges of a ``MultiGraph`` are all kept.
     measure
         One of ``"betweenness"``, ``"closeness"``, ``"straightness"``, or
         ``"reach"``.
@@ -282,8 +288,29 @@ def append_edges_metrics(
     dicts: list[dict[Any, Any]],
     column_names: list[str],
 ) -> pd.DataFrame:
-    """Attach edge-level centrality values to an edges GeoDataFrame."""
-    edge_ids = {(u, v): graph[u][v]["edgeID"] for u, v in graph.edges()}
+    """Attach edge-level centrality values to an edges GeoDataFrame.
+
+    ``dicts`` map the graph's edges to values, keyed as the graph yields them: ``(u, v)`` for a
+    ``Graph``, ``(u, v, key)`` for a ``MultiGraph`` - the keys
+    ``networkx.edge_betweenness_centrality`` returns for each.
+
+    A ``Graph`` (``graph_fromGDF``) holds one edge per pair of nodes, so parallel streets in
+    ``edges_gdf`` are missing from it and would have no value. That raises a ``ValueError``: build
+    a ``MultiGraph`` (``multiGraph_fromGDF``), which gives every street its own value.
+    """
+    if graph.is_multigraph():
+        edge_ids = {
+            (u, v, key): data["edgeID"] for u, v, key, data in graph.edges(keys=True, data=True)
+        }
+    else:
+        edge_ids = {(u, v): data["edgeID"] for u, v, data in graph.edges(data=True)}
+        missing = sorted(set(edges_gdf["edgeID"]) - set(edge_ids.values()))
+        if missing:
+            raise ValueError(
+                f"{len(missing)} edge(s) are not in the graph, which holds one edge per pair of "
+                "nodes: build it with multiGraph_fromGDF to give parallel streets their own "
+                f"values. Missing edgeIDs: {missing[:20]}"
+            )
 
     dicts = [*dicts, edge_ids]
     column_names = [*column_names, "edgeID"]
@@ -293,12 +320,6 @@ def append_edges_metrics(
     edges_gdf = pd.merge(edges_gdf, tmp, on="edgeID", how="left")
     edges_gdf.index = edges_gdf.edgeID
     edges_gdf.index.name = None
-
-    # Edges missing from the graph (e.g. the longer of two parallel edges) get 0. Filled after the
-    # merge, by edgeID: filling by the input's index labels added new rows whenever the index was
-    # not the edgeIDs.
-    metrics = [metric for metric in column_names if metric != "edgeID"]
-    edges_gdf[metrics] = edges_gdf[metrics].fillna(0.0)
     return edges_gdf
 
 

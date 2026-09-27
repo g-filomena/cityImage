@@ -70,21 +70,23 @@ def test_weight_nodes_counts_services_within_radius():
     assert out_graph.nodes[1]["opp"] == 2
 
 
-def test_append_edges_metrics_merges_values_and_fills_missing():
+def test_append_edges_metrics_merges_values_by_edge_id():
     graph = _path_graph()
-    # append_edges_metrics looks rows up by edgeID via .at, so index by edgeID
-    # (with an unnamed index, as the real callers pass it).
-    edges_gdf = pd.DataFrame({"edgeID": [10, 11, 99]}).set_index(
-        "edgeID", drop=False
-    )  # 99 unmatched
-    edges_gdf.index.name = None
+    edges_gdf = pd.DataFrame({"edgeID": [10, 11]})
     metric = {(1, 2): 0.5, (2, 3): 0.7}
 
     out = append_edges_metrics(edges_gdf, graph, [metric], ["betw"])
 
     assert out.loc[10, "betw"] == 0.5
     assert out.loc[11, "betw"] == 0.7
-    assert out.loc[99, "betw"] == 0.0  # missing edge filled with 0.0
+
+
+def test_append_edges_metrics_refuses_edges_missing_from_a_graph():
+    graph = _path_graph()
+    edges_gdf = pd.DataFrame({"edgeID": [10, 11, 99]})  # 99 is not in the graph
+
+    with pytest.raises(ValueError, match="multiGraph_fromGDF"):
+        append_edges_metrics(edges_gdf, graph, [{(1, 2): 0.5, (2, 3): 0.7}], ["betw"])
 
 
 # --------------------------------------------------------------------------- regions

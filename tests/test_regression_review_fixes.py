@@ -341,6 +341,65 @@ def test_append_edges_metrics_adds_no_rows_when_the_index_is_not_the_edge_id():
     assert out["Eb"].notna().all()
 
 
+def _crescent_beside_a_straight_road():
+    """Nodes 0-1-2 on a line, with a second, longer street (a crescent) also joining 0 and 1."""
+    nodes = gpd.GeoDataFrame(
+        {"nodeID": [0, 1, 2]}, geometry=[Point(0, 0), Point(10, 0), Point(20, 0)], crs=CRS
+    )
+    edges = gpd.GeoDataFrame(
+        {"edgeID": [7, 8, 9], "u": [0, 0, 1], "v": [1, 1, 2], "key": [0, 0, 0]},
+        geometry=[
+            LineString([(0, 0), (10, 0)]),
+            LineString([(0, 0), (5, 8), (10, 0)]),
+            LineString([(10, 0), (20, 0)]),
+        ],
+        crs=CRS,
+    )
+    edges["length"] = edges.geometry.length
+    return nodes, edges
+
+
+def test_multigraph_keeps_parallel_streets_sharing_a_key():
+    nodes, edges = _crescent_beside_a_straight_road()
+
+    multigraph = ci.multiGraph_fromGDF(nodes, edges)
+
+    assert multigraph.number_of_edges(0, 1) == 2
+    assert {data["edgeID"] for data in multigraph[0][1].values()} == {7, 8}
+
+
+def test_edge_metrics_on_a_multigraph_give_every_street_a_value():
+    nodes, edges = _crescent_beside_a_straight_road()
+    multigraph = ci.multiGraph_fromGDF(nodes, edges)
+    betweenness = nx.edge_betweenness_centrality(multigraph, weight="length", normalized=False)
+
+    out = centrality.append_edges_metrics(edges, multigraph, [betweenness], ["Eb"])
+
+    # Shortest paths take the straight road, so the crescent carries none of them.
+    assert out.loc[7, "Eb"] > 0.0
+    assert out.loc[8, "Eb"] == 0.0
+    assert out.loc[9, "Eb"] > 0.0
+
+
+def test_edge_metrics_refuse_a_graph_missing_parallel_streets():
+    nodes, edges = _crescent_beside_a_straight_road()
+    graph = ci.graph_fromGDF(nodes, edges)
+
+    with pytest.raises(ValueError, match="multiGraph_fromGDF"):
+        centrality.append_edges_metrics(
+            edges, graph, [nx.edge_betweenness_centrality(graph, weight="length")], ["Eb"]
+        )
+
+
+def test_node_centrality_on_a_multigraph_matches_the_graph():
+    nodes, edges = _crescent_beside_a_straight_road()
+
+    on_graph = ci.calculate_centrality(ci.graph_fromGDF(nodes, edges), weight="length")
+    on_multigraph = ci.calculate_centrality(ci.multiGraph_fromGDF(nodes, edges), weight="length")
+
+    assert on_multigraph == on_graph
+
+
 # --- Barriers -------------------------------------------------------------------------------
 
 
