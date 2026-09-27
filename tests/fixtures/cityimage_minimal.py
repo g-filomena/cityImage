@@ -14,9 +14,10 @@ from shapely.geometry import LineString, Point, Polygon
 
 CRS = "EPSG:3857"
 
-# Real (small) York street network shipped in the repo, used for offline topology/barrier/region
-# regression tests. A central subset is clipped so the full clean_network pass stays a couple of
-# seconds instead of ~40s on the whole town, while still exercising genuine street topology.
+# Real (small) York, Ontario street network shipped in the repo, used for offline
+# topology/barrier/region regression tests. A central subset is clipped so a clean_network pass
+# stays well under a second (about 2 s on the whole town), while still exercising genuine street
+# topology.
 YORK_GPKG = Path(__file__).resolve().parents[1] / "input" / "York_street_network.gpkg"
 YORK_CRS = "EPSG:2019"
 _YORK_DICT_COLUMNS = {
@@ -39,12 +40,13 @@ def _york_lines_subset() -> gpd.GeoDataFrame:
     return lines.cx[cx - half : cx + half, cy - half : cy + half].copy()
 
 
-def york_raw_network() -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
-    """Return the York subset as an *uncleaned* node/edge network (via network_from_lines)."""
+def york_raw_network(whole_town: bool = False) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
+    """Return the York subset (or the whole town) as an *uncleaned* node/edge network."""
     import cityImage as ci
 
+    lines = gpd.read_file(YORK_GPKG).to_crs(YORK_CRS) if whole_town else _york_lines_subset()
     return ci.network_from_lines(
-        _york_lines_subset().copy(), YORK_CRS, dict_columns=_YORK_DICT_COLUMNS, other_columns=[]
+        lines.copy(), YORK_CRS, dict_columns=_YORK_DICT_COLUMNS, other_columns=[]
     )
 
 

@@ -112,7 +112,9 @@ Submodules marked *(extra: X)* need the corresponding optional install (see
 - `cityImage.pedestrian`: pedestrian-network filtering and construction from OSM
   highway features.
 - `cityImage.network` and `cityImage.network_topology`: street-network
-  construction, cleaning, simplification, and topology repair.
+  construction, cleaning, simplification, and topology repair. See the
+  [network cleaning guide](https://github.com/g-filomena/cityImage/blob/master/docs/network_topology.md)
+  for every case, with diagrams.
 - `cityImage.graph` and `cityImage.angles`: primal/dual graph semantics and
   angular relationships.
 - `cityImage.centrality`: node/edge centrality wrappers (iGraph-based measures;
@@ -165,6 +167,10 @@ pytest -m "not network" -ra
 python -m build
 twine check dist/*
 ```
+
+## Changelog
+
+See [CHANGELOG.md](https://github.com/g-filomena/cityImage/blob/master/CHANGELOG.md).
 
 ## License
 

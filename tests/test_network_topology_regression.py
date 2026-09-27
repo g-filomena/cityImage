@@ -725,6 +725,17 @@ def test_simplify_graph_keeps_column_dtypes():
     assert simplified.iloc[0]["lanes"] == 2
 
 
+def test_simplify_graph_merges_into_an_int32_column():
+    # pandas refuses an object Series into an int32 column; the merged value must be cast back.
+    nodes_gdf, edges_gdf = _two_segments(lanes=pd.array([1, 2], dtype="int32"))
+    edges_gdf["lanes"] = edges_gdf["lanes"].astype("int32")
+
+    _, simplified = nt.simplify_graph(nodes_gdf, edges_gdf)
+
+    assert simplified["lanes"].dtype == "int32"
+    assert simplified.iloc[0]["lanes"] == 2
+
+
 def test_clean_same_vertexes_edges_collapses_a_longer_street_mapped_twice():
     # A straight street, and one crescent mapped twice about 1 m apart.
     nodes_gdf, edges_gdf = _pair_with_detour([(0, 0), (5, 10), (10, 0)])
@@ -817,7 +828,11 @@ _LOOP_MAPPINGS = {
     ),
     "through two nodes": (
         {2: (10.0, 10.0), 5: (10.0, 0.0)},
-        [(1, 2, [(0, 0), (0, 10), (10, 10)]), (2, 5, [(10, 10), (10, 0)]), (5, 1, [(10, 0), (0, 0)])],
+        [
+            (1, 2, [(0, 0), (0, 10), (10, 10)]),
+            (2, 5, [(10, 10), (10, 0)]),
+            (5, 1, [(10, 0), (0, 0)]),
+        ],
     ),
     "as one edge": ({}, [(1, 1, [(0, 0), (0, 10), (10, 10), (10, 0), (0, 0)])]),
 }
@@ -850,3 +865,308 @@ def test_clean_network_loop_street_leaves_no_pseudo_node(mapping, self_loops):
         assert len(loops) == 1
         assert round(loops.geometry.length.iloc[0], 6) == 40.0
         assert round(clean_edges.geometry.length.sum(), 6) == 60.0
+
+
+def _through_junction():
+    # Edge 1000 runs from 100 to 300 through junction 200 without being split there; 200 is where
+    # edge 1001 starts. Nodes carry an attribute and non-contiguous IDs.
+    nodes_gdf = _nodes(
+        [
+            {"nodeID": 100, "x": 0.0, "y": 0.0, "elev": 1.0},
+            {"nodeID": 200, "x": 10.0, "y": 0.0, "elev": 2.0},
+            {"nodeID": 300, "x": 20.0, "y": 0.0, "elev": 3.0},
+            {"nodeID": 400, "x": 10.0, "y": 10.0, "elev": 4.0},
+        ]
+    )
+    edges_gdf = _edges(
+        [
+            {
+                "edgeID": 1000,
+                "u": 100,
+                "v": 300,
+                "name": "High St",
+                "geometry": LineString([(0, 0), (10, 0), (20, 0)]),
+            },
+            {
+                "edgeID": 1001,
+                "u": 200,
+                "v": 400,
+                "name": "Mill Ln",
+                "geometry": LineString([(10, 0), (10, 10)]),
+            },
+        ]
+    )
+    return nodes_gdf, edges_gdf
+
+
+def test_fix_fake_self_loops_keeps_ids_and_attributes():
+    nodes_gdf, edges_gdf = _through_junction()
+
+    fixed_nodes, fixed_edges = nt.fix_fake_self_loops(nodes_gdf, edges_gdf)
+
+    pd.testing.assert_frame_equal(fixed_nodes, nodes_gdf)
+    rows = {
+        (edge_id, u, v, name)
+        for edge_id, u, v, name in zip(
+            fixed_edges["edgeID"],
+            fixed_edges["u"],
+            fixed_edges["v"],
+            fixed_edges["name"],
+            strict=True,
+        )
+    }
+    assert rows == {
+        (1000, 100, 200, "High St"),
+        (1002, 200, 300, "High St"),
+        (1001, 200, 400, "Mill Ln"),
+    }
+    assert list(fixed_edges.index) == list(fixed_edges["edgeID"])
+    assert fixed_edges["edgeID"].dtype == edges_gdf["edgeID"].dtype
+
+
+def test_fix_network_topology_adds_one_shared_node_at_a_crossing_and_keeps_ids():
+    # Two ways cross at (5, 0), a vertex of both, where no node exists.
+    nodes_gdf = _nodes(
+        [
+            {"nodeID": 7, "x": 0.0, "y": 0.0, "elev": 1.0},
+            {"nodeID": 8, "x": 10.0, "y": 0.0, "elev": 1.0},
+            {"nodeID": 9, "x": 5.0, "y": -5.0, "elev": 1.0},
+            {"nodeID": 11, "x": 5.0, "y": 5.0, "elev": 1.0},
+        ]
+    )
+    edges_gdf = _edges(
+        [
+            {"edgeID": 3, "u": 7, "v": 8, "geometry": LineString([(0, 0), (5, 0), (10, 0)])},
+            {"edgeID": 5, "u": 9, "v": 11, "geometry": LineString([(5, -5), (5, 0), (5, 5)])},
+        ]
+    )
+
+    fixed_nodes, fixed_edges = nt.fix_network_topology(nodes_gdf, edges_gdf)
+
+    assert sorted(fixed_nodes["nodeID"]) == [7, 8, 9, 11, 12]
+    new_node = fixed_nodes.loc[12]
+    assert (new_node.geometry.x, new_node.geometry.y) == (5.0, 0.0)
+    assert fixed_nodes.loc[[7, 8, 9, 11], "elev"].tolist() == [1.0] * 4
+    assert sorted(fixed_edges["edgeID"]) == [3, 5, 6, 7]
+    pairs = {frozenset(pair) for pair in zip(fixed_edges["u"], fixed_edges["v"], strict=True)}
+    assert pairs == {frozenset(p) for p in [(7, 12), (12, 8), (9, 12), (12, 11)]}
+
+
+def test_clean_network_keeps_protected_ids_when_a_way_is_split():
+    # Edge 1000 is split at junction 200 before anything else, which used to renumber every node,
+    # so nodes_to_keep_regardless pointed at another node. Mill Ln continues 400-500-600; 400 is a
+    # protected pseudo-node, 500 an unprotected one.
+    nodes_gdf, edges_gdf = _through_junction()
+    nodes_gdf = pd.concat(
+        [
+            nodes_gdf,
+            _nodes(
+                [
+                    {"nodeID": 500, "x": 10.0, "y": 20.0, "elev": 5.0},
+                    {"nodeID": 600, "x": 10.0, "y": 30.0, "elev": 6.0},
+                ]
+            ),
+        ]
+    )
+    edges_gdf = pd.concat(
+        [
+            edges_gdf,
+            _edges(
+                [
+                    {
+                        "edgeID": 1003,
+                        "u": 400,
+                        "v": 500,
+                        "name": "Mill Ln",
+                        "geometry": LineString([(10, 10), (10, 20)]),
+                    },
+                    {
+                        "edgeID": 1004,
+                        "u": 500,
+                        "v": 600,
+                        "name": "Mill Ln",
+                        "geometry": LineString([(10, 20), (10, 30)]),
+                    },
+                ]
+            ),
+        ]
+    )
+
+    clean_nodes, _ = nt.clean_network(
+        nodes_gdf, edges_gdf, remove_islands=False, nodes_to_keep_regardless=[400]
+    )
+
+    assert sorted(clean_nodes["nodeID"]) == [100, 200, 300, 400, 600]
+    assert clean_nodes.loc[100, "elev"] == 1.0
+
+
+def test_clean_network_drops_a_node_left_only_with_a_removed_self_loop():
+    # A loop street on its own, mapped as two streets between 9 and 19: merging 19 closes a
+    # self-loop at 9, which self_loops=True then removes. Node 9 must not be left behind.
+    nodes_gdf = _nodes(
+        [
+            {"nodeID": 1, "x": 0.0, "y": 0.0},
+            {"nodeID": 2, "x": 10.0, "y": 0.0},
+            {"nodeID": 3, "x": 20.0, "y": 0.0},
+            {"nodeID": 9, "x": 100.0, "y": 0.0},
+            {"nodeID": 19, "x": 110.0, "y": 10.0},
+        ]
+    )
+    edges_gdf = _edges(
+        [
+            {"edgeID": 10, "u": 1, "v": 2, "geometry": LineString([(0, 0), (10, 0)])},
+            {"edgeID": 11, "u": 2, "v": 3, "geometry": LineString([(10, 0), (20, 0)])},
+            {
+                "edgeID": 12,
+                "u": 9,
+                "v": 19,
+                "geometry": LineString([(100, 0), (100, 10), (110, 10)]),
+            },
+            {
+                "edgeID": 13,
+                "u": 19,
+                "v": 9,
+                "geometry": LineString([(110, 10), (110, 0), (100, 0)]),
+            },
+        ]
+    )
+
+    clean_nodes, clean_edges = nt.clean_network(
+        nodes_gdf, edges_gdf, remove_islands=False, self_loops=True
+    )
+
+    assert set(clean_nodes["nodeID"]) == set(clean_edges["u"]).union(clean_edges["v"]) == {1, 3}
+
+
+def test_fix_fake_self_loops_splits_a_3d_edge_and_keeps_z():
+    nodes_gdf, edges_gdf = _through_junction()
+    edges_gdf["geometry"] = [
+        LineString([(0, 0, 5), (10, 0, 6), (20, 0, 7)]),
+        LineString([(10, 0, 6), (10, 10, 8)]),
+    ]
+
+    _, fixed_edges = nt.fix_fake_self_loops(nodes_gdf, edges_gdf)
+
+    assert sorted(fixed_edges["edgeID"]) == [1000, 1001, 1002]
+    assert [list(geometry.coords) for geometry in fixed_edges.sort_index().geometry] == [
+        [(0.0, 0.0, 5.0), (10.0, 0.0, 6.0)],
+        [(10.0, 0.0, 6.0), (10.0, 10.0, 8.0)],
+        [(10.0, 0.0, 6.0), (20.0, 0.0, 7.0)],
+    ]
+
+
+def test_split_does_not_leave_a_zero_length_piece_at_a_repeated_end_vertex():
+    nodes_gdf = _nodes([{"nodeID": 1, "x": 0.0, "y": 0.0}, {"nodeID": 2, "x": 10.0, "y": 0.0}])
+    edges_gdf = _edges(
+        [{"edgeID": 5, "u": 1, "v": 2, "geometry": LineString([(0, 0), (5, 1), (10, 0), (10, 0)])}]
+    )
+
+    _, fixed_edges = nt.fix_fake_self_loops(nodes_gdf, edges_gdf)
+
+    assert (fixed_edges.geometry.length > 0).all()
+    assert (fixed_edges["u"] != fixed_edges["v"]).all()
+
+
+def test_split_joins_an_edge_end_whose_node_point_is_off_by_float_noise():
+    # Node 3's point is 1e-7 off the end of edge 20, which ends on edge 10's internal vertex.
+    nodes_gdf = _nodes(
+        [
+            {"nodeID": 1, "x": 0.0, "y": 0.0},
+            {"nodeID": 2, "x": 10.0, "y": 0.0},
+            {"nodeID": 3, "x": 5.0000001, "y": 0.0},
+            {"nodeID": 4, "x": 5.0, "y": 5.0},
+        ]
+    )
+    edges_gdf = _edges(
+        [
+            {"edgeID": 10, "u": 1, "v": 2, "geometry": LineString([(0, 0), (5, 0), (10, 0)])},
+            {"edgeID": 20, "u": 4, "v": 3, "geometry": LineString([(5, 5), (5, 0)])},
+        ]
+    )
+
+    fixed_nodes, fixed_edges = nt.fix_fake_self_loops(nodes_gdf, edges_gdf)
+
+    assert sorted(fixed_nodes["nodeID"]) == [1, 2, 3, 4]
+    assert nt.nodes_degree(fixed_edges)[3] == 3
+
+
+def test_split_orients_pieces_of_an_edge_stored_against_its_labels():
+    # Edge 10 is labelled 1 -> 2 but its line runs from node 2 to node 1, through node 3.
+    nodes_gdf = _nodes(
+        [
+            {"nodeID": 1, "x": 0.0, "y": 0.0},
+            {"nodeID": 2, "x": 10.0, "y": 0.0},
+            {"nodeID": 3, "x": 5.0, "y": 0.0},
+            {"nodeID": 4, "x": 5.0, "y": 5.0},
+        ]
+    )
+    edges_gdf = _edges(
+        [
+            {"edgeID": 10, "u": 1, "v": 2, "geometry": LineString([(10, 0), (5, 0), (0, 0)])},
+            {"edgeID": 20, "u": 3, "v": 4, "geometry": LineString([(5, 0), (5, 5)])},
+        ]
+    )
+
+    fixed_nodes, fixed_edges = nt.fix_fake_self_loops(nodes_gdf, edges_gdf)
+
+    for u, v, line in zip(fixed_edges["u"], fixed_edges["v"], fixed_edges.geometry, strict=True):
+        assert line.coords[0] == fixed_nodes.loc[u].geometry.coords[0]
+        assert line.coords[-1] == fixed_nodes.loc[v].geometry.coords[0]
+
+
+def test_split_keeps_edge_and_node_dtypes():
+    nodes_gdf = _nodes(
+        [
+            {"nodeID": 7, "x": 0.0, "y": 0.0, "degree": 1},
+            {"nodeID": 8, "x": 10.0, "y": 0.0, "degree": 1},
+            {"nodeID": 9, "x": 5.0, "y": -5.0, "degree": 1},
+            {"nodeID": 11, "x": 5.0, "y": 5.0, "degree": 1},
+        ]
+    )
+    edges_gdf = _edges(
+        [
+            {"edgeID": 3, "u": 7, "v": 8, "geometry": LineString([(0, 0), (5, 0), (10, 0)])},
+            {"edgeID": 5, "u": 9, "v": 11, "geometry": LineString([(5, -5), (5, 0), (5, 5)])},
+        ]
+    )
+    edges_gdf["highway"] = pd.Categorical(["primary", "residential"])
+    edges_gdf["oneway"] = pd.array([True, False], dtype="boolean")
+
+    fixed_nodes, fixed_edges = nt.fix_network_topology(nodes_gdf, edges_gdf)
+
+    assert isinstance(fixed_edges["highway"].dtype, pd.CategoricalDtype)
+    assert fixed_edges["oneway"].dtype == "boolean"
+    assert fixed_edges["edgeID"].dtype == edges_gdf["edgeID"].dtype
+    assert fixed_nodes["degree"].dtype == "Int64"  # the new junction has no degree yet
+    assert fixed_nodes["nodeID"].dtype == nodes_gdf["nodeID"].dtype
+
+
+def test_new_junction_takes_z_interpolated_between_the_edge_ends():
+    nodes_gdf = _nodes(
+        [
+            {"nodeID": 1, "x": 0.0, "y": 0.0, "z": 10.0},
+            {"nodeID": 2, "x": 10.0, "y": 0.0, "z": 20.0},
+            {"nodeID": 3, "x": 2.5, "y": -5.0, "z": 0.0},
+            {"nodeID": 4, "x": 2.5, "y": 5.0, "z": 0.0},
+        ]
+    )
+    edges_gdf = _edges(
+        [
+            {"edgeID": 10, "u": 1, "v": 2, "geometry": LineString([(0, 0), (2.5, 0), (10, 0)])},
+            {"edgeID": 20, "u": 3, "v": 4, "geometry": LineString([(2.5, -5), (2.5, 0), (2.5, 5)])},
+        ]
+    )
+
+    fixed_nodes, _ = nt.fix_network_topology(nodes_gdf, edges_gdf)
+
+    assert fixed_nodes.loc[5, "z"] == 12.5
+
+
+def test_fix_functions_return_copies_when_nothing_is_split():
+    nodes_gdf, edges_gdf = _star()
+
+    for fix in (nt.fix_fake_self_loops, nt.fix_network_topology):
+        fixed_nodes, fixed_edges = fix(nodes_gdf, edges_gdf)
+        assert fixed_nodes is not nodes_gdf
+        assert fixed_edges is not edges_gdf
+        pd.testing.assert_frame_equal(fixed_edges, edges_gdf)

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import geopandas as gpd
 import pytest
+import shapely
 from shapely.geometry import LineString, Point
 
 import cityImage as ci
@@ -46,6 +47,32 @@ def test_filter_distance_keeps_pairs_beyond_threshold():
     assert len(out) == 1
     assert out.iloc[0]["buildingID"] == 1
     assert out.iloc[0]["geometry"].length == pytest.approx(100.0)
+
+
+def test_filter_distance_cap_matches_the_uncapped_pairs_within_it():
+    # The capped path uses a spatial-index radius query (no scipy); it must return the same
+    # pairs, in the same order, as the uncapped path filtered to the cap.
+    chunk = gpd.GeoDataFrame(
+        {"nodeID": [1, 2], "observer_geo": [Point(0, 0), Point(300, 0)]},
+        geometry=[Point(0, 0), Point(300, 0)],
+        crs=CRS,
+    )
+    xs = [10, 60, 120, 200, 260, 400]
+    targets = gpd.GeoDataFrame(
+        {"buildingID": list(range(len(xs))), "target_geo": [Point(x, 0) for x in xs]},
+        geometry=[Point(x, 0) for x in xs],
+        crs=CRS,
+    )
+
+    capped = ci.filter_distance(
+        chunk, targets, min_observer_target_distance=50, max_observer_target_distance=150
+    )
+    uncapped = ci.filter_distance(chunk, targets, min_observer_target_distance=50)
+    expected = uncapped[shapely.length(uncapped["geometry"].to_numpy()) <= 150]
+
+    assert list(zip(capped["nodeID"], capped["buildingID"], strict=True)) == list(
+        zip(expected["nodeID"], expected["buildingID"], strict=True)
+    )
 
 
 def test_merge_gpkg_chunks_to_gdf(tmp_path):
