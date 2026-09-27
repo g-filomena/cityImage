@@ -24,7 +24,7 @@ The current API separates cityImage-owned semantics from external-library respon
 - `cityImage.osm` bridges OSMnx outputs into cityImage schemas.
 - `cityImage.network` and `cityImage.network_topology` preserve node/edge/topology semantics.
 - `cityImage.landuse`, `cityImage.barriers`, `cityImage.regions`, `cityImage.landmarks`, and `cityImage.scoring` implement the core urban-image logic.
-- `cityImage.visibility3d` remains optional because 3D sight-line computation requires heavier mesh and parallel-processing dependencies.
+- `cityImage.visibility3d` remains optional because 3D sight-line computation requires parallel-processing dependencies (Dask, psutil).
 
 This design keeps the core installation lighter while retaining advanced optional workflows for plotting, building-height estimation, and 3D visibility.
 

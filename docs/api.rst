@@ -233,10 +233,8 @@ are optional and require the ``visibility3d`` extra, or ``all``.
    visibility_polygon2d
    compute_3d_sight_lines
    obstructions_2d
-   obstructions_3d
    filter_distance
    downsample_coords
-   polygon_2d_to_3d
    merge_gpkg_chunks_to_gdf
 
 Geometry and small utilities

@@ -36,6 +36,10 @@ extensions = [
     "sphinx.ext.intersphinx",
 ]
 
+# GitHub-style anchors for Markdown headings, so in-page links such as
+# ``[Recipes](#recipes)`` resolve both on GitHub and in Sphinx.
+myst_heading_anchors = 3
+
 # -- Intersphinx -------------------------------------------------------------
 # Enables validated cross-references to Python objects in this project and to
 # external libraries (used from Markdown notebook cells and docstrings).

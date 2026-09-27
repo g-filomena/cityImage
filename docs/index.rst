@@ -114,5 +114,7 @@ Documentation content
    Home <self>
    About <about>
    User Guide <notebooks/userGuide.rst>
+   Network cleaning <network_topology>
    Module ownership <development/module_ownership>
    API reference <api>
+   Changelog <changelog>

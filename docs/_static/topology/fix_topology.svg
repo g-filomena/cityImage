@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 244" width="760" height="244" role="img" aria-label="fix_network_topology cases"><title>fix_network_topology cases</title><style>
+text{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.t{font-size:13px;font-weight:600}
+.s{font-size:12px}
+.lbl{font-size:11.5px}
+.m{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;font-weight:600}
+.halo{paint-order:stroke;stroke-width:5px;stroke-linejoin:round}
+.e{fill:none;stroke-width:3.5;stroke-linecap:round;stroke-linejoin:round}
+.x{stroke-dasharray:6 5;opacity:.9}
+.case{fill:none;stroke-width:10;stroke-linecap:butt}
+.jp{stroke-width:2.5} .jj{stroke-width:2} .jk{stroke-width:3} .v{stroke-width:1.5}
+.ar{fill:none;stroke-width:1.8}
+.pilltxt{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px}
+.oktxt,.notxt{font-size:11.5px;font-weight:600}
+.clus{fill-opacity:.08;stroke-opacity:.55;stroke-dasharray:4 3;stroke-width:1.2}
+.opt{stroke-dasharray:5 4}
+.stepn{font-size:11px;font-weight:700}
+.stepbg{stroke-width:1.4}
+
+.bg{fill:#f7f8fa;stroke:#e3e6eb}
+.card{fill:#ffffff;stroke:#d5dae1;stroke-width:1.2}
+.loopbox{fill:#eef3fd;stroke:#c9d7f5;stroke-width:1.2}
+.t{fill:#1d2530} .s,.lbl{fill:#5d6877} .m{fill:#1d2530}
+.halo{stroke:#f7f8fa}
+.e{stroke:#a3acb8} .k{stroke:#2563eb} .x{stroke:#dc2626}
+.case{stroke:#f7f8fa}
+.j,.jj{fill:#1d2530} .jj{stroke:#f7f8fa} .jp{fill:#f7f8fa;stroke:#d97706} .jk{fill:#f7f8fa;stroke:#16a34a}
+.jx{fill:#dc2626} .v{fill:#f7f8fa;stroke:#5d6877}
+.ar{stroke:#7b8594} .arh{fill:#7b8594}
+.pill{fill:#e8ecf2} .pilltxt{fill:#3b4553}
+.ok{fill:#e3f1e7} .oktxt{fill:#166534} .no{fill:#fde8e8} .notxt{fill:#991b1b}
+.clus{fill:#2563eb;stroke:#2563eb} .sep{stroke:#e3e6eb} .stepn{fill:#2563eb}
+.stepbg{fill:#ffffff;stroke:#2563eb}
+@media (prefers-color-scheme: dark){
+.bg{fill:#0f141a;stroke:#2a313a}
+.card{fill:#161c24;stroke:#2f3844;stroke-width:1.2}
+.loopbox{fill:#122033;stroke:#27406a;stroke-width:1.2}
+.t{fill:#e6ebf1} .s,.lbl{fill:#98a3b1} .m{fill:#e6ebf1}
+.halo{stroke:#0f141a}
+.e{stroke:#5f6a78} .k{stroke:#60a5fa} .x{stroke:#f87171}
+.case{stroke:#0f141a}
+.j,.jj{fill:#e6ebf1} .jj{stroke:#0f141a} .jp{fill:#0f141a;stroke:#fbbf24} .jk{fill:#0f141a;stroke:#4ade80}
+.jx{fill:#f87171} .v{fill:#0f141a;stroke:#98a3b1}
+.ar{stroke:#8a95a4} .arh{fill:#8a95a4}
+.pill{fill:#232b36} .pilltxt{fill:#c5cdd8}
+.ok{fill:#12301f} .oktxt{fill:#86efac} .no{fill:#3a1618} .notxt{fill:#fca5a5}
+.clus{fill:#60a5fa;stroke:#60a5fa} .sep{stroke:#2a313a} .stepn{fill:#60a5fa}
+.stepbg{fill:#161c24;stroke:#60a5fa}
+}</style><defs><marker id="ah" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="arh" d="M0,0 L10,5 L0,10 z"/></marker></defs><rect class="bg" x="0.5" y="0.5" width="759" height="243" rx="12"/><text class="t" x="170" y="28" text-anchor="middle">Shared internal vertex</text><text class="s" x="170" y="45" text-anchor="middle">both ways split, crossing noded</text><text class="t" x="450" y="28" text-anchor="middle">Crossing, no shared vertex</text><text class="s" x="450" y="45" text-anchor="middle">bridge · tunnel · 2D overlap</text><text class="t" x="660" y="28" text-anchor="middle">Node on a segment</text><text class="s" x="660" y="45" text-anchor="middle">no vertex of the other way there</text><line class="sep" x1="340" y1="16" x2="340" y2="228"/><line class="sep" x1="560" y1="16" x2="560" y2="228"/><polyline class="e" points="20,135 80,135 140,135"/><polyline class="e" points="80,70 80,135 80,200"/><circle class="j" cx="20" cy="135" r="6"/><circle class="j" cx="140" cy="135" r="6"/><circle class="j" cx="80" cy="70" r="6"/><circle class="j" cx="80" cy="200" r="6"/><circle class="v" cx="80" cy="135" r="5"/><line class="ar" x1="155" y1="135" x2="192" y2="135" marker-end="url(#ah)"/><polyline class="e k" points="210,135 270,135"/><polyline class="e k" points="330,135 270,135"/><polyline class="e k" points="270,70 270,135"/><polyline class="e k" points="270,200 270,135"/><circle class="j" cx="210" cy="135" r="6"/><circle class="j" cx="330" cy="135" r="6"/><circle class="j" cx="270" cy="70" r="6"/><circle class="j" cx="270" cy="200" r="6"/><circle class="j" cx="270" cy="135" r="6"/><polyline class="e" points="380,135 520,135"/><path class="case" d="M450,70 V200"/><polyline class="e" points="450,70 450,200"/><circle class="j" cx="380" cy="135" r="6"/><circle class="j" cx="520" cy="135" r="6"/><circle class="j" cx="450" cy="70" r="6"/><circle class="j" cx="450" cy="200" r="6"/><rect class="ok" x="410.3" y="206" width="79.4" height="22" rx="11"/><text class="oktxt" x="450" y="221.5" text-anchor="middle">unchanged</text><polyline class="e" points="590,135 730,135"/><polyline class="e" points="660,70 660,135"/><circle class="j" cx="590" cy="135" r="6"/><circle class="j" cx="730" cy="135" r="6"/><circle class="j" cx="660" cy="70" r="6"/><circle class="j" cx="660" cy="135" r="6"/><rect class="ok" x="620.3" y="206" width="79.4" height="22" rx="11"/><text class="oktxt" x="660" y="221.5" text-anchor="middle">unchanged</text></svg>
