@@ -27,10 +27,9 @@ import pandas as pd
 from shapely import STRtree
 from shapely.geometry import LineString, Point
 
+from .angles import _round_coord as _coord_key
 from .data_utils import convert_numeric_columns
-from .geometry import split_line_at_MultiPoint
 from .graph import _is_missing_scalar, graph_fromGDF, nodes_degree
-from .network import join_nodes_edges_by_coordinates, obtain_nodes_gdf
 
 pd.set_option("display.precision", 3)
 
@@ -49,6 +48,10 @@ def fix_network_topology(nodes_gdf, edges_gdf):
     well as an edge whose vertex happens to fall on another edge's interior (the split would only be
     undone by the pseudo-node simplification anyway). No new vertices are ever introduced.
 
+    Existing nodes and edges keep their IDs, attributes and dtypes: a split edge keeps its edgeID
+    on its first piece, and a split point takes the node already there or, if there is none, a new
+    node (see _split_edges).
+
     Parameters
     ----------
     nodes_gdf: Point GeoDataFrame
@@ -59,14 +62,9 @@ def fix_network_topology(nodes_gdf, edges_gdf):
     Returns
     -------
     nodes_gdf, edges_gdf: tuple of GeoDataFrames
-        The (possibly unchanged) nodes and the updated edges.
+        Copies of the nodes, with any new junction added, and of the updated edges.
     """
-    edges_gdf = edges_gdf.copy()
     coords_list = [list(geometry.coords) for geometry in edges_gdf.geometry]
-    edges_gdf["coords"] = coords_list
-
-    def _coord_key(coord, ndigits=10):
-        return (round(float(coord[0]), ndigits), round(float(coord[1]), ndigits))
 
     # coordinate -> set of edge positions carrying it as any vertex (endpoint or internal)
     vertex_edges = defaultdict(set)
@@ -76,35 +74,24 @@ def fix_network_topology(nodes_gdf, edges_gdf):
 
     # An internal vertex that is also a vertex of a *different* edge is a shared, un-noded junction
     # -> a split point. Endpoints are already u/v nodes, so only internal vertices are considered.
-    to_fix_points = []
+    split_keys = []
     for pos, coords in enumerate(coords_list):
         endpoints = {_coord_key(coords[0]), _coord_key(coords[-1])}
-        points, seen = [], set()
-        for coord in coords[1:-1]:
-            key = _coord_key(coord)
-            if key in endpoints or key in seen:
-                continue
-            if vertex_edges[key] - {pos}:  # the vertex belongs to another edge too
-                points.append(Point(coord[0], coord[1]))
-                seen.add(key)
-        to_fix_points.append(points)
+        internal = {_coord_key(coord) for coord in coords[1:-1]} - endpoints
+        split_keys.append({key for key in internal if vertex_edges[key] - {pos}})
 
-    edges_gdf["to_fix"] = to_fix_points
-    edges_gdf["fixing"] = [len(item) > 0 for item in to_fix_points]
-
-    to_fix = edges_gdf[edges_gdf["fixing"]].copy()
-    edges_gdf = edges_gdf[~edges_gdf["fixing"]]
-    if len(to_fix) == 0:
-        # Nothing to split: drop temp columns and return the unchanged nodes alongside the edges,
-        # matching the (nodes_gdf, edges_gdf) contract callers unpack.
-        edges_gdf = edges_gdf.drop(columns=["coords", "to_fix", "fixing"], errors="ignore")
-        return nodes_gdf, edges_gdf
-    return _add_fixed_edges(edges_gdf, to_fix)
+    return _split_edges(nodes_gdf, edges_gdf, split_keys)
 
 
 def fix_fake_self_loops(nodes_gdf, edges_gdf):
     """
-    Fix the network topology by removing (fake) self-loops and adding fixed edges.
+    Split edges that run through an existing node without being split there.
+
+    An internal vertex of an edge that lies on a node (another edge's end, or the edge's own start
+    or end, as in a way that loops back through its first node) becomes a split point. A node's
+    position is its point and the end coordinates of its edges, so float noise between the two
+    does not hide it. Existing nodes and edges keep their IDs, attributes and dtypes (see
+    _split_edges).
 
     Parameters
     ----------
@@ -115,91 +102,201 @@ def fix_fake_self_loops(nodes_gdf, edges_gdf):
 
     Returns
     -------
-    LineString GeoDataFrame
-        The updated edges GeoDataFrame.
-    """
-
-    edges_gdf = edges_gdf.copy()
-    edges_gdf["coords"] = [list(geometry.coords) for geometry in edges_gdf.geometry]
-    # all the coordinates but the from and to vertices' ones.
-    edges_gdf["coords"] = [coords[1:-1] for coords in edges_gdf.coords]
-
-    # convert nodes_gdf['x'] and nodes_gdf['y'] to numpy arrays for faster computation
-    x = list(nodes_gdf["x"])
-    y = list(nodes_gdf["y"])
-    # create a set of all coordinates in nodes. This essentially correspond to the from and to nodes of the edges currently in the edges_gdf
-    nodes_set = set(zip(x, y, strict=False))
-
-    to_fix = []
-    # loop through the coordinates in edges_gdf.coords and check if they are in the nodes_set. This means that one of the edges coords (not from and to),
-    # coincide with some other edge from or to vertex (indicating some sort of loop)
-    for coords in edges_gdf.coords:
-        fix_coords = []
-        for coord in coords:
-            if coord in nodes_set:
-                fix_coords.append(coord)
-        to_fix.append(fix_coords)
-
-    # assign the results to self_loops['to_fix']
-    edges_gdf["to_fix"] = to_fix
-    edges_gdf["fixing"] = [len(to_fix) > 0 for to_fix in edges_gdf["to_fix"]]
-    to_fix = edges_gdf[edges_gdf["fixing"]].copy()
-    edges_gdf = edges_gdf[~edges_gdf["fixing"]]
-    if len(to_fix) == 0:
-        return nodes_gdf, edges_gdf
-    return _add_fixed_edges(edges_gdf, to_fix)
-
-
-def _add_fixed_edges(edges_gdf, to_fix_gdf):
-    """
-    Add fixed edges to the edges GeoDataFrame.
-
-    Parameters
-    ----------
-    edges_gdf: LineString GeoDataFrame
-        The street segments GeoDataFrame.
-    to_fix_gdf: GeoDataFrame
-        The GeoDataFrame containing the edges to be fixed.
-
-    Returns
-    -------
     nodes_gdf, edges_gdf: tuple of GeoDataFrames
-        The cleaned junctions and street segments GeoDataFrames.
+        Copies of the nodes and of the updated edges.
     """
-    dfs = []
+    node_keys = {_coord_key(point.coords[0]) for point in nodes_gdf.geometry}
+    for geometry in edges_gdf.geometry:
+        node_keys.add(_coord_key(geometry.coords[0]))
+        node_keys.add(_coord_key(geometry.coords[-1]))
+    split_keys = [
+        {_coord_key(coord) for coord in geometry.coords[1:-1]} & node_keys
+        for geometry in edges_gdf.geometry
+    ]
+    return _split_edges(nodes_gdf, edges_gdf, split_keys)
 
-    def _split_row_geometry(row):
-        split_points = [point if isinstance(point, Point) else Point(point) for point in row.to_fix]
-        return split_line_at_MultiPoint(row.geometry, split_points, z=None)
 
-    new_geometries = to_fix_gdf.apply(_split_row_geometry, axis=1)
-    new_geometries = pd.DataFrame(new_geometries, columns=["lines"])
+def _split_at_vertices(line, keys):
+    """Split a line at each internal vertex whose ``_coord_key`` is in ``keys``, keeping z.
 
-    def append_new_geometries(row):
-        for n, line in enumerate(row):  # assigning the resulting geometries
-            ix = row.name
-            index = ix if n == 0 else max(edges_gdf.index) + 1
+    A piece that would have no length (a vertex repeated at a split point, or at the line's end)
+    is left out: the pieces either side of it already meet there.
+    """
+    coords = list(line.coords)
+    lines, current = [], [coords[0]]
+    start, moved = _coord_key(coords[0]), False
+    for coord in coords[1:-1]:
+        current.append(coord)
+        key = _coord_key(coord)
+        moved = moved or key != start
+        if key in keys:
+            if moved:
+                lines.append(LineString(current))
+            current, start, moved = [coord], key, False
+    current.append(coords[-1])
+    if moved or _coord_key(coords[-1]) != start or not lines:
+        lines.append(LineString(current))
+    return lines
 
-            # copy attributes
-            row = to_fix_gdf.loc[ix].copy()
-            # and assign geometry an new edgeID
-            row["edgeID"] = index
-            row["geometry"] = line
-            dfs.append(row.to_frame().T)
 
-    new_geometries.apply(lambda row: append_new_geometries(row), axis=1)
-    rows = pd.concat(dfs, ignore_index=True)
-    rows = rows.explode(column="geometry")
+def _oriented_ends(nodes_gdf, edges_gdf):
+    """Per edge, the nodes at the first and at the last coordinate of its geometry.
 
-    # concatenate the dataframes and assign to edges_gdf
-    edges_gdf = pd.concat([edges_gdf, rows], ignore_index=True)
-    edges_gdf.drop(["u", "v", "to_fix", "fixing", "coords"], inplace=True, axis=1)
-    edges_gdf["length"] = edges_gdf.geometry.length
-    edges_gdf["edgeID"] = edges_gdf.index
-    nodes_gdf = obtain_nodes_gdf(edges_gdf, edges_gdf.crs)
-    nodes_gdf, edges_gdf = join_nodes_edges_by_coordinates(nodes_gdf, edges_gdf)
+    That is ``(u, v)``, or ``(v, u)`` for a line stored against its labels: whichever pairing puts
+    the labelled nodes nearer to the line's ends.
+    """
+    xy = {
+        node_id: point.coords[0]
+        for node_id, point in zip(nodes_gdf["nodeID"], nodes_gdf.geometry, strict=True)
+    }
 
-    return nodes_gdf, edges_gdf
+    def _d2(a, b):
+        return (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2
+
+    ends = []
+    for u, v, line in zip(edges_gdf["u"], edges_gdf["v"], edges_gdf.geometry, strict=True):
+        first, last = line.coords[0], line.coords[-1]
+        reversed_ = (
+            u != v
+            and u in xy
+            and v in xy
+            and _d2(first, xy[v]) + _d2(last, xy[u]) < _d2(first, xy[u]) + _d2(last, xy[v])
+        )
+        ends.append((v, u) if reversed_ else (u, v))
+    return ends
+
+
+def _split_edges(nodes_gdf, edges_gdf, split_keys):
+    """Split edges at internal vertices, keeping every existing nodeID, edgeID, attribute and dtype.
+
+    ``split_keys`` holds, per edge row, the ``_coord_key`` of the vertices to split that edge at,
+    wherever the edge passes them. The pieces of a split edge are copies of its row, oriented by
+    its geometry: the first starts at the node at the line's first coordinate and keeps the edgeID,
+    the last ends at the node at its last coordinate, and the others get new edgeIDs after the
+    largest. A split point takes the node at its coordinates (a node's point, or an edge end
+    labelled with it) or, if there is none, a new node after the largest nodeID, shared by every
+    edge split there. A new node's ``z`` is the vertex's own, or else interpolated along the edge
+    between its end nodes; its other columns are left missing (integer and boolean columns become
+    nullable to hold that).
+    """
+    nodes_gdf, edges_gdf = nodes_gdf.copy(), edges_gdf.copy()
+    if not any(split_keys):
+        return nodes_gdf, edges_gdf
+
+    ends = _oriented_ends(nodes_gdf, edges_gdf)
+    node_at = {}
+    for node_id, point in zip(nodes_gdf["nodeID"], nodes_gdf.geometry, strict=True):
+        node_at.setdefault(_coord_key(point.coords[0]), node_id)
+    for (start, end), line in zip(ends, edges_gdf.geometry, strict=True):
+        node_at.setdefault(_coord_key(line.coords[0]), start)
+        node_at.setdefault(_coord_key(line.coords[-1]), end)
+
+    if "z" in nodes_gdf.columns:
+        node_z = dict(zip(nodes_gdf["nodeID"], nodes_gdf["z"], strict=True))
+    elif nodes_gdf.geometry.has_z.any():
+        node_z = dict(zip(nodes_gdf["nodeID"], nodes_gdf.geometry.z, strict=True))
+    else:
+        node_z = {}
+    node_dims = 3 if nodes_gdf.geometry.has_z.any() else 2
+    next_node = nodes_gdf["nodeID"].max() + 1 if len(nodes_gdf) else 0
+    next_edge = edges_gdf["edgeID"].max() + 1
+    new_nodes = []
+
+    def _node_for(coord, fraction, start, end):
+        nonlocal next_node
+        key = _coord_key(coord)
+        if key in node_at:
+            return node_at[key]
+        z = coord[2] if len(coord) > 2 else None
+        z_start, z_end = node_z.get(start), node_z.get(end)
+        if z is None and not (_is_missing_scalar(z_start) or _is_missing_scalar(z_end)):
+            z = z_start + fraction * (z_end - z_start)
+        point = coord[:2] if z is None else (coord[0], coord[1], z)
+        node = {"nodeID": next_node, "geometry": Point(point[:node_dims])}
+        for column, value in zip(("x", "y", "z"), point, strict=False):
+            if column in nodes_gdf.columns:
+                node[column] = value
+        new_nodes.append(node)
+        node_at[key] = next_node
+        next_node += 1
+        return node_at[key]
+
+    take, geometries, edge_ids, us, vs, order = [], [], [], [], [], []
+    for pos, keys in enumerate(split_keys):
+        if not keys:
+            continue
+        line, (start, end) = edges_gdf.geometry.iloc[pos], ends[pos]
+        lines = _split_at_vertices(line, keys)
+        travelled, piece_u = 0.0, start
+        for n, piece in enumerate(lines):
+            travelled += piece.length
+            if n == len(lines) - 1:
+                piece_v = end
+            else:
+                fraction = travelled / line.length if line.length else 0.0
+                piece_v = _node_for(piece.coords[-1], fraction, start, end)
+            if n == 0:
+                edge_ids.append(edges_gdf["edgeID"].iloc[pos])
+            else:
+                edge_ids.append(next_edge)
+                next_edge += 1
+            take.append(pos)
+            geometries.append(piece)
+            us.append(piece_u)
+            vs.append(piece_v)
+            order.append((pos, n))
+            piece_u = piece_v
+
+    # Pieces are copies of their edge's row, so every column keeps its dtype.
+    pieces = edges_gdf.iloc[take].reset_index(drop=True)
+    pieces["edgeID"] = pd.Series(edge_ids).astype(edges_gdf["edgeID"].dtype)
+    pieces["u"] = pd.Series(us).astype(edges_gdf["u"].dtype)
+    pieces["v"] = pd.Series(vs).astype(edges_gdf["v"].dtype)
+    pieces[edges_gdf.geometry.name] = gpd.GeoSeries(geometries, crs=edges_gdf.crs)
+
+    # The pieces of a split edge take its place in the frame, so row order is kept.
+    kept = [pos for pos, keys in enumerate(split_keys) if not keys]
+    new_edges = pd.concat([edges_gdf.iloc[kept].reset_index(drop=True), pieces], ignore_index=True)
+    sort_key = [(pos, 0) for pos in kept] + order
+    new_edges = new_edges.iloc[sorted(range(len(sort_key)), key=sort_key.__getitem__)]
+    new_edges["length"] = new_edges.geometry.length
+    new_edges = _index_like(new_edges, edges_gdf, "edgeID")
+
+    if new_nodes:
+        added = gpd.GeoDataFrame(new_nodes, geometry="geometry", crs=nodes_gdf.crs)
+        if nodes_gdf.geometry.name != "geometry":
+            added = added.rename_geometry(nodes_gdf.geometry.name)
+        combined = _keep_dtypes(pd.concat([nodes_gdf, added]), nodes_gdf)
+        nodes_gdf = _index_like(combined, nodes_gdf, "nodeID")
+
+    return nodes_gdf, new_edges
+
+
+def _keep_dtypes(gdf, original):
+    """Cast ``gdf``'s columns back to ``original``'s dtypes after rows with missing values were
+    added: integer and boolean columns become their nullable counterparts where a value is missing.
+    """
+    for column, dtype in original.dtypes.items():
+        if column == original.geometry.name or gdf[column].dtype == dtype:
+            continue
+        if gdf[column].isna().any():
+            if pd.api.types.is_bool_dtype(dtype):
+                dtype = "boolean"
+            elif pd.api.types.is_integer_dtype(dtype) and not isinstance(
+                dtype, pd.api.extensions.ExtensionDtype
+            ):
+                dtype = "Int64"
+        gdf[column] = gdf[column].astype(dtype)
+    return gdf
+
+
+def _index_like(gdf, original, id_column):
+    """Index ``gdf`` by its ID column if ``original`` is indexed by its IDs, else by position."""
+    if original.index.equals(pd.Index(original[id_column])):
+        gdf = gdf.set_index(id_column, drop=False)
+        gdf.index.name = None
+        return gdf
+    return gdf.reset_index(drop=True)
 
 
 def remove_disconnected_islands(nodes_gdf, edges_gdf):
@@ -333,6 +430,7 @@ def clean_network(
         # eliminate loops
         if self_loops:
             edges_gdf = edges_gdf[edges_gdf["u"] != edges_gdf["v"]]
+            nodes_gdf = _drop_unused_nodes(nodes_gdf, edges_gdf)
         if dead_ends:
             nodes_gdf, edges_gdf = fix_dead_ends(nodes_gdf, edges_gdf, nodes_to_keep_regardless)
 
@@ -352,6 +450,7 @@ def clean_network(
         # repreat eliminate loops
         if self_loops:
             edges_gdf = edges_gdf[edges_gdf["u"] != edges_gdf["v"]]
+            nodes_gdf = _drop_unused_nodes(nodes_gdf, edges_gdf)
         if dead_ends:
             nodes_gdf, edges_gdf = fix_dead_ends(nodes_gdf, edges_gdf, nodes_to_keep_regardless)
 
@@ -419,7 +518,7 @@ def _finalize_dataframes(nodes_gdf, edges_gdf, crs):
 
     nodes_gdf.drop(["wkt"], axis=1, inplace=True, errors="ignore")  # remove temporary columns
     edges_gdf.drop(
-        ["coords", "tmp", "code", "wkt", "fixing", "to_fix"], axis=1, inplace=True, errors="ignore"
+        ["coords", "tmp", "code", "wkt"], axis=1, inplace=True, errors="ignore"
     )  # remove temporary columns
     edges_gdf["length"] = edges_gdf["geometry"].length
     edges_gdf.set_index("edgeID", drop=False, inplace=True, append=False)
@@ -611,9 +710,6 @@ def simplify_graph(
     dropped_nodes: set = set()
     pieces = {eid: [eid] for eid in edges_gdf.index}
 
-    def _coord_key(coord, ndigits=10):
-        return tuple(round(float(value), ndigits) for value in coord[:2])
-
     for nodeID in to_edit:
         incident = sorted(
             (e for e in incidence[nodeID] if e not in dropped_edges), key=order.__getitem__
@@ -682,7 +778,7 @@ def simplify_graph(
 
 
 _STRUCTURAL_EDGE_COLUMNS = frozenset(
-    {"edgeID", "u", "v", "geometry", "length", "coords", "code", "tmp", "wkt", "fixing", "to_fix"}
+    {"edgeID", "u", "v", "geometry", "length", "coords", "code", "tmp", "wkt"}
 )
 
 
@@ -711,11 +807,15 @@ def _merge_attributes(edges_gdf, original, merged):
         frame["_k"] = [repr(value) for value in frame["_v"]]
         weight = frame.groupby(["_target", "_k"], sort=False)["_w"].sum()
         best = weight.groupby(level=0, sort=False).idxmax()
-        first_value = frame.drop_duplicates(["_target", "_k"]).set_index(["_target", "_k"])["_v"]
+        # The piece each winning value was first met on: taking the value from the column by
+        # that piece keeps the column's dtype.
+        first_piece = frame.drop_duplicates(["_target", "_k"]).set_index(["_target", "_k"])[
+            "_piece"
+        ]
         targets = list(best.index)
-        edges_gdf.loc[targets, column] = pd.Series(
-            [first_value.loc[key] for key in best], index=targets
-        )
+        chosen = original[column].loc[[first_piece.loc[key] for key in best]]
+        chosen.index = targets
+        edges_gdf.loc[targets, column] = chosen
     return edges_gdf
 
 
@@ -787,7 +887,7 @@ def fix_dead_ends(nodes_gdf, edges_gdf, nodes_to_keep_regardless=None):
 def _drop_unused_nodes(nodes_gdf, edges_gdf):
     """Keep only the nodes that some edge references as its u or v."""
     used = set(edges_gdf["u"]).union(edges_gdf["v"])
-    return nodes_gdf[nodes_gdf["nodeID"].isin(used)]
+    return nodes_gdf[nodes_gdf["nodeID"].isin(used)].copy()
 
 
 def clean_same_vertexes_edges(

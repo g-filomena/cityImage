@@ -615,8 +615,8 @@ def filter_distance(
         Minimum allowed 2D distance between observer and target (in CRS units).
     max_observer_target_distance : float or None, default None
         Maximum allowed 2D distance between observer and target (in CRS units). When
-        set, candidate pairs are found with a KD-tree radius query so only pairs within
-        the cap are ever materialised; ``None`` keeps every pair beyond the minimum
+        set, candidate pairs are found with a spatial-index radius query so only pairs
+        within the cap are ever materialised; ``None`` keeps every pair beyond the minimum
         (the full cartesian product), reproducing the historical behaviour.
 
     Returns
@@ -636,19 +636,21 @@ def filter_distance(
     min_sq = float(min_observer_target_distance) ** 2
 
     if max_observer_target_distance is not None:
-        # KD-tree radius query: only pairs within the cap are enumerated, so we never
+        # Spatial-index radius query: only pairs within the cap are enumerated, so we never
         # materialise the observer x target cartesian product (the source of both the
         # runtime blow-up on long lines and the memory pressure on large cities).
-        from scipy.spatial import cKDTree
-
-        observer_tree = cKDTree(observer_xy)
-        target_tree = cKDTree(target_xy)
-        near = observer_tree.sparse_distance_matrix(
-            target_tree, float(max_observer_target_distance), output_type="coo_matrix"
+        target_tree = shapely.STRtree(shapely.points(target_xy))
+        observer_pos, target_pos = target_tree.query(
+            shapely.points(observer_xy),
+            predicate="dwithin",
+            distance=float(max_observer_target_distance),
         )
-        observer_pos, target_pos, dist = near.row, near.col, near.data
-        keep = dist >= float(min_observer_target_distance)
+        delta = observer_xy[observer_pos] - target_xy[target_pos]
+        keep = (delta * delta).sum(axis=1) >= min_sq
         observer_pos, target_pos = observer_pos[keep], target_pos[keep]
+        # Observer-major order, as in the uncapped branch below.
+        order = np.lexsort((target_pos, observer_pos))
+        observer_pos, target_pos = observer_pos[order], target_pos[order]
     else:
         # Broadcast the pairwise distance filter instead of materialising the cartesian
         # product with a pandas cross merge (which duplicated every attribute column —
