@@ -41,7 +41,8 @@ def convert_numeric_columns(df: pd.DataFrame) -> pd.DataFrame:
 
     Integer and float NumPy dtypes are converted to their Python scalar
     equivalents where possible. Object columns are stringified to avoid mixed
-    object/list values in downstream graph and file-export steps.
+    object/list values in downstream graph and file-export steps; a missing value
+    stays missing (NaN), never the string "None" or "nan".
     """
     out = df.copy()
     for column in out.columns:
@@ -50,6 +51,8 @@ def convert_numeric_columns(df: pd.DataFrame) -> pd.DataFrame:
         elif out[column].dtype == np.float64:
             out[column] = out[column].astype(float)
         elif out[column].dtype == "object":
-            out[column] = out[column].astype(str)
+            # A missing value stays missing: pandas 2 would turn None and NaN into "None" / "nan".
+            values = out[column]
+            out[column] = values.astype(str).where(values.notna())
 
     return out
