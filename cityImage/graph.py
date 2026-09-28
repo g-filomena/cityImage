@@ -185,9 +185,12 @@ def dual_gdf(
     segment lengths; optional angle values encode deflection between original
     geometries.
 
-    With ``oneway=True`` the dual edges are directed: an edge ``u -> v`` means segment ``v`` can
-    be entered from segment ``u``, respecting one-way streets (``oneway == 1``). Route on them
-    with ``dual_graph_fromGDF(..., directed=True)``.
+    Each pair of adjacent segments is one dual edge, one row with one geometry, and its
+    ``oneway`` column says which moves it allows: 0 when segment ``v`` can be entered from ``u``
+    and ``u`` from ``v``, 1 when only ``u -> v`` is allowed (the row points that way). With
+    ``oneway=True`` the moves respect one-way streets (primal ``oneway == 1``), and a pair where
+    neither move is allowed has no row; without it every pair is 0. Route on the moves with
+    ``dual_graph_fromGDF(..., directed=True)``.
     """
     nodes = nodes_gdf.copy().set_index("nodeID", drop=False)
     nodes.index.name = None
@@ -218,18 +221,26 @@ def dual_gdf(
     nodes_dual.index = nodes_dual.edgeID
     nodes_dual.index.name = None
 
+    # Every allowed move between two segments; "intersecting" lists the segments each one leads
+    # into, so a one-way pair appears in one direction only.
+    moves = {
+        (row.Index, intersecting)
+        for row in nodes_dual.itertuples()
+        for intersecting in row.intersecting
+        if intersecting != row.Index
+    }
+
     new_edges: list[dict[str, Any]] = []
-    processed: set[tuple[Hashable, Hashable]] = set()
+    written: set[frozenset[Hashable]] = set()
 
     for row in nodes_dual.itertuples():
         for intersecting in row.intersecting:
-            if (
-                row.Index == intersecting
-                or (row.Index, intersecting) in processed
-                or (not oneway and (intersecting, row.Index) in processed)
-            ):
+            pair = frozenset((row.Index, intersecting))
+            if row.Index == intersecting or pair in written:
                 continue
+            written.add(pair)
 
+            # Met first from an allowed move, so a one-way row points in its allowed direction.
             intersecting_row = nodes_dual.loc[intersecting]
             distance = (row.length + intersecting_row.length) / 2
             geometry = LineString([row.geometry, intersecting_row.geometry])
@@ -239,16 +250,17 @@ def dual_gdf(
                     "v": intersecting,
                     "geometry": geometry,
                     "length": distance,
+                    "oneway": 0 if (intersecting, row.Index) in moves else 1,
                 }
             )
-            processed.add((row.Index, intersecting))
 
     edges_dual = gpd.GeoDataFrame(
         new_edges,
-        columns=["u", "v", "geometry", "length"],
+        columns=["u", "v", "geometry", "length", "oneway"],
         crs=crs,
         geometry="geometry",
     )
+    edges_dual["oneway"] = edges_dual["oneway"].astype(int)
 
     if angle != "radians":
         edges_dual["deg"] = edges_dual.apply(
@@ -281,9 +293,10 @@ def dual_graph_fromGDF(
 ) -> nx.Graph:
     """Create a NetworkX graph from dual-node and dual-edge GeoDataFrames.
 
-    ``directed=True`` builds a ``networkx.DiGraph``, for dual edges from
-    ``dual_gdf(oneway=True)``, whose pairs respect one-way streets. Community detection
-    (``identify_regions``) needs the undirected graph.
+    By default an undirected ``networkx.Graph``, one edge per row. ``directed=True`` builds a
+    ``networkx.DiGraph`` of the moves each row allows (see ``dual_gdf``): ``u -> v`` always, and
+    ``v -> u`` too where ``oneway`` is 0. Rows without a ``oneway`` column are read as two-way.
+    Community detection (``identify_regions``) needs the undirected graph.
     """
     nodes = nodes_dual.copy().set_index("edgeID", drop=False)
     nodes.index.name = None
@@ -296,7 +309,10 @@ def dual_graph_fromGDF(
     _set_node_attributes_from_gdf(dual_graph, nodes)
 
     for _, row in edges.iterrows():
-        dual_graph.add_edge(row["u"], row["v"], **_edge_attributes(row, {"u", "v"}))
+        attributes = _edge_attributes(row, {"u", "v"})
+        dual_graph.add_edge(row["u"], row["v"], **attributes)
+        if directed and row.get("oneway", 0) != 1:
+            dual_graph.add_edge(row["v"], row["u"], **attributes)
 
     return dual_graph
 

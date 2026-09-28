@@ -286,10 +286,53 @@ def test_dual_graph_respects_one_way_streets():
     nodes_dual, edges_dual = ci.dual_gdf(nodes, edges, CRS, oneway=True)
     dual_graph = ci.dual_graph_fromGDF(nodes_dual, edges_dual, directed=True)
 
+    assert edges_dual[["u", "v", "oneway"]].values.tolist() == [[0, 1, 1]]
     assert dual_graph.is_directed()
     assert not ci.dual_graph_fromGDF(nodes_dual, edges_dual).is_directed()
     assert nx.has_path(dual_graph, 0, 1)
     assert not nx.has_path(dual_graph, 1, 0)
+
+
+def test_a_two_way_pair_is_one_row_and_both_moves():
+    nodes = gpd.GeoDataFrame(
+        {"nodeID": [0, 1, 2, 3]},
+        geometry=[Point(0, 0), Point(10, 0), Point(20, 0), Point(30, 0)],
+        crs=CRS,
+    )
+    edges = gpd.GeoDataFrame(
+        {"edgeID": [0, 1, 2], "u": [0, 1, 2], "v": [1, 2, 3], "oneway": [0, 0, 1]},
+        geometry=[
+            LineString([(0, 0), (10, 0)]),
+            LineString([(10, 0), (20, 0)]),
+            LineString([(20, 0), (30, 0)]),
+        ],
+        crs=CRS,
+    )
+    edges["length"] = edges.geometry.length
+
+    nodes_dual, edges_dual = ci.dual_gdf(nodes, edges, CRS, oneway=True)
+    dual_graph = ci.dual_graph_fromGDF(nodes_dual, edges_dual, directed=True)
+
+    # Segments 0-1 are two-way: one row, both moves. Segment 2 runs one way, away from 1.
+    assert sorted(edges_dual[["u", "v", "oneway"]].values.tolist()) == [[0, 1, 0], [1, 2, 1]]
+    assert set(dual_graph.edges()) == {(0, 1), (1, 0), (1, 2)}
+
+
+def test_directed_dual_graph_without_oneway_allows_every_move():
+    nodes = gpd.GeoDataFrame(
+        {"nodeID": [0, 1, 2]}, geometry=[Point(0, 0), Point(10, 0), Point(20, 0)], crs=CRS
+    )
+    edges = gpd.GeoDataFrame(
+        {"edgeID": [0, 1], "u": [0, 1], "v": [1, 2], "length": [10.0, 10.0]},
+        geometry=[LineString([(0, 0), (10, 0)]), LineString([(10, 0), (20, 0)])],
+        crs=CRS,
+    )
+
+    nodes_dual, edges_dual = ci.dual_gdf(nodes, edges, CRS)
+    dual_graph = ci.dual_graph_fromGDF(nodes_dual, edges_dual, directed=True)
+
+    assert edges_dual["oneway"].tolist() == [0]
+    assert set(dual_graph.edges()) == {(0, 1), (1, 0)}
 
 
 def test_dual_graph_without_oneway_stays_undirected():

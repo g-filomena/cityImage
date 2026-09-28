@@ -23,10 +23,13 @@ Entries marked **⚠ behaviour** change the output of an existing call with the 
   `compute_local_scores`) give a building without a height (missing or zero), in a layer where
   others have one, a visual score of 0; such buildings received NaN scores. Every building stays
   in the output and can be a landmark through its other components.
-- **⚠ behaviour** `dual_gdf(oneway=True)` returns directed dual edges, and
+- **⚠ behaviour** `dual_gdf` writes one row per pair of adjacent segments, with a new `oneway`
+  column: 0 when the move is allowed both ways, 1 when only `u` → `v` is (with `oneway=True`,
+  respecting one-way streets; the row points in the allowed direction).
   `dual_graph_fromGDF(..., directed=True)` (new argument, default False) builds a
-  `networkx.DiGraph` from them, so routes respect one-way streets. By default the dual graph is
-  undirected.
+  `networkx.DiGraph` of those moves, both directions of a two-way pair and the allowed one of a
+  one-way pair, so routes respect one-way streets. Dual edges without the column are read as
+  two-way. By default the dual graph is undirected.
 - **⚠ behaviour** `amend_nodes_membership` raises a `ValueError`, instead of looping forever, when
   the network is not connected (remove its islands first), is smaller than `min_size_district`,
   has no district of that size, has nodes that cannot be amended, or does not settle within one
