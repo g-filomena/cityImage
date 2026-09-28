@@ -70,6 +70,19 @@ def _require_visibility3d_dependencies(*import_names: str) -> None:
         )
 
 
+def _show_progress_logs() -> None:
+    """Show this module's INFO records, which ``verbose=True`` asks for.
+
+    The logger is set to INFO. When no handler up the logger hierarchy would show its records (the
+    caller has not configured logging), a console handler is added to it, once.
+    """
+    LOGGER.setLevel(logging.INFO)
+    if not LOGGER.hasHandlers():
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter("%(message)s"))
+        LOGGER.addHandler(handler)
+
+
 class _ProgressLogger:
     """Progress and timing for :func:`compute_3d_sight_lines`, logged at INFO, in one place.
 
@@ -156,6 +169,7 @@ def compute_3d_sight_lines(
     consolidate_tolerance: float = 0.0,
     num_workers: int = 20,
     verbose: bool = False,
+    tmp_dir: str | Path | None = None,
 ):
     """Compute visible 3D sight lines between observer nodes and target buildings.
 
@@ -210,11 +224,14 @@ def compute_3d_sight_lines(
     num_workers : int, default 20
         Number of parallel Dask workers used for the 2D obstruction check.
     verbose : bool, default False
-        When ``True``, log progress at INFO on the ``cityImage.visibility3d`` logger: a bar
-        with per-step 2D/3D times and an ETA, each time the bar advances, plus step and total
-        wall times. INFO is shown once the caller enables it, e.g.
-        ``logging.basicConfig(level=logging.INFO)``. When ``False`` (the default) the compute
-        path is silent.
+        When ``True``, progress is logged at INFO on the ``cityImage.visibility3d`` logger, and
+        shown: a bar with per-step 2D/3D times and an ETA each time the bar advances, plus step
+        and total wall times. The logger is set to INFO, and prints to the console when logging
+        is not configured. When ``False`` (the default) the compute path is silent.
+    tmp_dir : str or Path, optional
+        Folder in which the per-chunk GeoPackages are written, inside a temporary subfolder
+        removed once they are merged (or on error). A city-scale run can write tens of GB there.
+        Defaults to the working directory.
 
     Returns
     -------
@@ -226,6 +243,8 @@ def compute_3d_sight_lines(
     # The 3D visibility test is closed-form (see _analytic_obstructions_3d); only the
     # 2D batching stack (dask + psutil) is required.
     _require_visibility3d_dependencies("dask", "psutil")
+    if verbose:
+        _show_progress_logs()
     progress = _ProgressLogger(enabled=verbose)
 
     # Step 0: Prepare data
@@ -274,8 +293,13 @@ def compute_3d_sight_lines(
         ]
 
     # Chunks are written to a private temporary folder, removed once they are merged (or on
-    # error), so nothing is left in the working directory.
-    chunk_dir = Path(tempfile.mkdtemp(prefix=f"{city_name}_sight_lines_"))
+    # error), so nothing is left behind.
+    chunk_dir = Path(
+        tempfile.mkdtemp(
+            prefix=f"{city_name}_sight_lines_",
+            dir=Path(tmp_dir) if tmp_dir is not None else Path.cwd(),
+        )
+    )
     try:
         out_prefix = "chunk_sight_lines"
         out_files = []

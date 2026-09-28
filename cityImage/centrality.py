@@ -294,9 +294,10 @@ def append_edges_metrics(
     ``Graph``, ``(u, v, key)`` for a ``MultiGraph`` - the keys
     ``networkx.edge_betweenness_centrality`` returns for each.
 
-    A ``Graph`` (``graph_fromGDF``) holds one edge per pair of nodes, so parallel streets in
-    ``edges_gdf`` are missing from it and would have no value. That raises a ``ValueError``: build
-    a ``MultiGraph`` (``multiGraph_fromGDF``), which gives every street its own value.
+    A ``Graph`` (``graph_fromGDF``) holds one edge per pair of nodes, the shortest, so the other
+    parallel streets in ``edges_gdf`` are missing from it: they get 0, the exact value for
+    shortest-path measures such as betweenness, which no shortest path takes them into. A
+    ``MultiGraph`` (``multiGraph_fromGDF``) gives every street its own computed value.
     """
     if graph.is_multigraph():
         edge_ids = {
@@ -304,13 +305,7 @@ def append_edges_metrics(
         }
     else:
         edge_ids = {(u, v): data["edgeID"] for u, v, data in graph.edges(data=True)}
-        missing = sorted(set(edges_gdf["edgeID"]) - set(edge_ids.values()))
-        if missing:
-            raise ValueError(
-                f"{len(missing)} edge(s) are not in the graph, which holds one edge per pair of "
-                "nodes: build it with multiGraph_fromGDF to give parallel streets their own "
-                f"values. Missing edgeIDs: {missing[:20]}"
-            )
+    metrics = list(column_names)
 
     dicts = [*dicts, edge_ids]
     column_names = [*column_names, "edgeID"]
@@ -320,6 +315,9 @@ def append_edges_metrics(
     edges_gdf = pd.merge(edges_gdf, tmp, on="edgeID", how="left")
     edges_gdf.index = edges_gdf.edgeID
     edges_gdf.index.name = None
+    if not graph.is_multigraph():
+        missing = ~edges_gdf["edgeID"].isin(set(edge_ids.values()))
+        edges_gdf.loc[missing, metrics] = 0.0
     return edges_gdf
 
 

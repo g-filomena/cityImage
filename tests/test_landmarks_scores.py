@@ -191,7 +191,7 @@ def test_compute_local_scores_rejects_unnormalised_component_weights():
 
 def test_visibility_score_cleans_messy_height_values():
     buildings = _buildings(3)
-    # A comma-decimal string, a list-wrapped value, and a NaN exercise the _clean_height branches.
+    # A comma-decimal string, a list-wrapped value, and a NaN exercise the parse_height branches.
     buildings["height"] = ["12,5", [10.0], float("nan")]
 
     out = ci.visibility_score(buildings)  # no sight lines -> fac derived from cleaned heights

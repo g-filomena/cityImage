@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import geopandas as gpd
 import networkx as nx
+import numpy as np
 import pandas as pd
 import pytest
 from shapely.geometry import LineString, Point, Polygon
@@ -81,12 +82,14 @@ def test_append_edges_metrics_merges_values_by_edge_id():
     assert out.loc[11, "betw"] == 0.7
 
 
-def test_append_edges_metrics_refuses_edges_missing_from_a_graph():
+def test_append_edges_metrics_gives_0_to_edges_missing_from_a_graph():
     graph = _path_graph()
     edges_gdf = pd.DataFrame({"edgeID": [10, 11, 99]})  # 99 is not in the graph
 
-    with pytest.raises(ValueError, match="multiGraph_fromGDF"):
-        append_edges_metrics(edges_gdf, graph, [{(1, 2): 0.5, (2, 3): 0.7}], ["betw"])
+    out = append_edges_metrics(edges_gdf, graph, [{(1, 2): 0.5, (2, 3): np.nan}], ["betw"])
+
+    assert out.loc[99, "betw"] == 0.0
+    assert np.isnan(out.loc[11, "betw"])  # a value missing for an edge in the graph stays NaN
 
 
 # --------------------------------------------------------------------------- regions

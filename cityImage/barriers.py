@@ -28,6 +28,7 @@ from shapely.geometry import (
     MultiLineString,
     MultiPolygon,
     Polygon,
+    box,
 )
 from shapely.ops import nearest_points, polygonize_full, unary_union
 
@@ -91,25 +92,32 @@ def _empty_barriers(crs: Any = None, barrier_type: str | None = None) -> gpd.Geo
 
 
 def _resolve_crs(crs: Any, *frames: gpd.GeoDataFrame | None) -> Any:
-    """Return ``crs``, or a local projected CRS when none is given and the input is not projected.
+    """Return ``crs``, or the local UTM zone when none is given and the input is longitude/latitude.
 
     The barrier rules measure areas, lengths and buffers in CRS units, which on longitude/latitude
     input are degrees: lakes and parks would fall below every area threshold and a 10-unit buffer
     would spread a railway over 20 degrees. Such input is projected to its UTM zone, as
-    ``buildings_from_osm`` and ``network_from_osm`` do.
+    ``buildings_from_osm`` and ``network_from_osm`` do. Input without a CRS is used as it is, in
+    its own units.
     """
     if crs is not None:
         return crs
-    present = [frame for frame in frames if isinstance(frame, gpd.GeoDataFrame) and not frame.empty]
-    if not present or all(frame.crs is not None and frame.crs.is_projected for frame in present):
-        return None
     geographic = [
-        (frame if frame.crs is not None else frame.set_crs("EPSG:4326")).to_crs("EPSG:4326")
-        for frame in present
+        frame
+        for frame in frames
+        if isinstance(frame, gpd.GeoDataFrame)
+        and not frame.empty
+        and frame.crs is not None
+        and frame.crs.is_geographic
     ]
-    return gpd.GeoSeries(
-        pd.concat([frame.geometry for frame in geographic], ignore_index=True), crs="EPSG:4326"
-    ).estimate_utm_crs()
+    if not geographic:
+        return None
+    # The zone of the frames' joint extent, found from their bounding boxes alone.
+    extents = [
+        gpd.GeoSeries([box(*frame.total_bounds)], crs=frame.crs).to_crs("EPSG:4326")
+        for frame in geographic
+    ]
+    return gpd.GeoSeries(pd.concat(extents, ignore_index=True), crs="EPSG:4326").estimate_utm_crs()
 
 
 def _as_projected(gdf: gpd.GeoDataFrame | None, crs: Any = None) -> gpd.GeoDataFrame:

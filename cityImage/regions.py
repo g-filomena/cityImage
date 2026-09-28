@@ -233,8 +233,16 @@ def districts_to_edges_from_nodes(
     # Look nodes up by nodeID, not by index label: a frame whose index is not its nodeIDs (after a
     # filter and reset_index, say) would otherwise read another node's district without error.
     district_of = pd.Series(nodes_gdf[column].to_numpy(), index=nodes_gdf["nodeID"].to_numpy())
-    district_u = edges_gdf["u"].map(district_of).astype(int)
-    district_v = edges_gdf["v"].map(district_of).astype(int)
+    district_u = edges_gdf["u"].map(district_of)
+    district_v = edges_gdf["v"].map(district_of)
+    unassigned = district_u.isna() | district_v.isna()
+    if unassigned.any():
+        raise ValueError(
+            f"{int(unassigned.sum())} edge(s) have an endpoint without a district in {column!r}: "
+            f"edgeIDs {edges_gdf.loc[unassigned, 'edgeID'].tolist()[:20]}"
+        )
+    district_u = district_u.astype(int)
+    district_v = district_v.astype(int)
     edges_gdf[f"{column}_uv"] = district_u.where(district_u == district_v, INVALID_DISTRICT)
     edges_gdf[f"{column}_u"] = district_u
     edges_gdf[f"{column}_v"] = district_v
@@ -285,9 +293,9 @@ def amend_nodes_membership(
     Raises
     ------
     ValueError
-        If the network is not connected, if it has fewer nodes than ``min_size_district``, if no
-        district reaches ``min_size_district``, if a pass leaves invalid nodes and amends none, or
-        if amending does not settle within one pass per node. None of these can finish.
+        If the network is not connected, if no district reaches ``min_size_district`` (a network
+        smaller than it included), if a pass leaves invalid nodes and amends none, or if amending
+        does not settle within one pass per node. None of these can finish.
     """
     nodes_gdf = nodes_gdf.copy()
     # Node look-ups below use .loc by nodeID, so index by nodeID regardless of the caller's index
@@ -295,18 +303,13 @@ def amend_nodes_membership(
     nodes_gdf = nodes_gdf.set_index("nodeID", drop=False)
     nodes_gdf.index.name = None
 
-    if min_size_district > len(nodes_gdf):
-        raise ValueError(
-            f"min_size_district ({min_size_district}) is larger than the network "
-            f"({len(nodes_gdf)} nodes): no district can be valid"
-        )
     _require_connected(nodes_gdf, edges_gdf)
 
     nodes_gdf = _check_disconnected_districts(nodes_gdf, edges_gdf, column, min_size_district)
     if (nodes_gdf[column] == INVALID_DISTRICT).all():
         raise ValueError(
-            f"No district reaches min_size_district ({min_size_district}): "
-            "there is no valid district to amend the nodes into"
+            f"No district reaches min_size_district ({min_size_district}) in a network of "
+            f"{len(nodes_gdf)} nodes: there is no valid district to amend the nodes into"
         )
 
     # Bounded: a run needing more passes than there are nodes is going round in circles, with

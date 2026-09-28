@@ -30,21 +30,22 @@ Entries marked **⚠ behaviour** change the output of an existing call with the 
   the network is not connected (remove its islands first), is smaller than `min_size_district`,
   has no district of that size, has nodes that cannot be amended, or does not settle within one
   pass per node.
-- **⚠ behaviour** `append_edges_metrics` takes a `MultiGraph` (`multiGraph_fromGDF`) and gives
-  every street, parallel ones included, its own value. Given a `Graph` that lacks some of the edges
-  (parallel streets, of which it keeps the shortest), it raises a `ValueError` instead of filling
-  them with 0. `calculate_centrality` accepts a `MultiGraph` too, and `multiGraph_fromGDF` keeps
+- `append_edges_metrics` also takes a `MultiGraph` (`multiGraph_fromGDF`), which gives every
+  street, parallel ones included, its own value. With a `Graph`, the parallel streets it leaves out
+  (it keeps the shortest of each pair) get 0, the exact value for shortest-path measures; any other
+  NaN stays. `calculate_centrality` accepts a `MultiGraph` too, and `multiGraph_fromGDF` keeps
   parallel streets that share a `key` (`network_from_lines` keys every edge 0) instead of keeping
   the last one read. The node-and-paths notebooks compute edge betweenness on a `MultiGraph`.
-- **⚠ behaviour** `compute_3d_sight_lines(verbose=True)` logs its progress at INFO on the
+- `compute_3d_sight_lines(verbose=True)` logs its progress at INFO on the
   `cityImage.visibility3d` logger instead of printing it, one line each time the progress bar
-  advances; enable it with `logging.basicConfig(level=logging.INFO)`. "No visible sight-lines" is
-  logged too.
+  advances. `verbose=True` sets that logger to INFO and gives it a console handler when logging is
+  not configured, so the progress shows either way. "No visible sight-lines" is logged too.
 - **⚠ behaviour** 2D advance visibility (`visibility_polygon2d`, `2dvis`) covers the whole ring
   of rays: the slice between the 350° and 0° rays was left out.
 - `barriers_from_osm`, `barriers_from_osm_features` (and the per-type builders) and
   `network_from_osm(network_type="walk")` / `pedestrian_network_from_osm` project to the local UTM
-  zone when `crs` is None; the barrier rules were applied in degrees.
+  zone when `crs` is None and the input is in longitude/latitude; the barrier rules were applied
+  in degrees. Input without a CRS stays in its own units.
 - `gdf_multipolygon_to_polygon` keeps the ID column unless a MultiPolygon is split, so
   `buildings_from_file` keeps the file's building IDs.
 
@@ -59,8 +60,9 @@ Entries marked **⚠ behaviour** change the output of an existing call with the 
   `along_within_parks`, and the building preparation of `compute_3d_sight_lines` (which raised the
   caller's `base` values to 1.0).
 - `visibility_score` (and so `score_building_components`) keeps the caller's index.
-- `compute_3d_sight_lines` writes its chunk files to a temporary folder removed afterwards,
-  instead of leaving them in `./sight_lines_tmp`.
+- `compute_3d_sight_lines` writes its chunk files to a temporary subfolder of `tmp_dir` (new
+  argument, default the working directory), removed afterwards, instead of leaving them in
+  `./sight_lines_tmp`.
 - `weight_nodes`, `append_edges_metrics` and `districts_to_edges_from_nodes` match rows by
   `nodeID`/`edgeID` rather than by index label (a `KeyError`, extra rows, or silently wrong
   districts when the index was not the IDs).

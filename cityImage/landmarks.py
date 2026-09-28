@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 from shapely.geometry import Point, Polygon, mapping
 
-from .buildings import _clean_height
+from .buildings import known_heights, parse_height
 from .data_utils import scaling_columnDF
 
 LOGGER = logging.getLogger(__name__)
@@ -202,7 +202,7 @@ def visibility_score(buildings_gdf, sight_lines=None, method="longest"):
     has_height = "height" in buildings_gdf.columns
 
     if has_height:
-        buildings_gdf["height"] = buildings_gdf["height"].apply(_clean_height)
+        buildings_gdf["height"] = buildings_gdf["height"].apply(parse_height)
 
     if has_height and not buildings_gdf.empty:
         buildings_gdf["fac"] = buildings_gdf.apply(
@@ -472,9 +472,8 @@ def _drop_buildings_without_height(buildings_gdf):
     """
     if "height" not in buildings_gdf.columns:
         return buildings_gdf
-    heights = buildings_gdf["height"].apply(_clean_height).astype(float)
-    missing = heights.isna()
-    if not missing.any() or not (heights > 0.0).any():
+    missing = known_heights(buildings_gdf["height"]).isna()
+    if not missing.any() or missing.all():
         return buildings_gdf
     LOGGER.warning("Left out %d building(s) without a height from the scores", int(missing.sum()))
     return buildings_gdf[~missing].copy()

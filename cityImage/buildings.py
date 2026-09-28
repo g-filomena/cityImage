@@ -64,7 +64,7 @@ def select_buildings_by_study_area(
     return larger_buildings_gdf[larger_buildings_gdf.geometry.within(study_area)].copy()
 
 
-def _clean_height(value: Any) -> float | None:
+def parse_height(value: Any) -> float | None:
     """Read a height in metres: the first number in the value, or None when it holds none.
 
     Accepts numbers, strings such as ``"12 m"`` or ``"12,5"`` (as OSM tags carry them), and
@@ -76,8 +76,17 @@ def _clean_height(value: Any) -> float | None:
         return None
     if isinstance(value, (int, float)):
         return float(value)
-    match = re.search(r"\d+(\.\d+)?", str(value).replace(",", "."))
+    match = re.search(r"-?\d+(\.\d+)?", str(value).replace(",", "."))
     return float(match.group()) if match else None
+
+
+def known_heights(values: pd.Series) -> pd.Series:
+    """Heights in metres (see ``parse_height``), NaN where unknown: missing, unreadable or not
+    above zero. A layer has heights when at least one is known; the loader and the landmark
+    scores both read heights through this.
+    """
+    heights = values.apply(parse_height).astype(float)
+    return heights.where(heights > 0.0)
 
 
 def _drop_buildings_below_height(
@@ -85,12 +94,12 @@ def _drop_buildings_below_height(
 ) -> gpd.GeoDataFrame:
     """Keep the buildings at least ``min_height`` tall; a building without a height is dropped.
 
-    The ``height`` column of the kept rows is read as numbers (see ``_clean_height``). When no
+    The ``height`` column of the kept rows is read as numbers (see ``known_heights``). When no
     building has a height (every value missing or zero), the column carries nothing: it is dropped
     and every building kept, and the landmark scores then leave the visual component out.
     """
-    heights = buildings_gdf["height"].apply(_clean_height).astype(float)
-    if not (heights > 0.0).any():
+    heights = known_heights(buildings_gdf["height"])
+    if heights.isna().all():
         LOGGER.info("No building has a height: the height column is dropped")
         return buildings_gdf.drop(columns=["height"])
     keep = heights >= min_height

@@ -6,6 +6,7 @@ Each test pins one behaviour with the smallest realistic input.
 
 from __future__ import annotations
 
+import logging
 import math
 import os
 
@@ -78,7 +79,7 @@ def test_amend_nodes_membership_refuses_a_network_smaller_than_min_size():
     nodes, edges = ci.network_from_lines(_grid_lines(2), CRS)
     nodes["d"] = 0
 
-    with pytest.raises(ValueError, match="larger than the network"):
+    with pytest.raises(ValueError, match="No district reaches"):
         regions.amend_nodes_membership(nodes, edges, "d", min_size_district=10)
 
 
@@ -189,6 +190,26 @@ def test_compute_3d_sight_lines_leaves_the_caller_frame_and_no_files(tmp_path):
     assert len(sight_lines) > 0
     assert buildings["base"].tolist() == [0.3, 0.5]
     assert list(tmp_path.iterdir()) == []
+
+    chunks = tmp_path / "chunks"
+    chunks.mkdir()
+    ci.compute_3d_sight_lines(nodes, buildings, buildings, None, "t", num_workers=1, tmp_dir=chunks)
+    assert list(chunks.iterdir()) == []
+
+
+def test_verbose_sight_lines_show_their_progress(monkeypatch):
+    from cityImage import visibility3d
+
+    logger = logging.getLogger("cityImage.visibility3d")
+    monkeypatch.setattr(logger, "level", logging.NOTSET)
+    monkeypatch.setattr(logger, "handlers", [])
+    monkeypatch.setattr(logger, "propagate", False)  # as if no logging were configured
+
+    visibility3d._show_progress_logs()
+    visibility3d._show_progress_logs()
+
+    assert logger.level == logging.INFO
+    assert len(logger.handlers) == 1
 
 
 # --- Networks -------------------------------------------------------------------------------
@@ -395,14 +416,20 @@ def test_edge_metrics_on_a_multigraph_give_every_street_a_value():
     assert out.loc[9, "Eb"] > 0.0
 
 
-def test_edge_metrics_refuse_a_graph_missing_parallel_streets():
+def test_edge_metrics_on_a_graph_match_the_multigraph():
     nodes, edges = _crescent_beside_a_straight_road()
     graph = ci.graph_fromGDF(nodes, edges)
+    multigraph = ci.multiGraph_fromGDF(nodes, edges)
 
-    with pytest.raises(ValueError, match="multiGraph_fromGDF"):
-        centrality.append_edges_metrics(
-            edges, graph, [nx.edge_betweenness_centrality(graph, weight="length")], ["Eb"]
-        )
+    on_graph = centrality.append_edges_metrics(
+        edges, graph, [nx.edge_betweenness_centrality(graph, weight="length")], ["Eb"]
+    )
+    on_multigraph = centrality.append_edges_metrics(
+        edges, multigraph, [nx.edge_betweenness_centrality(multigraph, weight="length")], ["Eb"]
+    )
+
+    assert on_graph.loc[8, "Eb"] == 0.0  # the crescent, left out of the Graph
+    assert on_graph["Eb"].tolist() == pytest.approx(on_multigraph["Eb"].tolist())
 
 
 def test_node_centrality_on_a_multigraph_matches_the_graph():
@@ -433,6 +460,17 @@ def test_barriers_are_projected_when_no_crs_is_given():
     assert sorted(out["barrier_type"]) == ["railway", "water"]
     width = out[out["barrier_type"] == "railway"].total_bounds
     assert width[2] - width[0] < 2000  # metres, not a 20-degree buffer
+
+
+def test_barriers_without_a_crs_keep_their_own_units():
+    rail = gpd.GeoDataFrame(
+        {"railway": ["rail"]}, geometry=[LineString([(350000, 400000), (352000, 400000)])]
+    )
+
+    out = barriers.railway_barriers_from_osm_features(rail)
+
+    assert out.crs is None
+    assert out.total_bounds[0] == pytest.approx(350000, abs=50)
 
 
 def test_along_within_parks_leaves_the_caller_frame():

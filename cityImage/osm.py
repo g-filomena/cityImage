@@ -19,7 +19,7 @@ from shapely.geometry import Point
 
 from .adapters import standardize_buildings_gdf
 from .barriers import barrier_osm_feature_tags, barriers_from_osm_features
-from .buildings import _clean_height
+from .buildings import parse_height
 from .geometry import gdf_multipolygon_to_polygon
 from .landuse import classify_land_uses_raws_into_OSMgroups, derive_land_uses_raw_fromOSM
 from .network import _resolve_list_edges_gdf, reset_index_graph_gdfs
@@ -335,7 +335,7 @@ def buildings_from_osm(
     )
     buildings = _polygonal_buildings(buildings)
     if keep_osm_heights and "height" in buildings.columns:
-        buildings["height"] = buildings["height"].apply(_clean_height)
+        buildings["height"] = buildings["height"].apply(parse_height)
     else:
         buildings = buildings.drop(columns=["height"], errors="ignore")
 
