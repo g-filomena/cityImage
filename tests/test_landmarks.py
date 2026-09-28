@@ -68,7 +68,7 @@ def test_visibility_score_empty_sight_lines_returns_gdf_not_tuple():
 
     assert hasattr(out, "geometry")
     assert "3dvis" in out.columns
-    assert out["3dvis"].eq(0.0).all()
+    assert out["3dvis"].isna().all()  # no building reached: nothing to score
 
 
 def test_cultural_score_from_osm_uses_historic_helper():

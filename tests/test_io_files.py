@@ -26,7 +26,7 @@ def _write_buildings(path, extra=None):
 
 def test_buildings_from_file_applies_height_base_defaults(tmp_path):
     out = ci.buildings_from_file(_write_buildings(tmp_path / "b.gpkg"), crs=UTM, min_area=100)
-    assert (out["height"] == 5).all()  # min_height default when no height field/column
+    assert out["height"].isna().all()  # no height field/column: heights are the caller's
     assert (out["base"] == 0.0).all()  # base default
     assert "buildingID" in out.columns
 

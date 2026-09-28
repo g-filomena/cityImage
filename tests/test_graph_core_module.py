@@ -94,3 +94,47 @@ def test_from_nx_to_gdf_is_only_a_geometry_bearing_graph_adapter():
     assert nodes.sort_values("nodeID")["nodeID"].tolist() == [1, 2]
     assert edges["edgeID"].tolist() == [10]
     assert nodes.crs == edges.crs
+
+
+def test_graph_edges_keep_their_u_and_v():
+    import geopandas as gpd
+    from shapely.geometry import LineString, Point
+
+    import cityImage as ci
+
+    nodes = gpd.GeoDataFrame(
+        {"nodeID": [5, 7]}, geometry=[Point(0, 0), Point(10, 0)], crs="EPSG:3857"
+    )
+    # Drawn from node 7 to node 5, one-way that way.
+    edges = gpd.GeoDataFrame(
+        {"edgeID": [0], "u": [7], "v": [5], "oneway": [True], "length": [10.0]},
+        geometry=[LineString([(10, 0), (0, 0)])],
+        crs="EPSG:3857",
+    )
+
+    for graph in (ci.graph_fromGDF(nodes, edges), ci.multiGraph_fromGDF(nodes, edges)):
+        data = next(iter(graph.edges(data=True)))[2]
+        assert (data["u"], data["v"], data["oneway"]) == (7, 5, True)
+
+
+@pytest.mark.parametrize("angle", [None, "radians"])
+def test_dual_gdf_of_a_single_street_has_no_dual_edges(angle):
+    import geopandas as gpd
+    from shapely.geometry import LineString, Point
+
+    import cityImage as ci
+
+    nodes = gpd.GeoDataFrame(
+        {"nodeID": [0, 1]}, geometry=[Point(0, 0), Point(10, 0)], crs="EPSG:3857"
+    )
+    edges = gpd.GeoDataFrame(
+        {"edgeID": [0], "u": [0], "v": [1], "length": [10.0]},
+        geometry=[LineString([(0, 0), (10, 0)])],
+        crs="EPSG:3857",
+    )
+
+    nodes_dual, edges_dual = ci.dual_gdf(nodes, edges, "EPSG:3857", angle=angle)
+
+    assert nodes_dual["edgeID"].tolist() == [0]
+    assert edges_dual.empty
+    assert ("rad" if angle == "radians" else "deg") in edges_dual.columns

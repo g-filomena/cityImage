@@ -284,13 +284,15 @@ def test_dual_graph_respects_one_way_streets():
     )
 
     nodes_dual, edges_dual = ci.dual_gdf(nodes, edges, CRS, oneway=True)
-    dual_graph = ci.dual_graph_fromGDF(nodes_dual, edges_dual, directed=True)
+    dual_graph = ci.dual_graph_fromGDF(nodes_dual, edges_dual)
 
     assert edges_dual[["u", "v", "oneway"]].values.tolist() == [[0, 1, 1]]
-    assert dual_graph.is_directed()
-    assert not ci.dual_graph_fromGDF(nodes_dual, edges_dual).is_directed()
-    assert nx.has_path(dual_graph, 0, 1)
-    assert not nx.has_path(dual_graph, 1, 0)
+    assert not dual_graph.is_directed()
+    # The undirected edge keeps the allowed direction, 0 -> 1, for the modeller to follow.
+    data = dual_graph.edges[1, 0]
+    assert (data["u"], data["v"], data["oneway"]) == (0, 1, 1)
+    _, edges_back = ci.from_nx_to_gdf(dual_graph, CRS)
+    assert edges_back[["u", "v", "oneway"]].values.tolist() == [[0, 1, 1]]
 
 
 def test_a_two_way_pair_is_one_row_and_both_moves():
@@ -311,28 +313,56 @@ def test_a_two_way_pair_is_one_row_and_both_moves():
     edges["length"] = edges.geometry.length
 
     nodes_dual, edges_dual = ci.dual_gdf(nodes, edges, CRS, oneway=True)
-    dual_graph = ci.dual_graph_fromGDF(nodes_dual, edges_dual, directed=True)
+    dual_graph = ci.dual_graph_fromGDF(nodes_dual, edges_dual)
 
     # Segments 0-1 are two-way: one row, both moves. Segment 2 runs one way, away from 1.
     assert sorted(edges_dual[["u", "v", "oneway"]].values.tolist()) == [[0, 1, 0], [1, 2, 1]]
-    assert set(dual_graph.edges()) == {(0, 1), (1, 0), (1, 2)}
+    assert dual_graph.number_of_edges() == 2
+    assert dual_graph.edges[0, 1]["oneway"] == 0
+    assert dual_graph.edges[1, 2]["oneway"] == 1
 
 
-def test_directed_dual_graph_without_oneway_allows_every_move():
+def _three_segments(oneway):
     nodes = gpd.GeoDataFrame(
-        {"nodeID": [0, 1, 2]}, geometry=[Point(0, 0), Point(10, 0), Point(20, 0)], crs=CRS
-    )
-    edges = gpd.GeoDataFrame(
-        {"edgeID": [0, 1], "u": [0, 1], "v": [1, 2], "length": [10.0, 10.0]},
-        geometry=[LineString([(0, 0), (10, 0)]), LineString([(10, 0), (20, 0)])],
+        {"nodeID": [0, 1, 2, 3]},
+        geometry=[Point(0, 0), Point(10, 0), Point(20, 0), Point(30, 0)],
         crs=CRS,
     )
+    edges = gpd.GeoDataFrame(
+        {"edgeID": [0, 1, 2], "u": [0, 1, 2], "v": [1, 2, 3], "oneway": oneway},
+        geometry=[
+            LineString([(0, 0), (10, 0)]),
+            LineString([(10, 0), (20, 0)]),
+            LineString([(20, 0), (30, 0)]),
+        ],
+        crs=CRS,
+    )
+    edges["length"] = edges.geometry.length
+    return nodes, edges
 
-    nodes_dual, edges_dual = ci.dual_gdf(nodes, edges, CRS)
-    dual_graph = ci.dual_graph_fromGDF(nodes_dual, edges_dual, directed=True)
 
-    assert edges_dual["oneway"].tolist() == [0]
-    assert set(dual_graph.edges()) == {(0, 1), (1, 0)}
+@pytest.mark.parametrize(
+    "oneway",
+    [
+        [False, False, True],
+        ["no", "No", "yes"],
+        ["false", None, "TRUE"],
+        [0.0, np.nan, 1.0],
+    ],
+)
+def test_dual_gdf_reads_booleans_and_yes_no_as_oneway(oneway):
+    nodes, edges = _three_segments(oneway)
+
+    _, edges_dual = ci.dual_gdf(nodes, edges, CRS, oneway=True)
+
+    assert sorted(edges_dual[["u", "v", "oneway"]].values.tolist()) == [[0, 1, 0], [1, 2, 1]]
+
+
+def test_dual_gdf_raises_on_an_unreadable_oneway():
+    nodes, edges = _three_segments(["no", "-1", "reversible"])
+
+    with pytest.raises(ValueError, match="-1.*reversible"):
+        ci.dual_gdf(nodes, edges, CRS, oneway=True)
 
 
 def test_dual_graph_without_oneway_stays_undirected():
@@ -348,7 +378,7 @@ def test_dual_graph_without_oneway_stays_undirected():
     nodes_dual, edges_dual = ci.dual_gdf(nodes, edges, CRS)
 
     assert not ci.dual_graph_fromGDF(nodes_dual, edges_dual).is_directed()
-    assert len(edges_dual) == 1
+    assert edges_dual["oneway"].tolist() == [0]
 
 
 def test_network_from_osm_walk_projects_when_no_crs_is_given(monkeypatch):
@@ -552,17 +582,180 @@ def test_buildings_from_file_keeps_the_file_ids(tmp_path):
     assert ci.buildings_from_file(str(path), CRS)["buildingID"].tolist() == [101, 205]
 
 
-def test_buildings_from_file_drops_buildings_below_min_height(tmp_path):
+def test_buildings_from_file_drops_only_buildings_known_to_be_below_min_height(tmp_path):
     path = tmp_path / "b.gpkg"
     gpd.GeoDataFrame(
-        {"buildingID": [0, 1, 2, 3, 4], "h": [12.0, np.nan, 0.0, 3.0, 20.0]},
-        geometry=[box(i * 50, 0, i * 50 + 20, 20) for i in range(5)],
+        {"buildingID": [0, 1, 2, 3, 4, 5], "h": [12.0, np.nan, 0.0, 3.0, 20.0, 5.0]},
+        geometry=[box(i * 50, 0, i * 50 + 20, 20) for i in range(6)],
         crs=CRS,
     ).to_file(path)
 
-    out = ci.buildings_from_file(str(path), CRS, height_field="h")
+    out = ci.buildings_from_file(str(path), CRS, height_field="h", min_height=5)
 
-    assert out["buildingID"].tolist() == [0, 4]  # missing, zero and 3 m dropped
+    assert out["buildingID"].tolist() == [0, 1, 2, 4, 5]  # only the 3 m building is dropped
+    heights = out.set_index("buildingID")["height"]
+    assert heights[[0, 4, 5]].tolist() == [12.0, 20.0, 5.0]
+    assert heights[[1, 2]].isna().all()  # missing and zero heights are unknown
+
+
+def test_the_building_schema_reads_heights_as_metres_above_zero():
+    buildings = gpd.GeoDataFrame(
+        {"buildingID": range(6), "height": ["12 m", "7,5", 0, -3.0, "bad", None]},
+        geometry=[box(i * 50, 0, i * 50 + 20, 20) for i in range(6)],
+        crs=CRS,
+    )
+
+    out = ci.standardize_buildings_gdf(buildings)
+
+    assert out["height"].dtype == float
+    assert out["height"].tolist()[:2] == [12.0, 7.5]
+    assert out["height"].iloc[2:].isna().all()
+
+
+def test_visibility_score_leaves_a_building_without_a_height_out_of_fac_and_3dvis():
+    buildings = gpd.GeoDataFrame(
+        {"buildingID": [0, 1, 2, 3], "height": [10.0, 0.0, -4.0, np.nan]},
+        geometry=[box(i * 50, 0, i * 50 + 10, 10) for i in range(4)],
+        crs=CRS,
+    )
+    sight_lines = gpd.GeoDataFrame(
+        {"nodeID": [1, 1], "buildingID": [0, 1]},
+        geometry=[LineString([(0, 50), (5, 10)]), LineString([(50, 50), (55, 10)])],
+        crs=CRS,
+    )
+
+    out = ci.visibility_score(buildings, sight_lines=sight_lines)
+
+    assert out.loc[0, "fac"] == 100.0
+    assert out.loc[0, "3dvis"] >= 0.0
+    assert out.loc[1:, ["fac", "3dvis"]].isna().all().all()  # no negative or zero facade area
+
+
+def test_zero_and_negative_heights_do_not_stretch_the_height_rescaling():
+    with_bad = ci.score_buildings_global(_scored_buildings([10.0, -20.0, 30.0]))
+    without = ci.score_buildings_global(_scored_buildings([10.0, np.nan, 30.0]))
+
+    assert with_bad.loc[[0, 2], "height_sc"].tolist() == [0.0, 1.0]
+    pd.testing.assert_series_equal(with_bad["vScore"], without["vScore"])
+    assert math.isnan(with_bad.loc[1, "vScore"])
+
+
+def test_a_building_without_a_height_does_not_move_the_visual_rescaling():
+    # Building 1 has no height but carries fac and 3dvis values, as a hand-built frame may.
+    scored = ci.score_buildings_global(_scored_buildings([5.0, np.nan, 7.0]))
+    known = ci.score_buildings_global(_scored_buildings([5.0, np.nan, 7.0]).drop(index=1))
+
+    for column in ("fac_sc", "3dvis_sc", "vScore", "vScore_sc"):
+        assert scored.loc[[0, 2], column].tolist() == known[column].tolist()
+        assert math.isnan(scored.loc[1, column])
+
+
+def test_scaling_keeps_nan_when_the_known_values_are_equal():
+    scaled = ci.scaling_columnDF(pd.Series([4.0, np.nan, 4.0]))
+
+    assert scaled.tolist()[0::2] == [0.0, 0.0]
+    assert math.isnan(scaled[1])
+
+
+def test_global_and_local_scores_are_not_rounded():
+    buildings = _scored_buildings([5.0, 6.0, 7.0])
+    buildings["area"] = [1.0, 2.0, 7.0]  # thirds, which rounding would cut
+
+    global_scores = ci.score_buildings_global(buildings)
+    local_scores = ci.score_buildings_local(buildings)
+
+    for column in (global_scores["gScore"], local_scores["lScore"]):
+        assert column.tolist() != column.round(3).tolist()
+
+
+def test_3dvis_is_not_computed_without_sight_lines():
+    buildings = _scored_buildings([5.0, 6.0, 7.0]).drop(columns=["fac", "3dvis"])
+
+    assert ci.visibility_score(buildings)["3dvis"].isna().all()
+    # Sight lines that reach no building: nothing to score either.
+    empty = gpd.GeoDataFrame({"nodeID": [], "buildingID": []}, geometry=[], crs=CRS)
+    assert ci.visibility_score(buildings, sight_lines=empty)["3dvis"].isna().all()
+    elsewhere = gpd.GeoDataFrame(
+        {"nodeID": [0], "buildingID": [99]}, geometry=[LineString([(0, 0), (0, 50)])], crs=CRS
+    )
+    assert ci.visibility_score(buildings, sight_lines=elsewhere)["3dvis"].isna().all()
+
+
+def test_3dvis_is_0_for_an_unreached_building_when_another_is_reached():
+    buildings = _scored_buildings([5.0, 6.0, np.nan]).drop(columns=["fac", "3dvis"])
+    lines = gpd.GeoDataFrame(
+        {"nodeID": [0], "buildingID": [0]}, geometry=[LineString([(0, 0), (0, 50)])], crs=CRS
+    )
+
+    out = ci.visibility_score(buildings, sight_lines=lines)["3dvis"]
+
+    # One reached building scales to 0 on its own, like the unreached one; no height stays NaN.
+    assert out.tolist()[:2] == [0.0, 0.0]
+    assert math.isnan(out.tolist()[2])
+
+
+def test_cult_is_not_computed_without_a_historic_layer():
+    buildings = _scored_buildings(None).drop(columns="cult")
+    historic = gpd.GeoDataFrame(geometry=[box(0, 0, 5, 5)], crs=CRS)
+
+    assert ci.cultural_score(buildings)["cult"].isna().all()
+    with_layer = ci.cultural_score(buildings, historic_elements_gdf=historic)
+    assert with_layer["cult"].tolist() == [1.0, 0.0, 0.0]
+
+
+def test_cult_is_nan_only_when_no_building_has_anything():
+    buildings = _scored_buildings(None).drop(columns="cult")
+    far = gpd.GeoDataFrame({"grade": [2.0]}, geometry=[box(900, 900, 905, 905)], crs=CRS)
+    zero = gpd.GeoDataFrame({"grade": [0.0]}, geometry=[box(0, 0, 5, 5)], crs=CRS)
+    untagged = buildings.assign(historic=[None, "no", ""])
+
+    # A layer no building touches, sums that are all 0, no historic tag: nothing to score.
+    assert ci.cultural_score(buildings, historic_elements_gdf=far)["cult"].isna().all()
+    assert ci.cultural_score(buildings, zero, score_column="grade")["cult"].isna().all()
+    assert ci.cultural_score(untagged, from_OSM=True)["cult"].isna().all()
+    # One building with something: the others get 0.
+    tagged = buildings.assign(historic=[None, "castle", ""])
+    assert ci.cultural_score(tagged, from_OSM=True)["cult"].tolist() == [0.0, 1.0, 0.0]
+
+
+def test_a_building_with_no_neighbour_is_as_unexpected_as_can_be():
+    buildings = _scored_buildings(None)
+    buildings["land_uses"] = [["residential"]] * 3
+
+    prag = ci.pragmatic_score(buildings, search_radius=5)["prag"]  # 10 m apart
+
+    assert prag.tolist() == [1.0, 1.0, 1.0]
+
+
+def test_global_scores_write_only_the_computed_components():
+    buildings = _scored_buildings([5.0, 6.0, 7.0]).drop(columns=["cult", "prag"])
+
+    scored = ci.score_buildings_global(buildings)
+
+    assert {"vScore", "sScore"} <= set(scored.columns)
+    assert not {"cScore", "cScore_sc", "pScore", "pScore_sc"} & set(scored.columns)
+
+
+@pytest.mark.parametrize("heights", [None, [np.nan, 0.0, np.nan]], ids=["no-column", "unknown"])
+def test_scores_without_heights_write_no_visual_columns(heights):
+    buildings = _scored_buildings(heights)
+    visual = {"vScore", "vScore_sc", "vScore_l", "fac_sc", "height_sc", "3dvis_sc"}
+
+    global_scores = ci.score_buildings_global(buildings)
+    local_scores = ci.score_buildings_local(buildings)
+
+    for scored in (global_scores, local_scores):
+        assert not visual & set(scored.columns)
+        assert ("height" in scored.columns) == (heights is not None)  # never added
+    assert global_scores["gScore"].notna().all()
+    assert local_scores["lScore"].notna().all()
+
+
+def test_scores_read_height_strings():
+    scored = ci.score_buildings_global(_scored_buildings(["10 m", "bad", "30 m"]))
+
+    assert scored["height"].tolist()[0::2] == [10.0, 30.0]
+    assert math.isnan(scored.loc[1, "vScore"])
 
 
 def test_buildings_from_file_with_an_empty_height_field_scores_without_heights(tmp_path):
@@ -591,7 +784,141 @@ def test_buildings_from_file_without_heights_keeps_every_building(tmp_path):
     out = ci.buildings_from_file(str(path), CRS, min_height=5)
 
     assert out["buildingID"].tolist() == [0, 1]
-    assert out["height"].tolist() == [5.0, 5.0]
+    assert out["height"].isna().all()
+
+
+def test_buildings_without_a_height_are_not_3d_obstructions():
+    from cityImage import visibility3d
+
+    buildings = gpd.GeoDataFrame(
+        {"buildingID": [0, 1, 2, 3], "height": [12.0, 0.0, np.nan, "bad"]},
+        geometry=[box(i * 50, 0, i * 50 + 20, 20) for i in range(4)],
+        crs=CRS,
+    )
+
+    prepared = visibility3d._prepare_buildings_gdf(buildings)
+
+    assert prepared["buildingID"].tolist() == [0]
+    assert prepared["height"].tolist() == [12.0]
+
+
+def test_3d_building_base_is_used_as_given_and_zero_when_missing():
+    from cityImage import visibility3d
+
+    buildings = gpd.GeoDataFrame(
+        {"buildingID": [0, 1, 2], "height": [12.0, 12.0, 12.0], "base": [0.3, np.nan, -2.0]},
+        geometry=[box(i * 50, 0, i * 50 + 20, 20) for i in range(3)],
+        crs=CRS,
+    )
+
+    prepared = visibility3d._prepare_buildings_gdf(buildings)
+
+    assert prepared["base"].tolist() == [0.3, 0.0, -2.0]
+    assert visibility3d._prepare_buildings_gdf(buildings.drop(columns="base"))["base"].eq(0).all()
+
+
+def test_3d_targets_are_the_buildings_at_least_min_target_height_tall():
+    from cityImage import visibility3d
+
+    nodes = gpd.GeoDataFrame(
+        {"nodeID": [0], "x": [0.0], "y": [-400.0]}, geometry=[Point(0, -400)], crs=CRS
+    )
+    buildings = gpd.GeoDataFrame(
+        {"buildingID": [0, 1, 2], "height": [4.0, 5.0, 12.0]},
+        geometry=[box(i * 50, 0, i * 50 + 20, 20) for i in range(3)],
+        crs=CRS,
+    )
+
+    def targets(**kwargs):
+        _, target_points, obstructions = visibility3d._prepare_3d_sight_lines(
+            nodes, buildings, buildings, **kwargs
+        )
+        assert sorted(obstructions["buildingID"]) == [0, 1, 2]  # every height obstructs
+        return sorted(target_points["buildingID"].unique())
+
+    assert targets() == [1, 2]  # the 5 m default, inclusive
+    assert targets(min_target_height=10.0) == [2]
+
+
+def _observer_nodes(z):
+    nodes = gpd.GeoDataFrame(
+        {"nodeID": [0, 1, 2], "x": [0.0, 30.0, 60.0], "y": [-400.0] * 3},
+        geometry=[Point(x, -400) for x in (0, 30, 60)],
+        crs=CRS,
+    )
+    if z is not None:
+        nodes["z"] = z
+    return nodes
+
+
+def test_3d_observers_stand_on_their_z_as_given():
+    from cityImage import visibility3d
+
+    eyes = visibility3d._observer_eyes(_observer_nodes([-80.0, 0.0, 12.0]), observer_height=1.6)
+
+    assert [point.z for point in eyes] == pytest.approx([-78.4, 1.6, 13.6])  # no nodata guess
+
+
+@pytest.mark.parametrize("z", [None, [np.nan] * 3], ids=["no-column", "all-missing"])
+def test_3d_observers_without_elevations_stand_at_zero(z):
+    from cityImage import visibility3d
+
+    eyes = visibility3d._observer_eyes(_observer_nodes(z), observer_height=1.6)
+
+    assert [point.z for point in eyes] == pytest.approx([1.6] * 3)
+
+
+def test_3d_observers_without_a_z_are_left_out_where_others_have_one(caplog):
+    from cityImage import visibility3d
+
+    buildings = gpd.GeoDataFrame(
+        {"buildingID": [0], "height": [12.0], "base": [10.0]}, geometry=[box(0, 0, 20, 20)], crs=CRS
+    )
+
+    with caplog.at_level(logging.INFO, logger="cityImage.visibility3d"):
+        observers, _, _ = visibility3d._prepare_3d_sight_lines(
+            _observer_nodes([10.0, np.nan, 11.0]), buildings, buildings
+        )
+
+    assert observers["nodeID"].tolist() == [0, 2]
+    assert "Left out 1 observer node(s)" in caplog.text
+    assert "different grounds" not in caplog.text
+
+
+def test_3d_sight_lines_warn_when_only_one_side_has_elevations(caplog):
+    from cityImage import visibility3d
+
+    buildings = gpd.GeoDataFrame(
+        {"buildingID": [0], "height": [12.0]}, geometry=[box(0, 0, 20, 20)], crs=CRS
+    )
+
+    with caplog.at_level(logging.WARNING, logger="cityImage.visibility3d"):
+        visibility3d._prepare_3d_sight_lines(_observer_nodes([50.0] * 3), buildings, buildings)
+
+    assert "nodes have elevations but the buildings (base) do not" in caplog.text
+
+
+def test_2d_networks_are_loaded_at_ground_level():
+    lines = gpd.GeoDataFrame(geometry=[LineString([(0, 0), (100, 0)])], crs=CRS)
+
+    nodes, _ = ci.network_from_lines(lines, CRS)
+
+    assert nodes["z"].eq(0.0).all()
+
+
+def test_3d_sight_lines_need_a_building_with_a_height():
+    from cityImage import visibility3d
+
+    buildings = gpd.GeoDataFrame(
+        {"buildingID": [0, 1], "height": [np.nan, 0.0]},
+        geometry=[box(0, 0, 20, 20), box(50, 0, 70, 20)],
+        crs=CRS,
+    )
+
+    with pytest.raises(ValueError, match="no building has one"):
+        visibility3d._prepare_buildings_gdf(buildings)
+    with pytest.raises(ValueError, match="no building has one"):
+        visibility3d._prepare_buildings_gdf(buildings.drop(columns="height"))
 
 
 def test_buildings_from_osm_keeps_height_tags_only_when_asked(monkeypatch):
@@ -619,7 +946,7 @@ def test_scores_give_a_building_without_a_height_no_visual_score():
     local_scores = ci.score_buildings_local(buildings)
 
     assert global_scores["buildingID"].tolist() == [0, 1, 2]
-    assert global_scores.loc[1, "vScore"] == 0.0
+    assert math.isnan(global_scores.loc[1, "vScore"])  # no visual score, adds nothing to gScore
     assert global_scores["gScore"].notna().all()
     assert local_scores["buildingID"].tolist() == [0, 1, 2]
     assert local_scores["lScore"].notna().all()
@@ -630,6 +957,14 @@ def test_scores_without_heights_leave_out_the_visual_component():
 
     assert "vScore" not in scored.columns
     assert scored["gScore"].notna().all()
+
+
+def test_local_scores_write_only_the_local_score():
+    buildings = _scored_buildings([5.0, 6.0, 7.0])
+
+    out = ci.score_buildings_local(buildings)
+
+    assert set(out.columns) - set(buildings.columns) == {"lScore", "lScore_sc"}
 
 
 def test_score_buildings_local_leaves_the_caller_frame():

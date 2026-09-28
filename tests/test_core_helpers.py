@@ -48,6 +48,13 @@ def test_center_line_averages_lines_with_different_vertex_counts_whole():
     assert (5.0, 5.0) in coords  # halfway along both lines
 
 
+def test_center_line_averages_z_when_every_line_has_it():
+    a = LineString([(0, 0, 10), (10, 0, 20)])
+    b = LineString([(0, 2, 12), (10, 2, 22)])
+    assert list(center_line([a, b]).coords) == [(0.0, 1.0, 11.0), (10.0, 1.0, 21.0)]
+    assert not center_line([a, LineString([(0, 2), (10, 2)])]).has_z
+
+
 def test_center_line_requires_two_lines():
     with pytest.raises(ValueError, match="At least two"):
         center_line([LineString([(0, 0), (1, 1)])])

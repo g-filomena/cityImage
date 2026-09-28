@@ -13,6 +13,7 @@ from collections import Counter
 
 import networkx as nx
 import pytest
+from shapely.geometry import Point
 
 import cityImage as ci
 from tests.fixtures.cityimage_minimal import york_raw_network
@@ -55,10 +56,18 @@ def cleaned(request, raw):
     return options, nodes, edges
 
 
-def test_no_vertex_is_invented(raw, cleaned):
+def test_no_vertex_is_invented_except_on_centre_lines(raw, cleaned):
+    # A new vertex only comes from the centre line of a street mapped an even number of times,
+    # so it lies within half of same_vertexes_tolerance (5 m) of the input.
     _, _, edges = cleaned
-    raw_vertices = {_key(c) for line in raw[1].geometry for c in line.coords}
-    assert {_key(c) for line in edges.geometry for c in line.coords} <= raw_vertices
+    raw_lines = raw[1].geometry
+    raw_vertices = {_key(c) for line in raw_lines for c in line.coords}
+    new = {_key(c) for line in edges.geometry for c in line.coords} - raw_vertices
+    sindex = raw_lines.sindex
+    for x, y in new:
+        point = Point(x, y)
+        nearest = raw_lines.iloc[sindex.query(point.buffer(2.5))]
+        assert nearest.distance(point).min() <= 2.5 + 1e-6
 
 
 def test_edges_and_nodes_reference_each_other(cleaned):
@@ -146,15 +155,19 @@ def test_cleaning_twice_changes_nothing(cleaned):
 def test_nothing_is_lost_when_nothing_is_asked_to_remove_it(raw):
     raw_nodes, raw_edges = raw
     _, edges = ci.clean_network(
-        raw_nodes.copy(), raw_edges.copy(), remove_islands=False, same_vertexes_edges=False
+        raw_nodes.copy(),
+        raw_edges.copy(),
+        remove_islands=False,
+        same_vertexes_edges=False,
+        self_loops=False,
     )
     assert edges.geometry.length.sum() == pytest.approx(raw_edges.geometry.length.sum())
 
 
-def test_loop_streets_are_kept_unless_self_loops(raw):
+def test_loop_streets_are_removed_unless_self_loops_is_false(raw):
     raw_nodes, raw_edges = raw
-    _, kept = ci.clean_network(raw_nodes.copy(), raw_edges.copy())
-    _, dropped = ci.clean_network(raw_nodes.copy(), raw_edges.copy(), self_loops=True)
+    _, kept = ci.clean_network(raw_nodes.copy(), raw_edges.copy(), self_loops=False)
+    _, dropped = ci.clean_network(raw_nodes.copy(), raw_edges.copy())
     assert (kept["u"] == kept["v"]).any()  # closed service ways and footways
     assert (dropped["u"] != dropped["v"]).all()
 

@@ -192,7 +192,7 @@ def test_correct_edge_geometries_forces_linestring_endpoints_to_node_coordinates
     ]
 
 
-def test_clean_same_vertexes_edges_keeps_one_edge_of_a_street_mapped_twice():
+def test_clean_same_vertexes_edges_takes_the_centre_line_of_a_street_mapped_twice():
     nodes_gdf = _nodes(
         [
             {"nodeID": 1, "x": 0.0, "y": 0.0},
@@ -208,10 +208,43 @@ def test_clean_same_vertexes_edges_keeps_one_edge_of_a_street_mapped_twice():
 
     clean_nodes, clean_edges = nt.clean_same_vertexes_edges(nodes_gdf.copy(), edges_gdf.copy())
 
-    # Two equally central copies: the shorter, then the lower edgeID, is kept as mapped.
+    # No middle copy of two: their centre line, on the row of the shorter (then lower edgeID).
     assert clean_nodes["nodeID"].tolist() == [1, 2]
     assert clean_edges["edgeID"].tolist() == [10]
-    assert list(clean_edges.iloc[0].geometry.coords) == [(0.0, 0.0), (10.0, 0.0)]
+    assert list(clean_edges.iloc[0].geometry.coords) == [(0.0, 1.0), (10.0, 1.0)]
+    assert clean_edges.iloc[0]["length"] == 10.0
+
+
+def test_clean_same_vertexes_edges_takes_the_centre_line_of_the_two_middle_of_four_copies():
+    # Copies at y = -3, -1, 1 and 4: the two most central are at -1 and 1.
+    nodes_gdf = _nodes([{"nodeID": 1, "x": 0.0, "y": 0.0}, {"nodeID": 2, "x": 100.0, "y": 0.0}])
+    edges_gdf = _edges(
+        [
+            {"edgeID": 10 + i, "u": 1, "v": 2, "geometry": LineString([(0, 0), (50, y), (100, 0)])}
+            for i, y in enumerate([-3, -1, 1, 4])
+        ]
+    )
+
+    _, clean_edges = nt.clean_same_vertexes_edges(nodes_gdf.copy(), edges_gdf.copy())
+
+    assert len(clean_edges) == 1
+    assert list(clean_edges.iloc[0].geometry.coords) == [(0.0, 0.0), (50.0, 0.0), (100.0, 0.0)]
+
+
+def test_clean_same_vertexes_edges_orients_the_centre_line_as_the_kept_edge():
+    nodes_gdf = _nodes([{"nodeID": 1, "x": 0.0, "y": 0.0}, {"nodeID": 2, "x": 10.0, "y": 0.0}])
+    edges_gdf = _edges(
+        [
+            {"edgeID": 10, "u": 2, "v": 1, "geometry": LineString([(10, 0), (0, 0)])},
+            {"edgeID": 11, "u": 1, "v": 2, "geometry": LineString([(0, 2), (10, 2)])},
+        ]
+    )
+
+    _, clean_edges = nt.clean_same_vertexes_edges(nodes_gdf.copy(), edges_gdf.copy())
+
+    edge = clean_edges.iloc[0]
+    assert (edge["edgeID"], edge["u"], edge["v"]) == (10, 2, 1)
+    assert list(edge.geometry.coords) == [(10.0, 1.0), (0.0, 1.0)]
 
 
 def _crescent():
@@ -1170,3 +1203,77 @@ def test_fix_functions_return_copies_when_nothing_is_split():
         assert fixed_nodes is not nodes_gdf
         assert fixed_edges is not edges_gdf
         pd.testing.assert_frame_equal(fixed_edges, edges_gdf)
+
+
+def _three_node_line(first, second):
+    # Segments 10 (nodes 1-2) and 11 (nodes 2-3) along a line, 2 a pseudo-node; each argument is
+    # (reversed, oneway): whether the segment is drawn towards node 1, and its oneway value.
+    nodes_gdf = _nodes(
+        [
+            {"nodeID": 1, "x": 0.0, "y": 0.0},
+            {"nodeID": 2, "x": 10.0, "y": 0.0},
+            {"nodeID": 3, "x": 20.0, "y": 0.0},
+        ]
+    )
+    rows = []
+    for edge_id, (a, b), (reverse, oneway) in [(10, (1, 2), first), (11, (2, 3), second)]:
+        u, v = (b, a) if reverse else (a, b)
+        xy = {1: (0, 0), 2: (10, 0), 3: (20, 0)}
+        rows.append(
+            {
+                "edgeID": edge_id,
+                "u": u,
+                "v": v,
+                "oneway": oneway,
+                "geometry": LineString([xy[u], xy[v]]),
+            }
+        )
+    return nodes_gdf, _edges(rows)
+
+
+@pytest.mark.parametrize(
+    "first, second",
+    [
+        ((False, True), (False, False)),  # one-way into a two-way segment
+        ((False, True), (True, True)),  # two one-ways both ending at node 2
+        ((True, True), (False, True)),  # two one-ways both starting at node 2
+    ],
+)
+def test_preserve_direction_keeps_a_pseudo_node_where_the_direction_changes(first, second):
+    nodes_gdf, edges_gdf = _three_node_line(first, second)
+
+    nodes, edges = nt.simplify_graph(nodes_gdf, edges_gdf, preserve_direction=True)
+
+    assert sorted(edges["edgeID"]) == [10, 11]
+    assert 2 in set(nodes["nodeID"])
+    assert nt._are_nodes_simplified(nodes, edges, preserve_direction=True)
+    # Without preserve_direction the pseudo-node is merged as ever.
+    _, merged = nt.simplify_graph(nodes_gdf, edges_gdf)
+    assert len(merged) == 1
+    assert not nt._are_nodes_simplified(nodes_gdf, edges_gdf)
+
+
+@pytest.mark.parametrize("oneway", [True, "yes", 1])
+def test_preserve_direction_merges_one_ways_that_run_on_in_their_direction(oneway):
+    # 3 -> 2 -> 1: both segments drawn towards node 1, the way the traffic flows.
+    nodes_gdf, edges_gdf = _three_node_line((True, oneway), (True, oneway))
+
+    _, edges = nt.simplify_graph(nodes_gdf, edges_gdf, preserve_direction=True)
+
+    assert len(edges) == 1
+    edge = edges.iloc[0]
+    assert (edge["u"], edge["v"]) == (3, 1)
+    assert list(edge.geometry.coords) == [(20, 0), (10, 0), (0, 0)]
+
+
+def test_clean_network_with_preserve_direction_keeps_the_oneway_change():
+    nodes_gdf, edges_gdf = _three_node_line((False, True), (False, False))
+
+    nodes, edges = nt.clean_network(
+        nodes_gdf, edges_gdf, remove_islands=False, preserve_direction=True
+    )
+    _, merged = nt.clean_network(nodes_gdf, edges_gdf, remove_islands=False)
+
+    assert sorted(edges["oneway"].tolist()) == [False, True]
+    assert 2 in set(nodes["nodeID"])
+    assert len(merged) == 1

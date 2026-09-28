@@ -6,6 +6,8 @@ global + local aggregators on small synthetic building fixtures.
 
 from __future__ import annotations
 
+import math
+
 import geopandas as gpd
 import numpy as np
 import pytest
@@ -198,7 +200,7 @@ def test_visibility_score_cleans_messy_height_values():
 
     fac = out["fac"].tolist()
     assert fac[0] > 0 and fac[1] > 0  # "12,5" -> 12.5 and [10.0] -> 10.0 give a facade area
-    assert fac[2] == 0.0  # NaN height -> no facade area
+    assert math.isnan(fac[2])  # NaN height -> unknown facade area
 
 
 def test_pragmatic_score_accepts_tuple_set_and_array_land_use_cells():
@@ -240,8 +242,8 @@ def test_cultural_score_rejects_unknown_score_column():
         ci.cultural_score(buildings, historic_elements_gdf=historic, score_column="missing")
 
 
-def test_cultural_score_empty_historic_geometries_returns_zero():
+def test_cultural_score_without_historic_geometries_is_not_computed():
     buildings = _buildings(2)
     historic = gpd.GeoDataFrame({"importance": [1.0]}, geometry=[None], crs=CRS)
     out = ci.cultural_score(buildings, historic_elements_gdf=historic)
-    assert (out["cult"] == 0.0).all()  # nothing to intersect
+    assert out["cult"].isna().all()  # no historic layer to read

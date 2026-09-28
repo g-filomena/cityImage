@@ -138,9 +138,8 @@ def _ensure_centrality_metrics():
     for metric, column in zip([Bc, Sc, Rc, Cc], ["Bc", "Sc", "Rc", "Cc"], strict=False):
         nodes_gdf[column] = nodes_gdf.nodeID.map(metric)
 
-    multigraph = ci.multiGraph_fromGDF(nodes_gdf, edges_gdf)
-    Eb = nx.edge_betweenness_centrality(multigraph, weight=weight, normalized=False)
-    edges_gdf = ci.append_edges_metrics(edges_gdf, multigraph, [Eb], ["Eb"])
+    Eb = nx.edge_betweenness_centrality(graph, weight=weight, normalized=False)
+    edges_gdf = ci.append_edges_metrics(edges_gdf, graph, [Eb], ["Eb"])
 
 
 def _osm_features_from_place(tags):
