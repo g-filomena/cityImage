@@ -199,3 +199,22 @@ def test_validate_reports_flag_missing_columns():
     buildings = gpd.GeoDataFrame({"buildingID": [1]}, geometry=[Point(0, 0)], crs=CRS)
     assert validate_buildings_gdf(buildings).ok is True
     assert validate_buildings_gdf(buildings, require_height=True).ok is False  # no height column
+
+
+def test_convert_numeric_columns_keeps_missing_values_missing():
+    # An object column, as pandas 2 reads text: None and NaN must not become "None" / "nan".
+    frame = pd.DataFrame(
+        {
+            "name": pd.Series(["High St", None, float("nan")], dtype=object),
+            "mixed": pd.Series([[1, 2], None, "x"], dtype=object),
+        }
+    )
+
+    from cityImage.data_utils import convert_numeric_columns
+
+    out = convert_numeric_columns(frame)
+
+    assert out["name"].tolist()[0] == "High St"
+    assert out["name"].isna().tolist() == [False, True, True]
+    assert out["mixed"].tolist()[0] == "[1, 2]"
+    assert out["mixed"].isna().tolist() == [False, True, False]
