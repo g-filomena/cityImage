@@ -27,10 +27,11 @@ the reason.
 | --- | --- | --- |
 | **1** | **No node is ever added.** | A way is split only at a vertex it already has. No midpoint or other artificial node is created, not even to separate two parallel streets. |
 | **2** | **Parallel streets stay parallel.** | Two different streets between the same two junctions (a crescent and a straight road, the two sides of a block) remain two edges with the same `u`–`v`. |
-| **3** | **A street is only reduced when it is mapped more than once.** | Copies of one street collapse to a single *real* edge. Geometries are never averaged or redrawn. |
+| **3** | **A street is only reduced when it is mapped more than once.** | Copies of one street collapse to their middle one: a real edge, or, with an even number of copies, the centre line of the two middle ones. Nothing else is averaged or redrawn. |
 
-Nothing moves either: apart from snapping each edge's two end points onto its nodes, coordinates
-stay exactly as they were in the input.
+Nothing moves either: apart from snapping each edge's two end points onto its nodes and the centre
+line of a street mapped an even number of times, coordinates stay exactly as they were in the
+input.
 
 ---
 
@@ -42,7 +43,7 @@ nodes, edges = ci.clean_network(
     dead_ends=False,               # peel dead-end streets
     remove_islands=True,           # keep the largest connected component
     same_vertexes_edges=True,      # collapse a street mapped twice
-    self_loops=False,              # True REMOVES loop streets
+    self_loops=True,               # remove loop streets
     fix_topology=False,            # node ways crossing at a shared vertex
     preserve_direction=False,      # treat u→v and v→u as different edges
     nodes_to_keep_regardless=None, # nodeIDs never peeled or merged
@@ -61,8 +62,8 @@ Dashed boxes are optional and run only when their flag is on.
 | `remove_islands` | `True` | 5 | Keeps only the largest connected component. |
 | `same_vertexes_edges` | `True` | 6d, loop exit | Reduces a street mapped more than once between the same nodes to one edge. |
 | `same_vertexes_tolerance` | `5.0` | 6d | Largest Hausdorff distance between two copies of one street. |
-| `self_loops` | `False` | 6b, 6c, 6f | **`True` removes** self-loops (loop streets). |
-| `preserve_direction` | `False` | 6c, 6d | Treats `u→v` and `v→u` as different edges, never duplicates of each other. |
+| `self_loops` | `True` | 6b, 6c, 6f | **`True` removes** self-loops (loop streets); `False` keeps them. |
+| `preserve_direction` | `False` | 6c, 6d, 6e | Treats `u→v` and `v→u` as different edges, never duplicates of each other, and keeps a pseudo-node where a one-way street's direction would be lost. |
 | `nodes_to_keep_regardless` | `[]` | 4, 6b, 6e, 6f | Nodes that are never peeled as dead ends or merged as pseudo-nodes. |
 
 > **Watch the flag names.** `self_loops=True` and `dead_ends=True` mean *remove* them. The
@@ -147,12 +148,12 @@ while either of these holds:
 - **`clean_duplicate_edges`**: drops edges with identical geometry and, unless
   `preserve_direction=True`, edges with the same coordinates in reverse order. The first row is
   kept. Nodes no edge references are dropped.
-- Called **on its own**, `clean_duplicate_edges` also removes self-loops (`self_loops=True` by
+- Called **on its own**, `clean_duplicate_edges` keeps self-loops (`self_loops=False` by
   default). Inside `clean_network` it follows `clean_network`'s `self_loops`.
 
 ### A street mapped twice: `clean_same_vertexes_edges` (step 6d)
 
-![Four pairs of edges between the same two junctions: two near-identical copies (one kept), a crescent and a straight road (both kept), two sides of a block (both kept), and a copy with a detour more than 10% longer (both kept)](_static/topology/same_vertexes.svg)
+![Four pairs of edges between the same two junctions: two near-identical copies (replaced by their centre line), a crescent and a straight road (both kept), two sides of a block (both kept), and a copy with a detour more than 10% longer (both kept)](_static/topology/same_vertexes.svg)
 
 Edges that join the **same pair of nodes** are compared two at a time. Two edges count as **the
 same street** only when both tests pass:
@@ -164,18 +165,26 @@ same street** only when both tests pass:
 
 - **Matches chain.** If A matches B and B matches C, all three are one street, even when A and C
   do not match directly. The result does not depend on row order.
-- **The most central copy is kept**: the one with the smallest total Hausdorff distance to the
-  others (for three copies, the middle one). Ties go to the shorter edge, then to the lower
-  `edgeID`. It is a real edge from the input; nothing is averaged.
+- **The middle copy is kept.** Copies are ranked by their total Hausdorff distance to the others
+  (ties to the shorter edge, then to the lower `edgeID`). With an odd number (3, 5, …) the most
+  central copy is kept as mapped. With an even number (2, 4, …) there is no middle copy: the
+  edge becomes the **centre line of the two most central** (`center_line`, averaged at the same
+  fractions of their length, 3D when both are), in the direction and with the row, `edgeID` and
+  attributes of the first of them. Its ends are the same two nodes, so no node is added.
 - **Self-loops are skipped.** Whether they stay is up to `self_loops`.
 - **Only edges with the same `u`–`v` are compared.** Two copies of a street that are split at
   different points are not compared until pseudo-node merging gives them the same end nodes. This
   is one reason the loop repeats.
 
 > Converting to a graph: `graph_fromGDF` builds an `nx.Graph`, which holds one edge per node
-> pair, so it keeps the **shortest** of parallel edges (the one a shortest path would use).
-> `multiGraph_fromGDF` keeps them all: compute edge measures such as betweenness on it, and
-> `append_edges_metrics` gives each parallel street its own value.
+> pair, so it keeps the **shortest** of parallel edges (the one a shortest path would use). A
+> two-way street mapped as two opposing one-ways between the same nodes then keeps only one
+> direction: for one-way routing, use `multiGraph_fromGDF`. Both graphs keep each edge's `u`, `v`
+> and `oneway` as attributes.
+> `multiGraph_fromGDF` keeps them all. For edge measures such as betweenness, weighted by
+> `length`, the two give the same values: `append_edges_metrics` gives the parallel streets a
+> `Graph` leaves out 0, and networkx gives them 0 on a `MultiGraph` too, since no shortest path
+> takes them. Unweighted, a `MultiGraph` splits a value evenly between parallel streets.
 
 ### Pseudo-nodes: `simplify_graph` (step 6e)
 
@@ -194,10 +203,16 @@ removed and its two segments are merged into one edge.
   entrances and other points that must stay nodes.
 - **Crescents become parallel edges.** When the merged edge joins two nodes that are already
   joined, both edges stay (rule 2). No midpoint is added to tell them apart (rule 1).
+- **One-way streets, with `preserve_direction=True`.** A one-way edge runs `u → v` (`oneway`
+  True, 1 or `"yes"`). A pseudo-node is kept where merging would lose that: one segment is
+  one-way and the other is not, or both are one-way but both start, or both end, at the node.
+  One-way segments that run on from one into the other are merged in their direction. Without
+  `preserve_direction` the network is undirected and a merged edge takes the `oneway` covering
+  most of its length.
 
 ### Loop streets: `self_loops` (steps 6b, 6c, 6f)
 
-![Before: a loop street leaves junction 1 and returns to it through pseudo-nodes 2 and 5. With self_loops=False (the default) it becomes one self-loop edge at node 1. With self_loops=True the loop is removed and node 1, now degree 2, is merged away so the through street becomes one edge](_static/topology/loop_street.svg)
+![Before: a loop street leaves junction 1 and returns to it through pseudo-nodes 2 and 5. With self_loops=False it becomes one self-loop edge at node 1. With self_loops=True (the default) the loop is removed and node 1, now degree 2, is merged away so the through street becomes one edge](_static/topology/loop_street.svg)
 
 A **loop street** leaves a junction and returns to it. However it is mapped, it ends up in the
 same place:
@@ -208,9 +223,9 @@ same place:
 | two edges through one node (two different streets between A and B, where B joins nothing else) | B has degree 2 and is merged, which closes the loop at A |
 | edges through several nodes | each pseudo-node is merged in turn; the last merge closes the loop |
 
-- **`self_loops=False` (default).** The loop stays as **one self-loop edge**. Its junction keeps
+- **`self_loops=False`.** The loop stays as **one self-loop edge**. Its junction keeps
   a degree of at least 3, so it is not a pseudo-node.
-- **`self_loops=True`.** The loop is dropped. Its junction may drop to degree 2 and be merged
+- **`self_loops=True` (default).** The loop is dropped. Its junction may drop to degree 2 and be merged
   (as in the figure) or to degree 1 and become a dead end.
 
 ### Dead ends: `fix_dead_ends` (steps 4, 6b, 6f)
@@ -329,7 +344,8 @@ nodes, edges = ci.clean_network(nodes, edges, fix_topology=True, dead_ends=True,
   coordinate to its `u` and `v` node; internal vertices are not touched.
 - **Parallel edges and graphs.** `graph_fromGDF` keeps the shortest of parallel edges;
   `multiGraph_fromGDF` keeps all of them. `append_edges_metrics` on a `Graph` gives the parallel
-  streets it leaves out 0, the exact value for shortest-path measures.
+  streets it leaves out 0, the exact value for shortest-path measures and the value a weighted
+  `MultiGraph` gives them.
 - **Row lookups need the ID index.** Standalone helpers look rows up with `.loc[ID]`. Keep frames
   indexed by `nodeID` / `edgeID` (`set_index("nodeID", drop=False)`), especially after reloading
   from GeoPackage.
@@ -350,7 +366,7 @@ edges frame it is given.
 | `remove_disconnected_islands` | `nodes, edges` | Largest component by node count. |
 | `fix_dead_ends` | `nodes, edges` | Takes `nodes_to_keep_regardless`. |
 | `clean_duplicate_nodes` | `nodes, edges` | Exact geometry (and `z`). |
-| `clean_duplicate_edges` | `nodes, edges` | Removes self-loops by default (`self_loops=True`). |
+| `clean_duplicate_edges` | `nodes, edges` | Keeps self-loops unless `self_loops=True`. |
 | `clean_same_vertexes_edges` | `nodes, edges` | Takes `preserve_direction`, `same_vertexes_tolerance`. |
 | `simplify_graph` | `nodes, edges` | Takes `nodes_to_keep_regardless`; keeps self-loops. |
 | `correct_edge_geometries` | `edges` | Snaps end points to nodes. |
