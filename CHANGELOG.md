@@ -20,8 +20,9 @@ Entries marked **⚠ behaviour** change the output of an existing call with the 
   `keep_osm_heights=True`, read as metres (`"12 m"`, `"12,5"`). By default the layer has no
   heights and the visual component is left out for every building, as before the refactor.
 - **⚠ behaviour** `score_buildings_global` / `score_buildings_local` (and `compute_global_scores` /
-  `compute_local_scores`) leave out, with a logged warning, the buildings without a height when
-  others have one; those buildings received NaN scores.
+  `compute_local_scores`) give a building without a height (missing or zero), in a layer where
+  others have one, a visual score of 0; such buildings received NaN scores. Every building stays
+  in the output and can be a landmark through its other components.
 - **⚠ behaviour** `dual_gdf(oneway=True)` returns directed dual edges, and
   `dual_graph_fromGDF(..., directed=True)` (new argument, default False) builds a
   `networkx.DiGraph` from them, so routes respect one-way streets. By default the dual graph is

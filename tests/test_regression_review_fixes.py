@@ -569,15 +569,16 @@ def test_buildings_from_osm_keeps_height_tags_only_when_asked(monkeypatch):
     assert math.isnan(tagged["height"].iloc[1])
 
 
-def test_scores_leave_out_buildings_without_a_height():
-    buildings = _scored_buildings([5.0, np.nan, 7.0])
+def test_scores_give_a_building_without_a_height_no_visual_score():
+    buildings = _scored_buildings([5.0, np.nan, 7.0])  # building 1 is the most visible in 3D
 
     global_scores = ci.score_buildings_global(buildings)
     local_scores = ci.score_buildings_local(buildings)
 
-    assert global_scores["buildingID"].tolist() == [0, 2]
+    assert global_scores["buildingID"].tolist() == [0, 1, 2]
+    assert global_scores.loc[1, "vScore"] == 0.0
     assert global_scores["gScore"].notna().all()
-    assert local_scores["buildingID"].tolist() == [0, 2]
+    assert local_scores["buildingID"].tolist() == [0, 1, 2]
     assert local_scores["lScore"].notna().all()
 
 

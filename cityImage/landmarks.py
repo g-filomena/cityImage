@@ -8,7 +8,6 @@ External libraries should prepare/download data; cityImage should score already-
 from __future__ import annotations
 
 import concurrent.futures
-import logging
 from typing import Any
 
 import geopandas as gpd
@@ -18,8 +17,6 @@ from shapely.geometry import Point, Polygon, mapping
 
 from .buildings import known_heights, parse_height
 from .data_utils import scaling_columnDF
-
-LOGGER = logging.getLogger(__name__)
 
 pd.set_option("display.precision", 3)
 
@@ -463,29 +460,25 @@ def pragmatic_score(
     return gdf.drop(columns=["_ci_row_id", "_w_list", "_lu_w"], errors="ignore")
 
 
-def _drop_buildings_without_height(buildings_gdf):
-    """Leave out the buildings without a height when others have one.
+def _without_height(buildings_gdf):
+    """Mark the buildings without a height (missing or zero, see ``known_heights``).
 
-    The visual component is computed when the layer has heights, and a building without one would
-    get a NaN score. A layer where no building has a height keeps every building, and the visual
-    component is then left out of the scores.
+    Where the layer has heights, the visual score is computed and such a building gets 0: an
+    unknown height never makes a building stand out, and the building can still be a landmark
+    through its other components.
     """
     if "height" not in buildings_gdf.columns:
-        return buildings_gdf
-    missing = known_heights(buildings_gdf["height"]).isna()
-    if not missing.any() or missing.all():
-        return buildings_gdf
-    LOGGER.warning("Left out %d building(s) without a height from the scores", int(missing.sum()))
-    return buildings_gdf[~missing].copy()
+        return pd.Series(False, index=buildings_gdf.index)
+    return known_heights(buildings_gdf["height"]).isna()
 
 
 def compute_global_scores(buildings_gdf, global_indexes_weights, global_components_weights):
     """Compute component and global landmarkness scores.
 
-    When some buildings have a height and others have none, the ones without are left out of the
-    result, as they would get a NaN visual score.
+    When some buildings have a height and others have none, the ones without get a visual score
+    of 0 (see ``_without_height``).
     """
-    buildings_gdf = _drop_buildings_without_height(buildings_gdf.copy())
+    buildings_gdf = buildings_gdf.copy()
 
     cols = {
         "direct": ["3dvis", "fac", "height", "area", "2dvis", "cult", "prag"],
@@ -514,6 +507,7 @@ def compute_global_scores(buildings_gdf, global_indexes_weights, global_componen
             for col in ["fac", "height", "3dvis"]
             if f"{col}_sc" in buildings_gdf
         )
+        buildings_gdf.loc[_without_height(buildings_gdf), "vScore"] = 0.0
         buildings_gdf["vScore_sc"] = scaling_columnDF(buildings_gdf["vScore"])
 
     buildings_gdf["sScore"] = sum(
@@ -566,7 +560,7 @@ def compute_local_scores(
     -------
     buildings_gdf: Polygon GeoDataFrame
         The updated buildings GeoDataFrame. When some buildings have a height and others have
-        none, the ones without are left out, as they would get a NaN visual score.
+        none, the ones without get a visual score of 0 (see ``_without_height``).
 
     Examples
     --------
@@ -585,7 +579,7 @@ def compute_local_scores(
     """
 
     # A copy, so the score columns are not added to the caller's frame.
-    buildings_gdf = _drop_buildings_without_height(buildings_gdf.copy())
+    buildings_gdf = buildings_gdf.copy()
     sindex = buildings_gdf.sindex  # spatial index
 
     # Validate that local_components_weights sum to 1.0
@@ -700,6 +694,7 @@ def _building_local_score(
             for col in ["fac", "height", "3dvis"]
             if f"{col}_sc" in matches
         )
+        matches.loc[_without_height(matches), "vScore_l"] = 0.0
 
     # Compute cultural and pragmatic scores if defined
     if "cScore" in local_components_weights and "cult_sc" in matches.columns:
