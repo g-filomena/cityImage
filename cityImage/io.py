@@ -85,10 +85,11 @@ def buildings_from_file(
     identifiers, area, height/base defaults, and source/provenance land-use
     columns.
 
-    Heights come from ``height_field``, or from an existing ``height`` column; buildings lower
-    than ``min_height`` or without a height are dropped. When no building has a height (every
-    value missing or zero), every building is kept without heights, and the landmark scores leave
-    the visual component out. A file with neither gets ``min_height`` for every building.
+    Heights come from ``height_field``, or from an existing ``height`` column, read as metres
+    (see ``known_heights``). Buildings whose height is lower than ``min_height`` are dropped; a
+    building without a height (missing, unreadable or not above zero) is kept with a NaN height.
+    The landmark scores give such a building a visual score of 0, and leave the visual component
+    out when no building has a height. Heights are the caller's to supply.
     """
     crs = _normalise_crs(crs)
     buildings = gpd.read_file(input_path).to_crs(crs).copy()
@@ -106,9 +107,8 @@ def buildings_from_file(
 
     if height_field is not None:
         buildings["height"] = buildings[height_field]
-    elif "height" not in buildings.columns:
-        buildings["height"] = min_height
-    buildings = _drop_buildings_below_height(buildings, min_height)
+    if "height" in buildings.columns:
+        buildings = _drop_buildings_below_height(buildings, min_height)
 
     if base_field is not None:
         buildings["base"] = buildings[base_field]

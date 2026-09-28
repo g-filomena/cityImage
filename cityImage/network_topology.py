@@ -29,7 +29,8 @@ from shapely.geometry import LineString, Point
 
 from .angles import _round_coord as _coord_key
 from .data_utils import convert_numeric_columns
-from .graph import _is_missing_scalar, graph_fromGDF, nodes_degree
+from .geometry import center_line
+from .graph import _is_missing_scalar, _oneway_flags, graph_fromGDF, nodes_degree
 
 pd.set_option("display.precision", 3)
 
@@ -340,7 +341,7 @@ def clean_network(
     dead_ends=False,
     remove_islands=True,
     same_vertexes_edges=True,
-    self_loops=False,
+    self_loops=True,
     fix_topology=False,
     preserve_direction=False,
     nodes_to_keep_regardless=None,
@@ -380,11 +381,12 @@ def clean_network(
     self_loops : bool, optional
         If True, removes self-loop edges (where start and end node are the same). A loop street,
         which leaves a junction and returns to it, is one such edge once its pseudo-nodes are
-        merged, however many nodes it was mapped with. Default is False.
+        merged, however many nodes it was mapped with. False keeps it. Default is True.
     fix_topology : bool, optional
         If True, breaks lines at intersections with other lines in the streets GeoDataFrame. Default is False.
     preserve_direction : bool, optional
-        If True, considers edge direction: edges with the same coordinates but opposite directions are not considered duplicates.
+        If True, considers edge direction: edges with the same coordinates but opposite directions are not considered duplicates,
+        and a pseudo-node where the direction changes is kept (see simplify_graph), so `oneway` stays exact.
         If False, such edges are treated as duplicates. Default is False.
     nodes_to_keep_regardless : list, optional
         List of node IDs to always keep, even if they would otherwise be removed (e.g. for transport stations). Default is empty list.
@@ -420,7 +422,11 @@ def clean_network(
             same_vertexes_edges
             and not _are_edges_simplified(edges_gdf, preserve_direction, same_vertexes_tolerance)
         )
-        | (not _are_nodes_simplified(nodes_gdf, edges_gdf, nodes_to_keep_regardless))
+        | (
+            not _are_nodes_simplified(
+                nodes_gdf, edges_gdf, nodes_to_keep_regardless, preserve_direction
+            )
+        )
         | (cycle == 0)
     ):
         edges_gdf["length"] = edges_gdf[
@@ -447,7 +453,9 @@ def clean_network(
             )
 
         # simplify the graph
-        nodes_gdf, edges_gdf = simplify_graph(nodes_gdf, edges_gdf, nodes_to_keep_regardless)
+        nodes_gdf, edges_gdf = simplify_graph(
+            nodes_gdf, edges_gdf, nodes_to_keep_regardless, preserve_direction
+        )
 
         # repreat eliminate loops
         if self_loops:
@@ -534,15 +542,20 @@ def _finalize_dataframes(nodes_gdf, edges_gdf, crs):
     return nodes_gdf, edges_gdf
 
 
-def _are_nodes_simplified(nodes_gdf, edges_gdf, nodes_to_keep_regardless=None):
+def _are_nodes_simplified(
+    nodes_gdf, edges_gdf, nodes_to_keep_regardless=None, preserve_direction=False
+):
     """
 
-    The function checks the presence of pseudo-junctions, by using the edges_gdf GeoDataFrame.
+    The function checks the presence of pseudo-junctions, by using the edges_gdf GeoDataFrame,
+    by the rule of simplify_graph.
 
     Parameters
     ----------
     edges_gdf: LineString GeoDataFrame
         The street segments GeoDataFrame.
+    preserve_direction: bool
+        Whether a pseudo-node where the direction changes is kept (see simplify_graph).
 
     Returns
     -------
@@ -562,12 +575,39 @@ def _are_nodes_simplified(nodes_gdf, edges_gdf, nodes_to_keep_regardless=None):
     if not to_edit:
         return True
 
-    # A node whose only edge is a self-loop has degree 2 but nothing to merge with.
-    neighbours = defaultdict(list)
-    for u, v in zip(edges_gdf["u"], edges_gdf["v"], strict=False):
-        neighbours[u].append(v)
-        neighbours[v].append(u)
-    return all(neighbours[node] == [node, node] for node in to_edit)
+    oneway_of = _oneway_of(edges_gdf) if preserve_direction else None
+    incident = defaultdict(list)
+    for eid, u, v in zip(edges_gdf.index, edges_gdf["u"], edges_gdf["v"], strict=True):
+        incident[u].append((eid, True))
+        incident[v].append((eid, False))
+
+    def mergeable(node):
+        (first, first_at_u), (second, second_at_u) = incident[node]
+        if first == second:  # a node whose only edge is a self-loop: nothing to merge with
+            return False
+        return not (
+            preserve_direction
+            and _direction_breaks(oneway_of[first], oneway_of[second], first_at_u, second_at_u)
+        )
+
+    return not any(mergeable(node) for node in to_edit)
+
+
+def _oneway_of(edges_gdf):
+    """Each edge's ``oneway`` as 1 or 0 (see graph._oneway_flags), by index; 0 without the column."""
+    if "oneway" not in edges_gdf.columns:
+        return dict.fromkeys(edges_gdf.index, 0)
+    return _oneway_flags(edges_gdf["oneway"]).to_dict()
+
+
+def _direction_breaks(first_oneway, second_oneway, first_at_u, second_at_u):
+    """Whether two segments meeting at a pseudo-node cannot be merged without losing direction:
+    one is one-way and the other is not, or both are one-way and do not run on from one into the
+    other (they both start, or both end, at the node).
+    """
+    if first_oneway != second_oneway:
+        return True
+    return first_oneway == 1 and first_at_u == second_at_u
 
 
 def _are_edges_simplified(edges_gdf, preserve_direction, same_vertexes_tolerance=5.0):
@@ -651,6 +691,7 @@ def simplify_graph(
     nodes_gdf,
     edges_gdf,
     nodes_to_keep_regardless=None,
+    preserve_direction=False,
 ):
     """
 
@@ -662,6 +703,11 @@ def simplify_graph(
     attribute of a merged segment takes the non-null value covering the greatest length among the
     segments merged into it.
 
+    With `preserve_direction`, a pseudo-node is kept where merging would lose the direction of a
+    one-way street (``oneway`` True, 1 or "yes"): one segment is one-way and the other is not, or
+    both are one-way but do not run on from one into the other. One-way segments that do are
+    merged in their direction.
+
     Parameters
     ----------
     nodes_gdf: Point GeoDataFrame
@@ -670,6 +716,8 @@ def simplify_graph(
         The street segments GeoDataFrame.
     nodes_to_keep_regardless: list
         List of nodeIDs representing nodes to keep, even when pseudo-nodes (e.g. stations, when modelling transport networks).
+    preserve_direction: bool
+        Whether a pseudo-node where the direction changes is kept. Default is False.
 
     Returns
     -------
@@ -702,6 +750,8 @@ def simplify_graph(
     v_of = edges_gdf["v"].to_dict()
     geom_of = edges_gdf["geometry"].to_dict()
     order = {eid: pos for pos, eid in enumerate(edges_gdf.index)}
+    # A merged edge keeps its first piece's edgeID and, merging only equal values, its oneway.
+    oneway_of = _oneway_of(edges_gdf) if preserve_direction else None
 
     incidence = defaultdict(set)
     for eid in edges_gdf.index:
@@ -729,6 +779,10 @@ def simplify_graph(
         # Which end of each segment is the pseudo-node: two segments of a loop street share both
         # their ends, so the shared end alone does not say where they meet.
         first_at_u, second_at_u = u1 == nodeID, u2 == nodeID
+        if preserve_direction and _direction_breaks(
+            oneway_of[first], oneway_of[second], first_at_u, second_at_u
+        ):
+            continue
         if first_at_u and second_at_u:  # meeting at u
             new_u, new_v = v1, v2
             line_a, line_b = coords_first[::-1], coords_second
@@ -904,9 +958,11 @@ def clean_same_vertexes_edges(
     `same_vertexes_tolerance` of each other (Hausdorff distance). A street is every edge linked to
     another through a chain of such matches, so the grouping does not depend on edge order.
 
-    Of each street mapped more than once, only its most central edge is kept: the one with the
-    smallest total distance to the others (of two, the shorter). Different streets are all kept,
-    as parallel edges between the same nodes; no node is added.
+    Each street mapped more than once becomes one edge, the middle of its copies, ranked by their
+    total distance to the others: with an odd number of copies the most central one, as mapped;
+    with an even number the centre line of the two most central (see center_line), which keeps the
+    row, edgeID and attributes of the more central, or shorter, of the two. Different streets are
+    all kept, as parallel edges between the same nodes; no node is added.
 
     Self-loops (u equal to v) are left as they are: removing them is up to clean_duplicate_edges
     or the `self_loops` option of clean_network.
@@ -936,14 +992,19 @@ def clean_same_vertexes_edges(
     edges_gdf = edges_gdf.copy()
     edges_gdf["code"] = _pair_codes(edges_gdf, preserve_direction)
     edges_gdf["length"] = edges_gdf.geometry.length
-    to_drop = [
-        index
-        for street in _same_streets(edges_gdf, same_vertexes_tolerance)
-        for index in street[1:]
-    ]
-    if not to_drop:
+    streets = _same_streets(edges_gdf, same_vertexes_tolerance)
+    if not streets:
         return nodes_gdf, edges_gdf
-    edges_gdf = edges_gdf.drop(to_drop, axis=0)
+
+    for street in streets:
+        if len(street) % 2 == 0:
+            # No middle copy: the centre line of the two most central, in the kept edge's direction.
+            kept, other = street[0], street[1]
+            edges_gdf.loc[kept, "geometry"] = center_line(
+                [edges_gdf.loc[kept, "geometry"], edges_gdf.loc[other, "geometry"]]
+            )
+            edges_gdf.loc[kept, "length"] = edges_gdf.loc[kept, "geometry"].length
+    edges_gdf = edges_gdf.drop([index for street in streets for index in street[1:]], axis=0)
     return _drop_unused_nodes(nodes_gdf, edges_gdf), edges_gdf
 
 
@@ -1001,7 +1062,7 @@ def clean_duplicate_edges(
     nodes_gdf,
     edges_gdf,
     preserve_direction=False,
-    self_loops=True,
+    self_loops=False,
 ):
     """
     Cleans and deduplicates network edges, and removes unused nodes.
@@ -1025,7 +1086,8 @@ def clean_duplicate_edges(
         If False, edges are treated as undirected and geometric duplicates (with reversed coords) are removed.
         Default is False.
     self_loops : bool, optional
-        If True, removes self-loop edges. Default is True.
+        If True, removes self-loop edges. Default is False; clean_network passes its own
+        ``self_loops``.
 
     Returns
     -------

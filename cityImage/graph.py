@@ -13,6 +13,7 @@ in dedicated modules or are delegated to external libraries.
 
 from __future__ import annotations
 
+from collections import defaultdict
 from collections.abc import Hashable
 from typing import Any
 
@@ -82,6 +83,11 @@ def graph_fromGDF(
     between the same two nodes) join a pair, the shortest is the one kept: the only one a
     shortest path uses, so shortest-path measures are exact. Use ``multiGraph_fromGDF`` to keep
     all of them.
+
+    An edge keeps its row's ``u`` and ``v`` as attributes, since an undirected edge does not keep
+    its order: with a ``oneway`` column, a one-way street runs ``u -> v``. A two-way street mapped
+    as two opposing one-ways between the same nodes keeps only its shorter direction here; for
+    one-way routing use ``multiGraph_fromGDF``.
     """
     nodes = nodes_gdf.copy()
     edges = edges_gdf.copy()
@@ -103,7 +109,7 @@ def graph_fromGDF(
     _set_node_attributes_from_gdf(graph, nodes)
 
     for _, row in edges.iterrows():
-        graph.add_edge(row["u"], row["v"], **_edge_attributes(row, {"u", "v"}))
+        graph.add_edge(row["u"], row["v"], **_edge_attributes(row, set()))
 
     return graph
 
@@ -117,7 +123,7 @@ def multiGraph_fromGDF(
     Every street is an edge, parallel streets between the same two nodes included, so edge
     measures (``networkx.edge_betweenness_centrality``, ``append_edges_metrics``) give each its
     own value. An edge takes its ``key`` column value as key, or a fresh key when that one is
-    taken or absent.
+    taken or absent, and keeps its row's ``u`` and ``v`` as attributes (see ``graph_fromGDF``).
     """
     nodes = nodes_gdf.copy()
     edges = edges_gdf.copy()
@@ -139,36 +145,75 @@ def multiGraph_fromGDF(
             row["u"],
             row["v"],
             key=key,
-            **_edge_attributes(row, {"u", "v", "key"}),
+            **_edge_attributes(row, {"key"}),
         )
 
     return multigraph
 
 
-def _intersecting_edge_ids(edges: gpd.GeoDataFrame, row: pd.Series) -> list[Hashable]:
-    """Return edge IDs sharing either endpoint with an edge row."""
-    return list(
-        edges.loc[
-            (edges["u"] == row["u"])
-            | (edges["u"] == row["v"])
-            | (edges["v"] == row["v"])
-            | (edges["v"] == row["u"])
-        ].index
-    )
+ONEWAY_YES_VALUES = {"yes", "true", "1"}
+ONEWAY_NO_VALUES = {"no", "false", "0"}
 
 
-def _oneway_intersecting_edge_ids(edges: gpd.GeoDataFrame, row: pd.Series) -> list[Hashable]:
-    """Return directed/oneway-aware dual-neighbour edge IDs."""
-    if row["oneway"] == 1:
-        mask = (edges["u"] == row["v"]) | ((edges["v"] == row["v"]) & (edges["oneway"] == 0))
-    else:
-        mask = (
-            (edges["u"] == row["v"])
-            | ((edges["v"] == row["v"]) & (edges["oneway"] == 0))
-            | (edges["u"] == row["u"])
-            | ((edges["v"] == row["u"]) & (edges["oneway"] == 0))
+def _oneway_flags(values: pd.Series) -> pd.Series:
+    """Read a primal ``oneway`` column as 1 (one-way, ``u -> v``) or 0 (two-way).
+
+    Booleans, 1/0 and the strings yes/true/1 and no/false/0 (any case) are read; a missing value
+    is two-way. Any other value, such as OSM's ``-1`` (one-way against the drawing direction) or
+    ``reversible``, raises a ValueError.
+    """
+
+    def flag(value: Any) -> int | None:
+        if _is_missing_scalar(value):
+            return 0
+        text = str(value).strip().lower()
+        if text.endswith(".0"):  # 1.0 / 0.0 from a float column
+            text = text[:-2]
+        if text in ONEWAY_YES_VALUES:
+            return 1
+        if text in ONEWAY_NO_VALUES:
+            return 0
+        return None
+
+    flags = values.map(flag)
+    unreadable = values[flags.isna()]
+    if not unreadable.empty:
+        raise ValueError(
+            "oneway must be a boolean, 1/0 or yes/no; unreadable values: "
+            f"{sorted(map(str, unreadable.unique()))}"
         )
-    return list(edges.loc[mask].index)
+    return flags.astype(int)
+
+
+def _dual_neighbours(
+    edges: gpd.GeoDataFrame, oneway: pd.Series | None = None
+) -> list[list[Hashable]]:
+    """For each segment, the segments sharing a junction with it that it leads into, in frame order.
+
+    Without ``oneway`` (see ``_oneway_flags``) that is every segment at either end. With it, a
+    one-way segment leads only out of its ``v`` end, and a one-way segment is entered only at its
+    ``u`` end. Each list includes the segment itself, which the caller skips.
+    """
+    position = {eid: pos for pos, eid in enumerate(edges.index)}
+    starting = defaultdict(list)  # node -> segments whose u it is
+    ending = defaultdict(list)  # node -> segments whose v it is
+    for eid, u, v in zip(edges.index, edges["u"], edges["v"], strict=True):
+        starting[u].append(eid)
+        ending[v].append(eid)
+
+    def into(node):
+        # Segments that can be entered at node.
+        if oneway is None:
+            return starting[node] + ending[node]
+        return starting[node] + [eid for eid in ending[node] if oneway[eid] == 0]
+
+    neighbours = []
+    for eid, u, v in zip(edges.index, edges["u"], edges["v"], strict=True):
+        found = into(v)
+        if oneway is None or oneway[eid] == 0:
+            found = found + into(u)
+        neighbours.append(sorted(set(found), key=position.__getitem__))
+    return neighbours
 
 
 def dual_gdf(
@@ -188,31 +233,26 @@ def dual_gdf(
     Each pair of adjacent segments is one dual edge, one row with one geometry, and its
     ``oneway`` column says which moves it allows: 0 when segment ``v`` can be entered from ``u``
     and ``u`` from ``v``, 1 when only ``u -> v`` is allowed (the row points that way). With
-    ``oneway=True`` the moves respect one-way streets (primal ``oneway == 1``), and a pair where
-    neither move is allowed has no row; without it every pair is 0. Route on the moves with
-    ``dual_graph_fromGDF(..., directed=True)``.
-    """
-    nodes = nodes_gdf.copy().set_index("nodeID", drop=False)
-    nodes.index.name = None
+    ``oneway=True`` the moves respect one-way streets (a primal ``oneway`` that is True, 1 or
+    "yes"; False, 0, "no" or missing is two-way, and any other value raises), and a pair where
+    neither move is allowed has no row; without it every pair is 0.
 
+    Parallel streets (different segments between the same two junctions) are separate dual
+    nodes, each linked to the streets at both junctions. Two of them meet at both ends but are
+    one dual edge: going along one and back along the other is a 180° turn at either end.
+    """
     edges = edges_gdf.copy().set_index("edgeID", drop=False)
     edges.index.name = None
 
     centroids = edges.copy()
     centroids["centroid"] = centroids.geometry.centroid
 
+    oneway_flags = None
     if oneway:
         if "oneway" not in centroids.columns:
             raise ValueError("edges_gdf must contain 'oneway' when oneway=True")
-        centroids["intersecting"] = centroids.apply(
-            lambda row: _oneway_intersecting_edge_ids(centroids, row),
-            axis=1,
-        )
-    else:
-        centroids["intersecting"] = centroids.apply(
-            lambda row: _intersecting_edge_ids(centroids, row),
-            axis=1,
-        )
+        oneway_flags = _oneway_flags(centroids["oneway"])
+    centroids["intersecting"] = _dual_neighbours(centroids, oneway_flags)
 
     nodes_dual_data = centroids.drop(columns=["geometry", "centroid"])
     nodes_dual = gpd.GeoDataFrame(nodes_dual_data, crs=crs, geometry=centroids["centroid"])
@@ -232,6 +272,8 @@ def dual_gdf(
 
     new_edges: list[dict[str, Any]] = []
     written: set[frozenset[Hashable]] = set()
+    lengths = nodes_dual["length"].to_dict()
+    centres = nodes_dual.geometry.to_dict()
 
     for row in nodes_dual.itertuples():
         for intersecting in row.intersecting:
@@ -241,9 +283,8 @@ def dual_gdf(
             written.add(pair)
 
             # Met first from an allowed move, so a one-way row points in its allowed direction.
-            intersecting_row = nodes_dual.loc[intersecting]
-            distance = (row.length + intersecting_row.length) / 2
-            geometry = LineString([row.geometry, intersecting_row.geometry])
+            distance = (lengths[row.Index] + lengths[intersecting]) / 2
+            geometry = LineString([centres[row.Index], centres[intersecting]])
             new_edges.append(
                 {
                     "u": row.Index,
@@ -262,26 +303,18 @@ def dual_gdf(
     )
     edges_dual["oneway"] = edges_dual["oneway"].astype(int)
 
-    if angle != "radians":
-        edges_dual["deg"] = edges_dual.apply(
-            lambda row: angle_line_geometries(
-                edges.loc[row["u"]].geometry,
-                edges.loc[row["v"]].geometry,
-                degree=True,
-                calculation_type="deflection",
-            ),
-            axis=1,
-        )
-    else:
-        edges_dual["rad"] = edges_dual.apply(
-            lambda row: angle_line_geometries(
-                edges.loc[row["u"]].geometry,
-                edges.loc[row["v"]].geometry,
-                degree=False,
-                calculation_type="deflection",
-            ),
-            axis=1,
-        )
+    geometries = edges.geometry.to_dict()
+    degree = angle != "radians"
+    edges_dual["deg" if degree else "rad"] = pd.Series(
+        [
+            angle_line_geometries(
+                geometries[u], geometries[v], degree=degree, calculation_type="deflection"
+            )
+            for u, v in zip(edges_dual["u"], edges_dual["v"], strict=True)
+        ],
+        index=edges_dual.index,
+        dtype=float,
+    )
 
     return nodes_dual, edges_dual
 
@@ -289,14 +322,12 @@ def dual_gdf(
 def dual_graph_fromGDF(
     nodes_dual: gpd.GeoDataFrame,
     edges_dual: gpd.GeoDataFrame,
-    directed: bool = False,
 ) -> nx.Graph:
-    """Create a NetworkX graph from dual-node and dual-edge GeoDataFrames.
+    """Create an undirected NetworkX graph from dual-node and dual-edge GeoDataFrames.
 
-    By default an undirected ``networkx.Graph``, one edge per row. ``directed=True`` builds a
-    ``networkx.DiGraph`` of the moves each row allows (see ``dual_gdf``): ``u -> v`` always, and
-    ``v -> u`` too where ``oneway`` is 0. Rows without a ``oneway`` column are read as two-way.
-    Community detection (``identify_regions``) needs the undirected graph.
+    One edge per row. An edge keeps the row's ``u``, ``v`` and ``oneway`` (see ``dual_gdf``) as
+    attributes, since an undirected edge does not keep its order: where ``oneway`` is 1, only
+    ``u -> v`` is allowed, and following it is left to the modeller.
     """
     nodes = nodes_dual.copy().set_index("edgeID", drop=False)
     nodes.index.name = None
@@ -304,15 +335,12 @@ def dual_graph_fromGDF(
     edges["u"] = edges["u"].astype(int)
     edges["v"] = edges["v"].astype(int)
 
-    dual_graph = nx.DiGraph() if directed else nx.Graph()
+    dual_graph = nx.Graph()
     dual_graph.add_nodes_from(nodes.index)
     _set_node_attributes_from_gdf(dual_graph, nodes)
 
     for _, row in edges.iterrows():
-        attributes = _edge_attributes(row, {"u", "v"})
-        dual_graph.add_edge(row["u"], row["v"], **attributes)
-        if directed and row.get("oneway", 0) != 1:
-            dual_graph.add_edge(row["v"], row["u"], **attributes)
+        dual_graph.add_edge(row["u"], row["v"], **_edge_attributes(row, set()))
 
     return dual_graph
 
@@ -351,7 +379,8 @@ def from_nx_to_gdf(
 
     edges_gdf = gpd.GeoDataFrame(
         [
-            {**data, "u": u, "v": v, "geometry": data["geometry"]}
+            # An edge's own u/v (a dual edge's direction) win over the graph's unordered pair.
+            {"u": u, "v": v, **data, "geometry": data["geometry"]}
             for u, v, data in graph.edges(data=True)
         ],
         crs=crs,

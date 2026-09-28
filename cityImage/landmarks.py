@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 from shapely.geometry import Point, Polygon, mapping
 
-from .buildings import known_heights, parse_height
+from .buildings import known_heights
 from .data_utils import scaling_columnDF
 
 pd.set_option("display.precision", 3)
@@ -187,30 +187,36 @@ def visibility_score(buildings_gdf, sight_lines=None, method="longest"):
     """Calculate visibility landmark sub-scores.
 
     Adds:
-    - fac: approximate facade area, computed whenever height is available;
-    - 3dvis: 3D visibility score, derived from sight-line lengths when provided.
+    - fac: approximate facade area;
+    - 3dvis: 3D visibility score, derived from sight-line lengths; 0 for a building no sight
+      line reaches (not visible, or too short to be a target) when another building is reached.
+      When no building with a height is reached (``sight_lines`` None or empty, or matching none
+      of them), ``3dvis`` is NaN for every building: there is no visibility to score.
+
+    Heights are read through ``known_heights``. A building without a height gets NaN for both,
+    so it stays out of their rescaling in the landmark scores.
     """
     if sight_lines is None:
         sight_lines = pd.DataFrame()
 
     buildings_gdf = buildings_gdf.copy()
-    buildings_gdf["fac"] = 0.0
+    if "height" in buildings_gdf.columns:
+        buildings_gdf["height"] = known_heights(buildings_gdf["height"])
+        known = buildings_gdf["height"].notna()
+    else:
+        known = pd.Series(False, index=buildings_gdf.index)
 
-    has_height = "height" in buildings_gdf.columns
+    buildings_gdf["fac"] = np.nan
+    if known.any():
+        buildings_gdf.loc[known, "fac"] = [
+            _facade_area(geometry, height)
+            for geometry, height in zip(
+                buildings_gdf.geometry[known], buildings_gdf.loc[known, "height"], strict=True
+            )
+        ]
 
-    if has_height:
-        buildings_gdf["height"] = buildings_gdf["height"].apply(parse_height)
-
-    if has_height and not buildings_gdf.empty:
-        buildings_gdf["fac"] = buildings_gdf.apply(
-            lambda row: (
-                _facade_area(row["geometry"], row["height"]) if pd.notnull(row["height"]) else 0.0
-            ),
-            axis=1,
-        )
-
-    if not has_height or sight_lines.empty:
-        buildings_gdf["3dvis"] = 0.0
+    buildings_gdf["3dvis"] = np.nan
+    if not known.any() or sight_lines.empty:
         return buildings_gdf
 
     sight_lines = sight_lines.copy()
@@ -236,7 +242,11 @@ def visibility_score(buildings_gdf, sight_lines=None, method="longest"):
         raise ValueError("method must be either 'longest' or 'combined'")
 
     # Mapped by buildingID rather than merged, so the scored frame keeps the caller's index.
-    buildings_gdf["3dvis"] = buildings_gdf["buildingID"].map(stats["3dvis"]).fillna(0.0)
+    reached = buildings_gdf["buildingID"].isin(stats.index) & known
+    if reached.any():
+        buildings_gdf["3dvis"] = (
+            buildings_gdf["buildingID"].map(stats["3dvis"]).fillna(0.0).where(known)
+        )
 
     return buildings_gdf
 
@@ -284,59 +294,63 @@ def cultural_score(
     score_column: str | None = None,
     from_OSM: bool = False,
 ):
-    """Compute a cultural landmark component per building."""
+    """Compute a cultural landmark component per building.
+
+    ``cult`` counts the historic elements intersecting each building, or sums their
+    ``score_column``; with ``from_OSM=True`` it is 1 for a building with a ``historic`` tag. A
+    building with nothing gets 0 when another building has something; when no building has
+    anything (no historic layer, no element intersecting a building, no ``historic`` tag, or
+    every sum 0), ``cult`` is NaN for every building: there is no cultural information to score.
+    """
     buildings_gdf = buildings_gdf.copy()
-    buildings_gdf["cult"] = 0.0
+    cult = _cultural_values(buildings_gdf, historic_elements_gdf, score_column, from_OSM)
+    buildings_gdf["cult"] = cult if (cult > 0).any() else np.nan
+    return buildings_gdf
+
+
+def _cultural_values(buildings_gdf, historic_elements_gdf, score_column, from_OSM):
+    """Each building's cultural value (see ``cultural_score``), 0 where it has nothing."""
+    cult = pd.Series(0.0, index=buildings_gdf.index)
 
     if from_OSM:
         if "historic" not in buildings_gdf.columns:
             raise ValueError("from_OSM=True requires buildings_gdf to contain a 'historic' column")
-        buildings_gdf["cult"] = (
-            buildings_gdf["historic"].apply(_is_historic).astype("int8").astype(float)
-        )
-        return buildings_gdf
+        return buildings_gdf["historic"].apply(_is_historic).astype(float)
 
     if historic_elements_gdf is None or len(historic_elements_gdf) == 0:
-        return buildings_gdf
+        return cult
 
     if buildings_gdf.crs != historic_elements_gdf.crs:
         raise ValueError(
             "CRS mismatch: buildings_gdf and historic_elements_gdf must have the same CRS"
         )
 
-    left = buildings_gdf[["geometry"]].copy()
     right_cols = ["geometry"]
-
     if score_column is not None:
         if score_column not in historic_elements_gdf.columns:
             raise ValueError(f"score_column '{score_column}' not found in historic_elements_gdf")
         right_cols.append(score_column)
 
-    right = historic_elements_gdf[right_cols].copy()
-
+    left = buildings_gdf[["geometry"]]
     left = left[left.geometry.notna()].copy()
+    right = historic_elements_gdf[right_cols]
     right = right[right.geometry.notna()].copy()
-
     if left.empty or right.empty:
-        return buildings_gdf
+        return cult
 
     try:
         joined = gpd.sjoin(left, right, how="inner", predicate="intersects")
     except TypeError:
         joined = gpd.sjoin(left, right, how="inner", op="intersects")
-
     if joined.empty:
-        return buildings_gdf
+        return cult
 
     if score_column is None:
-        counts = joined.groupby(joined.index).size().astype(float)
-        buildings_gdf["cult"] = counts.reindex(buildings_gdf.index, fill_value=0.0)
-        return buildings_gdf
-
-    vals = pd.to_numeric(joined[score_column], errors="coerce").fillna(0.0)
-    sums = vals.groupby(joined.index).sum().astype(float)
-    buildings_gdf["cult"] = sums.reindex(buildings_gdf.index, fill_value=0.0)
-    return buildings_gdf
+        values = joined.groupby(joined.index).size().astype(float)
+    else:
+        scores = pd.to_numeric(joined[score_column], errors="coerce").fillna(0.0)
+        values = scores.groupby(joined.index).sum().astype(float)
+    return values.reindex(buildings_gdf.index, fill_value=0.0)
 
 
 def pragmatic_score(
@@ -349,7 +363,8 @@ def pragmatic_score(
     """Compute a pragmatic landmark component from semantic land-use labels.
 
     Missing or empty land-use labels are treated as ``default_land_use`` and
-    aligned with a full overlap weight of ``[1.0]``.
+    aligned with a full overlap weight of ``[1.0]``. A building with no other building within
+    ``search_radius`` is as unexpected as can be: 1.
     """
     gdf = buildings_gdf.copy()
 
@@ -432,19 +447,13 @@ def pragmatic_score(
     def _unexpectedness(row_id, building_geometry, building_label):
         buf = building_geometry.buffer(search_radius)
         candidate_idx = list(sindex.intersection(buf.bounds))
-        if not candidate_idx:
-            return 0.0
-
         possible = gdf_exploded.iloc[candidate_idx]
         matches = possible[possible.intersects(buf)]
         matches = matches[matches["_ci_row_id"] != row_id]
 
-        if matches.empty:
-            return 0.0
-
         total_w = float(matches["_w"].sum())
-        if total_w <= 0:
-            return 0.0
+        if total_w <= 0:  # no neighbour
+            return 1.0
 
         Nj_w = float(matches.loc[matches[land_uses_column] == building_label, "_w"].sum())
         return 1.0 - (Nj_w / total_w)
@@ -455,86 +464,104 @@ def pragmatic_score(
     )
 
     scores = gdf_exploded.groupby("_ci_row_id")["prag_temp"].max()
-    gdf["prag"] = gdf["_ci_row_id"].map(scores).fillna(0.0).astype(float)
+    gdf["prag"] = gdf["_ci_row_id"].map(scores).astype(float)
 
     return gdf.drop(columns=["_ci_row_id", "_w_list", "_lu_w"], errors="ignore")
 
 
-def _without_height(buildings_gdf):
-    """Mark the buildings without a height (missing or zero, see ``known_heights``).
+# The indexes of each component. The visual component is computed only where a building has a
+# height; the cultural and pragmatic components are their single index.
+VISUAL_INDEXES = ("fac", "height", "3dvis")
+STRUCTURAL_INDEXES = ("area", "neigh", "2dvis", "road")
+COMPONENT_INDEXES = {
+    "vScore": VISUAL_INDEXES,
+    "sScore": STRUCTURAL_INDEXES,
+    "cScore": ("cult",),
+    "pScore": ("prag",),
+}
+# Indexes where a lower value makes a building stand out.
+INVERSE_INDEXES = ("neigh", "road")
 
-    Where the layer has heights, the visual score is computed and such a building gets 0: an
-    unknown height never makes a building stand out, and the building can still be a landmark
-    through its other components.
+
+def _with_known_heights(buildings_gdf):
+    """A copy with ``height``, where there is one, read through ``known_heights``: NaN where
+    missing, unreadable or not above zero. A frame without a height column is left without one.
+
+    Where the layer has heights, the visual score is computed and a building without one gets 0:
+    an unknown height never makes a building stand out, and the building can still be a landmark
+    through its other components. It is not an obstruction to 3D sight lines either. Heights are
+    the caller's to supply; drop such buildings beforehand to leave them out of the scores.
     """
-    if "height" not in buildings_gdf.columns:
-        return pd.Series(False, index=buildings_gdf.index)
-    return known_heights(buildings_gdf["height"]).isna()
+    buildings_gdf = buildings_gdf.copy()
+    if "height" in buildings_gdf.columns:
+        buildings_gdf["height"] = known_heights(buildings_gdf["height"])
+    return buildings_gdf
+
+
+def _has_heights(buildings_gdf):
+    """Whether at least one building has a height (read by ``_with_known_heights``)."""
+    return "height" in buildings_gdf.columns and buildings_gdf["height"].notna().any()
+
+
+def _component_scores(buildings_gdf, indexes_weights, components_weights, suffix=""):
+    """Rescale the indexes over ``buildings_gdf`` and write each component and its rescaled
+    value (``<component><suffix>`` and ``..._sc``); return the weighted sum of the components.
+
+    A component is written only when at least one of its indexes has a value; the visual one
+    only when a building has a height. Rescaling runs over the known values: a NaN index stays
+    NaN and never moves the others' scale, and a building without a height has no visual score.
+    A NaN counts as 0 only in the weighted sums, after rescaling, where it adds nothing.
+    """
+    has_heights = _has_heights(buildings_gdf)
+    total = pd.Series(0.0, index=buildings_gdf.index)
+    for component, weight in components_weights.items():
+        if component == "vScore" and not has_heights:
+            continue
+        # The visual indexes of a building without a height are unknown, whatever the frame holds.
+        if component == "vScore":
+            rows = buildings_gdf["height"].notna()
+        else:
+            rows = pd.Series(True, index=buildings_gdf.index)
+        indexes = [
+            index
+            for index in COMPONENT_INDEXES.get(component, ())
+            if index in buildings_gdf.columns and buildings_gdf[index].where(rows).notna().any()
+        ]
+        if not indexes:
+            continue
+        for index in indexes:
+            buildings_gdf[f"{index}_sc"] = scaling_columnDF(
+                buildings_gdf[index].where(rows), inverse=index in INVERSE_INDEXES
+            )
+        if len(COMPONENT_INDEXES[component]) == 1:
+            score = buildings_gdf[f"{indexes[0]}_sc"]
+        else:
+            score = sum(
+                buildings_gdf[f"{index}_sc"].fillna(0.0) * indexes_weights[index]
+                for index in indexes
+            )
+        if component == "vScore":
+            score = score.where(rows)
+        buildings_gdf[f"{component}{suffix}"] = score
+        buildings_gdf[f"{component}{suffix}_sc"] = scaling_columnDF(score)
+        total = total + buildings_gdf[f"{component}{suffix}_sc"].fillna(0.0) * weight
+    return total
 
 
 def compute_global_scores(buildings_gdf, global_indexes_weights, global_components_weights):
     """Compute component and global landmarkness scores.
 
-    When some buildings have a height and others have none, the ones without get a visual score
-    of 0 (see ``_without_height``).
+    Indexes and components are rescaled over the whole city (see ``_component_scores``): a
+    building without a height has no visual score and gets nothing from that component.
     """
-    buildings_gdf = buildings_gdf.copy()
-
-    cols = {
-        "direct": ["3dvis", "fac", "height", "area", "2dvis", "cult", "prag"],
-        "inverse": ["neigh", "road"],
-    }
+    buildings_gdf = _with_known_heights(buildings_gdf)
 
     if not (abs(sum(global_components_weights.values()) - 1.0) < 1e-6):
         raise ValueError("Global components weights must sum to 1.0")
 
-    compute_vScore = (
-        "vScore" in global_components_weights
-        and "height" in buildings_gdf.columns
-        and buildings_gdf["height"].max() > 0.0
-    )
-
-    for col in cols["direct"] + cols["inverse"]:
-        if col in buildings_gdf.columns:
-            buildings_gdf[col + "_sc"] = scaling_columnDF(
-                buildings_gdf[col],
-                inverse=(col in cols["inverse"]),
-            )
-
-    if compute_vScore:
-        buildings_gdf["vScore"] = sum(
-            buildings_gdf[f"{col}_sc"] * global_indexes_weights[col]
-            for col in ["fac", "height", "3dvis"]
-            if f"{col}_sc" in buildings_gdf
-        )
-        buildings_gdf.loc[_without_height(buildings_gdf), "vScore"] = 0.0
-        buildings_gdf["vScore_sc"] = scaling_columnDF(buildings_gdf["vScore"])
-
-    buildings_gdf["sScore"] = sum(
-        buildings_gdf[f"{col}_sc"] * global_indexes_weights[col]
-        for col in ["area", "neigh", "2dvis", "road"]
-        if f"{col}_sc" in buildings_gdf
-    )
-    buildings_gdf["sScore_sc"] = scaling_columnDF(buildings_gdf["sScore"])
-
-    buildings_gdf["cScore"] = (
-        buildings_gdf["cult_sc"] if "cult_sc" in buildings_gdf.columns else 0.0
-    )
-    buildings_gdf["pScore"] = (
-        buildings_gdf["prag_sc"] if "prag_sc" in buildings_gdf.columns else 0.0
-    )
-
-    if "cult_sc" in buildings_gdf.columns:
-        buildings_gdf["cScore_sc"] = buildings_gdf["cult_sc"]
-    if "prag_sc" in buildings_gdf.columns:
-        buildings_gdf["pScore_sc"] = buildings_gdf["prag_sc"]
-
-    buildings_gdf["gScore"] = sum(
-        buildings_gdf[f"{component}_sc"] * global_components_weights[component]
-        for component in global_components_weights
-        if f"{component}_sc" in buildings_gdf and (component != "vScore" or compute_vScore)
-    )
-    buildings_gdf["gScore_sc"] = scaling_columnDF(buildings_gdf["gScore"])
+    gScore = _component_scores(buildings_gdf, global_indexes_weights, global_components_weights)
+    buildings_gdf["gScore"] = gScore
+    buildings_gdf["gScore_sc"] = scaling_columnDF(gScore)
     return buildings_gdf
 
 
@@ -559,8 +586,8 @@ def compute_local_scores(
     Returns
     -------
     buildings_gdf: Polygon GeoDataFrame
-        The updated buildings GeoDataFrame. When some buildings have a height and others have
-        none, the ones without get a visual score of 0 (see ``_without_height``).
+        The updated buildings GeoDataFrame, with ``lScore`` and ``lScore_sc``. Each building's
+        indexes and components are rescaled over its neighbourhood (see ``_component_scores``).
 
     Examples
     --------
@@ -579,23 +606,13 @@ def compute_local_scores(
     """
 
     # A copy, so the score columns are not added to the caller's frame.
-    buildings_gdf = buildings_gdf.copy()
+    buildings_gdf = _with_known_heights(buildings_gdf)
     sindex = buildings_gdf.sindex  # spatial index
 
     # Validate that local_components_weights sum to 1.0
     if not (abs(sum(local_components_weights.values()) - 1.0) < 1e-6):
         raise ValueError("Local components weights must sum to 1.0")
 
-    # Initialize scores conditionally
-    compute_vScore = (
-        "vScore" in local_components_weights
-        and "height" in buildings_gdf.columns
-        and buildings_gdf["height"].max() > 0.0
-    )
-    if compute_vScore:
-        buildings_gdf["vScore_l"] = 0.0  # Initialize only if valid height data exists
-
-    buildings_gdf["sScore_l"] = 0.0
     buildings_gdf["lScore"] = 0.0
 
     with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -630,7 +647,8 @@ def _building_local_score(
     radius,
 ):
     """
-    The function computes landmarkness at the local level for a single building.
+    The function computes landmarkness at the local level for a single building: its components
+    rescaled over the buildings within ``radius`` (see ``_component_scores``).
 
     Parameters
     ----------
@@ -654,68 +672,15 @@ def _building_local_score(
     score : float
         The computed local-level landmarkness score for the building.
     """
-
-    cols = {
-        "direct": ["3dvis", "fac", "height", "area", "2dvis", "cult", "prag"],
-        "inverse": ["neigh", "road"],
-    }
-
     buffer = building_geometry.buffer(radius)
     matches_index = list(buildings_gdf_sindex.intersection(buffer.bounds))
     matches = buildings_gdf.iloc[matches_index].copy()
     matches = matches[matches.intersects(buffer)]
 
-    # Rescale all values dynamically if the column exists in matches
-    for column in cols["direct"] + cols["inverse"]:
-        if column in matches.columns:
-            matches[column + "_sc"] = scaling_columnDF(
-                matches[column], inverse=(column in cols["inverse"])
-            )
-
-    # Compute structural score (sScore)
-    if "sScore" in local_components_weights:
-        matches["sScore_l"] = sum(
-            matches[f"{col}_sc"] * local_indexes_weights[col]
-            for col in ["area", "2dvis", "neigh", "road"]
-            if f"{col}_sc" in matches
-        )
-
-    # Recomputing visual scores only if "height" is valid
-    # Determine if vScore should be computed
-    compute_vScore = (
-        "vScore" in local_components_weights
-        and "height" in matches.columns
-        and matches["height"].max() > 0.0
+    lScore = _component_scores(
+        matches, local_indexes_weights, local_components_weights, suffix="_l"
     )
-
-    if compute_vScore:
-        matches["vScore_l"] = sum(
-            matches[f"{col}_sc"] * local_indexes_weights[col]
-            for col in ["fac", "height", "3dvis"]
-            if f"{col}_sc" in matches
-        )
-        matches.loc[_without_height(matches), "vScore_l"] = 0.0
-
-    # Compute cultural and pragmatic scores if defined
-    if "cScore" in local_components_weights and "cult_sc" in matches.columns:
-        matches["cScore_l"] = matches["cult_sc"]
-    if "pScore" in local_components_weights and "prag_sc" in matches.columns:
-        matches["pScore_l"] = matches["prag_sc"]
-
-    # Rescale component scores dynamically
-    for component in local_components_weights:
-        if f"{component}_l" in matches and (component != "vScore" or compute_vScore):
-            matches[f"{component}_l_sc"] = scaling_columnDF(matches[f"{component}_l"])
-
-    # Compute the final local score
-    matches["lScore"] = sum(
-        matches[f"{component}_l_sc"] * local_components_weights[component]
-        for component in local_components_weights
-        if f"{component}_l_sc" in matches and (component != "vScore" or compute_vScore)
-    )
-
-    # Return the local score for the specified building
-    return round(matches.loc[buildingID, "lScore"], 3)
+    return lScore.loc[buildingID]
 
 
 def assert_all_polygons(gdf: gpd.GeoDataFrame):

@@ -26,8 +26,8 @@ def _union_all(geometries: Any) -> Any:
 def center_line(line_geometries: list[LineString]) -> LineString:
     """Compute a centre line from consistently oriented LineStrings.
 
-    The helper is used when duplicate street edges with the same endpoints need
-    to be collapsed while preserving an approximate middle geometry.
+    clean_same_vertexes_edges uses it when a street mapped an even number of times between the
+    same two nodes is collapsed to the centre line of its two middle copies.
 
     Parameters
     ----------
@@ -38,7 +38,8 @@ def center_line(line_geometries: list[LineString]) -> LineString:
     -------
     shapely.geometry.LineString
         Average line geometry: the lines are sampled at the same fractions of their length (every
-        vertex of every line), so lines with different vertex counts are averaged whole.
+        vertex of every line), so lines with different vertex counts are averaged whole. It runs in
+        the first line's direction, and is 3D when every line is.
     """
     if len(line_geometries) < 2:
         raise ValueError("At least two LineStrings are required to compute a center line.")
@@ -76,15 +77,17 @@ def center_line(line_geometries: list[LineString]) -> LineString:
             travelled += _squared_distance(a, b) ** 0.5
             fractions.add(round(min(travelled / line.length, 1.0), 12))
 
+    has_z = all(line.has_z for line in lines)
     center_line_coords = []
     for fraction in sorted(fractions):
         points = [line.interpolate(fraction, normalized=True) for line in lines]
-        center_line_coords.append(
-            (
-                sum(point.x for point in points) / len(points),
-                sum(point.y for point in points) / len(points),
-            )
+        coords = (
+            sum(point.x for point in points) / len(points),
+            sum(point.y for point in points) / len(points),
         )
+        if has_z:
+            coords += (sum(point.z for point in points) / len(points),)
+        center_line_coords.append(coords)
 
     return LineString(center_line_coords)
 

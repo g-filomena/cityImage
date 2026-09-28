@@ -19,7 +19,6 @@ from shapely.geometry import Point
 
 from .adapters import standardize_buildings_gdf
 from .barriers import barrier_osm_feature_tags, barriers_from_osm_features
-from .buildings import parse_height
 from .geometry import gdf_multipolygon_to_polygon
 from .landuse import classify_land_uses_raws_into_OSMgroups, derive_land_uses_raw_fromOSM
 from .network import _resolve_list_edges_gdf, reset_index_graph_gdfs
@@ -210,7 +209,7 @@ def _network_from_osmnx_graph(
     if len(nodes_gdf.geometry.iloc[0].coords[0]) > 2:
         nodes_gdf["z"] = nodes_gdf.geometry.apply(lambda geom: geom.coords[0][2])
     else:
-        nodes_gdf["z"] = 2.0
+        nodes_gdf["z"] = 0.0  # 2D network: ground level, as a building without a base
 
     nodes_gdf = nodes_gdf[nodes_gdf.nodeID.isin(pd.unique(edges_gdf[["u", "v"]].values.ravel()))]
     return nodes_gdf, edges_gdf
@@ -320,9 +319,9 @@ def buildings_from_osm(
     building identifiers and area.
 
     OSM ``height`` tags are kept only with ``keep_osm_heights=True``, read as metres (``"12 m"``,
-    ``"12,5"``). They usually cover only some buildings, and the landmark scores leave out the
-    buildings without a height when others have one. By default the layer has no heights and
-    the visual score component is left out for every building; heights from another source
+    ``"12,5"``; see ``known_heights``). They usually cover only some buildings: a building
+    without one has a NaN height and gets a visual score of 0. By default every height is NaN
+    and the visual score component is left out; heights from another source
     (``assign_building_heights_from_other_gdf``, rasters) can be assigned instead.
     """
     crs = _normalise_crs(crs)
@@ -334,9 +333,7 @@ def buildings_from_osm(
         crs=crs,
     )
     buildings = _polygonal_buildings(buildings)
-    if keep_osm_heights and "height" in buildings.columns:
-        buildings["height"] = buildings["height"].apply(parse_height)
-    else:
+    if not keep_osm_heights:
         buildings = buildings.drop(columns=["height"], errors="ignore")
 
     if crs is None:

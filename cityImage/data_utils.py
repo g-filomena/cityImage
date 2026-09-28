@@ -27,10 +27,10 @@ def scaling_columnDF(series: pd.Series, inverse: bool = False) -> pd.Series:
     -------
     pandas.Series
         Scaled values indexed like the input. Constant input maps to 0, or 1
-        when ``inverse=True``.
+        when ``inverse=True``. NaN stays NaN, and the scale runs over the other values.
     """
     if series.max() == series.min():
-        return pd.Series(1.0 if inverse else 0.0, index=series.index)
+        return pd.Series(1.0 if inverse else 0.0, index=series.index).where(series.notna())
 
     scaled = (series - series.min()) / (series.max() - series.min())
     return 1 - scaled if inverse else scaled

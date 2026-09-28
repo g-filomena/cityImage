@@ -16,6 +16,8 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 
+from .buildings import known_heights
+
 NODE_ID = "nodeID"
 EDGE_ID = "edgeID"
 BUILDING_ID = "buildingID"
@@ -186,7 +188,8 @@ def ensure_building_schema_defaults(
 
     This function fills geometry-derived and numeric defaults only. It does not
     classify land use and does not fabricate ``land_uses`` or
-    ``land_uses_overlap``.
+    ``land_uses_overlap``. ``height`` is always a float column in metres, NaN where a
+    building's height is unknown (see ``known_heights``) or when there is no height column.
     """
     gdf = buildings_gdf.copy()
     require_columns(gdf, REQUIRED_BUILDINGS_COLUMNS, frame_name="buildings_gdf")
@@ -195,8 +198,7 @@ def ensure_building_schema_defaults(
     if add_area and AREA not in gdf.columns:
         gdf[AREA] = gdf.geometry.area
 
-    if HEIGHT not in gdf.columns:
-        gdf[HEIGHT] = np.nan
+    gdf[HEIGHT] = known_heights(gdf[HEIGHT]) if HEIGHT in gdf.columns else np.nan
 
     if BASE not in gdf.columns:
         gdf[BASE] = 0.0

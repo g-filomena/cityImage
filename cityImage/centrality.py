@@ -297,7 +297,9 @@ def append_edges_metrics(
     A ``Graph`` (``graph_fromGDF``) holds one edge per pair of nodes, the shortest, so the other
     parallel streets in ``edges_gdf`` are missing from it: they get 0, the exact value for
     shortest-path measures such as betweenness, which no shortest path takes them into. A
-    ``MultiGraph`` (``multiGraph_fromGDF``) gives every street its own computed value.
+    ``MultiGraph`` (``multiGraph_fromGDF``) holds every street; weighted by length, networkx gives
+    the longer parallel streets 0 there too, and unweighted it splits a value evenly between
+    them.
     """
     if graph.is_multigraph():
         edge_ids = {

@@ -24,6 +24,7 @@ import numpy as np
 import pandas as pd
 from shapely.geometry import LineString, MultiPolygon, Point, Polygon
 
+from .buildings import known_heights
 from .network_topology import consolidate_nodes
 
 pd.set_option("display.precision", 3)
@@ -170,6 +171,7 @@ def compute_3d_sight_lines(
     num_workers: int = 20,
     verbose: bool = False,
     tmp_dir: str | Path | None = None,
+    min_target_height: float = 5.0,
 ):
     """Compute visible 3D sight lines between observer nodes and target buildings.
 
@@ -181,18 +183,23 @@ def compute_3d_sight_lines(
     GeoPackage files before being merged.
 
     Building ``height`` is treated as above-ground and added to ``base`` (terrain
-    elevation, defaulting to a 1.0 minimum) to obtain the absolute roof elevation
-    used for both targets and occluders.
+    elevation, 0 when missing) to obtain the absolute roof elevation used for both
+    targets and occluders; node ``z`` must be on the same vertical datum as ``base``.
+    Heights are read through ``known_heights``: a building without one is neither a
+    target nor an obstruction.
 
     Parameters
     ----------
     nodes_gdf : geopandas.GeoDataFrame
         Observer nodes. Required columns are ``geometry``, ``x``, ``y`` and
-        ``nodeID``; ``z`` (observer elevation) is optional and defaults to 0
-        (ground level) when the column is absent.
+        ``nodeID``; ``z`` (observer elevation) is optional. Without elevations (no
+        ``z`` column, or every value missing) observers stand at 0, the ground of a
+        building without a ``base``; where some nodes have one, the nodes without are
+        left out.
     target_buildings_gdf : geopandas.GeoDataFrame
         Buildings to use as visibility targets. Required columns are
-        ``buildingID``, ``geometry``, ``height``, and optionally ``base``.
+        ``buildingID``, ``geometry``, ``height``, and optionally ``base``. Only the
+        buildings at least ``min_target_height`` tall are targets.
     obstructions_buildings_gdf : geopandas.GeoDataFrame
         Buildings to use as possible obstructions. Required columns are
         ``buildingID``, ``geometry``, ``height``, and optionally ``base``.
@@ -232,6 +239,9 @@ def compute_3d_sight_lines(
         Folder in which the per-chunk GeoPackages are written, inside a temporary subfolder
         removed once they are merged (or on error). A city-scale run can write tens of GB there.
         Defaults to the working directory.
+    min_target_height : float, default 5.0
+        Minimum height, in metres, of a target building. Every building with a height
+        is an obstruction, whatever its height.
 
     Returns
     -------
@@ -255,6 +265,7 @@ def compute_3d_sight_lines(
             obstructions_buildings_gdf,
             distance_along=distance_along,
             observer_height=observer_height,
+            min_target_height=min_target_height,
             consolidate=consolidate,
             consolidate_tolerance=consolidate_tolerance,
             edges_gdf=edges_gdf,
@@ -407,6 +418,7 @@ def _prepare_3d_sight_lines(
     obstructions_gdf,
     distance_along=200,
     observer_height=1.6,
+    min_target_height=5.0,
     consolidate=False,
     consolidate_tolerance=0.0,
     edges_gdf=None,
@@ -417,7 +429,7 @@ def _prepare_3d_sight_lines(
     ----------
     nodes_gdf : geopandas.GeoDataFrame
         Observer nodes with ``geometry``, ``x``, ``y``, ``nodeID``; ``z`` is
-        optional and defaults to 0 (ground level) when the column is absent.
+        optional (see ``_observer_z``).
     target_buildings_gdf : geopandas.GeoDataFrame
         Target buildings with ``buildingID``, ``geometry``, ``height``, and
         optionally ``base``.
@@ -427,6 +439,8 @@ def _prepare_3d_sight_lines(
         Sampling distance along target-building roof edges.
     observer_height : float, default 1.6
         Eye height above node ``z``, in metres.
+    min_target_height : float, default 5.0
+        Minimum height, in metres, of a target building.
     consolidate : bool, default False
         Whether to consolidate observer nodes.
     consolidate_tolerance : float, default 0.0
@@ -441,18 +455,18 @@ def _prepare_3d_sight_lines(
         3D sight-line generation.
     """
 
-    if "z" not in nodes_gdf.columns:
-        # No observer elevation supplied (e.g. OSM nodes with no DTM sampled): treat
-        # observers as standing at ground level. Mirrors the pipeline convention that
-        # node z is 0 when no terrain raster is available. assign() returns a copy, so
-        # the caller's frame is never mutated.
-        nodes_gdf = nodes_gdf.assign(z=0.0)
-    nodes_gdf = nodes_gdf[["geometry", "x", "y", "nodeID", "z"]].copy()
+    # assign() returns a copy, so the caller's frame is never mutated.
+    nodes_gdf = nodes_gdf.assign(z=_observer_z(nodes_gdf))
+    unknown = nodes_gdf["z"].isna()
+    if unknown.any():
+        LOGGER.info("Left out %d observer node(s) without an elevation (z)", int(unknown.sum()))
+    nodes_gdf = nodes_gdf.loc[~unknown, ["geometry", "x", "y", "nodeID", "z"]].copy()
     nodes_gdf["geometry"] = _observer_eyes(nodes_gdf, observer_height)
 
     target_buildings_gdf = _prepare_buildings_gdf(target_buildings_gdf)
     obstructions_gdf = _prepare_buildings_gdf(obstructions_gdf)
-    target_buildings_gdf = target_buildings_gdf[target_buildings_gdf.height > 5.0]
+    _warn_on_elevation_mismatch(nodes_gdf["z"], obstructions_gdf["base"])
+    target_buildings_gdf = target_buildings_gdf[target_buildings_gdf["height"] >= min_target_height]
     target_points = _prepare_targets(target_buildings_gdf, distance_along)
     target_points.drop("geometry", axis=1, inplace=True)
 
@@ -474,17 +488,42 @@ def _prepare_3d_sight_lines(
     return observer_points_gdf, target_points, obstructions_gdf
 
 
-def _observer_eyes(nodes_gdf, observer_height):
-    """Return 3D observer points at node ``z`` plus ``observer_height``.
-
-    ``z`` below -50 is read as DTM nodata and replaced by 2. A frame without ``z``
-    is taken to be at ground level (0).
+def _observer_z(nodes_gdf):
+    """Node elevations (``z``) as given, NaN where unknown; 0 for every node when none has one
+    (no ``z`` column, or every value missing), the ground level of a building without a ``base``.
     """
-    z = nodes_gdf["z"] if "z" in nodes_gdf.columns else pd.Series(0.0, index=nodes_gdf.index)
-    z = z.where(z >= -50, 2)
+    if "z" in nodes_gdf.columns:
+        z = pd.to_numeric(nodes_gdf["z"], errors="coerce").astype(float)
+        if z.notna().any():
+            return z
+    return pd.Series(0.0, index=nodes_gdf.index)
+
+
+def _observer_eyes(nodes_gdf, observer_height):
+    """Return 3D observer points at node ``z`` (see ``_observer_z``) plus ``observer_height``."""
+    z = _observer_z(nodes_gdf)
     return gpd.points_from_xy(
         nodes_gdf.geometry.x, nodes_gdf.geometry.y, z + observer_height, crs=nodes_gdf.crs
     )
+
+
+def _warn_on_elevation_mismatch(node_z, building_base):
+    """Warn when the observers stand on terrain and the buildings do not, or the reverse.
+
+    Roofs are ``base + height`` and eyes ``z + observer_height``: with elevations on one side
+    only, the two are measured from different grounds and the sight lines are wrong.
+    """
+    nodes_on_terrain = bool((node_z != 0.0).any())
+    buildings_on_terrain = bool((building_base != 0.0).any())
+    if nodes_on_terrain != buildings_on_terrain:
+        with_elevations = "nodes" if nodes_on_terrain else "buildings"
+        without = "buildings (base)" if nodes_on_terrain else "nodes (z)"
+        LOGGER.warning(
+            "The %s have elevations but the %s do not: observers and roofs are measured "
+            "from different grounds",
+            with_elevations,
+            without,
+        )
 
 
 def _prepare_buildings_gdf(buildings_gdf):
@@ -499,18 +538,19 @@ def _prepare_buildings_gdf(buildings_gdf):
     Returns
     -------
     geopandas.GeoDataFrame
-        Building table indexed by ``buildingID`` with non-null heights and a
-        minimum base elevation of 1.0.
+        Building table indexed by ``buildingID`` with the buildings that have a height
+        (see ``known_heights``), and ``base`` 0 where missing.
     """
-    # A copy first, so the base default and floor below stay out of the caller's frame.
+    # A copy first, so the base default below stays out of the caller's frame.
     buildings_gdf = buildings_gdf.copy()
-    # add a 'base' column to the buildings GeoDataFrame with a default value of 1.0, if not provided
     if "base" not in buildings_gdf.columns:
-        buildings_gdf["base"] = 1.0
-
-    buildings_gdf["base"] = buildings_gdf["base"].where(
-        buildings_gdf["base"] > 1.0, 1.0
-    )  # minimum base
+        buildings_gdf["base"] = 0.0
+    buildings_gdf["base"] = pd.to_numeric(buildings_gdf["base"], errors="coerce").fillna(0.0)
+    # A building without a height (missing, unreadable or not above zero) is never an obstruction.
+    heights = known_heights(buildings_gdf["height"]) if "height" in buildings_gdf.columns else None
+    if heights is None or heights.isna().all():
+        raise ValueError("3D sight lines need building heights: no building has one")
+    buildings_gdf["height"] = heights
     buildings_gdf = buildings_gdf[buildings_gdf["height"].notna()]
     buildings_gdf = buildings_gdf[["buildingID", "geometry", "height", "base"]].copy()
     buildings_gdf.index = buildings_gdf.buildingID
@@ -1120,7 +1160,7 @@ def _finalize_sight_lines(sight_lines_tmp, nodes_gdf, consolidate, observer_heig
         Temporary sight-line results with observer/target references.
     nodes_gdf : geopandas.GeoDataFrame
         Original observer nodes with ``nodeID`` and ``geometry``; ``z`` is optional
-        and defaults to 0 (ground level) when the column is absent.
+        (see ``_observer_z``).
     consolidate : bool
         Whether observer node consolidation was used.
     observer_height : float, default 1.6

@@ -90,7 +90,7 @@ def network_from_lines(
     edges["length"] = edges.geometry.length
 
     if "z" not in nodes.columns:
-        nodes["z"] = 2.0
+        nodes["z"] = 0.0  # 2D lines: ground level, as a building without a base
 
     nodes = nodes[nodes.nodeID.isin(np.unique(edges[["u", "v"]].values))].copy()
     return nodes, edges

@@ -82,8 +82,8 @@ def parse_height(value: Any) -> float | None:
 
 def known_heights(values: pd.Series) -> pd.Series:
     """Heights in metres (see ``parse_height``), NaN where unknown: missing, unreadable or not
-    above zero. A layer has heights when at least one is known; the loader and the landmark
-    scores both read heights through this.
+    above zero. Every height the package uses is read through this: the building schema, the
+    loaders, the landmark scores and the 3D sight lines.
     """
     heights = values.apply(parse_height).astype(float)
     return heights.where(heights > 0.0)
@@ -92,22 +92,15 @@ def known_heights(values: pd.Series) -> pd.Series:
 def _drop_buildings_below_height(
     buildings_gdf: gpd.GeoDataFrame, min_height: float
 ) -> gpd.GeoDataFrame:
-    """Keep the buildings at least ``min_height`` tall; a building without a height is dropped.
+    """Drop the buildings whose known height is lower than ``min_height``.
 
-    The ``height`` column of the kept rows is read as numbers (see ``known_heights``). When no
-    building has a height (every value missing or zero), the column carries nothing: it is dropped
-    and every building kept, and the landmark scores then leave the visual component out.
+    A building without a height is kept, with a NaN height (see ``known_heights``).
     """
     heights = known_heights(buildings_gdf["height"])
-    if heights.isna().all():
-        LOGGER.info("No building has a height: the height column is dropped")
-        return buildings_gdf.drop(columns=["height"])
-    keep = heights >= min_height
+    keep = ~(heights < min_height)
     dropped = int((~keep).sum())
     if dropped:
-        LOGGER.info(
-            "Dropped %d building(s) lower than %s m or without a height", dropped, min_height
-        )
+        LOGGER.info("Dropped %d building(s) lower than %s m", dropped, min_height)
     kept = buildings_gdf[keep].copy()
     kept["height"] = heights[keep]
     return kept
