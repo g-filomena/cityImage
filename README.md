@@ -116,21 +116,26 @@ Submodules marked *(extra: X)* need the corresponding optional install (see
   [network cleaning guide](https://github.com/g-filomena/cityImage/blob/master/docs/network_topology.md)
   for every case, with diagrams.
 - `cityImage.graph` and `cityImage.angles`: primal/dual graph semantics and
-  angular relationships.
+  angular relationships. Each dual edge records whether the move between two
+  segments is allowed both ways or one way (`oneway`), and
+  `dual_graph_fromGDF(..., directed=True)` routes on those moves.
 - `cityImage.centrality`: node/edge centrality wrappers (iGraph-based measures;
-  iGraph is a core dependency).
+  iGraph is a core dependency). Edge measures computed on a `MultiGraph`
+  (`multiGraph_fromGDF`) give parallel streets their own values.
 - `cityImage.barriers`: natural and artificial barriers such as rivers,
   railways, parks, and major roads.
 - `cityImage.regions`: districts and gateways from network partitions
   (modularity-based detection via python-louvain, a core dependency).
 - `cityImage.landuse`: land-use derivation, classification, sparse
   representation, and assignment.
-- `cityImage.buildings`: building selection and study-area helpers.
+- `cityImage.buildings`: building selection, study-area and height-reading helpers.
 - `cityImage.height`: DEM/DTM-based building heights. *(extra: height)*
 - `cityImage.landmarks` and `cityImage.scoring`: Lynchian landmark and
-  imageability scoring.
+  imageability scoring. In a layer with heights, a building without one scores 0
+  on the visual component.
 - `cityImage.visibility2d`: 2D visibility workflows.
-- `cityImage.visibility3d`: optional 3D sight-line workflows. *(extra: visibility3d)*
+- `cityImage.visibility3d`: optional 3D sight-line workflows; `verbose=True` logs
+  progress through `logging`. *(extra: visibility3d)*
 - `cityImage.plotting`: optional static plotting helpers. *(extra: plot)*
 
 ## Minimal example
@@ -157,6 +162,10 @@ barriers = ci.barriers_from_osm(
     crs="EPSG:32632",
 )
 ```
+
+OSM `height` tags cover only some buildings, so `buildings_from_osm` leaves them
+out unless `keep_osm_heights=True`. `buildings_from_file` reads heights from
+`height_field` and drops buildings lower than `min_height` or without a height.
 
 ## Development checks
 

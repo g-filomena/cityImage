@@ -174,7 +174,8 @@ same street** only when both tests pass:
 
 > Converting to a graph: `graph_fromGDF` builds an `nx.Graph`, which holds one edge per node
 > pair, so it keeps the **shortest** of parallel edges (the one a shortest path would use).
-> `multiGraph_fromGDF` keeps them all.
+> `multiGraph_fromGDF` keeps them all: compute edge measures such as betweenness on it, and
+> `append_edges_metrics` gives each parallel street its own value.
 
 ### Pseudo-nodes: `simplify_graph` (step 6e)
 
@@ -327,7 +328,8 @@ nodes, edges = ci.clean_network(nodes, edges, fix_topology=True, dead_ends=True,
 - **End points are snapped at the end.** `correct_edge_geometries` sets each edge's first and last
   coordinate to its `u` and `v` node; internal vertices are not touched.
 - **Parallel edges and graphs.** `graph_fromGDF` keeps the shortest of parallel edges;
-  `multiGraph_fromGDF` keeps all of them.
+  `multiGraph_fromGDF` keeps all of them. `append_edges_metrics` on a `Graph` gives the parallel
+  streets it leaves out 0, the exact value for shortest-path measures.
 - **Row lookups need the ID index.** Standalone helpers look rows up with `.loc[ID]`. Keep frames
   indexed by `nodeID` / `edgeID` (`set_index("nodeID", drop=False)`), especially after reloading
   from GeoPackage.
