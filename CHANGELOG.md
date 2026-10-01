@@ -6,74 +6,7 @@ All notable changes to **cityImage** are recorded here. The format follows
 
 Entries marked **⚠ behaviour** change the output of an existing call with the same arguments.
 
-## [Unreleased]
-
-### Fixed — code review, September 2026
-
-#### Changed
-- **⚠ behaviour** `buildings_from_file` drops buildings lower than `min_height` or without a
-  height (missing or zero), as the loader did before the 2.x API refactor. When no building has a
-  height (the height field entirely missing or zero), every building is kept without heights and
-  the landmark scores leave the visual component out. A file with neither a `height_field` nor a
-  `height` column gets `min_height` for every building.
-- **⚠ behaviour** `buildings_from_osm` keeps OSM `height` tags only with the new
-  `keep_osm_heights=True`, read as metres (`"12 m"`, `"12,5"`). By default the layer has no
-  heights and the visual component is left out for every building, as before the refactor.
-- **⚠ behaviour** `score_buildings_global` / `score_buildings_local` (and `compute_global_scores` /
-  `compute_local_scores`) give a building without a height (missing or zero), in a layer where
-  others have one, a visual score of 0; such buildings received NaN scores. Every building stays
-  in the output and can be a landmark through its other components.
-- **⚠ behaviour** `dual_gdf` writes one row per pair of adjacent segments, with a new `oneway`
-  column: 0 when the move is allowed both ways, 1 when only `u` → `v` is (with `oneway=True`,
-  respecting one-way streets; the row points in the allowed direction).
-  `dual_graph_fromGDF(..., directed=True)` (new argument, default False) builds a
-  `networkx.DiGraph` of those moves, both directions of a two-way pair and the allowed one of a
-  one-way pair, so routes respect one-way streets. Dual edges without the column are read as
-  two-way. By default the dual graph is undirected.
-- **⚠ behaviour** `amend_nodes_membership` raises a `ValueError`, instead of looping forever, when
-  the network is not connected (remove its islands first), is smaller than `min_size_district`,
-  has no district of that size, has nodes that cannot be amended, or does not settle within one
-  pass per node.
-- `append_edges_metrics` also takes a `MultiGraph` (`multiGraph_fromGDF`), which gives every
-  street, parallel ones included, its own value. With a `Graph`, the parallel streets it leaves out
-  (it keeps the shortest of each pair) get 0, the exact value for shortest-path measures; any other
-  NaN stays. `calculate_centrality` accepts a `MultiGraph` too, and `multiGraph_fromGDF` keeps
-  parallel streets that share a `key` (`network_from_lines` keys every edge 0) instead of keeping
-  the last one read. The node-and-paths notebooks compute edge betweenness on a `MultiGraph`.
-- `compute_3d_sight_lines(verbose=True)` logs its progress at INFO on the
-  `cityImage.visibility3d` logger instead of printing it, one line each time the progress bar
-  advances. `verbose=True` sets that logger to INFO and gives it a console handler when logging is
-  not configured, so the progress shows either way. "No visible sight-lines" is logged too.
-- **⚠ behaviour** 2D advance visibility (`visibility_polygon2d`, `2dvis`) covers the whole ring
-  of rays: the slice between the 350° and 0° rays was left out.
-- `barriers_from_osm`, `barriers_from_osm_features` (and the per-type builders) and
-  `network_from_osm(network_type="walk")` / `pedestrian_network_from_osm` project to the local UTM
-  zone when `crs` is None and the input is in longitude/latitude; the barrier rules were applied
-  in degrees. Input without a CRS stays in its own units.
-- `gdf_multipolygon_to_polygon` keeps the ID column unless a MultiPolygon is split, so
-  `buildings_from_file` keeps the file's building IDs.
-
-#### Fixed
-- `network_from_lines` / `network_from_file` join 3D lines to their nodes (u/v were all NaN), and
-  `clean_network` accepts 3D line geometries.
-- `network_from_osm(network_type="walk")` validates `distance` like the other network types
-  instead of passing `None` to OSMnx.
-- `assign_building_heights_from_other_gdf` gives a detailed building's height to its best match
-  only, not to every building it overlaps.
-- Functions no longer write into the caller's frames: `score_buildings_local`,
-  `along_within_parks`, and the building preparation of `compute_3d_sight_lines` (which raised the
-  caller's `base` values to 1.0).
-- `visibility_score` (and so `score_building_components`) keeps the caller's index.
-- `compute_3d_sight_lines` writes its chunk files to a temporary subfolder of `tmp_dir` (new
-  argument, default the working directory), removed afterwards, instead of leaving them in
-  `./sight_lines_tmp`.
-- `weight_nodes`, `append_edges_metrics` and `districts_to_edges_from_nodes` match rows by
-  `nodeID`/`edgeID` rather than by index label (a `KeyError`, extra rows, or silently wrong
-  districts when the index was not the IDs).
-- `district_to_nodes_from_edges` falls back to the nearest edge anywhere when none is within
-  100 m, and `remove_disconnected_islands` accepts an empty network.
-
-## [2.2.0] — 2026-09-27
+## [2.2.0] — 2026-09-28
 
 ### Network cleaning — reworked
 
@@ -87,19 +20,28 @@ for a visual walk-through of every case.
   `clean_same_vertexes_edges`: the largest Hausdorff distance between two edges joining the same
   nodes for them to count as one street mapped twice.
 - `nodes_to_keep_regardless` on `fix_dead_ends`: dead-end peeling stops at these nodes.
-- `self_loops` on `clean_duplicate_edges` (default `True`, the previous behaviour when called on
-  its own). `clean_network` passes its own `self_loops` through.
+- `self_loops` on `clean_duplicate_edges` (default `False`). `clean_network` passes its own
+  `self_loops` through.
+- `preserve_direction` on `simplify_graph`, passed by `clean_network(preserve_direction=True)`: a
+  pseudo-node is kept where merging would lose the direction of a one-way street (one segment
+  one-way and the other not, or two one-ways that do not run on from one into the other), so
+  `oneway` stays exact on the cleaned edges. Without it, as before, a merged edge takes the
+  `oneway` covering most of its length.
 
 #### Changed
 - **⚠ behaviour** `clean_same_vertexes_edges` no longer drops the shorter of two edges between
-  the same nodes, and no longer replaces near-equal pairs by an averaged centre line. Edges are
-  grouped as one street when their lengths are within 10 % **and** they lie within
-  `same_vertexes_tolerance` of each other; matches chain transitively, and each group keeps its
-  most central real edge. Different streets between the same two junctions (a crescent and a
-  straight road, the two sides of a block) are kept as parallel edges.
-- **⚠ behaviour** Loop streets are kept by default. `clean_duplicate_edges` used to remove every
-  self-loop regardless of `clean_network(self_loops=False)`; now a street that leaves a junction and
-  returns to it survives as one self-loop edge unless `self_loops=True`.
+  the same nodes. Edges are grouped as one street when their lengths are within 10 % **and** they
+  lie within `same_vertexes_tolerance` of each other; matches chain transitively, and each group
+  becomes its middle copy: with an odd number of copies the most central edge as mapped, with an
+  even number the centre line of the two most central (a pair is still averaged, as before).
+  Different streets between the same two junctions (a crescent and a straight road, the two sides
+  of a block) are kept as parallel edges.
+- **⚠ behaviour** `clean_network(self_loops=False)` keeps loop streets: a street that leaves a
+  junction and returns to it survives as one self-loop edge. `clean_duplicate_edges` used to
+  remove every self-loop whatever `self_loops` said. The default, `self_loops=True` (previously
+  `False`), removes them, so a call without the argument gives the same result as before.
+- **⚠ behaviour** `clean_duplicate_edges` called on its own keeps self-loops unless
+  `self_loops=True`.
 - **⚠ behaviour** `clean_network` fixes topology (`fix_topology=True`) *before* removing dead ends
   and islands. A street joined to the network only at an un-noded shared vertex was previously
   seen as a dead end or an island and deleted.
@@ -109,10 +51,9 @@ for a visual walk-through of every case.
 - `simplify_graph` merges the two segments of a loop street correctly when they share both ends,
   and a merged edge takes, per attribute, the non-null value covering the most length. Column dtypes
   are kept.
-- **⚠ behaviour** `graph_fromGDF` keeps the *shortest* of parallel edges (it previously kept
-  whichever came last), so shortest-path measures are exact. `multiGraph_fromGDF` keeps all.
 - `center_line` averages lines at the same fractions of their length, so lines with different
-  vertex counts are averaged whole instead of being truncated to the shorter coordinate list.
+  vertex counts are averaged whole instead of being truncated to the shorter coordinate list,
+  and keeps `z` when every line has it.
 
 #### Fixed
 - **⚠ behaviour** Splitting an edge (`fix_fake_self_loops`, which `clean_network` always runs, and
@@ -129,12 +70,127 @@ for a visual walk-through of every case.
 - Edges are split at their own vertices, so 3D edges keep their `z`. `fix_network_topology`
   used to fail on 3D edges, and `fix_fake_self_loops` skipped them (it compared coordinates
   including `z`). `fix_fake_self_loops` also no longer needs `x` / `y` node columns.
+- `network_from_lines` / `network_from_file` join 3D lines to their nodes (u/v were all NaN), and
+  `clean_network` accepts 3D line geometries.
 - With `self_loops=True`, a node whose last edge was a removed self-loop is dropped instead of
   being left in the output with no edges.
 - Merging segments in `simplify_graph` no longer fails on `int32` (and other non-`int64`)
   attribute columns, and keeps each column's dtype.
+- **⚠ behaviour** With pandas 2, a missing text value (a street without a `name`, say) came out of
+  `clean_network`, and every function ending in `convert_numeric_columns`, as the string `"None"`
+  or `"nan"`; it stays missing now, as it already did with pandas 3.
 - User edge columns named `fixing` or `to_fix` are no longer ignored by attribute merging or dropped
   from the output.
+- `remove_disconnected_islands` accepts an empty network.
+
+### Graphs, dual graphs and centrality
+- **⚠ behaviour** `graph_fromGDF` keeps the *shortest* of parallel edges (it previously kept
+  whichever came last), so shortest-path measures are exact. `multiGraph_fromGDF` keeps all; use
+  it for one-way routing, since a two-way street mapped as two opposing one-ways between the same
+  nodes keeps only one direction in a `Graph`.
+- `graph_fromGDF` and `multiGraph_fromGDF` keep each edge's `u` and `v` as attributes, so the
+  direction of a one-way street (`u` → `v`) survives in the undirected graph.
+  `multiGraph_fromGDF` keeps parallel streets that share a `key` (`network_from_lines` keys every
+  edge 0) instead of keeping the last one read.
+- **⚠ behaviour** `dual_gdf` writes one row per pair of adjacent segments, with a new `oneway`
+  column: 0 when the move is allowed both ways, 1 when only `u` → `v` is (with `oneway=True`,
+  respecting one-way streets; the row points in the allowed direction). `dual_graph_fromGDF`
+  stays an undirected `networkx.Graph` whose edges keep the row's `u`, `v` and `oneway`, so a
+  model can follow one-way moves. With `oneway=True`, a primal `oneway` of True, 1 or `"yes"` is
+  one-way and False, 0, `"no"` or missing is two-way (any case); any other value, such as OSM's
+  `-1` or `reversible`, raises a `ValueError` (it was silently misread).
+- `dual_gdf` no longer fails when no two segments meet (a single street), and finds each segment's
+  neighbours through the junctions instead of scanning every segment, so its time grows with the
+  network rather than with its square (about 9× faster on 2,000 edges).
+- With a `Graph`, `append_edges_metrics` gives the parallel streets the graph leaves out (it
+  keeps the shortest of each pair) 0, the exact value for shortest-path measures, instead of NaN;
+  any other NaN stays. It also takes a `MultiGraph` (`multiGraph_fromGDF`), keyed `(u, v, key)`;
+  weighted by length, betweenness is the same on either. `calculate_centrality` accepts a
+  `MultiGraph` too.
+- `weight_nodes` and `append_edges_metrics` match rows by `nodeID`/`edgeID` rather than by index
+  label (a `KeyError`, or extra rows, when the index was not the IDs).
+
+### Buildings and heights
+- **⚠ behaviour** One reading of building heights (`known_heights`): a height is a number of
+  metres above zero, read from numbers or strings such as `"12 m"` or `"12,5"`; a missing,
+  unreadable, zero or negative value is unknown (NaN). The building schema
+  (`standardize_buildings_gdf`, and so every building loader and `score_building_components`),
+  the landmark scores and the 3D sight lines all read heights this way.
+- **⚠ behaviour** `buildings_from_file` drops the buildings whose height is lower than
+  `min_height`, as the loader did before the 2.x API refactor; a building without a height is
+  kept with a NaN height. A file without a height field no longer gets `min_height` for every
+  building: every height is NaN and the landmark scores leave the visual component out. Heights
+  are the caller's to supply.
+- **⚠ behaviour** `buildings_from_osm` keeps OSM `height` tags only with the new
+  `keep_osm_heights=True`. By default every height is NaN and the visual component is left out
+  for every building, as before the refactor.
+- `gdf_multipolygon_to_polygon` keeps the ID column unless a MultiPolygon is split, so
+  `buildings_from_file` keeps the file's building IDs.
+- `assign_building_heights_from_other_gdf` gives a detailed building's height to its best match
+  only, not to every building it overlaps.
+
+### Landmark scores
+- **⚠ behaviour** `visibility_score` gives a building without a height a NaN `fac` and `3dvis`
+  (they were 0; a zero or negative height gave a zero or negative facade area), so it stays out
+  of their rescaling. `3dvis` is NaN for every building when no building with a height is
+  reached by a sight line (none passed, an empty result, or lines to other buildings); it was 0.
+  When a building is reached, the others still get 0. It keeps the caller's index.
+- **⚠ behaviour** The landmark scores (`score_buildings_global` / `score_buildings_local`,
+  `compute_global_scores` / `compute_local_scores`) rescale over known values only: a NaN index
+  stays NaN and never moves the other buildings' scale, and a NaN counts as 0 only in the
+  weighted sums that follow the rescaling. A building without a height has no visual score
+  (`vScore`, and its visual indexes, NaN), which adds nothing to `gScore`/`lScore`; it received a
+  NaN score. Every building stays in the output and can be a landmark through its other
+  components; drop such buildings beforehand to leave them out. A component (`vScore`,
+  `sScore`, `cScore`, `pScore`) and its indexes' `_sc` columns are written only when computed;
+  `cScore`/`pScore`/`sScore` were written as 0 without their indexes. The scores never add a
+  `height` column. `lScore` is no longer rounded to 3 decimals, so no two buildings tie by
+  rounding. Global and local scores share one implementation.
+- **⚠ behaviour** `score_buildings_local` / `compute_local_scores` no longer write `sScore_l`
+  and `vScore_l`, which were always 0; the local score is `lScore` (and `lScore_sc`).
+- **⚠ behaviour** `scaling_columnDF` keeps NaN as NaN when the other values are all equal; it
+  returned 0 (1 with `inverse=True`) for them.
+- **⚠ behaviour** `cultural_score` gives `cult` NaN for every building when no building has
+  anything: no historic layer, no historic element intersecting a building, no `historic` tag
+  with `from_OSM=True`, or every `score_column` sum 0; it was 0. When a building has something,
+  the others still get 0.
+- **⚠ behaviour** `pragmatic_score` gives a building with no other building within
+  `search_radius` a `prag` of 1 (as unexpected as can be); it was 0.
+- `score_buildings_local` no longer writes into the caller's frame.
+
+### 3D visibility
+- **⚠ behaviour** `observer_height` (default `1.6` m) on `compute_3d_sight_lines` and the
+  sight-line helpers: sight lines start at eye level (node `z` + `observer_height`) rather than at
+  node `z`.
+- **⚠ behaviour** Observers stand at node `z` as given: a `z` below -50 is no longer read as DTM
+  nodata and moved to 2 (nodata is the DTM reader's to handle, as `assign_height_from_dtm` does
+  with `min_valid_elev`). Where some nodes have a `z`, the nodes without one are left out.
+  Without elevations (no `z` column, or every value missing) observers stand at 0, the ground of
+  a building without a `base`. A warning is logged when only the nodes or only the buildings have
+  elevations.
+- **⚠ behaviour** `network_from_lines` / `network_from_file` and `network_from_osm` give the nodes
+  of a 2D network `z = 0` (ground level, as a building without a `base`) instead of 2, so eyes are
+  at `observer_height` above the buildings' ground.
+- **⚠ behaviour** `compute_3d_sight_lines` leaves out, as targets and obstructions, the buildings
+  without a height (a zero or unreadable one included), and raises a `ValueError` when no
+  building has one. A building's `base` is used as given, 0 when missing; it was raised to at
+  least 1.0, which put the roofs 1 m high over ground-level observers and moved low-lying terrain.
+  Targets are the buildings at least `min_target_height` tall (new argument, default 5 m); they
+  were the ones taller than 5 m. The building preparation no longer writes its `base` defaults
+  into the caller's frame.
+- `compute_3d_sight_lines(max_observer_target_distance=...)` imported scipy, which is not a
+  dependency, and failed where it was not installed. The radius query now uses shapely's `STRtree`.
+- `compute_3d_sight_lines` writes its chunk files to a temporary subfolder of `tmp_dir` (new
+  argument, default the working directory), removed afterwards, instead of leaving them in
+  `./sight_lines_tmp`.
+- `compute_3d_sight_lines(verbose=True)` logs its progress at INFO on the
+  `cityImage.visibility3d` logger instead of printing it, one line each time the progress bar
+  advances. `verbose=True` sets that logger to INFO and gives it a console handler when logging is
+  not configured, so the progress shows either way. "No visible sight-lines" is logged too.
+
+### 2D visibility
+- **⚠ behaviour** 2D advance visibility (`visibility_polygon2d`, `2dvis`) covers the whole ring
+  of rays: the slice between the 350° and 0° rays was left out.
 
 ### Barriers
 - **⚠ behaviour** Roads and railways tagged `tunnel=no` are no longer dropped as tunnels.
@@ -144,23 +200,29 @@ for a visual walk-through of every case.
   than every `highway`, parks rather than every `leisure` feature) and takes `include_primary`,
   `include_secondary` and `keep_light_rail`.
 - `barriers_from_osm` now forwards `include_primary` / `include_secondary` to the download query.
+- `barriers_from_osm`, `barriers_from_osm_features` and the per-type builders project to the local
+  UTM zone when `crs` is None and the input is in longitude/latitude; the barrier rules were
+  applied in degrees. Input without a CRS stays in its own units.
+- `along_within_parks` no longer writes into the caller's frame.
 
 ### Pedestrian networks
 - `service=alley` ways are kept (`ped="noEvidence"`, or `"yes"` with pedestrian evidence) instead of
   being dropped as generic service roads.
+- `network_from_osm(network_type="walk")` / `pedestrian_network_from_osm` project to the local UTM
+  zone when `crs` is None, and validate `distance` like the other network types instead of passing
+  `None` to OSMnx.
 
 ### Districts
 - **⚠ behaviour** `identify_regions` and `identify_regions_primal` take `random_state` (default `0`)
   and pass it to python-louvain, so the same input gives the same districts on every call.
   `random_state=None` restores the previous random partition.
-
-### 3D visibility
-- **⚠ behaviour** `observer_height` (default `1.6` m) on `compute_3d_sight_lines` and the
-  sight-line helpers: sight lines start at eye level (node `z` + `observer_height`) rather than at
-  node `z`. Nodes without a `z` column are taken to be at ground level; `z < -50` is read as DTM
-  nodata and replaced by `2`.
-- `compute_3d_sight_lines(max_observer_target_distance=...)` imported scipy, which is not a
-  dependency, and failed where it was not installed. The radius query now uses shapely's `STRtree`.
+- **⚠ behaviour** `amend_nodes_membership` raises a `ValueError`, instead of looping forever, when
+  the network is not connected (remove its islands first), is smaller than `min_size_district`,
+  has no district of that size, has nodes that cannot be amended, or does not settle within one
+  pass per node.
+- `districts_to_edges_from_nodes` matches rows by `nodeID` rather than by index label (silently
+  wrong districts when the index was not the IDs), and `district_to_nodes_from_edges` falls back
+  to the nearest edge anywhere when none is within 100 m.
 
 ### Documentation
 - New [network topology guide](https://github.com/g-filomena/cityImage/blob/master/docs/network_topology.md):
@@ -172,12 +234,17 @@ for a visual walk-through of every case.
 ### Project
 - Releases are published to PyPI by `.github/workflows/publish.yml` through trusted publishing when
   a `v*` tag is pushed.
-- Regression tests for dead ends, parallel and duplicate edges, loop streets, pseudo-node
-  simplification, edge splitting, barrier tag queries, `center_line`, `graph_fromGDF` and observer
-  eye height.
+- Regression tests for every change above, including dead ends, parallel and duplicate edges, loop
+  streets, pseudo-node simplification, edge splitting, one-way streets, barrier tag queries,
+  `center_line`, the dual graph, heights and the landmark scores.
 - `clean_network` is checked on the real York, Ontario network (a central subset, and the whole
-  town as `slow` tests) against the rules of the guide: no invented vertex, no orphan node, no
-  pseudo-node or street mapped twice left, IDs kept, and a second pass changing nothing.
+  town as `slow` tests) against the rules of the guide: no vertex invented except on centre lines,
+  no orphan node, no pseudo-node or street mapped twice left, IDs kept, and a second pass changing
+  nothing.
+- `pytest-timeout` in the `test` and `dev` extras, so a loop that never ends fails its test.
+- The live-OSM tests (`-m network`) use the first Overpass endpoint that answers (the public one,
+  then two mirrors), with a 60 s request timeout, and report a test that cannot reach any as
+  skipped rather than failed.
 
 ## [2.1.1] — 2026-09-26
 

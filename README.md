@@ -118,10 +118,10 @@ Submodules marked *(extra: X)* need the corresponding optional install (see
 - `cityImage.graph` and `cityImage.angles`: primal/dual graph semantics and
   angular relationships. Each dual edge records whether the move between two
   segments is allowed both ways or one way (`oneway`), and
-  `dual_graph_fromGDF(..., directed=True)` routes on those moves.
+  `dual_graph_fromGDF` keeps it, with the edge's `u` and `v`, on each edge.
 - `cityImage.centrality`: node/edge centrality wrappers (iGraph-based measures;
-  iGraph is a core dependency). Edge measures computed on a `MultiGraph`
-  (`multiGraph_fromGDF`) give parallel streets their own values.
+  iGraph is a core dependency). `append_edges_metrics` takes edge measures
+  computed on a `Graph` (`graph_fromGDF`) or a `MultiGraph` (`multiGraph_fromGDF`).
 - `cityImage.barriers`: natural and artificial barriers such as rivers,
   railways, parks, and major roads.
 - `cityImage.regions`: districts and gateways from network partitions
@@ -165,7 +165,11 @@ barriers = ci.barriers_from_osm(
 
 OSM `height` tags cover only some buildings, so `buildings_from_osm` leaves them
 out unless `keep_osm_heights=True`. `buildings_from_file` reads heights from
-`height_field` and drops buildings lower than `min_height` or without a height.
+`height_field` and drops buildings lower than `min_height`; a building without a
+height (missing, unreadable or not above zero) is kept with a NaN height. Heights
+are yours to supply: in the scores a building without one has no visual score
+(it adds nothing to the landmark score), and it is neither a target nor an
+obstruction in the 3D sight lines.
 
 ## Development checks
 
