@@ -243,8 +243,8 @@ for a visual walk-through of every case.
   nothing.
 - `pytest-timeout` in the `test` and `dev` extras, so a loop that never ends fails its test.
 - The live-OSM tests (`-m network`) use the first Overpass endpoint that answers (the public one,
-  then two mirrors), with a 60 s request timeout, and report a test that cannot reach any as
-  skipped rather than failed.
+  then two mirrors), with a 60 s request timeout. A test that cannot reach OSM runs once more, then
+  is reported as skipped, naming the host, rather than failed.
 
 ## [2.1.1] — 2026-09-26
 

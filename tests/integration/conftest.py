@@ -3,10 +3,13 @@ service reported as a skip rather than a failure.
 
 The public Overpass endpoint (overpass-api.de) often refuses connections from CI runners: each
 attempt then waits out the whole connect timeout and the test fails although cityImage never ran.
-A test that cannot reach any endpoint is skipped with the reason; any other error still fails.
+A test that cannot reach OSM is run once more, then skipped with the reason; any other error still
+fails.
 """
 
 from __future__ import annotations
+
+from urllib.parse import urlsplit
 
 import pytest
 
@@ -20,6 +23,7 @@ OVERPASS_ENDPOINTS = (
 )
 PROBE_TIMEOUT = 10  # seconds to wait for an endpoint to answer the probe
 REQUESTS_TIMEOUT = 60  # seconds for each OSM request (OSMnx's default is 180)
+RETRIES = 1  # further attempts at a test that could not reach OSM
 UNREACHABLE = (requests.exceptions.ConnectionError, requests.exceptions.Timeout)
 
 
@@ -50,10 +54,28 @@ def overpass_endpoint():
     return None  # every test that needs OSM will be skipped by pytest_runtest_call below
 
 
+def _describe(error: Exception) -> str:
+    """The error's type and the host it could not reach."""
+    url = getattr(getattr(error, "request", None), "url", None)
+    host = urlsplit(url).hostname if url else None
+    return f"{type(error).__name__} from {host}" if host else type(error).__name__
+
+
 @pytest.hookimpl(wrapper=True)
 def pytest_runtest_call(item):
-    """Report a test that could not reach OSM as skipped, with the reason."""
+    """Run a test again when it could not reach OSM, then report it as skipped, with the reason.
+
+    A failed connection to overpass-api.de usually lands on one of its unreachable addresses; the
+    next attempt resolves the name again and often gets through.
+    """
     try:
         return (yield)
     except UNREACHABLE as error:
-        pytest.skip(f"OSM (Overpass) unreachable: {type(error).__name__}")
+        last = error
+    for _ in range(RETRIES):
+        try:
+            item.runtest()
+            return None
+        except UNREACHABLE as error:
+            last = error
+    pytest.skip(f"OSM unreachable after {RETRIES + 1} attempts: {_describe(last)}")
