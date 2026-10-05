@@ -227,8 +227,9 @@ def dual_gdf(
 
     Dual nodes represent primal street segments. Dual edges connect street
     segments sharing a junction. Their length is the mean of the two original
-    segment lengths; optional angle values encode deflection between original
-    geometries.
+    segment lengths, and the deflection between the two segments is written in
+    degrees (``deg``) and in radians (``rad``), so a dual graph can be weighted by
+    either. ``angle`` is accepted for compatibility; both columns are always written.
 
     Each pair of adjacent segments is one dual edge, one row with one geometry, and its
     ``oneway`` column says which moves it allows: 0 when segment ``v`` can be entered from ``u``
@@ -304,17 +305,17 @@ def dual_gdf(
     edges_dual["oneway"] = edges_dual["oneway"].astype(int)
 
     geometries = edges.geometry.to_dict()
-    degree = angle != "radians"
-    edges_dual["deg" if degree else "rad"] = pd.Series(
+    edges_dual["rad"] = pd.Series(
         [
             angle_line_geometries(
-                geometries[u], geometries[v], degree=degree, calculation_type="deflection"
+                geometries[u], geometries[v], degree=False, calculation_type="deflection"
             )
             for u, v in zip(edges_dual["u"], edges_dual["v"], strict=True)
         ],
         index=edges_dual.index,
         dtype=float,
     )
+    edges_dual["deg"] = np.degrees(edges_dual["rad"])
 
     return nodes_dual, edges_dual
 

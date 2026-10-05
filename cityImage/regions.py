@@ -35,8 +35,20 @@ def _best_partition(graph: Any, weight: str, random_state: int | None = 0) -> di
 
     Louvain visits nodes in random order, so the partition is fixed by ``random_state``;
     ``None`` draws a different one on each call.
+
+    ``weight="topo"`` partitions on the topology alone. Any other weight must be an attribute
+    of the edges: python-louvain counts a missing one as 1 without a word, which would hand back a
+    topological partition under the weight's name.
     """
     import community
+
+    if weight != "topo" and graph.number_of_edges():
+        available = set().union(*(data.keys() for *_, data in graph.edges(data=True)))
+        if weight not in available:
+            raise ValueError(
+                f"no edge of the graph has a {weight!r} attribute to weight the partition by; "
+                f"available: {sorted(map(str, available))} (or weight=None for topology alone)"
+            )
 
     return community.best_partition(graph, weight=weight, random_state=random_state)
 

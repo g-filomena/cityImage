@@ -1238,7 +1238,9 @@ def consolidate_nodes(
             - 'geometry': consolidated node Point geometry
     consolidated_edges_gdf : GeoDataFrame (optional)
         Only returned if `consolidate_edges_too` is True.
-        Edges with endpoints mapped to new consolidated node IDs and geometries
+        Edges with endpoints mapped to new consolidated node IDs and geometries, `length`
+        recomputed; an edge whose ends merged is dropped, and of edges that now run along exactly
+        the same coordinates (either way) only the first is kept.
     """
 
     nodes_gdf = nodes_gdf.copy().set_index("nodeID", drop=False)
@@ -1378,7 +1380,24 @@ def consolidate_edges(edges_gdf, consolidated_nodes_gdf):
     consolidated_edges = edges_gdf.copy()
     consolidated_edges[["u", "v", "geometry"]] = consolidated_edges.apply(_update_edge, axis=1)
     consolidated_edges = consolidated_edges[consolidated_edges.u != consolidated_edges.v]
+    if "length" in consolidated_edges.columns:
+        consolidated_edges["length"] = consolidated_edges.geometry.length
+
+    # Two edges whose ends merged into the same nodes become one line when neither has an inner
+    # vertex (a street and the sidewalk beside it): the same street twice, so the first is kept,
+    # as clean_duplicate_edges does. Left in, they would also share a dual-node point, which
+    # GeoMason, keying nodes by coordinate, merges into one node.
+    consolidated_edges = consolidated_edges[~_same_line_twice(consolidated_edges)]
     consolidated_edges.index = consolidated_edges["edgeID"]
     consolidated_edges.index.name = None
 
     return consolidated_edges
+
+
+def _same_line_twice(edges_gdf):
+    """Mark every edge after the first that runs along exactly the same coordinates, either way."""
+    keys = []
+    for line in edges_gdf.geometry:
+        coords = tuple(tuple(coord) for coord in line.coords)
+        keys.append(min(coords, coords[::-1]))
+    return pd.Series(keys, index=edges_gdf.index).duplicated(keep="first")
