@@ -395,6 +395,39 @@ def test_consolidate_nodes_merges_close_nodes_and_returns_edges_when_requested()
     assert (cons_edges["u"] != cons_edges["v"]).all()  # the 2-3 edge collapsed and was dropped
 
 
+def test_consolidate_edges_keeps_one_of_a_street_and_its_sidewalk_turned_into_one_line():
+    # A road and the sidewalk 4 m beside it (drawn the other way), joined at each end by a
+    # crossing, and a curved street between the same corners. Consolidating each corner turns
+    # the road and the sidewalk into the same straight line; the curved street keeps its bend.
+    nodes = _nodes(
+        [
+            {"nodeID": 1, "x": 0.0, "y": 0.0},
+            {"nodeID": 2, "x": 50.0, "y": 0.0},
+            {"nodeID": 3, "x": 0.0, "y": 4.0},
+            {"nodeID": 4, "x": 50.0, "y": 4.0},
+        ]
+    )
+    edges = _edges(
+        [
+            {"edgeID": 10, "u": 1, "v": 2, "geometry": LineString([(0, 0), (50, 0)])},
+            {"edgeID": 11, "u": 4, "v": 3, "geometry": LineString([(50, 4), (0, 4)])},
+            {"edgeID": 12, "u": 1, "v": 3, "geometry": LineString([(0, 0), (0, 4)])},
+            {"edgeID": 13, "u": 2, "v": 4, "geometry": LineString([(50, 0), (50, 4)])},
+            {"edgeID": 14, "u": 1, "v": 2, "geometry": LineString([(0, 0), (25, 30), (50, 0)])},
+        ]
+    )
+
+    cons_nodes, cons_edges = nt.consolidate_nodes(
+        nodes, edges, consolidate_edges_too=True, tolerance=10
+    )
+
+    assert len(cons_nodes) == 2
+    assert sorted(cons_edges["edgeID"]) == [10, 14]  # the road once, and the curved street
+    road = cons_edges.loc[10]
+    assert list(road.geometry.coords) == [(0.0, 2.0), (50.0, 2.0)]
+    assert road["length"] == pytest.approx(50.0)  # recomputed from the new geometry
+
+
 def _line_network(n, spacing):
     """n nodes along the x axis, `spacing` metres apart, each joined to the next."""
     nodes = _nodes([{"nodeID": i, "x": i * spacing, "y": 0.0} for i in range(n)])

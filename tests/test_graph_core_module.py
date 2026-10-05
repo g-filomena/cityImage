@@ -137,4 +137,28 @@ def test_dual_gdf_of_a_single_street_has_no_dual_edges(angle):
 
     assert nodes_dual["edgeID"].tolist() == [0]
     assert edges_dual.empty
-    assert ("rad" if angle == "radians" else "deg") in edges_dual.columns
+    assert {"deg", "rad"} <= set(edges_dual.columns)
+
+
+@pytest.mark.parametrize("angle", [None, "degree", "radians"])
+def test_dual_gdf_writes_the_deflection_in_degrees_and_radians(angle):
+    import math
+
+    import geopandas as gpd
+    from shapely.geometry import LineString, Point
+
+    import cityImage as ci
+
+    nodes = gpd.GeoDataFrame(
+        {"nodeID": [0, 1, 2]}, geometry=[Point(0, 0), Point(10, 0), Point(10, 10)], crs="EPSG:3857"
+    )
+    edges = gpd.GeoDataFrame(
+        {"edgeID": [0, 1], "u": [0, 1], "v": [1, 2], "length": [10.0, 10.0]},
+        geometry=[LineString([(0, 0), (10, 0)]), LineString([(10, 0), (10, 10)])],
+        crs="EPSG:3857",
+    )
+
+    _, edges_dual = ci.dual_gdf(nodes, edges, "EPSG:3857", angle=angle)
+
+    assert edges_dual["deg"].tolist() == pytest.approx([90.0])
+    assert edges_dual["rad"].tolist() == pytest.approx([math.pi / 2])

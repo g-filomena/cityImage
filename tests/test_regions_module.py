@@ -114,3 +114,38 @@ def test_amend_nodes_membership_reassigns_small_district_and_survives_connectivi
     # The lone district is absorbed and the connectivity pass keeps everything in one district.
     assert set(out["district"]) == {1}
     assert len(out) == len(nodes_gdf)
+
+
+def _york_dual_graph():
+    nodes_gdf, edges_gdf = york_network()
+    nodes_dual, edges_dual = ci.dual_gdf(nodes_gdf, edges_gdf, "EPSG:2019")
+    return ci.dual_graph_fromGDF(nodes_dual, edges_dual), edges_gdf
+
+
+def test_identify_regions_weights_by_the_angle_the_dual_graph_carries():
+    pytest.importorskip("community")
+    dual_graph, edges_gdf = _york_dual_graph()
+
+    angular = ci.identify_regions(dual_graph, edges_gdf.copy(), weight="rad")
+    topological = ci.identify_regions(dual_graph, edges_gdf.copy())
+
+    # The weight is read: an angular partition is not the topological one under another name.
+    assert angular["p_rad"].tolist() != topological["p_topo"].tolist()
+
+
+@pytest.mark.parametrize("weight", ["radians", "angle"])
+def test_identify_regions_rejects_a_weight_no_edge_has(weight):
+    pytest.importorskip("community")
+    dual_graph, edges_gdf = _york_dual_graph()
+
+    with pytest.raises(ValueError, match="no edge of the graph has"):
+        ci.identify_regions(dual_graph, edges_gdf.copy(), weight=weight)
+
+
+def test_identify_regions_primal_rejects_a_weight_no_edge_has():
+    pytest.importorskip("community")
+    nodes_gdf, edges_gdf = york_network()
+    graph = ci.graph_fromGDF(nodes_gdf, edges_gdf)
+
+    with pytest.raises(ValueError, match="'rad'"):
+        ci.identify_regions_primal(graph, nodes_gdf, weight="rad")
