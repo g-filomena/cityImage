@@ -82,6 +82,12 @@ for a visual walk-through of every case.
 - User edge columns named `fixing` or `to_fix` are no longer ignored by attribute merging or dropped
   from the output.
 - `remove_disconnected_islands` accepts an empty network.
+- **⚠ behaviour** `consolidate_nodes(consolidate_edges_too=True)` / `consolidate_edges` recompute
+  `length` from the new geometry (it kept the length before consolidation), and keep only the
+  first of edges that now run along exactly the same coordinates, either way: a straight street
+  and the sidewalk beside it, once their ends are merged. Both were kept, and their dual nodes
+  then shared one point, which GeoMason-light merges into one node: on Melbourne, 925 segments
+  vanished from the dual graph and 7,703 dual edges were attached to the wrong node.
 
 ### Graphs, dual graphs and centrality
 - **⚠ behaviour** `graph_fromGDF` keeps the *shortest* of parallel edges (it previously kept
@@ -99,6 +105,14 @@ for a visual walk-through of every case.
   model can follow one-way moves. With `oneway=True`, a primal `oneway` of True, 1 or `"yes"` is
   one-way and False, 0, `"no"` or missing is two-way (any case); any other value, such as OSM's
   `-1` or `reversible`, raises a `ValueError` (it was silently misread).
+- **⚠ behaviour** `dual_gdf` writes the deflection between two segments in both degrees (`deg`)
+  and radians (`rad`); `angle` chose one of them and is now accepted without effect. A dual graph
+  can then be weighted by either.
+- **⚠ behaviour** `identify_regions` / `identify_regions_primal` raise a `ValueError` when no edge
+  of the graph carries the `weight` asked for; python-louvain counted the missing weight as 1, so
+  such a partition was topological under the weight's name. The districts notebooks, which ask
+  for `weight="rad"` on `dual_gdf`'s output, partitioned topologically for that reason; with `rad`
+  always written they are angular.
 - `dual_gdf` no longer fails when no two segments meet (a single street), and finds each segment's
   neighbours through the junctions instead of scanning every segment, so its time grows with the
   network rather than with its square (about 9× faster on 2,000 edges).
@@ -242,9 +256,14 @@ for a visual walk-through of every case.
   no orphan node, no pseudo-node or street mapped twice left, IDs kept, and a second pass changing
   nothing.
 - `pytest-timeout` in the `test` and `dev` extras, so a loop that never ends fails its test.
+- `tests/test_geomason_contract.py` checks the network layers, after a GeoPackage round trip,
+  against what GeoMason-light needs to build the primal and dual graphs: every segment end exactly
+  on its own junction, no two junctions (or dual nodes) at one point, single LineStrings, lengths
+  equal to the geometry, and a complete dual graph - on York, through five preparation paths.
 - The live-OSM tests (`-m network`) use the first Overpass endpoint that answers (the public one,
-  then two mirrors), with a 60 s request timeout. A test that cannot reach OSM runs once more, then
-  is reported as skipped, naming the host, rather than failed.
+  then two mirrors), with a 60 s request timeout. A test that cannot reach OSM runs again on
+  another endpoint, while one answers, then is reported as skipped, naming the host, rather than
+  failed.
 
 ## [2.1.1] — 2026-09-26
 

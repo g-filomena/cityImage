@@ -289,12 +289,15 @@ nodes, edges = ci.clean_network(nodes, edges)   # tidy what consolidation leaves
 3. **Placement.** Each consolidated node sits at the **mean** of its members; `z` is averaged
    when present. `old_nodeID` lists the merged IDs, and `nodeID` is the new cluster ID.
 4. **Edges** (`consolidate_edges_too=True`, or `consolidate_edges`): `u`/`v` are re-pointed,
-   end points are snapped to the new nodes (keeping each edge's 2D/3D dimensionality), and edges
-   that now start and end at the same node are dropped. That removes the short links inside the
-   junction, and also any loop street whose ends fall in one cluster.
+   end points are snapped to the new nodes (keeping each edge's 2D/3D dimensionality), `length`
+   is recomputed, and edges that now start and end at the same node are dropped. That removes the
+   short links inside the junction, and also any loop street whose ends fall in one cluster.
+5. **Lines drawn twice.** Two straight edges whose ends fall in the same two clusters - a street
+   and the sidewalk mapped beside it - become exactly the same line. Only the first is kept, as
+   `clean_duplicate_edges` does: left in, they would also share a dual-node point, and GeoMason,
+   which keys nodes by coordinate, would merge two segments into one dual node.
 
-Consolidation can leave pseudo-nodes, parallel edges and duplicates, so run `clean_network`
-afterwards.
+Consolidation can leave pseudo-nodes and parallel edges, so run `clean_network` afterwards.
 
 ---
 
