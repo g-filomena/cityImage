@@ -8,11 +8,13 @@ External libraries should prepare/download data; cityImage should score already-
 from __future__ import annotations
 
 import concurrent.futures
+import warnings
 from typing import Any
 
 import geopandas as gpd
 import numpy as np
 import pandas as pd
+import shapely
 from shapely.geometry import Point, Polygon, mapping
 
 from .buildings import known_heights
@@ -607,80 +609,103 @@ def compute_local_scores(
 
     # A copy, so the score columns are not added to the caller's frame.
     buildings_gdf = _with_known_heights(buildings_gdf)
-    sindex = buildings_gdf.sindex  # spatial index
 
     # Validate that local_components_weights sum to 1.0
     if not (abs(sum(local_components_weights.values()) - 1.0) < 1e-6):
         raise ValueError("Local components weights must sum to 1.0")
 
-    buildings_gdf["lScore"] = 0.0
+    geometries = np.asarray(buildings_gdf.geometry.values, dtype=object)
+    tree = shapely.STRtree(geometries)
+    columns = {
+        index: pd.to_numeric(buildings_gdf[index], errors="coerce").to_numpy(dtype=float)
+        for indexes in COMPONENT_INDEXES.values()
+        for index in indexes
+        if index in buildings_gdf.columns
+    }
+    has_height = (
+        buildings_gdf["height"].notna().to_numpy()
+        if "height" in buildings_gdf.columns
+        else np.zeros(len(buildings_gdf), dtype=bool)
+    )
 
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        future_scores = {
-            executor.submit(
-                _building_local_score,
-                row["geometry"],
-                idx,
-                buildings_gdf,
-                sindex,
-                local_components_weights,
+    scores = np.zeros(len(buildings_gdf))
+    for start in range(0, len(geometries), _LOCAL_SCORE_BATCH):
+        stop = min(start + _LOCAL_SCORE_BATCH, len(geometries))
+        # 16 segments per quarter circle, as geometry.buffer draws it (shapely.buffer draws 8).
+        buffers = shapely.buffer(geometries[start:stop], rescaling_radius, quad_segs=16)
+        focal, neighbour = tree.query(buffers, predicate="intersects")
+        order = np.argsort(focal, kind="stable")
+        focal, neighbour = focal[order], neighbour[order]
+        bounds = np.searchsorted(focal, np.arange(stop - start + 1))
+        for k in range(stop - start):
+            window = neighbour[bounds[k] : bounds[k + 1]]
+            scores[start + k] = _window_local_score(
+                window,
+                int(np.flatnonzero(window == start + k)[0]),
+                columns,
+                has_height,
                 local_indexes_weights,
-                rescaling_radius,
-            ): idx
-            for idx, row in buildings_gdf.iterrows()
-        }
-        for future in concurrent.futures.as_completed(future_scores):
-            buildingID = future_scores[future]
-            buildings_gdf.loc[buildingID, "lScore"] = future.result()
+                local_components_weights,
+            )
 
+    buildings_gdf["lScore"] = scores
     buildings_gdf["lScore_sc"] = scaling_columnDF(buildings_gdf["lScore"])
     return buildings_gdf
 
 
-def _building_local_score(
-    building_geometry,
-    buildingID,
-    buildings_gdf,
-    buildings_gdf_sindex,
-    local_components_weights,
-    local_indexes_weights,
-    radius,
-):
-    """
-    The function computes landmarkness at the local level for a single building: its components
-    rescaled over the buildings within ``radius`` (see ``_component_scores``).
+# Buildings whose neighbourhoods are queried at once: bounds the memory of the (building,
+# neighbour) pairs, which number the buildings times their neighbours.
+_LOCAL_SCORE_BATCH = 2000
 
-    Parameters
-    ----------
-    building_geometry  Polygon
-        The geometry of the building.
-    buildingID: int
-        The ID of the building.
-    buildings_gdf: Polygon GeoDataFrame
-        The GeoDataFrame containing the buildings.
-    buildings_gdf_sindex: Spatial Index
-        The spatial index of the buildings GeoDataFrame.
-    local_components_weights: dictionary
-        The weights assigned to local-level components.
-    local_indexes_weights: dictionary
-        The weights assigned to local-level indexes.
-    radius: float
-        The radius that regulates the area around the building within which the scores are recomputed.
 
-    Returns
-    -------
-    score : float
-        The computed local-level landmarkness score for the building.
-    """
-    buffer = building_geometry.buffer(radius)
-    matches_index = list(buildings_gdf_sindex.intersection(buffer.bounds))
-    matches = buildings_gdf.iloc[matches_index].copy()
-    matches = matches[matches.intersects(buffer)]
+def _scale(values, inverse=False):
+    """``scaling_columnDF`` on an array: min-max over the known values; constant values map to 0,
+    or 1 when ``inverse``; NaN stays NaN."""
+    with np.errstate(invalid="ignore"), warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        low, high = np.nanmin(values), np.nanmax(values)
+    if high == low:
+        return np.where(np.isnan(values), np.nan, 1.0 if inverse else 0.0)
+    scaled = (values - low) / (high - low)
+    return 1 - scaled if inverse else scaled
 
-    lScore = _component_scores(
-        matches, local_indexes_weights, local_components_weights, suffix="_l"
-    )
-    return lScore.loc[buildingID]
+
+def _window_local_score(window, focal, columns, has_height, indexes_weights, components_weights):
+    """The local score of the building at position ``focal`` of ``window``: ``_component_scores``
+    over the buildings of the window, read at the focal building. The same operations in the same
+    order, on arrays, so the result is the same to the last bit."""
+    rows_height = has_height[window]
+    total = 0.0
+    for component, weight in components_weights.items():
+        if component == "vScore" and not rows_height.any():
+            continue
+        rows = rows_height if component == "vScore" else np.ones(len(window), dtype=bool)
+        values = {
+            index: np.where(rows, columns[index][window], np.nan)
+            for index in COMPONENT_INDEXES.get(component, ())
+            if index in columns
+        }
+        indexes = [index for index, v in values.items() if not np.isnan(v).all()]
+        if not indexes:
+            continue
+        scaled = {
+            index: _scale(values[index], inverse=index in INVERSE_INDEXES) for index in indexes
+        }
+        if len(COMPONENT_INDEXES[component]) == 1:
+            score = scaled[indexes[0]]
+        else:
+            score = 0
+            for index in indexes:
+                score = (
+                    score
+                    + np.where(np.isnan(scaled[index]), 0.0, scaled[index])
+                    * (indexes_weights[index])
+                )
+        if component == "vScore":
+            score = np.where(rows, score, np.nan)
+        component_scaled = _scale(score)[focal]
+        total = total + (0.0 if np.isnan(component_scaled) else component_scaled) * weight
+    return total
 
 
 def assert_all_polygons(gdf: gpd.GeoDataFrame):

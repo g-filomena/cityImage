@@ -10,8 +10,10 @@ so importing :mod:`cityImage` or resolving its public API does not require the
 
 from __future__ import annotations
 
+import concurrent.futures
 import gc
 import logging
+import multiprocessing
 import shutil
 import tempfile
 import time
@@ -229,7 +231,9 @@ def compute_3d_sight_lines(
     consolidate_tolerance : float, default 0.0
         Spatial tolerance used for node consolidation.
     num_workers : int, default 20
-        Number of parallel Dask workers used for the 2D obstruction check.
+        Number of processes computing chunks in parallel, each single-threaded; the result is the
+        same whatever their number. With 1, or a single chunk, the chunks run in this process and
+        the 2D obstruction check uses this many Dask threads.
     verbose : bool, default False
         When ``True``, progress is logged at INFO on the ``cityImage.visibility3d`` logger, and
         shown: a bar with per-step 2D/3D times and an ETA each time the bar advances, plus step
@@ -311,75 +315,35 @@ def compute_3d_sight_lines(
             dir=Path(tmp_dir) if tmp_dir is not None else Path.cwd(),
         )
     )
+    context = {
+        "targets": targets,
+        "obstructions_gdf": obstructions_gdf,
+        "obstructions_sindex": obstructions_sindex,
+        "occluders": occluders,
+        "nodes_gdf": nodes_gdf,
+        "min_distance": min_observer_target_distance,
+        "max_distance": max_observer_target_distance,
+        "consolidate": consolidate,
+        "observer_height": observer_height,
+    }
     try:
-        out_prefix = "chunk_sight_lines"
-        out_files = []
-
         progress.n_chunks = len(observer_chunks)
-        for n, chunk in enumerate(observer_chunks):
-            visibles = []
-
-            potential_sight_lines = filter_distance(
-                chunk, targets, min_observer_target_distance, max_observer_target_distance
+        chunk_files = [
+            chunk_dir / f"{city_name}_chunk_sight_lines_{n}.gpkg"
+            for n in range(len(observer_chunks))
+        ]
+        if num_workers > 1 and len(observer_chunks) > 1:
+            results = _chunks_in_processes(
+                observer_chunks, chunk_files, context, num_workers, progress
             )
-            n_lines = len(potential_sight_lines)
-            if potential_sight_lines.empty:
-                progress.chunk(n + 1, 0, 0, 0.0, 0.0)
-                continue
-
-            t0 = time.perf_counter()
-            visible_2d, obstructed_2d = obstructions_2d(
-                potential_sight_lines,
-                obstructions_gdf,
-                obstructions_sindex,
-                num_workers=num_workers,
-            )
-            t_2d = time.perf_counter() - t0
-            if not visible_2d.empty:
-                visibles.append(visible_2d)
-
-            t0 = time.perf_counter()
-            visible_3d = pd.DataFrame()
-            if not obstructed_2d.empty:
-                import shapely
-
-                # Vectorised 3D segment construction (observer/target are 3D Points).
-                observer_xyz = shapely.get_coordinates(
-                    np.asarray(obstructed_2d["observer_geo"], dtype=object), include_z=True
-                )
-                target_xyz = shapely.get_coordinates(
-                    np.asarray(obstructed_2d["target_geo"], dtype=object), include_z=True
-                )
-                obstructed_2d["geometry"] = shapely.linestrings(
-                    np.stack([observer_xyz, target_xyz], axis=1)
-                )
-                visible_3d = _analytic_obstructions_3d(obstructed_2d, occluders, "matchesIDs")
-                if not visible_3d.empty:
-                    visibles.append(visible_3d)
-            t_3d = time.perf_counter() - t0
-
-            # Finalize columns and export
-            n_records = 0
-            if visibles:
-                for df in visibles:
-                    df.drop(
-                        columns=[col for col in ("visible", "z") if col in df.columns],
-                        inplace=True,
-                        errors="ignore",
-                    )
-                chunk_sight_lines = pd.concat(visibles, ignore_index=True)
-                chunk_sight_lines = _finalize_sight_lines(
-                    chunk_sight_lines, nodes_gdf, consolidate, observer_height
-                )
-                n_records = len(chunk_sight_lines)
-                chunk_file = chunk_dir / f"{city_name}_{out_prefix}_{n}.gpkg"
-                chunk_sight_lines.to_file(chunk_file)
-                out_files.append(chunk_file)
-                del chunk_sight_lines
-
-            del visibles, chunk, potential_sight_lines, visible_2d, obstructed_2d, visible_3d
-            gc.collect()
-            progress.chunk(n + 1, n_lines, n_records, t_2d, t_3d)
+        else:
+            context["threads"] = num_workers
+            results = {}
+            for n, chunk in enumerate(observer_chunks):
+                results[n] = _write_chunk(chunk, chunk_files[n], context)
+                progress.chunk(n + 1, *results[n][1:])
+        # In chunk order, whatever order they finished in, so the result does not depend on it.
+        out_files = [results[n][0] for n in sorted(results) if results[n][0] is not None]
         tmp_sight_lines = gpd.GeoDataFrame(geometry=[], crs=obstructions_gdf.crs)
         if out_files:
             with progress.step(" -- Merging chunk files"):
@@ -409,6 +373,136 @@ def compute_3d_sight_lines(
         return sight_lines
     finally:
         shutil.rmtree(chunk_dir, ignore_errors=True)
+
+
+def _chunk_sight_lines(chunk, context):
+    """The visible sight lines from one chunk of observers: the candidates within the distance
+    band, their 2D obstruction split, and the analytic 3D test of the 2D-obstructed ones.
+
+    Returns
+    -------
+    tuple
+        The visible lines (None when there are none), the number of candidates, and the 2D and
+        3D times in seconds.
+    """
+    potential_sight_lines = filter_distance(
+        chunk, context["targets"], context["min_distance"], context["max_distance"]
+    )
+    n_lines = len(potential_sight_lines)
+    if potential_sight_lines.empty:
+        return None, 0, 0.0, 0.0
+
+    visibles = []
+    t0 = time.perf_counter()
+    visible_2d, obstructed_2d = obstructions_2d(
+        potential_sight_lines,
+        context["obstructions_gdf"],
+        context["obstructions_sindex"],
+        num_workers=context["threads"],
+    )
+    t_2d = time.perf_counter() - t0
+    if not visible_2d.empty:
+        visibles.append(visible_2d)
+
+    t0 = time.perf_counter()
+    if not obstructed_2d.empty:
+        import shapely
+
+        # Vectorised 3D segment construction (observer/target are 3D Points).
+        observer_xyz = shapely.get_coordinates(
+            np.asarray(obstructed_2d["observer_geo"], dtype=object), include_z=True
+        )
+        target_xyz = shapely.get_coordinates(
+            np.asarray(obstructed_2d["target_geo"], dtype=object), include_z=True
+        )
+        obstructed_2d["geometry"] = shapely.linestrings(
+            np.stack([observer_xyz, target_xyz], axis=1)
+        )
+        visible_3d = _analytic_obstructions_3d(obstructed_2d, context["occluders"], "matchesIDs")
+        if not visible_3d.empty:
+            visibles.append(visible_3d)
+    t_3d = time.perf_counter() - t0
+
+    if not visibles:
+        return None, n_lines, t_2d, t_3d
+    for df in visibles:
+        df.drop(
+            columns=[c for c in ("visible", "z") if c in df.columns], inplace=True, errors="ignore"
+        )
+    sight_lines = _finalize_sight_lines(
+        pd.concat(visibles, ignore_index=True),
+        context["nodes_gdf"],
+        context["consolidate"],
+        context["observer_height"],
+    )
+    return sight_lines, n_lines, t_2d, t_3d
+
+
+def _write_chunk(chunk, chunk_file, context):
+    """Computes one chunk and writes its visible lines to ``chunk_file``.
+
+    Returns
+    -------
+    tuple
+        The file (None when no line is visible), the number of candidates and of visible lines,
+        and the 2D and 3D times.
+    """
+    sight_lines, n_lines, t_2d, t_3d = _chunk_sight_lines(chunk, context)
+    if sight_lines is None:
+        return None, n_lines, 0, t_2d, t_3d
+    sight_lines.to_file(chunk_file)
+    n_records = len(sight_lines)
+    del sight_lines
+    gc.collect()
+    return chunk_file, n_lines, n_records, t_2d, t_3d
+
+
+# The shared inputs of a worker process, set once by _init_chunk_worker.
+_WORKER_CONTEXT = None
+
+
+def _init_chunk_worker(context):
+    """Builds a worker's spatial index and occluders, which are not sent between processes."""
+    global _WORKER_CONTEXT
+    context = dict(context)
+    context["obstructions_sindex"] = context["obstructions_gdf"].sindex
+    context["occluders"] = _AnalyticOccluders(context["obstructions_gdf"])
+    _WORKER_CONTEXT = context
+
+
+def _run_chunk(n, chunk, chunk_file):
+    return n, _write_chunk(chunk, chunk_file, _WORKER_CONTEXT)
+
+
+def _chunks_in_processes(observer_chunks, chunk_files, context, num_workers, progress):
+    """Computes the chunks in ``num_workers`` processes, one chunk each at a time.
+
+    The chunks are independent and each runs its 2D split single-threaded, so the processes do
+    not contend for the interpreter lock as threads would. Each worker receives the inputs once
+    and builds its own index and occluders. Workers start from a fork server where there is one,
+    otherwise they spawn: never forked from this process, whose threads (Dask's, the caller's)
+    could leave a forked child waiting on a lock no thread will release.
+    """
+    methods = multiprocessing.get_all_start_methods()
+    method = "forkserver" if "forkserver" in methods else "spawn"
+    shipped = {k: v for k, v in context.items() if k not in ("obstructions_sindex", "occluders")}
+    shipped["threads"] = 1
+    results = {}
+    with concurrent.futures.ProcessPoolExecutor(
+        max_workers=num_workers,
+        mp_context=multiprocessing.get_context(method),
+        initializer=_init_chunk_worker,
+        initargs=(shipped,),
+    ) as pool:
+        futures = [
+            pool.submit(_run_chunk, n, chunk, chunk_files[n])
+            for n, chunk in enumerate(observer_chunks)
+        ]
+        for done, future in enumerate(concurrent.futures.as_completed(futures), start=1):
+            n, result = future.result()
+            results[n] = result
+            progress.chunk(done, *result[1:])
+    return results
 
 
 ## Preparation ###########################

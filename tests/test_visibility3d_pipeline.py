@@ -182,3 +182,55 @@ def test_observer_eye_height_clears_a_wall_ground_level_does_not(monkeypatch, tm
     at_eye = run(1.6)
     assert len(at_eye) > 0
     assert at_eye.geometry.iloc[0].coords[0][2] == pytest.approx(1.6)
+
+
+def _city_for_chunks():
+    """Twelve observers east of a block of buildings, so a small chunk size splits them into one
+    chunk each and some lines are obstructed in 2D, some in 3D, some visible."""
+    nodes = gpd.GeoDataFrame(
+        {
+            "nodeID": range(12),
+            "x": [500.0 + 10 * (i % 3) for i in range(12)],
+            "y": [5.0 + 8 * i for i in range(12)],
+            "z": [2.0] * 12,
+        },
+        geometry=[Point(500.0 + 10 * (i % 3), 5.0 + 8 * i) for i in range(12)],
+        crs=CRS,
+    )
+    heights = [20.0, 25.0, 8.0, 40.0, 12.0, 30.0]
+    buildings = gpd.GeoDataFrame(
+        {"buildingID": range(6), "height": heights, "base": [1.0] * 6},
+        geometry=[
+            Polygon([(x, y), (x + 10, y), (x + 10, y + 10), (x, y + 10)])
+            for x, y in [(0, 0), (0, 20), (150, 10), (0, 60), (200, 40), (0, 90)]
+        ],
+        crs=CRS,
+    )
+    edges = gpd.GeoDataFrame(
+        {"edgeID": [1], "u": [0], "v": [1]}, geometry=[LineString([(500, 5), (510, 13)])], crs=CRS
+    )
+    return nodes, buildings, edges
+
+
+def test_sight_lines_are_the_same_computed_in_parallel(monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+    nodes, buildings, edges = _city_for_chunks()
+
+    def run(workers):
+        return ci.compute_3d_sight_lines(
+            nodes_gdf=nodes,
+            target_buildings_gdf=buildings.copy(),
+            obstructions_buildings_gdf=buildings.copy(),
+            edges_gdf=edges,
+            city_name="Test",
+            distance_along=5,
+            min_observer_target_distance=100,
+            sight_lines_chunk_size=10,
+            num_workers=workers,
+        )
+
+    serial, parallel = run(1), run(3)
+    assert len(serial) > 0
+    assert list(serial.columns) == list(parallel.columns)
+    assert serial.drop(columns="geometry").equals(parallel.drop(columns="geometry"))
+    assert (serial.geometry.to_wkb() == parallel.geometry.to_wkb()).all()

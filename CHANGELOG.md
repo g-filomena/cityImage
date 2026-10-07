@@ -171,8 +171,19 @@ for a visual walk-through of every case.
 - **⚠ behaviour** `pragmatic_score` gives a building with no other building within
   `search_radius` a `prag` of 1 (as unexpected as can be); it was 0.
 - `score_buildings_local` no longer writes into the caller's frame.
+- `compute_local_scores` / `score_buildings_local` compute each building's neighbourhood with
+  arrays rather than a frame copy per building: the same scores to the last bit (a test compares
+  them with the per-building computation), about 50 times faster - 64 s instead of ~53 min on
+  25,508 Turin buildings at an 800 m radius.
 
 ### 3D visibility
+- `compute_3d_sight_lines` computes its chunks in `num_workers` processes, each single-threaded,
+  and merges them in chunk order, so the result is the same whatever the number of workers (a test
+  compares one with three). The chunks ran one after the other, with only the 2D split threaded,
+  which the interpreter lock kept to a few cores: London's 1,710 chunks took 13 h on 70 workers.
+  Workers start from a fork server, or spawn, and each receives the inputs once; they are never
+  forked from the caller, whose threads could leave a child waiting on a lock. With
+  `num_workers=1`, or a single chunk, it runs in the calling process as before.
 - **⚠ behaviour** `observer_height` (default `1.6` m) on `compute_3d_sight_lines` and the
   sight-line helpers: sight lines start at eye level (node `z` + `observer_height`) rather than at
   node `z`.

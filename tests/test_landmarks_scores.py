@@ -11,7 +11,7 @@ import math
 import geopandas as gpd
 import numpy as np
 import pytest
-from shapely.geometry import LineString, Point, Polygon
+from shapely.geometry import LineString, Point, Polygon, box
 
 import cityImage as ci
 
@@ -247,3 +247,58 @@ def test_cultural_score_without_historic_geometries_is_not_computed():
     historic = gpd.GeoDataFrame({"importance": [1.0]}, geometry=[None], crs=CRS)
     out = ci.cultural_score(buildings, historic_elements_gdf=historic)
     assert out["cult"].isna().all()  # no historic layer to read
+
+
+def _reference_local_scores(buildings, indexes_weights, components_weights, radius):
+    """The per-building local score as cityImage computed it before 2.2.0: the frame of the
+    buildings intersecting the building's buffer, rescaled by ``_component_scores``."""
+    from cityImage.landmarks import _component_scores, _with_known_heights
+
+    buildings = _with_known_heights(buildings)
+    sindex = buildings.sindex
+    scores = []
+    for position, geometry in enumerate(buildings.geometry):
+        buffer = geometry.buffer(radius)
+        matches = buildings.iloc[list(sindex.intersection(buffer.bounds))].copy()
+        matches = matches[matches.intersects(buffer)]
+        total = _component_scores(matches, indexes_weights, components_weights, suffix="_l")
+        scores.append(total.loc[buildings.index[position]])
+    return np.array(scores)
+
+
+def _awkward_buildings(n, seed):
+    """Buildings scattered over 2 km with every index, some missing, some constant, some heights
+    unknown, so each neighbourhood hits a different branch of the rescaling."""
+    rng = np.random.default_rng(seed)
+    xs, ys = rng.uniform(0, 2000, n), rng.uniform(0, 2000, n)
+    sizes = rng.uniform(5, 30, n)
+    geometry = [box(x, y, x + s, y + s) for x, y, s in zip(xs, ys, sizes, strict=True)]
+    data = {"buildingID": np.arange(n)}
+    for index in ("3dvis", "fac", "area", "2dvis", "neigh", "road", "cult", "prag"):
+        values = rng.uniform(0, 10, n)
+        values[rng.random(n) < 0.15] = np.nan
+        data[index] = values
+    data["cult"] = np.where(rng.random(n) < 0.9, 0.0, 1.0)  # mostly constant within a window
+    heights = rng.uniform(3, 60, n)
+    heights[rng.random(n) < 0.3] = np.nan
+    data["height"] = heights
+    return gpd.GeoDataFrame(data, geometry=geometry, crs="EPSG:3003")
+
+
+@pytest.mark.parametrize("seed, radius", [(0, 150), (1, 400), (2, 3000)])
+def test_compute_local_scores_equals_the_per_building_computation(seed, radius):
+    local_indexes = {
+        "3dvis": 0.5,
+        "fac": 0.3,
+        "height": 0.2,
+        "area": 0.4,
+        "2dvis": 0.0,
+        "neigh": 0.3,
+        "road": 0.3,
+    }
+    buildings = _awkward_buildings(300, seed)
+    out = ci.compute_local_scores(
+        buildings, local_indexes, LOCAL_COMPONENTS, rescaling_radius=radius
+    )
+    expected = _reference_local_scores(buildings, local_indexes, LOCAL_COMPONENTS, radius)
+    np.testing.assert_array_equal(out["lScore"].to_numpy(), expected)
