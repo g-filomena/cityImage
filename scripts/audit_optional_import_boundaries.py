@@ -15,6 +15,7 @@ from pathlib import Path
 
 OPTIONAL_IMPORT_ROOTS = {
     "dask",
+    "folium",
     "mapclassify",
     "matplotlib",
     "mpl_toolkits",
@@ -25,6 +26,7 @@ OPTIONAL_IMPORT_ROOTS = {
 
 ALLOWED_BY_ROOT = {
     "dask": {"cityImage/visibility3d.py"},
+    "folium": {"cityImage/interactive.py"},
     "mapclassify": {"cityImage/plotting/colors.py", "cityImage/plotting/static.py"},
     "matplotlib": {"cityImage/plotting/colors.py", "cityImage/plotting/static.py"},
     "mpl_toolkits": {"cityImage/plotting/static.py"},

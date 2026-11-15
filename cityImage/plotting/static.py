@@ -1183,3 +1183,122 @@ def _set_axes_frame(axes_frame=False, ax=None, black_background=False, text_colo
         ax.spines[spine].set_color(text_color)
     if black_background:
         ax.set_facecolor("black")
+
+
+# Width of a path, size of a node, by Lynch class (1-4): the strongest elements stand out, as in
+# Lynch's maps, and the many weak ones stay light.
+_PATH_WIDTH = {1: 3.4, 2: 2.2, 3: 1.2, 4: 0.7}
+_NODE_SIZE = {1: 50, 2: 22, 3: 5, 4: 1.5}
+
+
+def plot_city_image(
+    city_image,
+    figsize=(10, 10),
+    title=None,
+    black_background=False,
+    legend=True,
+    gateways=False,
+):
+    """Map the five elements of a ``CityImage`` (from ``image_of_the_city``) on one figure.
+
+    Districts are filled polygons; the street network is a light base, and the streets, nodes and
+    buildings ranked in Lynch's ranges (``lynch_class`` 1-4, 1 the strongest) are drawn on it:
+    paths wider, nodes larger, landmarks darker for a stronger class. Edges (barriers) are dashed lines. With
+    ``gateways=True`` the gateway nodes are hollow points. Returns the figure.
+    """
+    background = "black" if black_background else "white"
+    ink = "white" if black_background else "black"
+    fig, ax = plt.subplots(figsize=figsize)
+    fig.patch.set_facecolor(background)
+    ax.set_facecolor(background)
+    handles = []
+
+    if city_image.districts is not None and not city_image.districts.empty:
+        districts = city_image.districts
+        cmap = rand_cmap(nlabels=max(len(districts), 2), type_color="soft")
+        districts.plot(
+            ax=ax,
+            column="district",
+            cmap=cmap,
+            alpha=0.3,
+            zorder=0,
+            edgecolor=background,
+            linewidth=1.0,
+        )
+        handles.append(mpatches.Patch(color="grey", alpha=0.3, label="Districts"))
+
+    paths = city_image.paths
+    if paths is not None and not paths.empty:
+        paths.plot(ax=ax, color=ink, linewidth=0.25, alpha=0.25, zorder=1)
+        if "lynch_class" in paths.columns:
+            for lynch_class, width in _PATH_WIDTH.items():
+                ranked = paths[paths["lynch_class"] == lynch_class]
+                if not ranked.empty:
+                    ranked.plot(ax=ax, color="#d95f02", linewidth=width, zorder=3)
+            if (paths["lynch_class"] >= 1).any():
+                handles.append(Line2D([], [], color="#d95f02", linewidth=2.2, label="Paths"))
+
+    if city_image.edges is not None and not city_image.edges.empty:
+        city_image.edges.plot(ax=ax, color="#1b9e77", linewidth=2.0, linestyle="--", zorder=2)
+        handles.append(
+            Line2D([], [], color="#1b9e77", linewidth=2.0, linestyle="--", label="Edges")
+        )
+
+    landmarks = city_image.landmarks
+    if landmarks is not None and not landmarks.empty:
+        landmarks.plot(ax=ax, color=ink, alpha=0.08, zorder=1)
+        if "lynch_class" in landmarks.columns:
+            weak = landmarks[landmarks["lynch_class"].isin([3, 4])]
+            strong = landmarks[landmarks["lynch_class"].isin([1, 2])]
+            if not weak.empty:
+                weak.plot(ax=ax, color="#7570b3", alpha=0.25, zorder=4)
+            if not strong.empty:
+                strong.plot(ax=ax, color="#4a3f9e", edgecolor="#4a3f9e", linewidth=0.6, zorder=4)
+            if not (weak.empty and strong.empty):
+                handles.append(mpatches.Patch(color="#4a3f9e", label="Landmarks"))
+
+    nodes = city_image.nodes
+    if nodes is not None and not nodes.empty:
+        if "lynch_class" in nodes.columns:
+            ranked = nodes[nodes["lynch_class"] >= 1]
+            if not ranked.empty:
+                ranked.plot(
+                    ax=ax,
+                    color="#e7298a",
+                    markersize=ranked["lynch_class"].map(_NODE_SIZE),
+                    zorder=5,
+                )
+                handles.append(
+                    Line2D([], [], color="#e7298a", marker="o", linestyle="", label="Nodes")
+                )
+        if gateways and "gateway" in nodes.columns:
+            gateway_nodes = nodes[nodes["gateway"] == 1]
+            if not gateway_nodes.empty:
+                gateway_nodes.plot(
+                    ax=ax, facecolor="none", edgecolor=ink, markersize=12, linewidth=0.6, zorder=5
+                )
+                handles.append(
+                    Line2D(
+                        [],
+                        [],
+                        color=ink,
+                        marker="o",
+                        markerfacecolor="none",
+                        linestyle="",
+                        label="Gateways",
+                    )
+                )
+
+    ax.set_axis_off()
+    ax.set_aspect("equal")
+    if title:
+        ax.set_title(title, color=ink, fontsize=15)
+    if legend and handles:
+        ax.legend(
+            handles=handles,
+            loc="upper left",
+            bbox_to_anchor=(1.0, 1.0),
+            frameon=False,
+            labelcolor=ink,
+        )
+    return fig

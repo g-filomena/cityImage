@@ -28,6 +28,18 @@ Entries marked **⚠ behaviour** change the output of an existing call with the 
 
 ### Added
 
+- `image_of_the_city(place)` returns the five elements of the Image of the City in one call:
+  paths, nodes, edges (barriers), districts and landmarks, as a `CityImage` with `plot()` and
+  `to_file()`. It follows Filomena, Verstegen & Manley (2019): nodes from betweenness, paths
+  from angular betweenness, districts from angle-weighted modularity on the drive network of the
+  same place, landmarks from the global score. Nodes, paths and landmarks are ranked in Lynch's
+  ranges (`lynch_class` 1 for the strongest, over 0.75, down to 4; 0 below). `CityImageConfig` holds the parameters.
+- `plot_city_image(city_image)` maps the five elements on one figure. *(extra: plot)*
+- `CityImage.explore()` (`explore_city_image`): an interactive web map of the five elements with
+  the symbols of Lynch's legend, black on white: bars and dashes for paths, the comb for edges,
+  circles for nodes, star and triangles for landmarks, freehand dotted or hatched districts. One
+  layer per Lynch class, switched by its symbol. New `interactive` extra (folium), also in
+  `all`.
 - Python 3.13 in the CI test matrix and the package classifiers.
 - `CITATION.cff`, so GitHub shows how to cite cityImage.
 - `CONTRIBUTING.md`, a code of conduct, issue forms and a pull request template.

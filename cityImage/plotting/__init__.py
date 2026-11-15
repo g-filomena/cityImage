@@ -12,6 +12,7 @@ from .colors import kindlmann, lighten_color, normalize, rand_cmap, random_color
 from .static import (
     MultiPlot,
     Plot,
+    plot_city_image,
     plot_gdf,
     plot_grid_gdf_columns,
     plot_grid_gdfs_column,
@@ -23,6 +24,7 @@ __all__ = [
     "kindlmann",
     "lighten_color",
     "normalize",
+    "plot_city_image",
     "plot_gdf",
     "plot_grid_gdf_columns",
     "plot_grid_gdfs_column",

@@ -52,12 +52,16 @@ height = [
   "rasterio>=1.3",
   "rasterstats>=0.19",
 ]
+interactive = [
+  "folium>=0.14",
+]
 visibility3d = [
   "dask>=2025.7.0",
   "psutil>=5.9",
 ]
 all = [
   "dask>=2025.7.0",
+  "folium>=0.14",
   "mapclassify>=2.6",
   "matplotlib>=3.8",
   "psutil>=5.9",
