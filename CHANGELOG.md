@@ -16,6 +16,10 @@ Entries marked **⚠ behaviour** change the output of an existing call with the 
   0.25 / 0.35 / 0.10 / 0.30 and 0.40 / 0.00 / 0.30 / 0.30). `LandmarkScoringConfig` searches the
   pragmatic score within 200 m (was 1500 m), as the paper. Pass the old weights to keep the
   old scores.
+- `structural_score` is about 6 times faster and `pragmatic_score` about 70 times faster on a
+  few hundred buildings, with the same results: they read only the geometries instead of
+  copying every attribute column per building, query the spatial index once, and clip the
+  visibility rays without unioning the obstructions.
 - The package metadata now states the license as GPL-3.0-or-later, as the README already did
   (it said GPL-3.0-only).
 - Development status is now Production/Stable.

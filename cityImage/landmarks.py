@@ -55,6 +55,11 @@ def _advance_visibility_areas(
     """
     from .visibility2d import visibility_polygon2d
 
+    # The isovists read only the obstruction geometries: a geometry-only frame is lighter to
+    # index and to ship to each worker process.
+    obstructions_gdf = gpd.GeoDataFrame(geometry=obstructions_gdf.geometry.reset_index(drop=True))
+    sindex = obstructions_gdf.sindex
+
     def _serial():
         return [
             visibility_polygon2d(geometry, obstructions_gdf, sindex, max_expansion_distance)
@@ -150,39 +155,19 @@ def structural_score(
         advance_vis_expansion_distance,
         workers,
     )
-    buildings_gdf["neigh"] = buildings_gdf.geometry.apply(
-        lambda row: _number_neighbours(row, obstructions_gdf, sindex, radius=neighbours_radius)
+    buildings_gdf["neigh"] = _numbers_neighbours(
+        buildings_gdf.geometry, obstructions_gdf, radius=neighbours_radius
     )
 
     return buildings_gdf
 
 
-def _number_neighbours(geometry, obstructions_gdf, obstructions_sindex, radius):
-    """
-    The function counts the number of neighbours, in a GeoDataFrame, around a given geometry, within a
-    search radius.
-
-    Parameters
-    ----------
-    geometry: Shapely Geometry
-        The geometry for which neighbors are counted.
-    obstructions_gdf: GeoDataFrame
-        The GeoDataFrame containing the obstructions.
-    obstructions_sindex: Spatial Index
-        The spatial index of the obstructions GeoDataFrame.
-    radius: float
-        The search radius for neighboring buildings.
-
-    Returns
-    -------
-    int
-        The number of neighbors.
-    """
-    buffer = geometry.buffer(radius)
-    possible_neigh_index = list(obstructions_sindex.intersection(buffer.bounds))
-    possible_neigh = obstructions_gdf.iloc[possible_neigh_index]
-    precise_neigh = possible_neigh[possible_neigh.intersects(buffer)]
-    return len(precise_neigh)
+def _numbers_neighbours(geometries, obstructions_gdf, radius):
+    """For each geometry, the number of obstructions intersecting its ``radius`` buffer, the
+    geometry itself included when it is an obstruction; one query of the spatial index."""
+    buffers = geometries.buffer(radius)
+    positions, _ = obstructions_gdf.sindex.query(buffers, predicate="intersects")
+    return np.bincount(positions, minlength=len(buffers)).astype(int)
 
 
 def visibility_score(buildings_gdf, sight_lines=None, method="longest"):
@@ -444,28 +429,34 @@ def pragmatic_score(
         lambda x: float(x[1]) if isinstance(x, tuple) else 1.0
     )
 
-    sindex = gdf_exploded.sindex
-
-    def _unexpectedness(row_id, building_geometry, building_label):
-        buf = building_geometry.buffer(search_radius)
-        candidate_idx = list(sindex.intersection(buf.bounds))
-        possible = gdf_exploded.iloc[candidate_idx]
-        matches = possible[possible.intersects(buf)]
-        matches = matches[matches["_ci_row_id"] != row_id]
-
-        total_w = float(matches["_w"].sum())
-        if total_w <= 0:  # no neighbour
-            return 1.0
-
-        Nj_w = float(matches.loc[matches[land_uses_column] == building_label, "_w"].sum())
-        return 1.0 - (Nj_w / total_w)
-
-    gdf_exploded["prag_temp"] = gdf_exploded.apply(
-        lambda row: _unexpectedness(row["_ci_row_id"], row.geometry, row[land_uses_column]),
-        axis=1,
+    # Unexpectedness of each (building, land use): 1 - the weighted share of that land use among
+    # the land uses of the other buildings within ``search_radius``; 1 with no such building.
+    # One query of the spatial index pairs each building's buffer with the land-use rows it
+    # meets.
+    row_ids = gdf_exploded["_ci_row_id"].to_numpy()
+    buffers = gdf.geometry.buffer(search_radius)
+    building_pos, row_pos = gdf_exploded.sindex.query(buffers, predicate="intersects")
+    pairs = pd.DataFrame(
+        {
+            "building": gdf["_ci_row_id"].to_numpy()[building_pos],
+            "neighbour": row_ids[row_pos],
+            "label": gdf_exploded[land_uses_column].to_numpy()[row_pos],
+            "w": gdf_exploded["_w"].to_numpy()[row_pos],
+        }
     )
+    pairs = pairs[pairs["building"] != pairs["neighbour"]]
+    total_w = pairs.groupby("building")["w"].sum()
+    label_w = pairs.groupby(["building", "label"])["w"].sum()
 
-    scores = gdf_exploded.groupby("_ci_row_id")["prag_temp"].max()
+    own = pd.DataFrame({"building": row_ids, "label": gdf_exploded[land_uses_column].to_numpy()})
+    total = own["building"].map(total_w).fillna(0.0).to_numpy()
+    same = (
+        pd.Series(label_w.reindex(pd.MultiIndex.from_frame(own)).to_numpy()).fillna(0.0).to_numpy()
+    )
+    with np.errstate(divide="ignore", invalid="ignore"):
+        prag = np.where(total > 0, 1.0 - same / total, 1.0)
+
+    scores = pd.Series(prag).groupby(row_ids).max()
     gdf["prag"] = gdf["_ci_row_id"].map(scores).astype(float)
 
     return gdf.drop(columns=["_ci_row_id", "_w_list", "_lu_w"], errors="ignore")

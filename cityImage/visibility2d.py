@@ -10,7 +10,6 @@ from __future__ import annotations
 import numpy as np
 import shapely
 from shapely.geometry import LineString, Point, Polygon
-from shapely.ops import unary_union
 
 from .angles import get_coord_angle
 
@@ -64,7 +63,8 @@ def visibility_polygon2d(
         ]
     )
     lines = [LineString([origin, Point(x)]) for x in coords]
-    rays = unary_union(lines)
+    # The rays meet only at the origin, so their union is the plain multi-line.
+    rays = shapely.multilinestrings(lines)
 
     # Spatial pre-filter: only obstructions whose bounding box meets the ray fan can be
     # crossed by it, so query the index and run the exact (comparatively costly) `crosses`
@@ -73,44 +73,34 @@ def visibility_polygon2d(
     # candidates) but avoids the per-building full-table scan that dominated runtime. The
     # frame's own cached index is used, so `obstructions_sindex` stays a no-op accepted for
     # backward compatibility.
+    # Only the geometries are read: taking rows of the whole frame would copy every attribute
+    # column for each building, which cost more than the geometry work itself.
     del obstructions_sindex
     candidate_positions = obstructions_gdf.sindex.query(rays)
-    candidates = obstructions_gdf.iloc[candidate_positions]
+    candidates = obstructions_gdf.geometry.array[candidate_positions].to_numpy()
 
-    obstacles = candidates[candidates.crosses(rays)]
-    obstacles = obstacles[obstacles.geometry != building_geometry]
-    obstacles = obstacles[~obstacles.geometry.within(building_geometry.convex_hull)]
+    obstacles = candidates[shapely.crosses(candidates, rays)]
+    obstacles = obstacles[np.array([geometry != building_geometry for geometry in obstacles], bool)]
+    obstacles = obstacles[~shapely.within(obstacles, building_geometry.convex_hull)]
 
-    def _clip_to_nearest_obstruction(ray, obstruction_union):
-        """Shorten one ray to the obstruction vertex nearest the origin.
-
-        Works for every geometry type a line/polygon intersection can yield
-        (LineString, MultiLineString, Point, MultiPoint, GeometryCollection) and
-        returns the full ray when there is no real hit. Picking the nearest vertex
-        explicitly avoids relying on the order in which GEOS returns the pieces (and,
-        unlike the previous code, does not silently ignore point/collection hits).
-        """
-        intersection = ray.intersection(obstruction_union)
-        if intersection.is_empty:
-            return ray
-        inter_coords = shapely.get_coordinates(intersection)
-        if len(inter_coords) == 0:
-            return ray
-        squared_distance = (inter_coords[:, 0] - origin.x) ** 2 + (
-            inter_coords[:, 1] - origin.y
-        ) ** 2
-        nearest = inter_coords[int(np.argmin(squared_distance))]
-        return LineString([origin, Point(nearest)])
-
+    # Each ray ends at the obstruction point nearest the origin: the nearest coordinate of its
+    # intersections with every obstacle, which is that of its intersection with their union,
+    # without computing the union. Point, line and collection hits all count.
+    tips = coords.copy()
     if len(obstacles) > 0:
-        obstruction_union = unary_union(obstacles.geometry)
-        clipped_lines = [_clip_to_nearest_obstruction(line, obstruction_union) for line in lines]
-    else:
-        clipped_lines = lines
+        ray_array = np.asarray(lines, dtype=object)
+        hits = shapely.intersection(ray_array[:, None], obstacles[None, :])
+        hit_coords, hit_index = shapely.get_coordinates(hits.ravel(), return_index=True)
+        if len(hit_coords):
+            ray_index = hit_index // len(obstacles)
+            squared = (hit_coords[:, 0] - origin.x) ** 2 + (hit_coords[:, 1] - origin.y) ** 2
+            order = np.lexsort((squared, ray_index))
+            first = order[np.r_[True, ray_index[order][1:] != ray_index[order][:-1]]]
+            tips[ray_index[first]] = hit_coords[first]
 
     # The ring runs through the ray tips only: closing it through the origin would cut it along
     # the first and last rays and leave out the slice between them.
-    polygon = Polygon([line.coords[1] for line in clipped_lines])
+    polygon = Polygon(tips)
     visible_polygon = polygon.difference(building_geometry)
     if visible_polygon.is_empty:
         visible_polygon = polygon.buffer(0).difference(building_geometry)
