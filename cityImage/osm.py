@@ -70,6 +70,14 @@ def _distance_arg(distance: float | None, download_method: str) -> float | None:
     return distance
 
 
+def _required_distance(distance: float | None, download_method: str) -> float:
+    """The distance of a distance-based download method, which must be given."""
+    checked = _distance_arg(distance, download_method)
+    if checked is None:
+        raise ValueError(f"distance is required when download_method is {download_method!r}")
+    return checked
+
+
 def _unit_overlaps_for_land_uses(value):
     """Return equal overlap weights matching a land-use list."""
     if isinstance(value, tuple | set | list):
@@ -112,24 +120,25 @@ def features_from_osm(
     download-method dispatch used by the OSM bridge helpers.
     """
     _validate_download_method(download_method)
+    osm_tags = dict(tags)
 
     try:
         if download_method == "OSMplace":
-            features = ox.features_from_place(query, tags=tags)
+            features = ox.features_from_place(query, tags=osm_tags)
         elif download_method == "distance_from_address":
             features = ox.features_from_address(
                 query,
-                tags=tags,
-                dist=_distance_arg(distance, download_method),
+                tags=osm_tags,
+                dist=_required_distance(distance, download_method),
             )
         elif download_method == "distance_from_point":
             features = ox.features_from_point(
                 query,
-                tags=tags,
-                dist=_distance_arg(distance, download_method),
+                tags=osm_tags,
+                dist=_required_distance(distance, download_method),
             )
         elif download_method == "polygon":
-            features = ox.features_from_polygon(query, tags=tags)
+            features = ox.features_from_polygon(query, tags=osm_tags)
         else:
             raise ValueError(f"Unknown download_method: {download_method}")
     except Exception as exc:
@@ -236,7 +245,7 @@ def network_from_osm(
         _validate_download_method(download_method)
         # Validated as for the other network types, then passed on only when given, so the
         # pedestrian default applies otherwise.
-        pedestrian_kwargs = {}
+        pedestrian_kwargs: dict[str, Any] = {}
         if _distance_arg(distance, download_method) is not None:
             pedestrian_kwargs["distance"] = distance
         return pedestrian_network_from_osm(
@@ -259,7 +268,7 @@ def network_from_osm(
         elif download_method == "distance_from_address":
             graph = ox.graph_from_address(
                 query,
-                dist=_distance_arg(distance, download_method),
+                dist=_required_distance(distance, download_method),
                 network_type=network_type,
                 retain_all=True,
                 simplify=True,
@@ -267,7 +276,7 @@ def network_from_osm(
         elif download_method == "distance_from_point":
             graph = ox.graph_from_point(
                 query,
-                dist=_distance_arg(distance, download_method),
+                dist=_required_distance(distance, download_method),
                 network_type=network_type,
                 retain_all=True,
                 simplify=True,

@@ -74,6 +74,13 @@ def _local_end_segment(coords: list[Any]) -> tuple[tuple[float, float], tuple[fl
     return (_coord_tuple(coords[-2]), _coord_tuple(coords[-1]))
 
 
+def _flip(
+    segment: tuple[tuple[float, float], tuple[float, float]],
+) -> tuple[tuple[float, float], tuple[float, float]]:
+    """Return the segment with its endpoints swapped."""
+    return segment[1], segment[0]
+
+
 def _oriented_lines(
     coords_a: list[Any],
     coords_b: list[Any],
@@ -87,41 +94,39 @@ def _oriented_lines(
 
     if calculation_type == "angular_change":
         if end_a == end_b:
-            return _local_end_segment(coords_a), tuple(reversed(_local_end_segment(coords_b)))
+            return _local_end_segment(coords_a), _flip(_local_end_segment(coords_b))
         if end_a == start_b:
             return _local_end_segment(coords_a), _local_start_segment(coords_b)
         if start_a == start_b:
-            return tuple(reversed(_local_start_segment(coords_a))), _local_start_segment(coords_b)
+            return _flip(_local_start_segment(coords_a)), _local_start_segment(coords_b)
         if start_a == end_b:
-            return tuple(reversed(_local_start_segment(coords_a))), tuple(
-                reversed(_local_end_segment(coords_b))
-            )
+            return _flip(_local_start_segment(coords_a)), _flip(_local_end_segment(coords_b))
 
     elif calculation_type == "deflection":
         full_a = _full_segment(coords_a)
         full_b = _full_segment(coords_b)
 
         if end_a == end_b:
-            return full_a, tuple(reversed(full_b))
+            return full_a, _flip(full_b)
         if end_a == start_b:
             return full_a, full_b
         if start_a == start_b:
-            return tuple(reversed(full_a)), full_b
+            return _flip(full_a), full_b
         if start_a == end_b:
-            return tuple(reversed(full_a)), tuple(reversed(full_b))
+            return _flip(full_a), _flip(full_b)
 
     else:  # vectors
         full_a = _full_segment(coords_a)
         full_b = _full_segment(coords_b)
 
         if end_a == end_b:
-            return tuple(reversed(full_a)), tuple(reversed(full_b))
+            return _flip(full_a), _flip(full_b)
         if end_a == start_b:
-            return tuple(reversed(full_a)), full_b
+            return _flip(full_a), full_b
         if start_a == start_b:
             return full_a, full_b
         if start_a == end_b:
-            return full_a, tuple(reversed(full_b))
+            return full_a, _flip(full_b)
 
     raise AngleError("The lines do not intersect; provide lines that share an endpoint.")
 

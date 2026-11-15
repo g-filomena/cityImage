@@ -85,7 +85,7 @@ def barrier_osm_feature_tags(
 
 def _empty_barriers(crs: Any = None, barrier_type: str | None = None) -> gpd.GeoDataFrame:
     """Return an empty barrier GeoDataFrame."""
-    data = {"barrier_type": []}
+    data: dict[str, Any] = {"barrier_type": []}
     if barrier_type is not None:
         data["barrier_type"] = pd.Series(dtype="object")
     return gpd.GeoDataFrame(data, geometry=gpd.GeoSeries([], crs=crs), crs=crs)
@@ -512,7 +512,7 @@ def assign_structuring_barriers(
 
 def _crossing_barriers(line_geometry: LineString, barriers_gdf: gpd.GeoDataFrame) -> list[int]:
     """Return IDs of barriers crossing a line, excluding boundary touches."""
-    adjacent_barriers = []
+    adjacent_barriers: list[int] = []
     if barriers_gdf.empty:
         return adjacent_barriers
 

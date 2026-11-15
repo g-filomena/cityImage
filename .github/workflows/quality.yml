@@ -58,6 +58,10 @@ jobs:
         shell: bash -l {0}
         run: ruff format --check cityImage tests scripts
 
+      - name: Mypy
+        shell: bash -l {0}
+        run: mypy
+
       - name: Build source and wheel distributions
         shell: bash -l {0}
         run: |

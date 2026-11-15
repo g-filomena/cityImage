@@ -1,5 +1,6 @@
 from collections import defaultdict
 from collections.abc import Iterable, Mapping
+from typing import Any
 
 EXCLUDE_AMENITIES = {
     # Money / vending / automatons
@@ -940,7 +941,7 @@ for groups in OSM_DOMAIN_GROUPS.values():
 # then DROP ALL triplets with domain == "place_of_worship" (e.g., mass_rock:place_of_worship:place_of_worship).
 POW_RELIGIOUS_BUILDINGS = set(BUILDING_GROUPS["religious"])  # cathedral, church, mosque, ...
 
-RESOLUTION_RULES = {
+RESOLUTION_RULES: dict[str, dict[str, Any]] = {
     # ---------------------------------------------------------
     # Always education (amenity), regardless of source domain/group
     # ---------------------------------------------------------

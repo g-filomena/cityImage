@@ -104,6 +104,14 @@ markers = [
   "slow: long-running integration tests",
 ]
 
+[tool.mypy]
+# Permissive start: untyped functions are not checked and third-party stubs are optional.
+# Tighten module by module (e.g. check_untyped_defs) as annotations grow.
+python_version = "3.10"
+files = ["cityImage"]
+ignore_missing_imports = true
+warn_unused_configs = true
+
 [tool.ruff]
 line-length = 100
 target-version = "py310"

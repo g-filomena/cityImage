@@ -81,13 +81,13 @@ def center_line(line_geometries: list[LineString]) -> LineString:
     center_line_coords = []
     for fraction in sorted(fractions):
         points = [line.interpolate(fraction, normalized=True) for line in lines]
-        coords = (
+        center: tuple[float, ...] = (
             sum(point.x for point in points) / len(points),
             sum(point.y for point in points) / len(points),
         )
         if has_z:
-            coords += (sum(point.z for point in points) / len(points),)
-        center_line_coords.append(coords)
+            center += (sum(point.z for point in points) / len(points),)
+        center_line_coords.append(center)
 
     return LineString(center_line_coords)
 

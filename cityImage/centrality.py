@@ -301,6 +301,7 @@ def append_edges_metrics(
     the longer parallel streets 0 there too, and unweighted it splits a value evenly between
     them.
     """
+    edge_ids: dict[tuple[Any, ...], Any]
     if graph.is_multigraph():
         edge_ids = {
             (u, v, key): data["edgeID"] for u, v, key, data in graph.edges(keys=True, data=True)

@@ -19,11 +19,14 @@ Entries marked **⚠ behaviour** change the output of an existing call with the 
 ### Added
 
 - Python 3.13 in the CI test matrix and the package classifiers.
+- mypy runs in CI (`[tool.mypy]` in `pyproject.toml`).
 
 ### Fixed
 
 - `environment.yml` installed the igraph C library (`igraph`) instead of its Python bindings
   (`python-igraph`), so centrality failed in a fresh conda environment.
+- Type errors that mypy reports once the type hints of OSMnx and folium are installed: a
+  distance-based download now requires its distance explicitly (`_required_distance`).
 
 ## [2.2.0] — 2026-09-28
 
