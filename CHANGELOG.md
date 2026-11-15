@@ -6,6 +6,25 @@ All notable changes to **cityImage** are recorded here. The format follows
 
 Entries marked **⚠ behaviour** change the output of an existing call with the same arguments.
 
+## [Unreleased]
+
+### Changed
+
+- The package metadata now states the license as GPL-3.0-or-later, as the README already did
+  (it said GPL-3.0-only).
+- Development status is now Production/Stable.
+- The minimum pandas version is now 2.2.2, the first release that works with NumPy 2
+  (already required). pandas 2.2.0–2.2.1 fail on import with NumPy 2.
+
+### Added
+
+- Python 3.13 in the CI test matrix and the package classifiers.
+
+### Fixed
+
+- `environment.yml` installed the igraph C library (`igraph`) instead of its Python bindings
+  (`python-igraph`), so centrality failed in a fresh conda environment.
+
 ## [2.2.0] — 2026-09-28
 
 ### Network cleaning — reworked
