@@ -1,0 +1,48 @@
+name: Bug report
+description: Something in cityImage fails or returns a wrong result.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what you got instead.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Code to reproduce
+      description: >-
+        A short snippet that shows the problem, ideally on a small area (a few streets) or a
+        small GeoDataFrame built in the snippet.
+      render: python
+    validations:
+      required: true
+  - type: textarea
+    id: traceback
+    attributes:
+      label: Error message
+      description: The full traceback, if there is one.
+      render: text
+  - type: input
+    id: version
+    attributes:
+      label: cityImage version
+      description: Output of `python -c "import cityImage; print(cityImage.__version__)"`.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: >-
+        Operating system, Python version, how you installed cityImage (pip / conda), and the
+        versions of geopandas, shapely, osmnx and networkx.
+      placeholder: |
+        OS: Windows 11
+        Python: 3.12
+        Installed with: pip
+        geopandas 1.1.1, shapely 2.1.1, osmnx 2.0.5, networkx 3.4
+    validations:
+      required: true

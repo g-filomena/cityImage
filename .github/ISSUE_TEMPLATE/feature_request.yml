@@ -1,0 +1,21 @@
+name: Feature request
+description: Suggest a new function, option or workflow.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What you would like to do
+      description: The analysis you are trying to run and what is missing or hard today.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: How you imagine it working, for example the function call you would write.
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      description: Papers or methods the feature is based on, if any.

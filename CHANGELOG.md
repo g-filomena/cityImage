@@ -19,6 +19,8 @@ Entries marked **⚠ behaviour** change the output of an existing call with the 
 ### Added
 
 - Python 3.13 in the CI test matrix and the package classifiers.
+- `CITATION.cff`, so GitHub shows how to cite cityImage.
+- `CONTRIBUTING.md`, a code of conduct, issue forms and a pull request template.
 - mypy runs in CI (`[tool.mypy]` in `pyproject.toml`).
 
 ### Fixed

@@ -1,0 +1,38 @@
+cff-version: 1.2.0
+message: >-
+  If you use cityImage in your research, please cite the paper below, which describes the
+  method. To refer to the software itself, cite it with the version you used.
+title: "cityImage: a package for studying urban form and obtaining the computational Image of the City"
+type: software
+authors:
+  - family-names: Filomena
+    given-names: Gabriele
+    orcid: https://orcid.org/0000-0001-6380-7264
+version: 2.2.0
+date-released: 2026-09-28
+license: GPL-3.0-or-later
+repository-code: https://github.com/g-filomena/cityImage
+url: https://cityimage.readthedocs.io
+keywords:
+  - urban form analysis
+  - computational image of the city
+  - Kevin Lynch
+  - cognitive maps
+  - GIS
+preferred-citation:
+  type: article
+  title: A computational approach to The Image of the City
+  authors:
+    - family-names: Filomena
+      given-names: Gabriele
+      orcid: https://orcid.org/0000-0001-6380-7264
+    - family-names: Verstegen
+      given-names: Judith A.
+    - family-names: Manley
+      given-names: Ed
+  journal: Cities
+  volume: 89
+  start: 14
+  end: 25
+  year: 2019
+  doi: 10.1016/j.cities.2019.01.006
