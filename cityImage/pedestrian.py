@@ -127,11 +127,7 @@ PED_NO_EVIDENCE = "noEvidence"
 #   - "centrelines": one edge per street — drop separately-mapped
 #                    ``footway=sidewalk`` ways and keep road centrelines. Suits
 #                    Image-of-the-City / centrality analysis.
-#   - "sidewalks":   walking-surface network — keep sidewalks/crossings and drop
-#                    the centreline of any road that declares ``sidewalk=separate``
-#                    (its sidewalk is mapped elsewhere). Suits fine pedestrian
-#                    simulation/routing.
-SIDEWALK_POLICIES = ("keep_both", "centrelines", "sidewalks")
+SIDEWALK_POLICIES = ("keep_both", "centrelines")
 DEFAULT_SIDEWALK_POLICY = "keep_both"
 
 
@@ -244,14 +240,6 @@ def _pedestrian_status(
         # The road centreline already represents this street; drop the parallel
         # sidewalk way.
         return None
-    if (
-        sidewalk_policy == "sidewalks"
-        and "separate" in sidewalk_tokens
-        and not is_inherently_pedestrian
-        and highway != "cycleway"
-    ):
-        # The sidewalk is mapped as its own way; drop the redundant road centreline.
-        return None
 
     if highway == "cycleway":
         # A cycleway joins the pedestrian network when pedestrians are allowed
@@ -298,8 +286,7 @@ def filter_pedestrian_osm_features(
     sidewalk_policy
         How to reconcile separately-mapped sidewalks with road centrelines; one
         of :data:`SIDEWALK_POLICIES`. Defaults to ``"keep_both"`` (no
-        de-duplication). Use ``"centrelines"`` for one edge per street or
-        ``"sidewalks"`` for a walking-surface network.
+        de-duplication). Use ``"centrelines"`` for one edge per street.
 
     Returns
     -------

@@ -280,22 +280,15 @@ def test_centrelines_policy_drops_separately_mapped_sidewalks():
     assert _pedestrian_status(_sidewalk("footway", footway="crossing"), "centrelines") == "yes"
 
 
-def test_sidewalks_policy_drops_centreline_when_sidewalk_is_separate():
-    # The separately-mapped sidewalk is kept; the redundant centreline is dropped.
-    assert _pedestrian_status(_sidewalk("footway", footway="sidewalk"), "sidewalks") == "yes"
-    assert _pedestrian_status(_sidewalk("residential", sidewalk="separate"), "sidewalks") is None
-    # A road whose sidewalk is attached (not separate) keeps its centreline.
-    assert _pedestrian_status(_sidewalk("residential", sidewalk="both"), "sidewalks") == "yes"
-
-
 def test_invalid_sidewalk_policy_raises():
     features = gpd.GeoDataFrame(
         {"highway": ["footway"]},
         geometry=[LineString([(0, 0), (1, 0)])],
         crs=CRS,
     )
-    with pytest.raises(ValueError, match="sidewalk_policy"):
-        ci.filter_pedestrian_osm_features(features, sidewalk_policy="nope")
+    for policy in ("nope", "sidewalks"):
+        with pytest.raises(ValueError, match="sidewalk_policy"):
+            ci.filter_pedestrian_osm_features(features, sidewalk_policy=policy)
 
 
 def test_pedestrian_network_from_osm_is_available_with_core_install():

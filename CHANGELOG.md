@@ -25,6 +25,12 @@ Entries marked **⚠ behaviour** change the output of an existing call with the 
 - Development status is now Production/Stable.
 - The minimum pandas version is now 2.2.2, the first release that works with NumPy 2
   (already required). pandas 2.2.0–2.2.1 fail on import with NumPy 2.
+- **⚠ behaviour** `sidewalk_policy="sidewalks"` is removed: `filter_pedestrian_osm_features`,
+  `pedestrian_network_from_osm_features` and `pedestrian_network_from_osm` take `keep_both`
+  (default) or `centrelines`, and raise `ValueError` on `sidewalks`. It dropped any road with a
+  `separate` among its `sidewalk*` tags, so `sidewalk:left=separate` + `sidewalk:right=yes` lost
+  the right sidewalk, and a road tagged `separate` with no walkway drawn beside it left a hole in
+  the network.
 
 ### Added
 
