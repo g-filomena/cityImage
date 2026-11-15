@@ -130,6 +130,7 @@ _PUBLIC_SYMBOLS: dict[str, str] = {
     "image_of_the_city": "pipeline",
     "landmark_weight_sensitivity": "sensitivity",
     "identify_regions_primal": "regions",
+    "isovist_measures": "visibility2d",
     "regions_from_dual_partition": "regions",
     "regions_from_primal_partition": "regions",
     "kindlmann": "plotting",

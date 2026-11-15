@@ -106,3 +106,75 @@ def visibility_polygon2d(
         visible_polygon = polygon.buffer(0).difference(building_geometry)
 
     return visible_polygon.area
+
+
+## Isovists ###########################
+#
+# The isovist from a point is the area visible from it (Benedikt 1979). Its size is how open the
+# place is, and the corners along its edge, where the view stops at one building and continues
+# past it, are where someone could stand unseen: the prospect and refuge of Fisher and Nasar
+# (1992). ``isovist_measures`` measures one isovist from a fan of rays.
+
+
+def isovist_measures(radii, hits, min_jump=2.0, jump_ratio=0.5, walls=None):
+    """Area, compactness and occlusion of one isovist, from its ray lengths.
+
+    Parameters
+    ----------
+    radii
+        Length of each ray, in order around the circle, equally spaced.
+    hits
+        For each ray, an identifier of the obstruction it stopped at, or -1 if it met none.
+    min_jump, jump_ratio
+        Two neighbouring rays mark an occluding edge when they stop at different obstructions (or
+        one at none) and their lengths differ by more than ``min_jump`` and by more than
+        ``jump_ratio`` times the shorter one: the view passes a corner rather than running along a
+        facade split into several footprints.
+    walls
+        Optionally, for each ray, the wall segment it stopped at, as ``(x1, y1, x2, y2)`` relative
+        to the observer (NaN for a ray that met none). With it, a jump is an occluding edge only
+        if the longer ray crosses the line of the shorter ray's wall within its own length - past
+        the end of the wall. A longer ray that never crosses that line, or crosses it beyond its
+        reach, is looking along the wall at a grazing angle, not past a corner.
+
+    Returns
+    -------
+    tuple
+        ``(area, compactness, occlusions, occlusivity)``: the area of the polygon through the ray
+        tips, its isoperimetric quotient ``4 pi area / perimeter^2`` (1 for a circle), the number
+        of occluding edges, and their summed length - a discrete form of Benedikt's occlusivity.
+    """
+    radii = np.asarray(radii, dtype=float)
+    hits = np.asarray(hits)
+    k = len(radii)
+    step = 2.0 * np.pi / k
+    following = np.roll(radii, -1)
+    area = 0.5 * np.sin(step) * float(np.sum(radii * following))
+    angles = np.arange(k) * step
+    x, y = radii * np.cos(angles), radii * np.sin(angles)
+    perimeter = float(np.sum(np.hypot(np.roll(x, -1) - x, np.roll(y, -1) - y)))
+    compactness = 4.0 * np.pi * area / perimeter**2 if perimeter > 0 else 0.0
+    jump = np.abs(following - radii)
+    shorter = np.minimum(radii, following)
+    occluding = (hits != np.roll(hits, -1)) & (jump > min_jump) & (jump > jump_ratio * shorter)
+    if walls is not None:
+        for i in np.flatnonzero(occluding):
+            j = (i + 1) % k
+            near, far = (i, j) if radii[i] < radii[j] else (j, i)
+            occluding[i] = _passes_wall(angles[far], radii[far], walls[near])
+    return area, compactness, int(occluding.sum()), float(jump[occluding].sum())
+
+
+def _passes_wall(angle, reach, wall):
+    """Whether a ray from the origin at ``angle`` crosses the line through ``wall`` within
+    ``reach``."""
+    x1, y1, x2, y2 = wall
+    if np.isnan(x1):
+        return True
+    dx, dy = np.cos(angle), np.sin(angle)
+    ex, ey = x2 - x1, y2 - y1
+    den = dx * ey - dy * ex
+    if abs(den) < 1e-12:
+        return False
+    t = (x1 * ey - y1 * ex) / den
+    return 0.0 < t <= reach

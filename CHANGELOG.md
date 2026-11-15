@@ -49,6 +49,10 @@ Entries marked **⚠ behaviour** change the output of an existing call with the 
 - `CITATION.cff`, so GitHub shows how to cite cityImage.
 - `CONTRIBUTING.md`, a code of conduct, issue forms and a pull request template.
 - mypy runs in CI (`[tool.mypy]` in `pyproject.toml`).
+- `isovist_measures`: area, compactness, and the occluding edges of one isovist from its
+  ray lengths - neighbouring rays stopping at different obstructions, with a jump in length, and
+  with the longer ray crossing the line of the shorter one's wall past its end, so a view along a
+  wall at a grazing angle is not a corner.
 
 ### Fixed
 
