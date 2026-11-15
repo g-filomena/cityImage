@@ -123,7 +123,7 @@ def test_score_cityimage_buildings_can_run_pipeline_facade(monkeypatch):
     assert fake.calls == [
         "visibility:longest",
         "cultural",
-        "pragmatic:1500.0",
+        "pragmatic:200.0",
         "global",
         "local:300",
     ]

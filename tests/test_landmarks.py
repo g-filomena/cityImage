@@ -128,5 +128,6 @@ def test_global_scoring_preserves_landmarkness_composition():
     assert scored["sScore"].tolist() == pytest.approx([0.0, 0.0, 0.0])
     assert scored["cScore"].tolist() == pytest.approx([1.0, 0.0, 0.0])
     assert scored["pScore"].tolist() == pytest.approx([0.0, 0.0, 1.0])
-    assert scored["gScore"].tolist() == pytest.approx([0.1625, 0.0, 0.55])
-    assert scored["gScore_sc"].tolist() == pytest.approx([0.2954545454545454, 0.0, 1.0])
+    # Default (paper) weights: 0.50 visual, 0.30 structural, 0.10 cultural, 0.10 pragmatic.
+    assert scored["gScore"].tolist() == pytest.approx([0.225, 0.0, 0.6])
+    assert scored["gScore_sc"].tolist() == pytest.approx([0.375, 0.0, 1.0])

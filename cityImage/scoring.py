@@ -26,21 +26,23 @@ from .schema import (
     validate_edges_gdf,
 )
 
+# The weights of Filomena, Verstegen & Manley (2019), A computational approach to 'The Image of
+# the City', Cities 89, 14-25, Table 1.
 DEFAULT_GLOBAL_INDEX_WEIGHTS: dict[str, float] = {
     "fac": 0.30,
     "height": 0.20,
     "3dvis": 0.50,
-    "area": 0.40,
-    "2dvis": 0.00,
-    "neigh": 0.30,
-    "road": 0.30,
+    "area": 0.30,
+    "2dvis": 0.30,
+    "neigh": 0.20,
+    "road": 0.20,
 }
 
 DEFAULT_GLOBAL_COMPONENT_WEIGHTS: dict[str, float] = {
-    "vScore": 0.25,
-    "sScore": 0.35,
+    "vScore": 0.50,
+    "sScore": 0.30,
     "cScore": 0.10,
-    "pScore": 0.30,
+    "pScore": 0.10,
 }
 
 DEFAULT_LOCAL_INDEX_WEIGHTS: dict[str, float] = DEFAULT_GLOBAL_INDEX_WEIGHTS.copy()
@@ -63,7 +65,7 @@ class LandmarkScoringConfig:
     local_component_weights: Mapping[str, float] = field(
         default_factory=lambda: DEFAULT_LOCAL_COMPONENT_WEIGHTS.copy()
     )
-    pragmatic_search_radius: float = 1500.0
+    pragmatic_search_radius: float = 200.0
     pragmatic_default_land_use: str = "unclassified"
     local_rescaling_radius: float = 1500.0
     visibility_method: str = "longest"
@@ -126,7 +128,7 @@ def score_building_components(
     compute_cultural: bool = True,
     compute_pragmatic: bool = True,
     visibility_method: str = "longest",
-    pragmatic_search_radius: float = 1500.0,
+    pragmatic_search_radius: float = 200.0,
     pragmatic_default_land_use: str = "unclassified",
     land_uses_column: str = LAND_USES,
     land_uses_overlap_column: str = LAND_USES_OVERLAP,

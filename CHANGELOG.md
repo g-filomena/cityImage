@@ -10,6 +10,12 @@ Entries marked **⚠ behaviour** change the output of an existing call with the 
 
 ### Changed
 
+- **⚠ behaviour** The default landmark weights are those of Filomena, Verstegen & Manley (2019),
+  Table 1: components visual 0.50, structural 0.30, cultural 0.10, pragmatic 0.10; structural
+  indexes area 0.30, 2D advance visibility 0.30, neighbours 0.20, road distance 0.20 (they were
+  0.25 / 0.35 / 0.10 / 0.30 and 0.40 / 0.00 / 0.30 / 0.30). `LandmarkScoringConfig` searches the
+  pragmatic score within 200 m (was 1500 m), as the paper. Pass the old weights to keep the
+  old scores.
 - The package metadata now states the license as GPL-3.0-or-later, as the README already did
   (it said GPL-3.0-only).
 - Development status is now Production/Stable.
