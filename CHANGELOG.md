@@ -35,6 +35,9 @@ Entries marked **⚠ behaviour** change the output of an existing call with the 
   same place, landmarks from the global score. Nodes, paths and landmarks are ranked in Lynch's
   ranges (`lynch_class` 1 for the strongest, over 0.75, down to 4; 0 below). `CityImageConfig` holds the parameters.
 - `plot_city_image(city_image)` maps the five elements on one figure. *(extra: plot)*
+- `landmark_weight_sensitivity(buildings)`: perturbs the weights of the global landmark score
+  (at random, or one at a time) and measures the stability of the ranking, of the top buildings
+  and of the Lynch classes.
 - `CityImage.explore()` (`explore_city_image`): an interactive web map of the five elements with
   the symbols of Lynch's legend, black on white: bars and dashes for paths, the comb for edges,
   circles for nodes, star and triangles for landmarks, freehand dotted or hatched districts. One
