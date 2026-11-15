@@ -38,6 +38,8 @@ Entries marked **⚠ behaviour** change the output of an existing call with the 
 - `landmark_weight_sensitivity(buildings)`: perturbs the weights of the global landmark score
   (at random, or one at a time) and measures the stability of the ranking, of the top buildings
   and of the Lynch classes.
+- Docs: a Quickstart at the top of the User Guide, a Gallery of cities (Freiburg, Sarajevo,
+  Boston), and the one-call API in the API reference.
 - `CityImage.explore()` (`explore_city_image`): an interactive web map of the five elements with
   the symbols of Lynch's legend, black on white: bars and dashes for paths, the comb for edges,
   circles for nodes, star and triangles for landmarks, freehand dotted or hatched districts. One
@@ -60,6 +62,8 @@ Entries marked **⚠ behaviour** change the output of an existing call with the 
   same category took different colours in different maps and the single figure legend matched
   only one of them. The colours are now assigned once, over the categories of all the panels;
   geometries with no category are grey, and the legend is drawn even with a single panel.
+- The `Landmarks_fromOSM` notebook runs on the current API (land uses from `buildings_from_osm`,
+  local component weights summing to 1) and is saved with its outputs.
 
 ## [2.2.0] — 2026-09-28
 

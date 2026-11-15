@@ -16,9 +16,9 @@ The package originated from research on the computational formulation of Kevin L
 
 The package is not a replacement for GeoPandas, Shapely, OSMnx, NetworkX, iGraph, or rasterio. Instead, it defines a semantic layer on top of those libraries. Generic data acquisition, spatial operations, graph algorithms, and raster processing are delegated to specialised packages; cityImage keeps the schema, topology, Lynchian classification, and scoring semantics consistent across workflows.
 
-## Design after the refactor
+## Design
 
-The current API separates cityImage-owned semantics from external-library responsibilities:
+The API separates cityImage-owned semantics from external-library responsibilities:
 
 - `cityImage.io` bridges local geospatial files into cityImage schemas.
 - `cityImage.osm` bridges OSMnx outputs into cityImage schemas.

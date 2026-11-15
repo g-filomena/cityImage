@@ -2,11 +2,13 @@
 User Guide
 ==========
 
-This guide covers the main functions of `cityImage` and demonstrates its usage through Jupyter notebooks.
+Start from the Quickstart: the five elements of the Image of the City in one call. The notebooks
+then go through each step, with its own functions and parameters.
 
 .. toctree::
    :maxdepth: 1
 
+   Quickstart <quickstart.md>
    Nodes and Paths from OpenStreetMap Data <Nodes_Paths_fromOSM.ipynb>
    Nodes and Paths from Local Files <Nodes_Paths_Local_Files.ipynb>
    Districts from OpenStreetMap Data <Districts_fromOSM.ipynb>

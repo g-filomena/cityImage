@@ -1,6 +1,7 @@
 # cityImage module ownership map
 
-This file records the current post-refactor ownership boundary.
+This page is for contributors. It maps each module to the part of cityImage it owns
+and to the libraries it delegates to.
 
 Status meanings:
 
@@ -27,6 +28,9 @@ Status meanings:
 | `cityImage/scoring.py` | imageability scoring | keep | none | NumPy/Pandas | Combines Lynchian/imageability indicators into score outputs. |
 | `cityImage/height.py` | building height | keep thin | rasterio/rasterstats | rasterstats/rasterio | Thin raster/zonal-stat boundary plus cityImage building-height schema. |
 | `cityImage/visibility2d.py` | 2D visibility | keep | none | Shapely/GeoPandas | Preserves 2D visibility semantics. |
+| `cityImage/pipeline.py` | one-call pipeline | keep thin | none (plot extra for `CityImage.plot`) | the modules above | Chains the notebook workflow into `image_of_the_city`; adds no method of its own. |
+| `cityImage/sensitivity.py` | weight sensitivity | keep thin | none | Pandas/NumPy | Perturbs the landmark score weights and measures the stability of the ranking. |
+| `cityImage/interactive.py` | interactive map | keep thin | folium (interactive extra) | GeoPandas `explore`/folium | One folium map of a `CityImage`, a layer per element. |
 | `cityImage/visibility3d.py` | 3D visibility | keep | dask/psutil | Dask | Owns 3D sight-line workflow and output schema; delegates parallel chunking to Dask. |
 | `cityImage/geometry.py` | geometry helpers | keep small | none | Shapely/GeoPandas | Small custom helpers used by topology/visibility/regions. |
 | `cityImage/data_utils.py` | data helpers | keep small | none | Pandas/NumPy | Small scaling/conversion helpers used internally. |

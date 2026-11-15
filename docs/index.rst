@@ -49,7 +49,7 @@ Install with all optional extras:
 Main API areas
 --------------
 
-The refactored API separates cityImage-owned semantics from external libraries.
+The API separates cityImage-owned semantics from external libraries.
 Submodules marked *(extra: X)* need the corresponding optional install (see
 Installation above); the rest are available with the core install.
 
@@ -78,13 +78,33 @@ Installation above); the rest are available with the core install.
 - ``cityImage.visibility2d``: 2D visibility workflows.
 - ``cityImage.visibility3d``: optional 3D sight-line workflows. *(extra: visibility3d)*
 - ``cityImage.plotting``: optional static plotting helpers. *(extra: plot)*
+- ``cityImage.interactive``: interactive web map of the five elements. *(extra: interactive)*
+- ``cityImage.pipeline``: ``image_of_the_city``, the five elements in one call.
+- ``cityImage.sensitivity``: how much the landmarks depend on the weights of their score.
 
 Typical use
 -----------
 
+One call downloads a place from OpenStreetMap and returns the five elements:
+
 .. code-block:: python
 
    import cityImage as ci
+
+   img = ci.image_of_the_city("Susa, Italy", crs="EPSG:32632")
+   img.paths, img.nodes, img.edges, img.districts, img.landmarks  # GeoDataFrames
+   img.plot()                 # one map of the five elements (extra: plot)
+   img.explore()              # interactive web map (extra: interactive)
+   img.to_file("susa.gpkg")   # one GeoPackage layer per element
+
+As in Filomena, Verstegen & Manley (2019), the scores of nodes, paths and
+landmarks are rescaled to 0–1 and ranked in Lynch's ranges (0.125, 0.25, 0.5,
+0.75) in ``lynch_class``: 1 for the strongest (over 0.75) down to 4, 0 below.
+Every step and its parameters are in ``CityImageConfig``. The Quickstart and the
+Gallery show the results; the User Guide goes through each step. The same data
+can be downloaded step by step with:
+
+.. code-block:: python
 
    nodes, edges = ci.network_from_osm(
        "Susa, Italy",
@@ -114,7 +134,13 @@ Documentation content
    Home <self>
    About <about>
    User Guide <notebooks/userGuide.rst>
+   Gallery <gallery>
    Network cleaning <network_topology>
-   Module ownership <development/module_ownership>
    API reference <api>
    Changelog <changelog>
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Developer guide
+
+   Module ownership <development/module_ownership>

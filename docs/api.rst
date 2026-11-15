@@ -3,9 +3,9 @@
 cityImage API reference
 =======================
 
-This page documents the curated public API after the refactor. The package keeps
-cityImage-specific semantics at the top level and delegates generic operations to
-specialised libraries:
+This page documents the public API. The package keeps cityImage-specific
+semantics at the top level and delegates generic operations to specialised
+libraries:
 
 - file reading and CRS handling to GeoPandas;
 - OpenStreetMap acquisition to OSMnx;
@@ -20,6 +20,23 @@ visibility, and imageability scoring. Low-level implementation helpers and
 generic GeoPandas/Shapely operations are intentionally not listed here.
 
 .. currentmodule:: cityImage
+
+The Image of the City in one call
+---------------------------------
+
+``image_of_the_city`` chains the steps below into the five elements of Lynch's
+Image of the City. ``explore_city_image`` needs the ``interactive`` extra,
+``plot_city_image`` the ``plot`` extra.
+
+.. autosummary::
+   :toctree: api/
+
+   image_of_the_city
+   CityImage
+   CityImageConfig
+   explore_city_image
+   plot_city_image
+   landmark_weight_sensitivity
 
 Schema and adapters
 -------------------

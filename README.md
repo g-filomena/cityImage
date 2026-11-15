@@ -7,14 +7,20 @@
 
 # cityImage
 
+<img src="https://raw.githubusercontent.com/g-filomena/cityImage/master/docs/_static/gallery/freiburg.png" alt="The computational Image of the City of Freiburg im Breisgau, drawn with the symbols of Lynch's legend" width="100%">
+
+*Freiburg im Breisgau: paths, edges, nodes, districts and landmarks from one call to
+`image_of_the_city`, drawn by `img.explore()` with the symbols of Lynch's legend. More in the
+[gallery](https://cityimage.readthedocs.io/en/latest/gallery.html).*
+
 **cityImage** is a Python package for analysing urban legibility and extracting a
 computational version of Kevin Lynch's *Image of the City* from geospatial data.
 
 The package works with user-provided GeoPandas datasets and with OpenStreetMap
-data acquired through OSMnx. The refactored API keeps cityImage-specific schema,
-topology, barrier, district, landmark, and scoring semantics while delegating
-generic acquisition, spatial joins, plotting, graph algorithms, and raster
-operations to established libraries.
+data acquired through OSMnx. cityImage defines the schema, topology, barrier,
+district, landmark, and scoring semantics, and leaves generic acquisition,
+spatial joins, plotting, graph algorithms, and raster operations to established
+libraries.
 
 For full documentation and examples, see the
 [cityImage documentation](https://cityimage.readthedocs.io/en/latest/).
@@ -90,6 +96,7 @@ base environment. Use extras for those:
 pip install "cityImage[plot]"         # plotting helpers (matplotlib, mapclassify)
 pip install "cityImage[height]"       # DEM/DTM height helpers
 pip install "cityImage[visibility3d]" # 3D sight-line workflow (adds dask + psutil)
+pip install "cityImage[interactive]"  # interactive web maps (folium)
 pip install "cityImage[all]"          # all optional runtime dependencies
 ```
 
@@ -101,7 +108,7 @@ pip install -e ".[all,test,docs,dev]"
 
 ## Main API areas
 
-The current API separates cityImage-owned semantics from external libraries.
+The API separates cityImage-owned semantics from external libraries.
 Submodules marked *(extra: X)* need the corresponding optional install (see
 [Installation](#installation)); the rest are available with the core install.
 
@@ -137,12 +144,45 @@ Submodules marked *(extra: X)* need the corresponding optional install (see
 - `cityImage.visibility3d`: optional 3D sight-line workflows; `verbose=True` logs
   progress through `logging`. *(extra: visibility3d)*
 - `cityImage.plotting`: optional static plotting helpers. *(extra: plot)*
+- `cityImage.interactive`: interactive web map of the five elements. *(extra: interactive)*
+- `cityImage.pipeline`: `image_of_the_city`, the five elements in one call.
+- `cityImage.sensitivity`: how much the landmarks depend on the weights of their score.
 
 ## Minimal example
+
+One call downloads a place from OpenStreetMap and returns the five elements:
 
 ```python
 import cityImage as ci
 
+img = ci.image_of_the_city("Susa, Italy", crs="EPSG:32632")
+
+img.paths       # streets, with angular betweenness (Ab) and lynch_class
+img.nodes       # street nodes, with betweenness (Bc), lynch_class, district, gateway
+img.edges       # barriers: rivers, railways, major roads, parks
+img.districts   # district polygons
+img.landmarks   # buildings, with their global landmark score (gScore) and lynch_class
+
+img.plot()                 # one map of the five elements (extra: plot)
+img.explore()              # interactive web map, one layer per element (extra: interactive)
+img.to_file("susa.gpkg")   # one GeoPackage layer per element
+```
+
+Every layer keeps all its features with their scores. As in Filomena, Verstegen & Manley
+(2019), the scores of nodes, paths and landmarks are rescaled to 0–1 and ranked in Lynch's
+ranges (0.125, 0.25, 0.5, 0.75): `lynch_class` is 1 for the strongest elements (over 0.75)
+down to 4 (0.125 to 0.25), 0 below, and `img.landmarks[img.landmarks.lynch_class.isin([1, 2])]`
+keeps only the strongest landmarks.
+Your own layers can replace any download: `ci.image_of_the_city(nodes=..., edges=...,
+buildings=..., barriers=...)`. Every step and its parameters are in `CityImageConfig`.
+The landmark weights are those of the paper; `ci.landmark_weight_sensitivity(img.landmarks)`
+measures how much the landmarks depend on them. The
+[Quickstart](https://cityimage.readthedocs.io/en/latest/notebooks/quickstart.html) goes through
+all of this.
+
+Step by step, the same data can be downloaded with:
+
+```python
 nodes, edges = ci.network_from_osm(
     "Susa, Italy",
     download_method="OSMplace",
@@ -176,6 +216,7 @@ obstruction in the 3D sight lines.
 ```bash
 ruff check cityImage tests scripts
 ruff format --check cityImage tests scripts
+mypy
 pytest -m "not network" -ra
 python -m build
 twine check dist/*
