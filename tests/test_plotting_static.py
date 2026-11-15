@@ -10,7 +10,9 @@ from __future__ import annotations
 
 import geopandas as gpd
 import matplotlib
+import numpy as np
 import pytest
+from matplotlib.colors import to_rgb
 from shapely.geometry import LineString, Point, Polygon
 
 matplotlib.use("Agg")
@@ -76,7 +78,7 @@ def test_plot_gdf_plain_and_categorical_with_legend():
 
     fig = plot_gdf(_polygons(), column="kind", legend=True, black_background=False)
     ax = fig.axes[0]
-    assert len(ax.collections) == 1  # geometry drawn
+    assert len(ax.collections) >= 1  # geometry drawn (one collection per class in geopandas >= 1.2)
     legend = ax.get_legend()
     assert legend is not None  # categorical legend rendered
     assert {t.get_text() for t in legend.get_texts()} == {"a", "b"}  # both categories labelled
@@ -95,7 +97,8 @@ def test_plot_gdf_numeric_with_colorbar_and_scheme():
     assert len(cbar_fig.axes) >= 2  # colorbar adds its own axes
 
     scheme_fig = plot_gdf(_lines(), column="flow", scheme="quantiles", classes=2, legend=True)
-    assert len(scheme_fig.axes[0].collections) == 1  # the two lines were drawn
+    # geopandas >= 1.2 may draw a layer in more than one collection
+    assert len(scheme_fig.axes[0].collections) >= 1  # the two lines were drawn
     assert scheme_fig.axes[0].get_legend() is not None  # scheme classes legend
 
 
@@ -109,7 +112,7 @@ def test_plot_gdf_points_with_size_scaling_and_base_map():
         base_map_color="grey",
     )
     ax = fig.axes[0]
-    assert len(ax.collections) == 2  # base map layer + points layer both drawn
+    assert len(ax.collections) >= 2  # base map layer + points layer both drawn
 
 
 def test_plot_grid_gdfs_column_across_multiple_gdfs():
@@ -123,6 +126,25 @@ def test_plot_grid_gdfs_column_across_multiple_gdfs():
         main_title="grid",
     )
     assert len(_data_axes(fig)) == 2  # both subplots drew their GeoDataFrame
+
+
+def test_plot_grid_gdfs_column_shares_category_colours_across_panels():
+    # The second map lacks category "a" and has a "c" the first one lacks: per-panel colouring
+    # would give "b" different colours in the two maps.
+    first = _polygons()
+    second = _polygons()
+    second["kind"] = ["b", "c", None]
+    fig = plot_grid_gdfs_column(gdfs=[first, second], column="kind", ncols=2, nrows=1, legend=True)
+    first_colors = fig.axes[0].collections[0].get_facecolor()
+    second_colors = fig.axes[1].collections[0].get_facecolor()
+    np.testing.assert_allclose(first_colors[1], second_colors[0])  # "b" in both maps
+    assert not np.allclose(first_colors[0], first_colors[1])  # "a" and "b" differ
+    np.testing.assert_allclose(second_colors[2][:3], to_rgb("#9e9e9e"))  # no category: grey
+
+    # One figure legend, with every category of every map and the colours used on the maps.
+    (legend,) = fig.legends
+    assert [text.get_text() for text in legend.texts] == ["a", "b", "c"]
+    np.testing.assert_allclose(legend.legend_handles[1].get_facecolor(), first_colors[1])
 
 
 def test_plot_grid_gdfs_column_validates_layout():

@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import numpy as np
 import pandas as pd
+from matplotlib.colors import to_rgba
 from matplotlib.lines import Line2D
 
 from ..data_utils import scaling_columnDF
@@ -413,12 +414,13 @@ def plot_grid_gdfs_column(
         max_value = max([gdf[column].max() for gdf in gdfs])
         norm = plt.Normalize(vmin=min_value, vmax=max_value)
 
-    unique_categories = []
-    if legend and scheme is None:
-        # Step 1: Collect unique categories
-        unique_categories = set()
-        for gdf in gdfs:
-            unique_categories = unique_categories.union(set(gdf[column].unique()))
+    # A categorical map: one colour per category, shared by all the panels, so that the same
+    # category has the same colour in every map and the single figure legend holds for all of them.
+    unique_categories: list = []
+    category_colors = None
+    if column is not None and scheme is None and bins is None and norm is None:
+        unique_categories = _shared_categories(gdfs, column)
+        category_colors = _category_colors(unique_categories, cmap)
 
     for n, ax in enumerate(multiPlot.grid.flat):
         if n > len(gdfs) - 1:
@@ -447,6 +449,7 @@ def plot_grid_gdfs_column(
             "geometry_size_columns": geometry_size_columns,
             "geometry_size_factor": geometry_size_factor,
             "unique_categories": unique_categories,
+            "category_colors": category_colors,
         }
         _subplot(**parameters)
 
@@ -648,9 +651,10 @@ def _plot_on_ax(
     geometry_size_factor=None,
     legend=False,
     zorder=0,
+    category_colors=None,
 ):
     """
-
+    It plots a GeoDataFrame on the given axes, on the basis of a column, when provided.
 
     Parameters
     ----------
@@ -686,12 +690,20 @@ def _plot_on_ax(
         When True, show the legend.
     zorder: int
         Zorder of this layer; e.g. if 0, plots first, thus main GeoDataFrame on top; if 1, plots last, thus on top.
+    category_colors: dict, optional
+        A colour per category of a categorical column, shared across several axes. When given,
+        each geometry takes the colour of its category (grey when it has none) and no axes
+        legend is drawn: the caller builds the legend from the same colours.
     """
 
     gdf = gdf.copy()
+    value_column = column  # kept for the size scaling below, even when colours are given
 
     categorical = not (norm is not None) | (scheme is not None)
-    if not categorical:
+    if categorical and column is not None and category_colors is not None:
+        color = [category_colors.get(value, _NO_CATEGORY_COLOR) for value in gdf[column]]
+        column, cmap, legend = None, None, False
+    elif not categorical:
         color = None
         if cmap is None:
             cmap = kindlmann()
@@ -729,11 +741,11 @@ def _plot_on_ax(
     geometry_type = gdf.iloc[0].geometry.geom_type
     if geometry_type == "Point":
         if geometry_size_factor is not None:
-            if "_sc" not in column:
-                gdf[column + "_sc"] = scaling_columnDF(gdf[column])
-                geometry_factor_column = column + "_sc"
+            if "_sc" not in value_column:
+                gdf[value_column + "_sc"] = scaling_columnDF(gdf[value_column])
+                geometry_factor_column = value_column + "_sc"
             else:
-                geometry_factor_column = column
+                geometry_factor_column = value_column
             # Define base marker size
             base_marker_size = 0.40
 
@@ -781,6 +793,7 @@ def _subplot(
     legend,
     axes_frame,
     unique_categories=None,
+    category_colors=None,
 ):
     """
     Create a _subplot with a map plot on the given axes.
@@ -823,6 +836,10 @@ def _subplot(
         If True, show the legend; otherwise, don't.
     axes_frame: bool
         Flag indicating whether to draw axes frame or not.
+    unique_categories: list, optional
+        The categories of a categorical column across all the subplots, for the figure legend.
+    category_colors: dict, optional
+        The colour of each of those categories, shared by all the subplots.
     """
 
     if unique_categories is None:
@@ -850,6 +867,8 @@ def _subplot(
     if legend and scheme is not None:
         legend_ax = (n == 1 and scheme == "User_Defined") or (scheme != "User_Defined")
         legend_fig = n == 1 and scheme == "User_Defined"
+    elif legend and category_colors is not None:  # one figure legend, from the shared colours
+        legend_fig = n == 0
     elif legend:  # categorical legend
         legend_ax = n == 1
         legend_fig = n == 1
@@ -869,10 +888,11 @@ def _subplot(
         geometry_size=geometry_size,
         geometry_size_column=geometry_size_column,
         geometry_size_factor=geometry_size_factor,
+        category_colors=category_colors,
     )
 
     if legend_fig and one_legend:
-        _generate_legend_fig(ax, multiPlot, gdf, unique_categories, cmap)
+        _generate_legend_fig(ax, multiPlot, gdf, unique_categories, cmap, category_colors)
     elif legend_ax:
         _generate_legend_ax(ax, multiPlot)
 
@@ -913,7 +933,45 @@ def _plot_base_map(gdf=None, ax=None, color=None, geometry_size=None, alpha=0.5,
         gdf.plot(ax=ax, color=color, alpha=alpha, zorder=zorder)
 
 
-def _generate_legend_fig(ax, plot, gdf, unique_categories=None, cmap=None):
+_NO_CATEGORY_COLOR = to_rgba("#9e9e9e")
+
+
+def _shared_categories(gdfs, column):
+    """The categories of column across all the GeoDataFrames, missing values left out, sorted."""
+    values = pd.concat([gdf[column] for gdf in gdfs], ignore_index=True).dropna().unique()
+    return sorted(values, key=lambda value: (str(type(value)), value))
+
+
+def _category_colors(categories, cmap=None):
+    """
+    It assigns one colour per category, so that a category keeps its colour across several maps.
+
+    Parameters
+    ----------
+    categories: list
+        The categories, in the order in which they take the colours of the colormap.
+    cmap: str or matplotlib.colors.Colormap, optional
+        The colormap the colours are sampled from, evenly; a random categorical colormap
+        (see rand_cmap) when not given.
+
+    Returns
+    -------
+    dict
+        The colour (RGBA) of each category.
+    """
+    if len(categories) == 0:
+        return {}
+    if cmap is None:
+        cmap = rand_cmap(len(categories))
+    colormap = plt.get_cmap(cmap)
+    positions = np.linspace(0.0, 1.0, len(categories)) if len(categories) > 1 else [0.5]
+    return {
+        category: colormap(position)
+        for category, position in zip(categories, positions, strict=True)
+    }
+
+
+def _generate_legend_fig(ax, plot, gdf, unique_categories=None, cmap=None, category_colors=None):
     """
     It generates the legend for an entire figure.
 
@@ -931,6 +989,8 @@ def _generate_legend_fig(ax, plot, gdf, unique_categories=None, cmap=None):
         List of unique categories for categorical data.
     cmap: str or Colormap, optional
         Colormap to use for categorical data.
+    category_colors: dict, optional
+        The colour of each category, as used on the maps; it takes precedence over cmap.
 
     """
 
@@ -939,6 +999,8 @@ def _generate_legend_fig(ax, plot, gdf, unique_categories=None, cmap=None):
     leg = ax.get_legend()
 
     if len(unique_categories) == 0:
+        if leg is None:
+            return
         handles = leg.legend_handles
         labels = [t.get_text() for t in leg.texts]
     else:
@@ -946,7 +1008,10 @@ def _generate_legend_fig(ax, plot, gdf, unique_categories=None, cmap=None):
         labels = []
         geometry_type = gdf.iloc[0].geometry.geom_type
         for i, cat in enumerate(unique_categories):
-            color = plt.get_cmap(cmap)(i / len(unique_categories))
+            if category_colors is not None:
+                color = category_colors[cat]
+            else:
+                color = plt.get_cmap(cmap)(i / len(unique_categories))
             if geometry_type in ["Polygon", "MultiPolygon"]:
                 patch = mpatches.Patch(color=color, label=str(cat))
             elif geometry_type in ["LineString", "MultiLineString"]:
@@ -965,7 +1030,8 @@ def _generate_legend_fig(ax, plot, gdf, unique_categories=None, cmap=None):
             labels.append(str(cat))
 
     fig_leg = plot.fig.legend(handles=handles, labels=labels, loc=5, borderaxespad=0)
-    ax.get_legend().remove()
+    if leg is not None:
+        leg.remove()
     plt.setp(
         fig_leg.texts,
         family="Times New Roman",
@@ -1019,10 +1085,13 @@ def _generate_legend_ax(ax, plot):
     leg.set_zorder(102)
 
     for handle in leg.legend_handles:
-        if not isinstance(handle, Line2D):
-            handle._legmarker.set_markersize(12)
-        else:
+        if isinstance(handle, Line2D):
             break
+        # Older matplotlib kept the marker of a legend handle in ``_legmarker``; newer ones draw
+        # patches (e.g. the rectangles of a categorical polygon legend), with no marker to size.
+        marker = getattr(handle, "_legmarker", None)
+        if marker is not None:
+            marker.set_markersize(12)
     leg.get_frame().set_facecolor("none")
 
 

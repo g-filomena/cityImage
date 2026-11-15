@@ -37,8 +37,14 @@ Entries marked **⚠ behaviour** change the output of an existing call with the 
 
 - `environment.yml` installed the igraph C library (`igraph`) instead of its Python bindings
   (`python-igraph`), so centrality failed in a fresh conda environment.
+- The legend of `plot_gdf` no longer reads `_legmarker`, which recent matplotlib versions do not
+  have on patch handles (categorical polygon legends raised `AttributeError`).
 - Type errors that mypy reports once the type hints of OSMnx and folium are installed: a
   distance-based download now requires its distance explicitly (`_required_distance`).
+- `plot_grid_gdfs_column` coloured the categories of a categorical column panel by panel, so the
+  same category took different colours in different maps and the single figure legend matched
+  only one of them. The colours are now assigned once, over the categories of all the panels;
+  geometries with no category are grey, and the legend is drawn even with a single panel.
 
 ## [2.2.0] — 2026-09-28
 
