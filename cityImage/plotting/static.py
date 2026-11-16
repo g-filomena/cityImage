@@ -1048,9 +1048,23 @@ def _generate_legend_fig(ax, plot, gdf, unique_categories=None, cmap=None, categ
         if isinstance(handle, mpatches.Patch):
             handle.set_linewidth(0)  # or other properties specific to patches
         elif not isinstance(handle, Line2D):
-            handle._legmarker.set_markersize(15)
+            _set_legend_marker_size(handle, 15)
         else:
             break
+
+
+def _set_legend_marker_size(handle, size):
+    """Size the marker of a legend ``handle``, in points.
+
+    Older matplotlib kept the marker of a legend handle in ``_legmarker``; newer ones give a
+    collection (the ``PathCollection`` of a classified point layer), sized in points squared, or a
+    patch, with no marker to size.
+    """
+    marker = getattr(handle, "_legmarker", None)
+    if marker is not None:
+        marker.set_markersize(size)
+    elif hasattr(handle, "set_sizes"):
+        handle.set_sizes([size**2])
 
 
 def _generate_legend_ax(ax, plot):
@@ -1087,11 +1101,7 @@ def _generate_legend_ax(ax, plot):
     for handle in leg.legend_handles:
         if isinstance(handle, Line2D):
             break
-        # Older matplotlib kept the marker of a legend handle in ``_legmarker``; newer ones draw
-        # patches (e.g. the rectangles of a categorical polygon legend), with no marker to size.
-        marker = getattr(handle, "_legmarker", None)
-        if marker is not None:
-            marker.set_markersize(12)
+        _set_legend_marker_size(handle, 12)
     leg.get_frame().set_facecolor("none")
 
 

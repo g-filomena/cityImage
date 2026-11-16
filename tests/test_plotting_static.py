@@ -163,6 +163,25 @@ def test_plot_grid_gdf_columns_across_multiple_columns():
     assert len(_data_axes(fig)) == 2  # one subplot per column, each drawn
 
 
+def test_plot_grid_gdf_columns_classified_points_share_one_legend():
+    # A classified point layer gives PathCollection legend handles, which recent matplotlib
+    # sizes with set_sizes: there is no _legmarker to read.
+    points = _points().assign(other=[2.0, 4.0, 8.0])
+    fig = plot_grid_gdf_columns(
+        points,
+        columns=["value", "other"],
+        ncols=2,
+        nrows=1,
+        scheme="User_Defined",
+        bins=[2.0, 5.0, 9.0],
+        cmap="viridis",
+        legend=True,
+    )
+
+    assert len(_data_axes(fig)) == 2
+    assert len(fig.legends) == 1
+
+
 def test_plot_grid_gdfs_column_point_legend_and_line_legend():
     # Point and LineString categorical legends exercise the marker/Line2D handle branches.
     point_fig = plot_grid_gdfs_column(
