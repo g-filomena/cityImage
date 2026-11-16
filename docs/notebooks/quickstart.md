@@ -17,10 +17,10 @@ pip install "cityImage[plot,interactive]"
 import cityImage as ci
 
 img = ci.image_of_the_city(
-    "Münsterplatz, Freiburg im Breisgau, Germany",
-    download_method="distance_from_address",
-    distance=2000,
-    crs="EPSG:32632",
+    (42.357, -71.064),               # Boston Common
+    download_method="distance_from_point",
+    distance=1500,
+    crs="EPSG:32619",
 )
 ```
 
@@ -64,14 +64,14 @@ Edges and districts are not ranked. The ranges are `CityImageConfig(lynch_bins=.
 
 ```python
 m = img.explore()       # interactive, needs the interactive extra
-m.save("freiburg.html")
+m.save("boston.html")
 img.plot()              # static, needs the plot extra
 ```
 
 `explore()` draws the elements with the symbols of Lynch's legend, black on white, a layer for
 each class of paths, nodes and landmarks:
 
-![Freiburg im Breisgau](../_static/gallery/freiburg.png)
+![Boston](../_static/gallery/boston.png)
 
 More cities are in the [gallery](../gallery.md).
 
@@ -110,9 +110,12 @@ config = ci.CityImageConfig(
         global_component_weights={"vScore": 0.5, "sScore": 0.3, "cScore": 0.1, "pScore": 0.1},
     ),
 )
-img = ci.image_of_the_city("Susa, Italy", crs="EPSG:32632", config=config)
-img.metadata   # place, CRS, networks, cityImage version, date
-img.to_file("susa.gpkg")   # one GeoPackage layer per element
+img = ci.image_of_the_city(
+    (42.357, -71.064), download_method="distance_from_point", distance=1500, crs="EPSG:32619",
+    config=config,
+)
+img.metadata                 # place, CRS, networks, cityImage version, date
+img.to_file("boston.gpkg")   # one GeoPackage layer per element
 ```
 
 ## How much do the landmarks depend on the weights?
@@ -129,17 +132,17 @@ oat = ci.landmark_weight_sensitivity(img.landmarks, method="one_at_a_time")
 oat.groupby("varied")[["spearman", "strong_kept"]].min()
 ```
 
-In Freiburg (3,555 buildings, no heights), with every weight changed at random by up to 20%:
+In Boston (1,774 buildings, no heights), with every weight changed at random by up to 20%:
 
 | | mean | min |
 |---|---|---|
-| rank correlation with the original score (`spearman`) | 0.996 | 0.983 |
+| rank correlation with the original score (`spearman`) | 0.997 | 0.986 |
 | top 20 buildings still in the top 20 (`top_k_overlap`) | 0.92 | 0.80 |
-| buildings in the same Lynch class (`same_class`) | 0.91 | 0.74 |
-| class 1–2 buildings still in class 1–2 (`strong_kept`) | 0.90 | 0.46 |
+| buildings in the same Lynch class (`same_class`) | 0.93 | 0.78 |
+| class 1–2 buildings still in class 1–2 (`strong_kept`) | 0.93 | 0.68 |
 
-The ranking hardly moves; the membership of the few strongest buildings (20 in class 1) is
-more fragile, chiefly to the weights of the pragmatic and structural components and of the
+The ranking hardly moves; the membership of the few strongest buildings (15 in class 1) is
+more fragile, chiefly to the weights of the structural and pragmatic components and of the
 building area.
 
 ## Step by step

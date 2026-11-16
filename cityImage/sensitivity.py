@@ -90,7 +90,12 @@ def landmark_weight_sensitivity(
 
     Examples
     --------
-    >>> img = ci.image_of_the_city("Susa, Italy", crs="EPSG:32632")
+    >>> img = ci.image_of_the_city(
+    ...     (42.357, -71.064),
+    ...     download_method="distance_from_point",
+    ...     distance=1500,
+    ...     crs="EPSG:32619",
+    ... )
     >>> runs = ci.landmark_weight_sensitivity(img.landmarks)
     >>> runs[["spearman", "top_k_overlap", "same_class"]].describe()
     """

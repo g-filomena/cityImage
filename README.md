@@ -153,7 +153,12 @@ One call downloads a place from OpenStreetMap and returns the five elements:
 ```python
 import cityImage as ci
 
-img = ci.image_of_the_city("Susa, Italy", crs="EPSG:32632")
+img = ci.image_of_the_city(
+    (42.357, -71.064),               # Boston Common
+    download_method="distance_from_point",
+    distance=1500,
+    crs="EPSG:32619",
+)
 
 img.paths       # streets, with angular betweenness (Ab) and lynch_class
 img.nodes       # street nodes, with betweenness (Bc), lynch_class, district, gateway
@@ -163,7 +168,7 @@ img.landmarks   # buildings, with their global landmark score (gScore) and lynch
 
 img.plot()                 # one map of the five elements (extra: plot)
 img.explore()              # interactive web map, one layer per element (extra: interactive)
-img.to_file("susa.gpkg")   # one GeoPackage layer per element
+img.to_file("boston.gpkg")  # one GeoPackage layer per element
 ```
 
 Every layer keeps all its features with their scores. As in Filomena, Verstegen & Manley
@@ -181,24 +186,11 @@ all of this.
 Step by step, the same data can be downloaded with:
 
 ```python
-nodes, edges = ci.network_from_osm(
-    "Susa, Italy",
-    download_method="OSMplace",
-    network_type="walk",
-    crs="EPSG:32632",
-)
+around_common = dict(download_method="distance_from_point", distance=1500, crs="EPSG:32619")
 
-buildings = ci.buildings_from_osm(
-    "Susa, Italy",
-    download_method="OSMplace",
-    crs="EPSG:32632",
-)
-
-barriers = ci.barriers_from_osm(
-    "Susa, Italy",
-    download_method="OSMplace",
-    crs="EPSG:32632",
-)
+nodes, edges = ci.network_from_osm((42.357, -71.064), network_type="walk", **around_common)
+buildings = ci.buildings_from_osm((42.357, -71.064), **around_common)
+barriers = ci.barriers_from_osm((42.357, -71.064), **around_common)
 ```
 
 OSM `height` tags cover only some buildings, so `buildings_from_osm` leaves them
