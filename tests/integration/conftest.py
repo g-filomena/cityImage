@@ -1,14 +1,15 @@
 """Live-OSM test settings: a reachable Overpass endpoint, a shorter timeout, and an unreachable
 service reported as a skip rather than a failure.
 
-The public Overpass endpoint (overpass-api.de) often refuses connections from CI runners: each
-attempt then waits out the whole connect timeout and the test fails although cityImage never ran.
+The public Overpass endpoint (overpass-api.de) often refuses connections from CI runners, or
+answers that it is at capacity (502, 429...): the test would fail although cityImage never ran.
 A test that cannot reach OSM runs again on another endpoint, while one answers, then is skipped with
 the reason; any other error still fails.
 """
 
 from __future__ import annotations
 
+import re
 from urllib.parse import urlsplit
 
 import pytest
@@ -24,6 +25,9 @@ OVERPASS_ENDPOINTS = (
 PROBE_TIMEOUT = 20  # seconds to wait for an endpoint to answer the probe
 REQUESTS_TIMEOUT = 60  # seconds for each OSM request (OSMnx's default is 180)
 UNREACHABLE = (requests.exceptions.ConnectionError, requests.exceptions.Timeout)
+# An endpoint that answers with one of these statuses is busy or throttling, not broken.
+BUSY_STATUSES = (429, 502, 503, 504)
+ResponseStatusCodeError = getattr(getattr(ox, "_errors", None), "ResponseStatusCodeError", ())
 
 # Why each endpoint was found unusable, in the order tried; reported when a test is skipped.
 _failures: dict[str, str] = {}
@@ -86,8 +90,25 @@ def overpass_endpoint():
     return endpoint  # None: every test that needs OSM is skipped by pytest_runtest_call below
 
 
+def _busy_status(error: Exception) -> int | None:
+    """The status of an OSMnx error for an endpoint that answered it is busy, else None."""
+    if not isinstance(error, ResponseStatusCodeError):
+        return None
+    match = re.search(r"responded: (\d{3})", str(error))
+    status = int(match.group(1)) if match else None
+    return status if status in BUSY_STATUSES else None
+
+
+def _is_unreachable(error: Exception) -> bool:
+    """Whether ``error`` says the endpoint could not serve the request, not that cityImage failed."""
+    return isinstance(error, UNREACHABLE) or _busy_status(error) is not None
+
+
 def _describe(error: Exception) -> str:
     """The error's type and the host it could not reach."""
+    status = _busy_status(error)
+    if status is not None:
+        return f"{type(error).__name__} ({status})"
     url = getattr(getattr(error, "request", None), "url", None)
     host = urlsplit(url).hostname if url else None
     return f"{type(error).__name__} from {host}" if host else type(error).__name__
@@ -104,7 +125,9 @@ def pytest_runtest_call(item):
     """
     try:
         return (yield)
-    except UNREACHABLE as error:
+    except Exception as error:
+        if not _is_unreachable(error):
+            raise
         _failures[ox.settings.overpass_url] = f"{_describe(error)} in the test"
     tried = {ox.settings.overpass_url}
     while (endpoint := _first_reachable(skip=tried)) is not None:
@@ -113,7 +136,9 @@ def pytest_runtest_call(item):
         try:
             item.runtest()
             return None
-        except UNREACHABLE as error:
+        except Exception as error:
+            if not _is_unreachable(error):
+                raise
             _failures[endpoint] = f"{_describe(error)} in the test"
     reasons = "; ".join(
         f"{_host(endpoint)}: {_failures.get(endpoint, 'not tried')}"
