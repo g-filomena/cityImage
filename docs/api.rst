@@ -75,9 +75,6 @@ file IO to GeoPandas and OSMnx.
    buildings_from_osm
    barriers_from_osm
    network_from_lines
-   pedestrian_network_from_osm
-   pedestrian_network_from_osm_features
-   filter_pedestrian_osm_features
 
 Buildings
 ---------

@@ -57,8 +57,6 @@ Installation above); the rest are available with the core install.
   schemas, validation, and input standardisation.
 - ``cityImage.io``: file/GeoPandas loading into cityImage schemas.
 - ``cityImage.osm``: OSMnx acquisition into cityImage schemas.
-- ``cityImage.pedestrian``: pedestrian-network filtering and construction from
-  OSM highway features.
 - ``cityImage.network`` and ``cityImage.network_topology``: street-network
   construction, cleaning, simplification, and topology repair.
 - ``cityImage.graph`` and ``cityImage.angles``: primal/dual graph semantics and

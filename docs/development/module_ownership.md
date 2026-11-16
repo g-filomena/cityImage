@@ -17,7 +17,6 @@ Status meanings:
 | `cityImage/io.py` | file IO bridge API | keep thin | none | GeoPandas | Preserves file-based notebook/user pipelines while delegating file reading. |
 | `cityImage/osm.py` | OSM bridge API | keep thin | osmnx | OSMnx | Preserves OSM notebook/user pipelines while delegating acquisition. |
 | `cityImage/network.py` | network construction | keep thin | none | GeoPandas/Shapely | Converts line data into cityImage nodes/edges schema. |
-| `cityImage/pedestrian.py` | pedestrian network acquisition | keep thin | osmnx | OSMnx | Pedestrian-specific OSM/network workflow boundary and filtering semantics. |
 | `cityImage/network_topology.py` | network topology | keep | none | shapely/geopandas/networkx | Custom geometry/topology repair operations not safely delegated wholesale. |
 | `cityImage/angles.py` | graph semantics | keep | none | math/shapely only | Preserves custom endpoint-oriented street-segment angle semantics. |
 | `cityImage/graph.py` | graph core | keep | none | NetworkX | Prepared GDF to graph and dual graph semantics. |

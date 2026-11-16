@@ -116,8 +116,6 @@ Submodules marked *(extra: X)* need the corresponding optional install (see
   validation, and input standardisation.
 - `cityImage.io`: file/GeoPandas loading into cityImage schemas.
 - `cityImage.osm`: OSMnx acquisition into cityImage schemas.
-- `cityImage.pedestrian`: pedestrian-network filtering and construction from OSM
-  highway features.
 - `cityImage.network` and `cityImage.network_topology`: street-network
   construction, cleaning, simplification, and topology repair. See the
   [network cleaning guide](https://github.com/g-filomena/cityImage/blob/master/docs/network_topology.md)

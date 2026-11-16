@@ -22,7 +22,6 @@ from .barriers import barrier_osm_feature_tags, barriers_from_osm_features
 from .geometry import gdf_multipolygon_to_polygon
 from .landuse import classify_land_uses_raws_into_OSMgroups, derive_land_uses_raw_fromOSM
 from .network import _resolve_list_edges_gdf, reset_index_graph_gdfs
-from .pedestrian import pedestrian_network_from_osm
 
 OSM_DOWNLOAD_METHODS = {"OSMplace", "distance_from_address", "distance_from_point", "polygon"}
 DEFAULT_NETWORK_METADATA_COLUMNS = (
@@ -36,6 +35,21 @@ DEFAULT_NETWORK_METADATA_COLUMNS = (
     "lit",
     "surface",
 )
+
+WALK_NETWORK_TYPES = {"walk", "foot", "pedestrian"}
+
+# OSMnx's walk filter without its ``sidewalk*=separate`` exclusions, which drop a street whose
+# sidewalk is drawn as a way of its own (and leave a hole where that sidewalk is not drawn), and
+# without ``motorroad=yes`` roads, closed to pedestrians. The second query adds the cycleways open
+# to pedestrians; OSMnx joins the two.
+WALK_FILTER = [
+    '["highway"]["area"!~"yes"]["access"!~"private"]'
+    '["highway"!~"abandoned|bus_guideway|construction|cycleway|motor|no|planned|platform|proposed'
+    '|raceway|razed|rest_area|services"]'
+    '["foot"!~"no"]["service"!~"private"]["motorroad"!~"yes"]',
+    '["highway"="cycleway"]["area"!~"yes"]["access"!~"private"]'
+    '["foot"~"^(yes|designated|permissive|destination|official)$"]',
+]
 
 
 def _empty_osm_features(tags, crs=None):
@@ -236,26 +250,19 @@ def network_from_osm(
 ) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
     """Download an OSM network and convert it to cityImage network schema.
 
-    OSMnx owns graph acquisition and projection. cityImage owns pedestrian
-    filtering, node/edge schema construction, and selected metadata retention.
+    OSMnx owns graph acquisition and projection; cityImage converts the graph to its node/edge
+    schema and keeps the selected metadata. ``network_type="walk"`` (or ``"foot"``,
+    ``"pedestrian"``) downloads with :data:`WALK_FILTER`, both directions walkable.
     """
     crs = _normalise_crs(crs)
-
-    if network_type in {"walk", "foot", "pedestrian"}:
-        _validate_download_method(download_method)
-        # Validated as for the other network types, then passed on only when given, so the
-        # pedestrian default applies otherwise.
-        pedestrian_kwargs: dict[str, Any] = {}
-        if _distance_arg(distance, download_method) is not None:
-            pedestrian_kwargs["distance"] = distance
-        return pedestrian_network_from_osm(
-            query,
-            crs=crs,
-            download_method=download_method,
-            **pedestrian_kwargs,
-        )
-
     _validate_download_method(download_method)
+
+    filter_kwargs: dict[str, Any] = {}
+    if network_type in WALK_NETWORK_TYPES:
+        # "walk" is one of OSMnx's bidirectional network types: one-way streets are walkable both
+        # ways.
+        network_type = "walk"
+        filter_kwargs["custom_filter"] = WALK_FILTER
 
     try:
         if download_method == "OSMplace":
@@ -264,6 +271,7 @@ def network_from_osm(
                 network_type=network_type,
                 retain_all=True,
                 simplify=True,
+                **filter_kwargs,
             )
         elif download_method == "distance_from_address":
             graph = ox.graph_from_address(
@@ -272,6 +280,7 @@ def network_from_osm(
                 network_type=network_type,
                 retain_all=True,
                 simplify=True,
+                **filter_kwargs,
             )
         elif download_method == "distance_from_point":
             graph = ox.graph_from_point(
@@ -280,6 +289,7 @@ def network_from_osm(
                 network_type=network_type,
                 retain_all=True,
                 simplify=True,
+                **filter_kwargs,
             )
         else:
             graph = ox.graph_from_polygon(
@@ -287,6 +297,7 @@ def network_from_osm(
                 network_type=network_type,
                 retain_all=True,
                 simplify=True,
+                **filter_kwargs,
             )
     except Exception as exc:
         if exc.__class__.__name__ == "InsufficientResponseError":

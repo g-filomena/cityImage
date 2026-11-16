@@ -112,14 +112,6 @@ OWNERSHIP: dict[str, ModuleOwner] = {
         "OSMnx",
         "Preserves OSM notebook/user pipelines while delegating acquisition.",
     ),
-    "cityImage/pedestrian.py": ModuleOwner(
-        "cityImage/pedestrian.py",
-        "pedestrian network acquisition",
-        "keep thin",
-        "osmnx",
-        "osmnx",
-        "Pedestrian-specific OSM/network workflow boundary.",
-    ),
     "cityImage/centrality.py": ModuleOwner(
         "cityImage/centrality.py",
         "centrality outputs",

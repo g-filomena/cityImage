@@ -381,31 +381,6 @@ def test_dual_graph_without_oneway_stays_undirected():
     assert edges_dual["oneway"].tolist() == [0]
 
 
-def test_network_from_osm_walk_projects_when_no_crs_is_given(monkeypatch):
-    import cityImage.pedestrian as pedestrian
-
-    features = gpd.GeoDataFrame(
-        {"highway": ["footway"]},
-        geometry=[LineString([(-0.100, 51.500), (-0.099, 51.500)])],
-        crs="EPSG:4326",
-    )
-    calls = {}
-
-    def fake_features(ox, method, *args, **kwargs):
-        calls.update(kwargs)
-        return features
-
-    monkeypatch.setattr(pedestrian, "_call_osmnx_features", fake_features)
-
-    nodes, edges = ci.network_from_osm(
-        (51.5, -0.1), download_method="distance_from_point", network_type="walk", distance=300
-    )
-
-    assert edges.crs.is_projected
-    assert edges["length"].iloc[0] == pytest.approx(69, abs=2)
-    assert calls["dist"] == 300
-
-
 def test_network_from_osm_walk_requires_a_distance_for_distance_methods():
     with pytest.raises(ValueError, match="distance is required"):
         ci.network_from_osm(

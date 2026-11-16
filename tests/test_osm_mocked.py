@@ -228,6 +228,60 @@ def test_network_from_osm_dispatches_each_graph_method(
     assert not nodes.empty and not edges.empty
 
 
+def _recording_network_ox(calls):
+    """The fake OSMnx of ``_fake_network_ox``, recording the arguments of ``graph_from_point``."""
+    fake = _fake_network_ox()
+    graph_from = fake.graph_from_point
+
+    def graph_from_point(*args, **kwargs):
+        calls.update(kwargs)
+        return graph_from(*args, **kwargs)
+
+    fake.graph_from_point = graph_from_point
+    return fake
+
+
+@pytest.mark.parametrize("network_type", ["walk", "foot", "pedestrian"])
+def test_network_from_osm_walk_downloads_with_the_walk_filter(monkeypatch, network_type):
+    calls = {}
+    monkeypatch.setattr(osm, "ox", _recording_network_ox(calls))
+    nodes, edges = network_from_osm(
+        (0.0, 0.0),
+        crs=UTM,
+        download_method="distance_from_point",
+        distance=300,
+        network_type=network_type,
+    )
+
+    assert not edges.empty
+    # "walk" is the OSMnx network type that makes one-way streets walkable both ways
+    assert calls["network_type"] == "walk"
+    assert calls["custom_filter"] == osm.WALK_FILTER
+    assert calls["dist"] == 300
+
+
+def test_network_from_osm_other_network_types_use_the_osmnx_filter(monkeypatch):
+    calls = {}
+    monkeypatch.setattr(osm, "ox", _recording_network_ox(calls))
+    network_from_osm(
+        (0.0, 0.0),
+        crs=UTM,
+        download_method="distance_from_point",
+        distance=300,
+        network_type="drive",
+    )
+
+    assert calls["network_type"] == "drive"
+    assert "custom_filter" not in calls
+
+
+def test_walk_filter_keeps_streets_with_separate_sidewalks_and_drops_motorroads():
+    main, cycleways = osm.WALK_FILTER
+    assert "separate" not in main + cycleways
+    assert '["motorroad"!~"yes"]' in main
+    assert '["highway"="cycleway"]' in cycleways and '["foot"~' in cycleways
+
+
 def test_network_from_osm_dict_columns_missing_column_raises(monkeypatch):
     monkeypatch.setattr(osm, "ox", _fake_network_ox())
     with pytest.raises(ValueError, match="missing column"):
