@@ -1310,3 +1310,69 @@ def test_clean_network_with_preserve_direction_keeps_the_oneway_change():
     assert sorted(edges["oneway"].tolist()) == [False, True]
     assert 2 in set(nodes["nodeID"])
     assert len(merged) == 1
+
+
+def _ring():
+    """A triangle: three streets that simplification merges into one loop street."""
+    nodes = _nodes(
+        [
+            {"nodeID": 0, "x": 0.0, "y": 0.0},
+            {"nodeID": 1, "x": 100.0, "y": 0.0},
+            {"nodeID": 2, "x": 50.0, "y": 80.0},
+        ]
+    )
+    edges = _edges(
+        [
+            {"edgeID": 0, "u": 0, "v": 1, "geometry": LineString([(0, 0), (100, 0)])},
+            {"edgeID": 1, "u": 1, "v": 2, "geometry": LineString([(100, 0), (50, 80)])},
+            {"edgeID": 2, "u": 2, "v": 0, "geometry": LineString([(50, 80), (0, 0)])},
+        ]
+    )
+    return nodes, edges
+
+
+def test_fix_dead_ends_returns_an_empty_network_for_no_edges():
+    nodes, edges = _ring()
+
+    nodes_out, edges_out = nt.fix_dead_ends(nodes, edges.iloc[0:0])
+
+    assert edges_out.empty and nodes_out.empty
+    assert {"u", "v", "geometry"}.issubset(edges_out.columns)
+
+
+@pytest.mark.parametrize("dead_ends", [True, False])
+def test_clean_network_that_removes_every_street_returns_an_empty_network(dead_ends):
+    # The ring merges into one loop street, which self_loops removes: nothing is left.
+    nodes, edges = _ring()
+
+    nodes_out, edges_out = nt.clean_network(nodes, edges, dead_ends=dead_ends, self_loops=True)
+
+    assert edges_out.empty and nodes_out.empty
+    assert {"u", "v", "geometry"}.issubset(edges_out.columns)
+
+
+@pytest.mark.timeout(60)
+def test_clean_network_ends_when_an_edge_refers_to_a_node_missing_from_the_nodes():
+    # Node 9 is a pseudo-node of the edges but absent from the nodes frame: simplify_graph and the
+    # loop check of clean_network must agree on it, or the loop never ends.
+    nodes = _nodes(
+        [
+            {"nodeID": 0, "x": 0.0, "y": 0.0},
+            {"nodeID": 1, "x": 200.0, "y": 0.0},
+            {"nodeID": 2, "x": 100.0, "y": 100.0},
+        ]
+    )
+    edges = _edges(
+        [
+            {"edgeID": 0, "u": 0, "v": 9, "geometry": LineString([(0, 0), (100, -20)])},
+            {"edgeID": 1, "u": 9, "v": 1, "geometry": LineString([(100, -20), (200, 0)])},
+            {"edgeID": 2, "u": 1, "v": 2, "geometry": LineString([(200, 0), (100, 100)])},
+            {"edgeID": 3, "u": 2, "v": 0, "geometry": LineString([(100, 100), (0, 0)])},
+        ]
+    )
+
+    nodes_out, edges_out = nt.simplify_graph(nodes, edges, nodes_to_keep_regardless=[0])
+
+    assert 9 not in set(edges_out["u"]) | set(edges_out["v"])
+    # What simplify_graph leaves is what the loop check calls simplified: the loop can end.
+    assert nt._are_nodes_simplified(nodes_out, edges_out, [0])

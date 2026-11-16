@@ -83,6 +83,11 @@ The first release on PyPI since 2.1.1. The changes are listed by kind, then by s
 
 ### Fixed
 
+- `clean_network` and `fix_dead_ends` no longer fail when the cleaning leaves no street (a ring
+  that merges into one loop street, removed with `self_loops=True`): they return empty layers.
+- `simplify_graph` with `nodes_to_keep_regardless` merges a pseudo-node that an edge refers to
+  but the nodes frame lacks, as the loop check of `clean_network` expects: the loop ended only
+  once no such node was left, so it could run forever.
 - `plot_grid_gdf_columns` and `plot_grid_gdfs_column` with one legend for a classified point layer
   no longer fail on recent matplotlib (`'PathCollection' object has no attribute '_legmarker'`);
   the legend markers are sized as before.
@@ -120,7 +125,9 @@ for a visual walk-through of every case.
   pseudo-node is kept where merging would lose the direction of a one-way street (one segment
   one-way and the other not, or two one-ways that do not run on from one into the other), so
   `oneway` stays exact on the cleaned edges. Without it, as before, a merged edge takes the
-  `oneway` covering most of its length.
+  `oneway` covering most of its length. **⚠ behaviour** With it, `oneway` must read as in
+  `dual_gdf` (True/1/"yes" or False/0/"no"/missing): OSM's `-1` or `reversible` raises a
+  `ValueError` instead of being cleaned as it was.
 
 #### Changed
 - **⚠ behaviour** `clean_same_vertexes_edges` no longer drops the shorter of two edges between

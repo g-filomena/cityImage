@@ -387,6 +387,8 @@ def clean_network(
     preserve_direction : bool, optional
         If True, considers edge direction: edges with the same coordinates but opposite directions are not considered duplicates,
         and a pseudo-node where the direction changes is kept (see simplify_graph), so `oneway` stays exact.
+        `oneway` is then read as in `dual_gdf`: True, 1 or "yes" is one-way, False, 0, "no" or missing
+        is two-way; any other value, such as OSM's "-1" or "reversible", raises a ValueError.
         If False, such edges are treated as duplicates. Default is False.
     nodes_to_keep_regardless : list, optional
         List of node IDs to always keep, even if they would otherwise be removed (e.g. for transport stations). Default is empty list.
@@ -467,9 +469,7 @@ def clean_network(
     # No second island removal here: the loop (node/edge de-duplication, dead-end and pseudo-node
     # removal) can only merge or peel, never split a component, so any islands were already removed
     # before the loop.
-    nodes_gdf["x"], nodes_gdf["y"] = list(
-        zip(*[(r.coords[0][0], r.coords[0][1]) for r in nodes_gdf.geometry], strict=False)
-    )
+    nodes_gdf["x"], nodes_gdf["y"] = nodes_gdf.geometry.x, nodes_gdf.geometry.y
     edges_gdf = correct_edge_geometries(nodes_gdf, edges_gdf)  # correct edges coordinates
     return _finalize_dataframes(nodes_gdf, edges_gdf, crs)
 
@@ -706,7 +706,8 @@ def simplify_graph(
     With `preserve_direction`, a pseudo-node is kept where merging would lose the direction of a
     one-way street (``oneway`` True, 1 or "yes"): one segment is one-way and the other is not, or
     both are one-way but do not run on from one into the other. One-way segments that do are
-    merged in their direction.
+    merged in their direction. A ``oneway`` value other than True/1/"yes" or False/0/"no"/missing
+    (OSM's "-1", "reversible") raises a ValueError.
 
     Parameters
     ----------
@@ -734,13 +735,11 @@ def simplify_graph(
     if len(to_edit) == 0:
         return (nodes_gdf, edges_gdf)
 
+    # The same nodes as _are_nodes_simplified considers (the clean_network loop ends on it), so
+    # by the edges' u and v rather than by nodes_gdf, which may lack a node an edge refers to.
     if nodes_to_keep_regardless:
-        to_edit_list = list(to_edit)
-        tmp_nodes = nodes_gdf[
-            (nodes_gdf["nodeID"].isin(to_edit_list))
-            & (~nodes_gdf["nodeID"].isin(nodes_to_keep_regardless))
-        ].copy()
-        to_edit = list(tmp_nodes["nodeID"])
+        keep = set(nodes_to_keep_regardless)
+        to_edit = [node for node in to_edit if node not in keep]
 
     # Mutable edge state and a node->edges incidence map, so each pseudo-node is resolved with O(1)
     # dict lookups instead of the old per-node full-frame scan and per-merge .drop (both O(edges),
@@ -936,7 +935,8 @@ def fix_dead_ends(nodes_gdf, edges_gdf, nodes_to_keep_regardless=None):
                 for pos in (p for node in nodes for p in incident[node]):
                     removed[pos] = False
 
-    edges_gdf = edges_gdf[[not gone for gone in removed]].copy()
+    # By position: a boolean list selects columns, not rows, when it is empty (no edges).
+    edges_gdf = edges_gdf.iloc[np.flatnonzero(~np.asarray(removed, dtype=bool))].copy()
     return _drop_unused_nodes(nodes_gdf.copy(), edges_gdf), edges_gdf
 
 
@@ -1154,9 +1154,15 @@ def correct_edge_geometries(nodes_gdf, edges_gdf):
         new_line_geometry = LineString([coor for coor in line_coords])
         return new_line_geometry
 
-    edges_gdf["geometry"] = edges_gdf.apply(
-        lambda row: _update_line_geometry_coords(row["u"], row["v"], nodes_gdf, row["geometry"]),
-        axis=1,
+    edges_gdf["geometry"] = gpd.GeoSeries(
+        [
+            _update_line_geometry_coords(u, v, nodes_gdf, geometry)
+            for u, v, geometry in zip(
+                edges_gdf["u"], edges_gdf["v"], edges_gdf.geometry, strict=True
+            )
+        ],
+        index=edges_gdf.index,
+        crs=edges_gdf.crs,
     )
     return edges_gdf
 
