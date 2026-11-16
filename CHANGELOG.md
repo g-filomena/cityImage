@@ -10,6 +10,9 @@ Entries marked **⚠ behaviour** change the output of an existing call with the 
 
 ## [3.0.0] — 2026-11-16
 
+The first release on PyPI since 2.1.1. The changes are listed by kind, then by subject from
+*Network cleaning* on.
+
 ### Added
 
 - `image_of_the_city(place)` returns the five elements of the Image of the City in one call:
@@ -98,11 +101,6 @@ Entries marked **⚠ behaviour** change the output of an existing call with the 
   geometries with no category are grey, and the legend is drawn even with a single panel.
 - The `Landmarks_fromOSM` notebook runs on the current API (land uses from `buildings_from_osm`,
   local component weights summing to 1) and is saved with its outputs.
-
-## 2.2.0 — not published
-
-Prepared in September 2026 but never released on PyPI: its changes reach PyPI users with 3.0.0,
-after 2.1.1.
 
 ### Network cleaning — reworked
 
@@ -325,13 +323,6 @@ for a visual walk-through of every case.
   UTM zone when `crs` is None and the input is in longitude/latitude; the barrier rules were
   applied in degrees. Input without a CRS stays in its own units.
 - `along_within_parks` no longer writes into the caller's frame.
-
-### Pedestrian networks
-- `service=alley` ways are kept (`ped="noEvidence"`, or `"yes"` with pedestrian evidence) instead of
-  being dropped as generic service roads.
-- `network_from_osm(network_type="walk")` / `pedestrian_network_from_osm` project to the local UTM
-  zone when `crs` is None, and validate `distance` like the other network types instead of passing
-  `None` to OSMnx.
 
 ### Districts
 - **⚠ behaviour** `identify_regions` and `identify_regions_primal` take `random_state` (default `0`)

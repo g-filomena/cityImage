@@ -250,7 +250,7 @@ def test_cultural_score_without_historic_geometries_is_not_computed():
 
 
 def _reference_local_scores(buildings, indexes_weights, components_weights, radius):
-    """The per-building local score as cityImage computed it before 2.2.0: the frame of the
+    """The per-building local score as cityImage 2.1.1 computed it: the frame of the
     buildings intersecting the building's buffer, rescaled by ``_component_scores``."""
     from cityImage.landmarks import _component_scores, _with_known_heights
 
