@@ -163,7 +163,7 @@ def compute_3d_sight_lines(
     obstructions_buildings_gdf: gpd.GeoDataFrame,
     edges_gdf: gpd.GeoDataFrame,
     city_name: str,
-    distance_along: float = 200,
+    distance_along: float = 10,
     min_observer_target_distance: float = 300,
     max_observer_target_distance: float | None = None,
     observer_height: float = 1.6,
@@ -209,8 +209,12 @@ def compute_3d_sight_lines(
         Network edges used only when ``consolidate=True``.
     city_name : str
         Prefix used for temporary chunk files.
-    distance_along : float, default 200
-        Sampling distance along target-building roof edges.
+    distance_along : float, default 10
+        Sampling distance along target-building roof edges: a roof vertex becomes a target point
+        each time the outline has run this far since the last one (at least one point per
+        building). Sparser sampling misses buildings seen from one side only: on Boston's centre,
+        200 m left 326 of 1408 buildings unreached that 20 m reached, and 20 m left 39 that
+        10 m reached. The run time grows with the number of target points.
     min_observer_target_distance : float, default 300
         Minimum 2D distance allowed between observer and target.
     max_observer_target_distance : float or None, default None
@@ -510,7 +514,7 @@ def _prepare_3d_sight_lines(
     nodes_gdf,
     target_buildings_gdf,
     obstructions_gdf,
-    distance_along=200,
+    distance_along=10,
     observer_height=1.6,
     min_target_height=5.0,
     consolidate=False,
@@ -529,7 +533,7 @@ def _prepare_3d_sight_lines(
         optionally ``base``.
     obstructions_gdf : geopandas.GeoDataFrame
         Buildings considered as potential obstructions.
-    distance_along : float, default 200
+    distance_along : float, default 10
         Sampling distance along target-building roof edges.
     observer_height : float, default 1.6
         Eye height above node ``z``, in metres.
