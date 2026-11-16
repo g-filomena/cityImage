@@ -421,7 +421,21 @@ def _freehand(polygon: Any, seed: int) -> Any:
     largest = max(p.area for p in parts)
     rng = np.random.default_rng(seed)
     wavering = [_waver(p.exterior, rng) for p in parts if p.area >= 0.05 * largest]
-    return shapely.union_all([Polygon(w) for w in wavering if len(w) >= 4]).buffer(0)
+    # A wavering outline can cross itself; made valid, it is the polygons it encloses.
+    polygons = [
+        polygon
+        for w in wavering
+        if len(w) >= 4
+        for polygon in _polygons(shapely.make_valid(Polygon(w)))
+    ]
+    return shapely.union_all(polygons).buffer(0) if polygons else Polygon()
+
+
+def _polygons(geometry: Any) -> list[Polygon]:
+    """The non-empty polygons of ``geometry``, however nested in collections."""
+    if isinstance(geometry, Polygon):
+        return [] if geometry.is_empty else [geometry]
+    return [polygon for part in getattr(geometry, "geoms", []) for polygon in _polygons(part)]
 
 
 def _waver(ring: Any, rng: np.random.Generator, scale: float = 1.0) -> np.ndarray:
