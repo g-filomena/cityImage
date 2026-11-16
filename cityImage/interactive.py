@@ -504,7 +504,7 @@ def _stars(points: gpd.GeoSeries, side: float) -> list[MultiPolygon]:
 
 
 _LEGEND = """
-<div style="position: fixed; bottom: 20px; left: 20px; z-index: 9999; background: #fff;
+<div style="position: fixed; bottom: 30px; right: 20px; z-index: 9999; background: #fff;
             border: 1px solid #111; padding: 10px 14px 8px; color: #111;
             font: 11px/1.3 Georgia, 'Times New Roman', serif;">
   <div style="font-style: italic; font-size: 15px; margin-bottom: 6px;">

@@ -7,11 +7,11 @@
 
 # cityImage
 
-<img src="https://raw.githubusercontent.com/g-filomena/cityImage/master/docs/_static/gallery/freiburg.png" alt="The computational Image of the City of Freiburg im Breisgau, drawn with the symbols of Lynch's legend" width="100%">
+<img src="https://raw.githubusercontent.com/g-filomena/cityImage/master/docs/_static/gallery/boston.png" alt="The computational Image of the City of central Boston, drawn with the symbols of Lynch's legend" width="100%">
 
-*Freiburg im Breisgau: paths, edges, nodes, districts and landmarks from one call to
-`image_of_the_city`, drawn by `img.explore()` with the symbols of Lynch's legend. More in the
-[gallery](https://cityimage.readthedocs.io/en/latest/gallery.html).*
+*Boston, 1.5 km around the Common, the area of Lynch's own study: paths, edges, nodes, districts
+and landmarks from one call to `image_of_the_city`, drawn by `img.explore()` with the symbols of
+Lynch's legend. More in the [gallery](https://cityimage.readthedocs.io/en/latest/gallery.html).*
 
 **cityImage** is a Python package for analysing urban legibility and extracting a
 computational version of Kevin Lynch's *Image of the City* from geospatial data.

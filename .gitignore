@@ -141,3 +141,6 @@ ehthumbs.db
 *.swp
 *.swo
 *~
+
+# local planning notes
+ROADMAP.md
