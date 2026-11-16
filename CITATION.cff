@@ -8,8 +8,8 @@ authors:
   - family-names: Filomena
     given-names: Gabriele
     orcid: https://orcid.org/0000-0001-6380-7264
-version: 2.2.0
-date-released: 2026-09-28
+version: 3.0.0
+date-released: 2026-11-16
 license: GPL-3.0-or-later
 repository-code: https://github.com/g-filomena/cityImage
 url: https://cityimage.readthedocs.io

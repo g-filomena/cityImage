@@ -8,6 +8,8 @@ Entries marked **⚠ behaviour** change the output of an existing call with the 
 
 ## [Unreleased]
 
+## [3.0.0] — 2026-11-16
+
 ### Changed
 
 - **⚠ behaviour** The default landmark weights are those of Filomena, Verstegen & Manley (2019),
@@ -25,12 +27,27 @@ Entries marked **⚠ behaviour** change the output of an existing call with the 
 - Development status is now Production/Stable.
 - The minimum pandas version is now 2.2.2, the first release that works with NumPy 2
   (already required). pandas 2.2.0–2.2.1 fail on import with NumPy 2.
-- **⚠ behaviour** `sidewalk_policy="sidewalks"` is removed: `filter_pedestrian_osm_features`,
-  `pedestrian_network_from_osm_features` and `pedestrian_network_from_osm` take `keep_both`
-  (default) or `centrelines`, and raise `ValueError` on `sidewalks`. It dropped any road with a
-  `separate` among its `sidewalk*` tags, so `sidewalk:left=separate` + `sidewalk:right=yes` lost
-  the right sidewalk, and a road tagged `separate` with no walkway drawn beside it left a hole in
-  the network.
+- **⚠ behaviour** `network_from_osm(network_type="walk")` (also `"foot"`, `"pedestrian"`), and so
+  the paths and nodes of `image_of_the_city`, downloads the street graph with OSMnx like the
+  other network types, with `osm.WALK_FILTER`: OSMnx's walk filter without its
+  `sidewalk*=separate` exclusions (a street whose sidewalk is drawn on its own stays) and without
+  `motorroad=yes` roads, plus the cycleways with a `foot` tag open to pedestrians. Unclassified,
+  `*_link`, service (not private) and trunk roads are now walkable without a `foot` or
+  `sidewalk` tag. As for the other network types, each street comes as two edges, one per
+  direction, until `clean_network` reduces them, and the edges carry the same metadata columns:
+  there is no `ped` column.
+
+- **⚠ behaviour** `compute_3d_sight_lines(distance_along=10)`: target points every 10 m of roof
+  outline (was 200 m). At 200 m nine buildings in ten had a single target point, and a building
+  seen from one side only could be missed: on Boston's centre 200 m left 326 of 1408 buildings
+  unreached that 10–20 m reached. The run takes about 3.5 times as long; pass
+  `distance_along=200` for the old sampling.
+
+### Removed
+
+- **⚠ behaviour** The `cityImage.pedestrian` module, with `pedestrian_network_from_osm`,
+  `pedestrian_network_from_osm_features` and `filter_pedestrian_osm_features`. Use
+  `network_from_osm(network_type="walk")`.
 
 ### Added
 
@@ -62,6 +79,9 @@ Entries marked **⚠ behaviour** change the output of an existing call with the 
 
 ### Fixed
 
+- `plot_grid_gdf_columns` and `plot_grid_gdfs_column` with one legend for a classified point layer
+  no longer fail on recent matplotlib (`'PathCollection' object has no attribute '_legmarker'`);
+  the legend markers are sized as before.
 - `environment.yml` installed the igraph C library (`igraph`) instead of its Python bindings
   (`python-igraph`), so centrality failed in a fresh conda environment.
 - The legend of `plot_gdf` no longer reads `_legmarker`, which recent matplotlib versions do not
@@ -444,7 +464,8 @@ below records what the repository shows.
 | 0.12 | 2020-06 | Travis CI, requirement fixes. |
 | 0.1 – 0.11 | 2019-11 | Initial releases, following Filomena, Verstegen & Manley (2019), *A computational approach to The Image of the City*, Cities 89. |
 
-[Unreleased]: https://github.com/g-filomena/cityImage/compare/v2.2.0...HEAD
+[Unreleased]: https://github.com/g-filomena/cityImage/compare/v3.0.0...HEAD
+[3.0.0]: https://github.com/g-filomena/cityImage/compare/v2.2.0...v3.0.0
 [2.2.0]: https://github.com/g-filomena/cityImage/compare/v2.1.1...v2.2.0
 [2.1.1]: https://github.com/g-filomena/cityImage/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/g-filomena/cityImage/compare/v2.0.1...v2.1.0
