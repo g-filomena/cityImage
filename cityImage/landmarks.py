@@ -44,9 +44,7 @@ def _structural_visibility_task(args):
     return visibility_polygon2d(geometry, _STRUCTURAL_OBSTRUCTIONS, None, max_expansion_distance)
 
 
-def _advance_visibility_areas(
-    geometries, obstructions_gdf, sindex, max_expansion_distance, workers
-):
+def _advance_visibility_areas(geometries, obstructions_gdf, max_expansion_distance, workers):
     """2D advance-visibility area per building geometry, in insertion order.
 
     Runs across a ``spawn`` process pool when ``workers > 1``; falls back to a serial pass
@@ -144,14 +142,12 @@ def structural_score(
         )
 
     obstructions_gdf = buildings_gdf if obstructions_gdf is None else obstructions_gdf
-    sindex = obstructions_gdf.sindex
     street_network = edges_gdf.geometry.union_all()
 
     buildings_gdf["road"] = buildings_gdf.geometry.distance(street_network)
     buildings_gdf["2dvis"] = _advance_visibility_areas(
         list(buildings_gdf.geometry),
         obstructions_gdf,
-        sindex,
         advance_vis_expansion_distance,
         workers,
     )
@@ -481,8 +477,9 @@ def _with_known_heights(buildings_gdf):
     """A copy with ``height``, where there is one, read through ``known_heights``: NaN where
     missing, unreadable or not above zero. A frame without a height column is left without one.
 
-    Where the layer has heights, the visual score is computed and a building without one gets 0:
-    an unknown height never makes a building stand out, and the building can still be a landmark
+    Where the layer has heights, the visual score is computed and a building without one has none
+    (NaN, adding nothing to the weighted sums): an unknown height never makes a building stand out,
+    and the building can still be a landmark
     through its other components. It is not an obstruction to 3D sight lines either. Heights are
     the caller's to supply; drop such buildings beforehand to leave them out of the scores.
     """

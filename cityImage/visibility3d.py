@@ -237,7 +237,11 @@ def compute_3d_sight_lines(
     num_workers : int, default 20
         Number of processes computing chunks in parallel, each single-threaded; the result is the
         same whatever their number. With 1, or a single chunk, the chunks run in this process and
-        the 2D obstruction check uses this many Dask threads.
+        the 2D obstruction check uses this many Dask threads. Each process holds its own copy of
+        the targets, obstructions and observers: lower ``num_workers`` when memory is short. The
+        processes start from a fork server or are spawned, so they import the calling script
+        again: a script (not a notebook) must call this function under
+        ``if __name__ == "__main__":``, as Python's ``multiprocessing`` requires.
     verbose : bool, default False
         When ``True``, progress is logged at INFO on the ``cityImage.visibility3d`` logger, and
         shown: a bar with per-step 2D/3D times and an ETA each time the bar advances, plus step

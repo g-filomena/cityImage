@@ -340,9 +340,10 @@ def buildings_from_osm(
 
     OSM ``height`` tags are kept only with ``keep_osm_heights=True``, read as metres (``"12 m"``,
     ``"12,5"``; see ``known_heights``). They usually cover only some buildings: a building
-    without one has a NaN height and gets a visual score of 0. By default every height is NaN
-    and the visual score component is left out; heights from another source
-    (``assign_building_heights_from_other_gdf``, rasters) can be assigned instead.
+    without one has a NaN height and no visual score (NaN, adding nothing to the landmark
+    score). By default every height is NaN and the visual score component is left out; heights
+    from another source (``assign_building_heights_from_other_gdf``, rasters) can be assigned
+    instead.
     """
     crs = _normalise_crs(crs)
     buildings = features_from_osm(

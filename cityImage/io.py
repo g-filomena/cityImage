@@ -88,8 +88,8 @@ def buildings_from_file(
     Heights come from ``height_field``, or from an existing ``height`` column, read as metres
     (see ``known_heights``). Buildings whose height is lower than ``min_height`` are dropped; a
     building without a height (missing, unreadable or not above zero) is kept with a NaN height.
-    The landmark scores give such a building a visual score of 0, and leave the visual component
-    out when no building has a height. Heights are the caller's to supply.
+    The landmark scores give such a building no visual score (NaN, adding nothing to the landmark
+    score), and leave the visual component out when no building has a height. Heights are the caller's to supply.
     """
     crs = _normalise_crs(crs)
     buildings = gpd.read_file(input_path).to_crs(crs).copy()
