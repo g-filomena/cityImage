@@ -174,6 +174,7 @@ def visibility_score(buildings_gdf, sight_lines=None, method="longest"):
     """Calculate visibility landmark sub-scores.
 
     Adds:
+
     - fac: approximate facade area;
     - 3dvis: 3D visibility score, derived from sight-line lengths; 0 for a building no sight
       line reaches (not visible, or too short to be a target) when another building is reached.

@@ -10,6 +10,36 @@ Entries marked **⚠ behaviour** change the output of an existing call with the 
 
 ## [3.0.0] — 2026-11-16
 
+### Added
+
+- `image_of_the_city(place)` returns the five elements of the Image of the City in one call:
+  paths, nodes, edges (barriers), districts and landmarks, as a `CityImage` with `plot()` and
+  `to_file()`. It follows Filomena, Verstegen & Manley (2019): nodes from betweenness, paths
+  from angular betweenness, districts from angle-weighted modularity on the drive network of the
+  same place, landmarks from the global score. Nodes, paths and landmarks are ranked in Lynch's
+  ranges (`lynch_class` 1 for the strongest, over 0.75, down to 4; 0 below). `CityImageConfig`
+  holds the parameters.
+- `plot_city_image(city_image)` maps the five elements on one figure. *(extra: plot)*
+- `landmark_weight_sensitivity(buildings)`: perturbs the weights of the global landmark score
+  (at random, or one at a time) and measures the stability of the ranking, of the top buildings
+  and of the Lynch classes.
+- Docs: a Quickstart at the top of the User Guide, a Gallery of cities (Freiburg, Sarajevo,
+  Boston), and the one-call API in the API reference. Every User Guide notebook is saved with its
+  outputs; `Landmarks_Local_Files` takes the terrain under observers and buildings from a DTM.
+- `CityImage.explore()` (`explore_city_image`): an interactive web map of the five elements with
+  the symbols of Lynch's legend, black on white: bars and dashes for paths, the comb for edges,
+  circles for nodes, star and triangles for landmarks, freehand dotted or hatched districts. One
+  layer per Lynch class, switched by its symbol. New `interactive` extra (folium), also in
+  `all`.
+- Python 3.13 in the CI test matrix and the package classifiers.
+- `CITATION.cff`, so GitHub shows how to cite cityImage.
+- `CONTRIBUTING.md`, a code of conduct, issue forms and a pull request template.
+- mypy runs in CI (`[tool.mypy]` in `pyproject.toml`).
+- `isovist_measures`: area, compactness, and the occluding edges of one isovist from its
+  ray lengths - neighbouring rays stopping at different obstructions, with a jump in length, and
+  with the longer ray crossing the line of the shorter one's wall past its end, so a view along a
+  wall at a grazing angle is not a corner.
+
 ### Changed
 
 - **⚠ behaviour** The default landmark weights are those of Filomena, Verstegen & Manley (2019),
@@ -36,7 +66,6 @@ Entries marked **⚠ behaviour** change the output of an existing call with the 
   `sidewalk` tag. As for the other network types, each street comes as two edges, one per
   direction, until `clean_network` reduces them, and the edges carry the same metadata columns:
   there is no `ped` column.
-
 - **⚠ behaviour** `compute_3d_sight_lines(distance_along=10)`: target points every 10 m of roof
   outline (was 200 m). At 200 m nine buildings in ten had a single target point, and a building
   seen from one side only could be missed: on Boston's centre 200 m left 326 of 1408 buildings
@@ -49,39 +78,14 @@ Entries marked **⚠ behaviour** change the output of an existing call with the 
   `pedestrian_network_from_osm_features` and `filter_pedestrian_osm_features`. Use
   `network_from_osm(network_type="walk")`.
 
-### Added
-
-- `image_of_the_city(place)` returns the five elements of the Image of the City in one call:
-  paths, nodes, edges (barriers), districts and landmarks, as a `CityImage` with `plot()` and
-  `to_file()`. It follows Filomena, Verstegen & Manley (2019): nodes from betweenness, paths
-  from angular betweenness, districts from angle-weighted modularity on the drive network of the
-  same place, landmarks from the global score. Nodes, paths and landmarks are ranked in Lynch's
-  ranges (`lynch_class` 1 for the strongest, over 0.75, down to 4; 0 below). `CityImageConfig` holds the parameters.
-- `plot_city_image(city_image)` maps the five elements on one figure. *(extra: plot)*
-- `landmark_weight_sensitivity(buildings)`: perturbs the weights of the global landmark score
-  (at random, or one at a time) and measures the stability of the ranking, of the top buildings
-  and of the Lynch classes.
-- Docs: a Quickstart at the top of the User Guide, a Gallery of cities (Freiburg, Sarajevo,
-  Boston), and the one-call API in the API reference.
-- `CityImage.explore()` (`explore_city_image`): an interactive web map of the five elements with
-  the symbols of Lynch's legend, black on white: bars and dashes for paths, the comb for edges,
-  circles for nodes, star and triangles for landmarks, freehand dotted or hatched districts. One
-  layer per Lynch class, switched by its symbol. New `interactive` extra (folium), also in
-  `all`.
-- Python 3.13 in the CI test matrix and the package classifiers.
-- `CITATION.cff`, so GitHub shows how to cite cityImage.
-- `CONTRIBUTING.md`, a code of conduct, issue forms and a pull request template.
-- mypy runs in CI (`[tool.mypy]` in `pyproject.toml`).
-- `isovist_measures`: area, compactness, and the occluding edges of one isovist from its
-  ray lengths - neighbouring rays stopping at different obstructions, with a jump in length, and
-  with the longer ray crossing the line of the shorter one's wall past its end, so a view along a
-  wall at a grazing angle is not a corner.
-
 ### Fixed
 
 - `plot_grid_gdf_columns` and `plot_grid_gdfs_column` with one legend for a classified point layer
   no longer fail on recent matplotlib (`'PathCollection' object has no attribute '_legmarker'`);
   the legend markers are sized as before.
+- `requirements.txt` left out `osmnx`, `igraph` and `python-louvain`, which are core: an install
+  from it could not download a network, nor compute centrality and districts. `environment.yml`
+  now has `folium` (for `explore()`) and `pytest-timeout`.
 - `environment.yml` installed the igraph C library (`igraph`) instead of its Python bindings
   (`python-igraph`), so centrality failed in a fresh conda environment.
 - The legend of `plot_gdf` no longer reads `_legmarker`, which recent matplotlib versions do not
@@ -95,7 +99,10 @@ Entries marked **⚠ behaviour** change the output of an existing call with the 
 - The `Landmarks_fromOSM` notebook runs on the current API (land uses from `buildings_from_osm`,
   local component weights summing to 1) and is saved with its outputs.
 
-## [2.2.0] — 2026-09-28
+## 2.2.0 — not published
+
+Prepared in September 2026 but never released on PyPI: its changes reach PyPI users with 3.0.0,
+after 2.1.1.
 
 ### Network cleaning — reworked
 
@@ -465,8 +472,7 @@ below records what the repository shows.
 | 0.1 – 0.11 | 2019-11 | Initial releases, following Filomena, Verstegen & Manley (2019), *A computational approach to The Image of the City*, Cities 89. |
 
 [Unreleased]: https://github.com/g-filomena/cityImage/compare/v3.0.0...HEAD
-[3.0.0]: https://github.com/g-filomena/cityImage/compare/v2.2.0...v3.0.0
-[2.2.0]: https://github.com/g-filomena/cityImage/compare/v2.1.1...v2.2.0
+[3.0.0]: https://github.com/g-filomena/cityImage/compare/v2.1.1...v3.0.0
 [2.1.1]: https://github.com/g-filomena/cityImage/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/g-filomena/cityImage/compare/v2.0.1...v2.1.0
 [2.0.1]: https://github.com/g-filomena/cityImage/compare/v2.0.0...v2.0.1

@@ -75,6 +75,8 @@ source_suffix = {
 # Notebook runtime smoke tests are handled separately.
 nbsphinx_execute = "never"
 nbsphinx_allow_errors = False
+# No notebook uses widgets: without a path nbsphinx does not look for ipywidgets.
+nbsphinx_widgets_path = ""
 
 # -- Options for HTML output -------------------------------------------------
 

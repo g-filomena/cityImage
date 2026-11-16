@@ -176,7 +176,7 @@ def plot_gdf(
     fig_size: float
         Size of the figure's side extent.
     scheme: str
-        Classification method. Choose amongst the options listed at https://pysal.org/mapclassify/api.html.
+        Classification method. Choose amongst the classifiers of mapclassify (https://pysal.org/mapclassify/).
     bins: list
         Bins defined by the user.
     classes: int
@@ -348,7 +348,7 @@ def plot_grid_gdfs_column(
     fig_size: float
         Size figure extent.
     scheme: str
-        Classification method. Choose amongst the options listed at https://pysal.org/mapclassify/api.html.
+        Classification method. Choose amongst the classifiers of mapclassify (https://pysal.org/mapclassify/).
     bins: list
         Bins defined by the user.
     classes: int
@@ -521,7 +521,7 @@ def plot_grid_gdf_columns(
     fig_size: float
         Size figure extent.
     scheme: str
-        Classification method. Choose amongst the options listed at https://pysal.org/mapclassify/api.html.
+        Classification method. Choose amongst the classifiers of mapclassify (https://pysal.org/mapclassify/).
     bins: list
         Bins defined by the user.
     classes: int
@@ -665,7 +665,7 @@ def _plot_on_ax(
     column: str
         Column on which the plot is based.
     scheme: str
-        Classification method. Choose amongst the options listed at https://pysal.org/mapclassify/api.html.
+        Classification method. Choose amongst the classifiers of mapclassify (https://pysal.org/mapclassify/).
     bins: list
         Bins defined by the user.
     classes: int
