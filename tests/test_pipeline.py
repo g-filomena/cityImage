@@ -239,3 +239,63 @@ def test_landmarks_use_the_paper_weights_by_default(scoring):
     assert scoring.global_index_weights["2dvis"] == 0.30
     assert scoring.pragmatic_search_radius == 200.0
     assert ci.CityImageConfig().structural_kwargs["neighbours_radius"] == 150
+
+
+def test_districts_that_cannot_be_assigned_are_left_out_with_a_warning(monkeypatch):
+    import cityImage.pipeline as pipeline
+
+    def cannot_amend(*args, **kwargs):
+        raise ValueError("A pass amended no node")
+
+    monkeypatch.setattr(pipeline, "amend_nodes_membership", cannot_amend)
+    nodes, edges, _, _ = _layers()
+
+    with pytest.warns(UserWarning, match="districts not computed: A pass amended no node"):
+        image = ci.image_of_the_city(
+            nodes=nodes, edges=edges, elements=("paths", "nodes", "districts"), config=CONFIG
+        )
+
+    assert image.districts is None
+    assert image.paths is not None and image.nodes is not None
+    assert "district" not in image.nodes.columns
+
+
+def test_longitude_latitude_layers_are_projected_to_their_utm_zone():
+    nodes, edges, _, _ = _layers()
+    projected = ci.image_of_the_city(nodes=nodes, edges=edges, elements=("paths",), config=CONFIG)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        geographic = ci.image_of_the_city(
+            nodes=nodes.to_crs(4326), edges=edges.to_crs(4326), elements=("paths",), config=CONFIG
+        )
+
+    assert geographic.paths.crs.is_projected
+    assert geographic.metadata["crs"] != "EPSG:4326"
+    # Measured in metres, the network cleans as the projected one does.
+    assert len(geographic.paths) == len(projected.paths)
+    assert geographic.paths.length.sum() == pytest.approx(projected.paths.length.sum(), rel=0.01)
+
+
+def test_centralities_are_computed_only_for_the_elements_asked(monkeypatch):
+    import cityImage.pipeline as pipeline
+
+    measured = []
+    real = pipeline.calculate_centrality
+
+    def recording(graph, measure, **kwargs):
+        measured.append((measure, kwargs.get("weight")))
+        return real(graph, measure, **kwargs)
+
+    monkeypatch.setattr(pipeline, "calculate_centrality", recording)
+    nodes, edges, buildings, _ = _layers()
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        ci.image_of_the_city(
+            nodes=nodes, edges=edges, buildings=buildings, elements=("landmarks",), config=CONFIG
+        )
+    assert measured == []
+
+    ci.image_of_the_city(nodes=nodes, edges=edges, elements=("paths",), config=CONFIG)
+    assert measured == [("betweenness", "rad")]

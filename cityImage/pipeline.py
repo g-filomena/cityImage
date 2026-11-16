@@ -218,7 +218,7 @@ def image_of_the_city(
         GeoDataFrames are not downloaded.
     crs
         Projected CRS of the result. ``None`` takes the local UTM zone of the downloaded network,
-        or the CRS of ``edges``.
+        or the CRS of ``edges`` (their local UTM zone when they are in longitude/latitude).
     download_method, distance
         As in ``network_from_osm``.
     nodes, edges
@@ -276,6 +276,9 @@ def image_of_the_city(
     else:
         _require_schema(validate_nodes_gdf(nodes), "nodes")
         _require_schema(validate_edges_gdf(edges), "edges")
+        if crs is None and edges.crs is not None and edges.crs.is_geographic and not edges.empty:
+            # Every step measures in CRS units: degrees would merge streets 5 degrees apart.
+            crs = edges.estimate_utm_crs()
         if crs is not None:
             nodes, edges = nodes.to_crs(crs), edges.to_crs(crs)
         metadata["network"] = "given"
@@ -285,19 +288,32 @@ def image_of_the_city(
     crs = edges.crs
     metadata["crs"] = crs.to_string() if crs is not None else None
 
-    # Nodes: betweenness on the primal graph. Paths: angular betweenness on the dual graph.
-    graph = graph_fromGDF(nodes, edges)
+    # Nodes: betweenness on the primal graph. Paths: angular betweenness on the dual graph, which
+    # the districts also partition when they are drawn on the paths network. Each is computed
+    # only when an element asks for it: they are the slowest steps.
     nodes = nodes.copy()
-    nodes["Bc"] = nodes["nodeID"].map(calculate_centrality(graph, "betweenness", weight="length"))
-    if config.straightness:
-        sc = calculate_centrality(graph, "straightness", weight="length")
-        nodes["Sc"] = nodes["nodeID"].map(sc)
-    nodes = _rank(nodes, "Bc", config.lynch_bins)
-    nodes_dual, edges_dual = dual_gdf(nodes, edges, crs)
-    dual_graph = dual_graph_fromGDF(nodes_dual, edges_dual)
+    if "nodes" in requested:
+        graph = graph_fromGDF(nodes, edges)
+        nodes["Bc"] = nodes["nodeID"].map(
+            calculate_centrality(graph, "betweenness", weight="length")
+        )
+        if config.straightness:
+            sc = calculate_centrality(graph, "straightness", weight="length")
+            nodes["Sc"] = nodes["nodeID"].map(sc)
+        nodes = _rank(nodes, "Bc", config.lynch_bins)
+    districts_on_paths = "districts" in requested and not (
+        config.district_network == "drive" and place is not None
+    )
+    dual_graph = None
+    if "paths" in requested or districts_on_paths:
+        nodes_dual, edges_dual = dual_gdf(nodes, edges, crs)
+        dual_graph = dual_graph_fromGDF(nodes_dual, edges_dual)
     edges = edges.copy()
-    edges["Ab"] = edges["edgeID"].map(calculate_centrality(dual_graph, "betweenness", weight="rad"))
-    edges = _rank(edges, "Ab", config.lynch_bins)
+    if "paths" in requested:
+        edges["Ab"] = edges["edgeID"].map(
+            calculate_centrality(dual_graph, "betweenness", weight="rad")
+        )
+        edges = _rank(edges, "Ab", config.lynch_bins)
 
     result_edges = None
     if "edges" in requested:
@@ -449,9 +465,15 @@ def _districts(
         return nodes, None
 
     polygons = polygonise_partitions(kept, column)
-    nodes = district_to_nodes_from_polygons(nodes, polygons, column)
-    nodes = amend_nodes_membership(nodes, edges, column, config.min_district_size)
-    nodes = find_gateways(nodes, edges, column)
+    assigned = district_to_nodes_from_polygons(nodes, polygons, column)
+    try:
+        assigned = amend_nodes_membership(assigned, edges, column, config.min_district_size)
+    except ValueError as error:
+        # The nodes cannot all join a district (e.g. part of the network is cut off): the other
+        # elements are kept, without districts.
+        _warn("districts", str(error))
+        return nodes, None
+    nodes = find_gateways(assigned, edges, column)
     nodes = nodes.rename(columns={column: "district"})
     polygons = polygons.rename(columns={column: "district"})
     polygons["district"] = polygons["district"].astype(int)
