@@ -79,4 +79,4 @@ moving functions between modules.
 - Add a line to `CHANGELOG.md` under `## [Unreleased]` for user-visible changes.
 
 By contributing you agree that your contribution is licensed under the project's
-[license](LICENSE), and that you follow the [code of conduct](CODE_OF_CONDUCT.md).
+[license](LICENSE).

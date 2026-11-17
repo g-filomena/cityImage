@@ -41,7 +41,7 @@ The first release on PyPI since 2.1.1. The changes are listed by kind, then by s
   `all`.
 - Python 3.13 in the CI test matrix and the package classifiers.
 - `CITATION.cff`, so GitHub shows how to cite cityImage.
-- `CONTRIBUTING.md`, a code of conduct, issue forms and a pull request template.
+- `CONTRIBUTING.md`, issue forms and a pull request template.
 - mypy runs in CI (`[tool.mypy]` in `pyproject.toml`).
 - `isovist_measures`: area, compactness, and the occluding edges of one isovist from its
   ray lengths - neighbouring rays stopping at different obstructions, with a jump in length, and
