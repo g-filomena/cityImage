@@ -19,7 +19,6 @@ ox = pytest.importorskip("osmnx")
 
 OVERPASS_ENDPOINTS = (
     "https://overpass-api.de/api",
-    "https://maps.mail.ru/osm/tools/overpass/api",
     "https://overpass.kumi.systems/api",
 )
 PROBE_TIMEOUT = 20  # seconds to wait for an endpoint to answer the probe
