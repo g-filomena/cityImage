@@ -3,21 +3,13 @@
 cityImage API reference
 =======================
 
-This page documents the public API. The package keeps cityImage-specific
-semantics at the top level and delegates generic operations to specialised
-libraries:
-
-- file reading and CRS handling to GeoPandas;
-- OpenStreetMap acquisition to OSMnx;
-- graph algorithms to NetworkX, iGraph, and python-louvain;
-- raster/zonal-statistics operations to rasterio/rasterstats;
-- optional parallel 3D sight-line computation to Dask;
-- optional static plotting to Matplotlib and mapclassify.
-
-The public API therefore focuses on stable cityImage schemas and computational
-urban-image semantics: networks, barriers, regions, land use, landmarks,
-visibility, and imageability scoring. Low-level implementation helpers and
-generic GeoPandas/Shapely operations are intentionally not listed here.
+This page documents the public API. cityImage leaves file reading and CRS
+handling to GeoPandas, OpenStreetMap downloads to OSMnx, graph algorithms to
+NetworkX, igraph and python-louvain, raster sampling to rasterio and
+rasterstats, the parallel 3D sight lines to Dask and static plots to Matplotlib
+and mapclassify. The functions listed here are cityImage's own: networks,
+barriers, regions, land use, landmarks, visibility and scores. Internal helpers
+are not listed.
 
 .. currentmodule:: cityImage
 
@@ -220,11 +212,10 @@ Building height and terrain elevation
 
 Height helpers are optional. Raster workflows require the ``height`` extra.
 
-Terminology: the **DTM** (bare-earth terrain) provides node ``z`` and building
-``base``; a **surface** model (DSM — first-return elevations including rooftops,
-often distributed under the generic name *DEM*) compared against the DTM provides
-above-ground building heights. ``assign_elevations_from_rasters`` is the one-stop
-entry point for cities without building-height data.
+The **DTM** (bare-earth terrain) gives node ``z`` and building ``base``; a
+**surface** model (DSM, with the roofs on it, often distributed as *DEM*)
+compared with the DTM gives the building heights. For a city without building
+heights, ``assign_elevations_from_rasters`` does all of this in one call.
 
 .. autosummary::
    :toctree: api/

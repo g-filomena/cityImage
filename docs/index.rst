@@ -49,7 +49,6 @@ Install with all optional extras:
 Main API areas
 --------------
 
-The API separates cityImage-owned semantics from external libraries.
 Submodules marked *(extra: X)* need the corresponding optional install (see
 Installation above); the rest are available with the core install.
 

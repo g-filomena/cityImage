@@ -27,50 +27,31 @@ For full documentation and examples, see the
 
 ## What cityImage does
 
-cityImage operationalises Lynchian urban elements as reproducible geospatial
-workflows:
+From a street network, buildings and barriers, cityImage derives Lynch's five elements:
 
-- **Paths and nodes** from street-network structure, centrality, graph topology,
-  and optional angular/dual-graph semantics.
-- **Edges** from structuring barriers such as water, railways, large parks, and
-  major roads.
-- **Districts** from network partitions, polygonisation, and gateway detection.
-- **Landmarks** from structural, visual, cultural, and pragmatic salience.
-- **Imageability scores** from composable landmark and urban-element indicators.
+- **paths**: the streets, scored by angular betweenness on the dual graph;
+- **nodes**: the junctions, scored by betweenness centrality;
+- **edges**: the barriers that structure movement, such as water, railways, large parks and
+  major roads;
+- **districts**: partitions of the street network, with the junctions that are their gateways;
+- **landmarks**: the buildings, scored on their structural, visual, cultural and pragmatic
+  salience.
 
-The package is designed as a semantic layer over geospatial data rather than as
-a replacement for general-purpose GIS, graph, or OSM tooling.
+## What it leaves to other libraries
 
-## How cityImage differs from other geospatial libraries
+- GeoPandas and Shapely: geometries, CRS, spatial joins and file IO;
+- OSMnx: OpenStreetMap downloads;
+- NetworkX and igraph: graphs and their algorithms;
+- python-louvain: modularity partitions;
+- rasterio and rasterstats: raster sampling (extra `height`);
+- Dask: the parallel 3D sight lines (extra `visibility3d`).
 
-cityImage deliberately delegates generic operations to specialised libraries:
-
-- **GeoPandas/Shapely** handle geometry containers, CRS conversion, spatial
-  predicates, overlay-like operations, and file IO.
-- **OSMnx** handles OpenStreetMap acquisition and raw OSM graph/feature access.
-- **NetworkX/iGraph** handle graph representation and graph algorithms.
-- **python-louvain** handles modularity-based community detection.
-- **Rasterio/rasterstats** handle raster sampling and zonal statistics.
-- **Dask** parallelises batching in the optional 3D sight-line workflow.
-
-The specificity of cityImage is different: it defines the **urban-image
-semantics** that sit on top of those tools. In practice this means cityImage
-focuses on:
-
-- stable nodes/edges/buildings schemas used across the package;
-- conversion of raw files or OSM outputs into those schemas;
-- graph cleaning and topology repair where the cityImage node/edge relationship
-  must be preserved;
-- dual/primal graph transformations with street-segment angle semantics;
-- barrier extraction and assignment as Lynchian edge semantics;
-- district and gateway logic from network partitions;
-- landmark/imageability component scores and final score composition;
-- example-ready workflows that keep the same conceptual outputs across cities.
-
-So, for example, OSMnx can acquire a walk network, GeoPandas can spatially join
-layers, and NetworkX can compute graph measures. cityImage connects those pieces
-into a reproducible workflow that returns *paths, nodes, edges, districts,
-landmarks,* and imageability scores in a consistent schema.
+cityImage keeps what is specific to the Image of the City: the schemas of nodes, edges and
+buildings, the same at every step; the cleaning of street networks without artificial nodes;
+the dual graph and the angles between streets; barriers as Lynch's edges; districts and their
+gateways; the landmark scores and the Lynch classes. OSMnx can download a walk network and
+NetworkX can compute its betweenness; cityImage turns them into paths, nodes, edges, districts
+and landmarks that share the same identifiers.
 
 ## Background
 
@@ -108,7 +89,6 @@ pip install -e ".[all,test,docs,dev]"
 
 ## Main API areas
 
-The API separates cityImage-owned semantics from external libraries.
 Submodules marked *(extra: X)* need the corresponding optional install (see
 [Installation](#installation)); the rest are available with the core install.
 
@@ -136,8 +116,8 @@ Submodules marked *(extra: X)* need the corresponding optional install (see
 - `cityImage.buildings`: building selection, study-area and height-reading helpers.
 - `cityImage.height`: DEM/DTM-based building heights. *(extra: height)*
 - `cityImage.landmarks` and `cityImage.scoring`: Lynchian landmark and
-  imageability scoring. In a layer with heights, a building without one scores 0
-  on the visual component.
+  imageability scoring. A building without a height has no visual score (NaN), which adds
+  nothing to its landmark score.
 - `cityImage.visibility2d`: 2D visibility workflows.
 - `cityImage.visibility3d`: optional 3D sight-line workflows; `verbose=True` logs
   progress through `logging`. *(extra: visibility3d)*

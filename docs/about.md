@@ -6,27 +6,16 @@ The package originated from research on the computational formulation of Kevin L
 
 ## Purpose
 
-`cityImage` provides reproducible geospatial workflows for identifying computational analogues of Lynchian urban elements:
+`cityImage` derives the elements of Lynch's *Image of the City* from geospatial data: paths and nodes from the street network and its centrality, edges from barriers such as water, railways, parks and major roads, districts from partitions of the network, with their gateways, and landmarks from the structural, visual, cultural and pragmatic salience of buildings.
 
-- paths and nodes from street-network structure and graph measures;
-- edges from barriers such as water, railways, parks, and major roads;
-- districts from network partitions and gateway logic;
-- landmarks from structural, visual, cultural, and pragmatic salience;
-- imageability scores from composable cityImage indicators.
-
-The package is not a replacement for GeoPandas, Shapely, OSMnx, NetworkX, iGraph, or rasterio. Instead, it defines a semantic layer on top of those libraries. Generic data acquisition, spatial operations, graph algorithms, and raster processing are delegated to specialised packages; cityImage keeps the schema, topology, Lynchian classification, and scoring semantics consistent across workflows.
+It builds on GeoPandas, Shapely, OSMnx, NetworkX, igraph and rasterio rather than replacing them. Data acquisition, spatial operations, graph algorithms and raster processing are theirs; the schemas, the network topology, the scores and the Lynch classes are cityImage's.
 
 ## Design
 
-The API separates cityImage-owned semantics from external-library responsibilities:
-
-- `cityImage.io` bridges local geospatial files into cityImage schemas.
-- `cityImage.osm` bridges OSMnx outputs into cityImage schemas.
-- `cityImage.network` and `cityImage.network_topology` preserve node/edge/topology semantics.
-- `cityImage.landuse`, `cityImage.barriers`, `cityImage.regions`, `cityImage.landmarks`, and `cityImage.scoring` implement the core urban-image logic.
-- `cityImage.visibility3d` remains optional because 3D sight-line computation requires parallel-processing dependencies (Dask, psutil).
-
-This design keeps the core installation lighter while retaining advanced optional workflows for plotting, building-height estimation, and 3D visibility.
+- `cityImage.io` reads local files into the cityImage schemas; `cityImage.osm` does the same with OSMnx downloads.
+- `cityImage.network` and `cityImage.network_topology` build and clean street networks, keeping the node and edge identifiers.
+- `cityImage.landuse`, `cityImage.barriers`, `cityImage.regions`, `cityImage.landmarks` and `cityImage.scoring` derive the elements and their scores.
+- Plotting, interactive maps, building heights from rasters and 3D sight lines need the optional extras `plot`, `interactive`, `height` and `visibility3d`, so the core install stays light.
 
 ## Terms and conditions
 
