@@ -59,6 +59,12 @@ The same checks run in CI on Python 3.10 to 3.13. Lines are at most 100 characte
 - Run only the offline tests with `pytest -m "not network"`, and the slow ones out too with
   `pytest -m "not network and not slow"`.
 
+## Documentation notebooks
+
+The notebooks in `docs/notebooks` are stored with their outputs; the documentation build does not
+run them. Those that read local files find their data in `docs/data`, which is not in the
+repository: `python scripts/fetch_docs_data.py` downloads it from Zenodo.
+
 ## Code organisation
 
 Each module owns one part of the Image of the City and delegates generic work (OSM acquisition,
