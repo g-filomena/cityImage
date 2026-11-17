@@ -1,35 +1,21 @@
-"""Building and node elevation/height helpers.
+"""Elevations of nodes and buildings, and building heights.
 
-This module keeps height-related capability outside the lightweight core import
-path. Raster-backed functions import ``rasterio`` and ``rasterstats`` lazily,
-inside the functions that need them, so ``import cityImage`` and
-``import cityImage.height`` do not require raster extras.
+The raster functions import ``rasterio`` and ``rasterstats`` inside themselves, so
+``import cityImage`` and ``import cityImage.height`` work without the ``height`` extra.
 
-Terminology (this module follows common GIS usage, with one caveat):
+The rasters, as in common GIS usage:
 
-- **DTM** (Digital Terrain Model): bare-earth *terrain* elevation — buildings and
-  vegetation stripped. This is what gives observer nodes their ``z`` and building
-  footprints their ground ``base``.
-- **DSM** (Digital Surface Model): first-return *surface* elevation — including
-  rooftops and canopy. Comparing it against the DTM yields above-ground building
-  heights (``height = top-of-surface − ground``).
-- **DEM** (Digital Elevation Model): strictly the umbrella term for both. In
-  :func:`buildings_height_from_dem_dtm` the ``dem_path`` argument plays the **DSM
-  role** (the surface with the roofs on it); the name is kept for backwards
-  compatibility.
+- the DTM (Digital Terrain Model) is the bare terrain, without buildings or trees. It gives the
+  nodes their ``z`` and the buildings their ``base``.
+- the DSM (Digital Surface Model) is the surface with roofs and trees on it. A building's
+  height is the DSM over its footprint minus its ``base``.
+- DEM (Digital Elevation Model) is, strictly, the name for both. The ``dem_path`` of
+  :func:`buildings_height_from_dem_dtm` is the DSM; the name is kept for compatibility.
 
-What you need for what:
-
-===========================  =========================================
-You have                     You can derive
-===========================  =========================================
-DTM only                     node ``z``, building ``base`` (no heights)
-DTM + DSM/DEM                node ``z``, building ``base`` **and** ``height``
-detailed building layer      building ``height`` (and ``base`` if it carries one)
-===========================  =========================================
-
-:func:`assign_elevations_from_rasters` is the one-stop entry point covering the
-raster rows of that table — useful for cities without any building-height data.
+With a DTM alone there are ``z`` and ``base`` but no heights; with a DSM too, heights as well.
+A detailed building layer can give heights (and ``base``, if it has one) without rasters.
+For a city without building heights, :func:`assign_elevations_from_rasters` does all the
+raster steps in one call.
 """
 
 from __future__ import annotations
@@ -205,17 +191,15 @@ def buildings_height_from_dem_dtm(
 ):
     """Compute per-building base elevation and height from DEM and DTM rasters.
 
-    ``dem_path`` must point at a **surface** model (DSM: first-return elevations
-    including rooftops); ``dtm_path`` at the bare-earth **terrain** model. Per
-    building, ``base`` is the ``base_stat`` of the terrain under the footprint and
-    ``height`` is the ``top_stat`` of the surface minus that base — i.e. an
-    above-ground height, not an absolute elevation.
+    ``dem_path`` is a surface model (DSM, with the roofs on it), ``dtm_path`` the bare
+    terrain (DTM). For each building, ``base`` is the ``base_stat`` of the terrain under
+    the footprint and ``height`` the ``top_stat`` of the surface minus that base: a height
+    above the ground, not an elevation.
 
     .. warning::
-       Buildings whose footprint does not intersect the raster extent are **dropped
-       from the returned frame** (and an error is raised when none intersect). Use
-       :func:`assign_elevations_from_rasters` for a non-destructive variant that
-       merges results back onto the full input frame.
+       Buildings whose footprint does not intersect the raster are **left out of the
+       returned frame**, and an error is raised when none does.
+       :func:`assign_elevations_from_rasters` keeps them, with NaN values.
 
     Requires the optional ``height`` extra: ``rasterio`` and ``rasterstats``.
     """
@@ -301,10 +285,9 @@ def assign_height_from_dtm(
 ):
     """Sample a DTM raster to assign elevation to point nodes.
 
-    The raster must be a bare-earth **terrain** model (DTM): the sampled value is
-    written to ``z_col`` and represents the ground under the node — e.g. the
-    observer elevation used by the 3D sight lines. Values below ``min_valid_elev``
-    (nodata seas, voids) become NaN for the caller to fill.
+    The raster is the bare terrain (DTM): the value under each node goes to ``z_col``,
+    where the observers of the 3D sight lines stand. Values below ``min_valid_elev``
+    (nodata, sea, voids) become NaN, for the caller to fill.
 
     Requires the optional ``height`` extra: ``rasterio``.
     """
@@ -355,8 +338,7 @@ def buildings_base_from_dtm(
     Use it when a city has building heights from another source (detailed layer, OSM
     tags) but the terrain relief should still feed the 3D sight lines.
 
-    Non-destructive: buildings outside the raster extent keep their row, with
-    ``base`` left as NaN.
+    Buildings outside the raster keep their row, with ``base`` left as NaN.
 
     Requires the optional ``height`` extra: ``rasterio`` and ``rasterstats``.
     """
@@ -408,24 +390,21 @@ def assign_elevations_from_rasters(
     all_touched=False,
     min_valid_elev=-50.0,
 ):
-    """One-stop elevation assignment from rasters, for cities without height data.
+    """Assign node and building elevations from rasters, for cities without height data.
 
-    Given a bare-earth **DTM** (terrain) and optionally a **surface** model
-    (DSM — first-return elevations including rooftops; the raster often shipped
-    under the generic name "DEM"), this assigns:
+    From a bare-terrain DTM and, optionally, a surface model (DSM, with the roofs on it, often
+    distributed as "DEM"), it assigns:
 
-    - node ``z`` (``z_col``): terrain elevation sampled at each point — the observer
-      elevation used by the 3D sight lines;
-    - building ``base``: terrain elevation under each footprint;
-    - building ``height`` (only when ``surface_path`` is given): above-ground height
-      as top-of-surface minus base.
+    - node ``z`` (``z_col``): the terrain at each point, where the observers of the 3D sight
+      lines stand;
+    - building ``base``: the terrain under each footprint;
+    - building ``height`` (only with ``surface_path``): the top of the surface minus ``base``.
 
-    With a DTM alone, heights are *not* derivable — only ``z`` and ``base`` are set;
-    supply heights from a detailed layer or OSM tags instead.
+    A DTM alone gives ``z`` and ``base`` but no heights; these must come from a detailed layer
+    or from OSM tags.
 
-    Non-destructive: results are merged back onto the full input frames, so features
-    outside the raster extent keep their rows (with NaN elevations). Either
-    ``nodes_gdf`` or ``buildings_gdf`` may be ``None`` to skip that side.
+    Features outside the raster keep their rows, with NaN elevations. Either ``nodes_gdf`` or
+    ``buildings_gdf`` may be ``None`` to skip that side.
 
     Returns
     -------

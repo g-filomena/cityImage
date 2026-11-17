@@ -119,7 +119,7 @@ def _normalize_token(value: object) -> str | None:
     if not string:
         return None
 
-    # IMPORTANT: strip ':' at ingestion (qualifiers are added later by code)
+    # ':' separates the parts of a triplet, so it is stripped from the raw value.
     string = _COLON_RE.sub("", string)
 
     string = string.replace("-", "_")

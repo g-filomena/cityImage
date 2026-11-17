@@ -1,25 +1,9 @@
-"""
-Stage 3. Assign land-use labels to building polygons by
-spatially matching against another GeoDataFrame (points or polygons).
+"""Land uses of buildings from another layer of points or polygons.
 
-Assumptions (per your latest design)
-------------------------------------
-- `other_gdf[other_land_use_column]` is already:
-  1) cleaned (no junk tokens),
-  2) normalized/canonical, and
-  3) classified (i.e., already the labels you want to propagate, typically macro-groups).
-
-Therefore this module:
-- does NOT normalize tokens,
-- does NOT apply amenity exclusions,
-- does NOT qualify duplicates,
-- does NOT apply cross-source redundancy rules.
-
-It only:
-- collects labels from spatial matches,
-- de-duplicates per building while preserving order (point mode),
-- aggregates polygon overlaps into per-building label weights (polygon mode),
-- optionally fills a default label when no match exists.
+The labels of the other layer are taken as they are: already cleaned and classified, usually
+macro groups. Each building gets the labels of the points that fall on it, without duplicates, or
+those of the polygons it overlaps, weighted by the overlap; a building with no match can get a
+default label.
 """
 
 from __future__ import annotations
@@ -28,10 +12,6 @@ import numpy as np
 import pandas as pd
 
 from .utils import _deduplicate_preserving_order, _to_list
-
-# =============================================================================
-# Public API
-# =============================================================================
 
 
 def land_use_from_other_gdf(
@@ -126,7 +106,7 @@ def land_use_from_other_gdf(
         )
         effective_overlap_col = overlap_column_name
 
-        # Defensive: ensure overlap column exists when requested
+        # Add the overlap column when no building got one.
         if effective_overlap_col is not None and effective_overlap_col not in output_gdf.columns:
             output_gdf[effective_overlap_col] = [[] for _ in range(len(output_gdf))]
 
@@ -164,11 +144,6 @@ def land_use_from_other_gdf(
                 )
 
     return output_gdf
-
-
-# =============================================================================
-# Point mode
-# =============================================================================
 
 
 def land_use_from_points(
@@ -211,11 +186,6 @@ def land_use_from_points(
 
     output_gdf[new_land_use_column] = output_gdf.geometry.apply(_collect_point_labels)
     return output_gdf
-
-
-# =============================================================================
-# Polygon mode
-# =============================================================================
 
 
 def land_use_from_polygons(
@@ -274,7 +244,7 @@ def land_use_from_polygons(
             return poly_fixed.intersection(geom_fixed).area
 
     def _labels_list(v) -> list[str]:
-        # other_gdf is already clean/classified; ensure list-like + de-dup within polygon.
+        # other_gdf is already classified: only make a list without duplicates.
         return _deduplicate_preserving_order(_to_list(v))
 
     def _renormalize_to_one(labels: list[str], weights: list[float], ndigits: int = 3):

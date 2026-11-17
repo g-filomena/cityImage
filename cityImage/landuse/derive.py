@@ -1,29 +1,11 @@
-"""
-Stage 1: derive raw land-use triplets ("token:macro_group:domain") from an OSM-derived buildings GeoDataFrame.
+"""Raw land-use triplets ("token:macro_group:domain") of buildings downloaded from OSM.
 
-Key features
-------------
-1) Normalize + clean tokens
-   - accepts scalars and ";"-separated multi-values
-   - drops junk values (yes/no/etc.) and excluded amenities
-   - order-preserving de-duplication per row
-
-2) Redundancy removal (registry-driven)
-   - within-domain: drop group-label triplets "g:g:D" if any member "x:g:D" exists (x != g),
-     using OSM_DOMAIN_GROUPS and OSM_DOMAIN_VALUE_TO_GROUP.
-
-3) Rule-based resolution
-   - applies RESOLUTION_RULES (canonical targets, conditional reclassify, container drops)
-   - global: if any religious building is present, drop all domain=="place_of_worship" triplets.
-
-Dependencies (from .land_use_tags)
-----------------------------------
-- EXCLUDE_AMENITIES: set[str]
-- RESOLUTION_RULES: dict[str, ...]
-- POW_RELIGIOUS_BUILDINGS: set[str]
-- OSM_DOMAIN_GROUPS: dict[str, dict[str, list[str]]]
-- OSM_DOMAIN_VALUE_TO_GROUP: dict[str, dict[str, str]]
-
+The tokens of each building are read from its tags, as single values or ";"-separated lists;
+junk values (yes, no, ...) and the amenities in ``EXCLUDE_AMENITIES`` are dropped, and
+duplicates removed in order. Within a domain, a group label "g:g:D" is dropped when one of its
+members "x:g:D" is present (``OSM_DOMAIN_GROUPS``, ``OSM_DOMAIN_VALUE_TO_GROUP``). The triplets
+are then resolved with ``RESOLUTION_RULES`` (:func:`apply_resolution_rules`). The registries
+are in ``cityImage.landuse.tags``.
 """
 
 from __future__ import annotations
@@ -46,10 +28,6 @@ from .utils import (
     _is_truthy_osm_tag_value,
     _normalize_token,
 )
-
-# -----------------------------------------------------------------------------
-# Module-level constants
-# -----------------------------------------------------------------------------
 
 BUILDING_USE_PREFIX = "building:use:"
 
@@ -230,54 +208,25 @@ def derive_land_uses_raw_fromOSM(buildings_gdf, default: str = "residential"):
 
 
 def apply_resolution_rules(triplets: list[str]) -> list[str]:
-    """
-    Resolver for "token:macro_group:domain" triplets using RESOLUTION_RULES.
+    """Resolve the "token:macro_group:domain" triplets of a row with ``RESOLUTION_RULES``.
 
-    Policy
-    ------
-    - If ANY triplet in the row has macro_group == "UNCLASSIFIED" OR domain == "UNCLASSIFIED",
-      this function SKIPS all automatic resolution logic for the entire row and only performs:
-        * exact triplet de-duplication (order-preserving)
-      Rationale: UNCLASSIFIED rows are intended to be fixed manually first (via overrides),
-      then re-run through this resolver once clean.
+    A row with an UNCLASSIFIED macro group or domain in any triplet is only freed of exact
+    duplicates: it is meant to be fixed by hand first (with overrides) and resolved again.
+    In the other rows, in this order:
 
-    Automatic resolution is applied ONLY when the row contains NO UNCLASSIFIED entries.
+    1. "when" rules reclassify single triplets. Their only condition is ``domain_equals`` and
+       their only action ``reclassify``; the first matching clause wins.
+    2. A token with a canonical form takes it, and is kept once, at its first occurrence.
+    3. When a religious building is present (a ``building`` token in
+       ``POW_RELIGIOUS_BUILDINGS``), every ``place_of_worship`` triplet is dropped.
+    4. Container rules drop a parent when one of its children is present, after steps 1 and 2.
+    5. Exact duplicates are dropped; the triplets keep the input order.
 
-    Automatic resolution semantics (applied only on fully-classified rows)
-    ---------------------------------------------------------------------
-      1) when (PASS 1):
-         - supports only condition: {"domain_equals": "<domain>"}
-         - supports only action: "reclassify"
-         - first matching clause wins
-         - evaluated per-triplet before anything else
-
-      2) canonical:
-         - token-level canonicalization to (macro_group, domain)
-         - token emitted at most once in canonical form (first occurrence wins)
-
-      3) POW global drop:
-         - if ANY religious building token exists in the row (domain="building" and token in POW_RELIGIOUS_BUILDINGS),
-           drop ALL triplets with domain == "place_of_worship"
-
-      4) containers:
-         - rule-driven "drop parent if child present" evaluation
-         - presence is computed AFTER (when + canonical)
-
-      5) final output:
-         - preserves input order
-         - exact triplet dedup (first occurrence wins)
-
-    Notes
-    -----
-    - Assumes no malformed triplets (always "token:macro_group:domain").
-    - With the row-skip policy, UNCLASSIFIED triplets never participate in when/canonical/presence/containers/POW.
+    Triplets are assumed well formed ("token:macro_group:domain").
     """
     if not triplets:
         return triplets
 
-    # ----------------------------
-    # Parse / format helpers
-    # ----------------------------
     def parse(t: str) -> tuple[str, str, str]:
         token, group, domain = t.split(":", 2)
         return token, group, domain
@@ -288,34 +237,20 @@ def apply_resolution_rules(triplets: list[str]) -> list[str]:
     # Parse once, preserve original order via index
     parsed = [(i, *parse(t)) for i, t in enumerate(triplets)]
 
-    # ============================================================================
-    # ROW-GUARD — if ANY UNCLASSIFIED exists, skip all automatic logic
-    # ============================================================================
+    # A row with any UNCLASSIFIED triplet is left as it is, only without exact duplicates.
     if any(group == "UNCLASSIFIED" or domain == "UNCLASSIFIED" for _, _, group, domain in parsed):
-        # exact-dedup, preserve order
         return list(dict.fromkeys(triplets))
 
-    # ----------------------------
-    # Canonical targets:
-    # token -> (canonical_macro_group, canonical_domain)
-    # ----------------------------
+    # token -> (canonical macro_group, canonical domain)
     canonical_target: dict[str, tuple[str, str]] = {
         token: (rule["canonical"]["macro_group"], rule["canonical"]["domain"])
         for token, rule in RESOLUTION_RULES.items()
         if "canonical" in rule
     }
 
-    # ============================================================================
-    # PASS 1 — "when" per-triplet reclassify
-    #
-    # Goal:
-    #   override a specific triplet's (token, group, domain) before any presence/canonical.
-    #
-    # Notes:
-    #   - only supports domain_equals
-    #   - only supports action=reclassify
-    #   - first matching clause wins
-    # ============================================================================
+    # Pass 1: the "when" rules reclassify single triplets, before presence and canonical forms
+    # are computed. Only `domain_equals` conditions and the `reclassify` action exist; the first
+    # matching clause wins.
     reclassify_override: dict[int, tuple[str, str, str]] = {}
 
     for i, token, _group, domain in parsed:
@@ -335,38 +270,27 @@ def apply_resolution_rules(triplets: list[str]) -> list[str]:
             break  # first matching clause wins
 
     def after_when(i: int, token: str, group: str, domain: str) -> tuple[str, str, str]:
-        """Triplet after PASS 1 (or unchanged if no override)."""
+        """The triplet after pass 1 (unchanged when no rule applies)."""
         return reclassify_override.get(i, (token, group, domain))
 
-    # ============================================================================
-    # PASS 2 — Presence AFTER (when + canonical)
-    #
-    # This drives:
-    #   - POW global drop (religious building present)
-    #   - container drop rules
-    # ============================================================================
+    # Pass 2: which tokens are present in each domain, after the "when" rules and the canonical
+    # forms. The place-of-worship drop and the container rules read it.
     domain_to_tokens: dict[str, set[str]] = {}
 
     for i, token, group, domain in parsed:
         token, group, domain = after_when(i, token, group, domain)
 
-        # Presence reflects canonical endpoints
         if token in canonical_target:
             group, domain = canonical_target[token]
 
         domain_to_tokens.setdefault(domain, set()).add(token)
 
-    # POW global drop condition:
+    # A religious building drops every place_of_worship triplet of the row.
     religious_building_present = bool(
         domain_to_tokens.get("building", set()) & POW_RELIGIOUS_BUILDINGS
     )
 
-    # ============================================================================
-    # Containers — rule-driven
-    #
-    # Output:
-    #   container_drops contains (parent_token, parent_domain) pairs to remove.
-    # ============================================================================
+    # Containers: the (parent_token, parent_domain) pairs to drop because a child is present.
     container_drops: set[tuple[str, str]] = set()
 
     for token, rule in RESOLUTION_RULES.items():
@@ -376,7 +300,7 @@ def apply_resolution_rules(triplets: list[str]) -> list[str]:
 
         parent_domain = container["parent_domain"]
 
-        # Parent must be present (post-when + post-canonical) to be droppable
+        # Only a parent present after pass 1 and the canonical forms can be dropped.
         if token not in domain_to_tokens.get(parent_domain, set()):
             continue
 
@@ -394,16 +318,8 @@ def apply_resolution_rules(triplets: list[str]) -> list[str]:
                     container_drops.add((token, parent_domain))
                     break
 
-    # ============================================================================
-    # FINAL EMISSION — preserve order and apply filters
-    #
-    # Order:
-    #   - when reclassify
-    #   - canonical uniqueness
-    #   - POW global drop
-    #   - container drops
-    #   - exact triplet dedup
-    # ============================================================================
+    # Output, in the input order: "when" reclassification, one canonical triplet per token,
+    # the place-of-worship drop, the container drops, and no exact duplicates.
     out: list[str] = []
     seen: set[str] = set()  # exact triplet dedup
     emitted_canon: set[str] = set()  # token-level canonical dedup
@@ -411,14 +327,13 @@ def apply_resolution_rules(triplets: list[str]) -> list[str]:
     for i, tok0, grp0, dom0 in parsed:
         tok, grp, dom = after_when(i, tok0, grp0, dom0)
 
-        # Canonical: force canonical endpoint and only emit first occurrence of that token
+        # A token with a canonical form is emitted once, in that form, at its first occurrence.
         if tok in canonical_target:
             if tok in emitted_canon:
                 continue
             grp, dom = canonical_target[tok]
             emitted_canon.add(tok)
 
-        # POW global drop
         if religious_building_present and dom == "place_of_worship":
             continue
 

@@ -1,82 +1,9 @@
-"""
-Stage 2: resolve raw OSM triplets into stable land-use labels.
+"""Land-use triplets ("token:group:domain") into labels: OSM macro groups, DMA categories
+(live, work, visit) or classes of a sparse attribute.
 
-Purpose
--------
-Take per-row raw triplets produced by Stage 1:
-    ["<token>:<group>:<domain>", ...]
-and apply deterministic rule-based resolution to:
-- enforce canonical domain/group targets for specific tokens,
-- reclassify special cases (conditional on source domain),
-- remove redundant container parents when child evidence exists,
-- suppress place_of_worship features when a religious building is present,
-- preserve UNCLASSIFIED triplets unchanged.
-
-Inputs
-------
-buildings_gdf[land_uses_raw_column]:
-    Scalar or list-like of triplets formatted as:
-        "<token>:<group>:<domain>"
-
-Outputs
--------
-buildings_gdf[land_uses_raw_column] (in-place update pattern) or a new column:
-    list[str] of resolved triplets, still formatted as:
-        "<token>:<group>:<domain>"
-
-Optionally (downstream):
-- Stage 2 can be followed by projecting triplets to macro-groups only
-  (e.g., ["education", "healthcare", ...]) for propagation in Stage 3.
-
-Resolution model
-----------------
-Stage 2 is a pure resolver: it assumes Stage 1 already handled:
-- token normalization and junk filtering,
-- amenity exclusions,
-- within-domain group-label redundancy removal.
-
-Stage 2 does NOT:
-- normalize tokens,
-- infer new tokens,
-- merge with external sources,
-- apply geometry logic.
-
-Deterministic pass order
-------------------------
-Given triplets in original row order, Stage 2 applies:
-
-1) UNCLASSIFIED pass-through
-   - any triplet with token OR group OR domain == "UNCLASSIFIED"
-   - emitted as-is (only exact-deduped)
-   - excluded from all rule logic and from presence computations
-
-2) PASS 1: when reclassify (per occurrence)
-   - evaluate RESOLUTION_RULES[token]["when"] clauses for that triplet
-   - match on domain_equals only
-   - first matching clause wins
-   - applies only "reclassify"
-
-3) PASS 2: compute presence AFTER (when + canonical)
-   - build domain -> set(tokens) presence map used for:
-       - POW global suppression
-       - container evaluation
-
-4) Canonicalization (token-level)
-   - if token has a canonical target, force (group, domain) to canonical
-   - emit at most one canonical instance per token (first occurrence wins)
-
-5) POW global suppression
-   - if ANY religious building is present:
-         (domain="building" and token in POW_RELIGIOUS_BUILDINGS)
-     then drop ALL triplets with domain == "place_of_worship"
-
-6) Containers
-   - if a parent token is present in its parent_domain and any configured child
-     condition is met, drop that parent triplet (token, parent_domain)
-
-7) Exact triplet de-duplication
-   - final output preserves order; identical triplets are emitted once
-
+The triplets come from :mod:`cityImage.landuse.derive`, already resolved. UNCLASSIFIED tokens
+can be listed with :func:`find_unclassified_tokens_OSM_groups` and assigned a group by hand with
+:func:`apply_manual_triplet_overrides`.
 """
 
 from __future__ import annotations
@@ -384,9 +311,7 @@ def classify_land_use(
 ):
     """Classify sparse attribute values using explicit category lists.
 
-    This wrapper is kept because older examples/tests call `classify_land_use`.
-    New code should prefer `classify_sparse_land_uses` for non-OSM sparse
-    land-use attributes.
+    For non-OSM land-use attributes, :func:`classify_sparse_land_uses` is preferable.
 
     `categories[i]` contains raw values and `strings[i]` is the target class.
     Scalar and list-like cells are supported. Unmatched values are preserved.

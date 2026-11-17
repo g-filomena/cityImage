@@ -1,12 +1,8 @@
-"""High-level building landmark scoring facade.
+"""Landmark scores of buildings: components, global and local scores, and their weights.
 
-This module is the thin semantic layer that should become the main public
-entry point for cityImage scoring. It consumes already-prepared GeoDataFrames
-and delegates component computations to ``cityImage.landmarks`` only when a
-score is actually requested.
-
-The purpose is to keep the scientific cityImage API separate from data loading,
-network cleaning, plotting, and optional heavyweight dependencies.
+The functions take buildings already in the cityImage schema; they do not download, clean or
+plot data. ``cityImage.landmarks``, which computes the components, is imported only when a
+score is computed.
 """
 
 from __future__ import annotations

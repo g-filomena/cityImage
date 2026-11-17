@@ -741,10 +741,9 @@ def simplify_graph(
         keep = set(nodes_to_keep_regardless)
         to_edit = [node for node in to_edit if node not in keep]
 
-    # Mutable edge state and a node->edges incidence map, so each pseudo-node is resolved with O(1)
-    # dict lookups instead of the old per-node full-frame scan and per-merge .drop (both O(edges),
-    # making the whole pass O(pseudo-nodes x edges)). The merge rules — which two incident edges
-    # (lowest frame position first) and the orientation of the merged line — are unchanged.
+    # Edges as dicts, with a node -> edges map, so that each pseudo-node is resolved with dict
+    # lookups rather than a scan of the frame. Of a node's edges, the two at the lowest frame
+    # positions are merged.
     u_of = edges_gdf["u"].to_dict()
     v_of = edges_gdf["v"].to_dict()
     geom_of = edges_gdf["geometry"].to_dict()

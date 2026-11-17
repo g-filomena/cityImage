@@ -867,9 +867,6 @@ CRAFT_GROUPS = {
 }
 
 
-# ----------------------------
-# Reverse maps: value -> macro-group label
-# ----------------------------
 def _build_value_to_group(group_name_to_values: Mapping[str, Iterable[str]]) -> dict[str, str]:
     """
     Build value -> group label lookup from dict[group_label -> list(values)].
@@ -883,7 +880,7 @@ def _build_value_to_group(group_name_to_values: Mapping[str, Iterable[str]]) -> 
     return out
 
 
-# 1) Single source of truth: domain -> raw GROUPS dict
+# Domain -> its *_GROUPS dict. Every other registry is derived from this one.
 OSM_DOMAIN_GROUPS = {
     "building": BUILDING_GROUPS,
     "amenity": AMENITY_GROUPS,
@@ -897,111 +894,66 @@ OSM_DOMAIN_GROUPS = {
     # "landuse": LANDUSE_GROUPS,   # later, one-line add
 }
 
-# ----------------------------
-# Single source of truth: domain -> (value->group lookup)
-# Dict insertion order = precedence.
-# ----------------------------
-# 2) Derive value->group lookups from the same registry
+# Domain -> (value -> group label). The order of the domains is their precedence.
 OSM_DOMAIN_VALUE_TO_GROUP = {
     domain: _build_value_to_group(groups) for domain, groups in OSM_DOMAIN_GROUPS.items()
 }
 
-# ----------------------------
-# Macro-group labels (i.e., the group keys across domains)
-# ----------------------------
-# Macro group labels = the top-level keys of every *_GROUPS dict
+# Macro groups: the keys of every *_GROUPS dict.
 OSM_MACRO_GROUP_LABELS: set[str] = set()
 for groups in OSM_DOMAIN_GROUPS.values():
     OSM_MACRO_GROUP_LABELS.update(groups.keys())
 
-# -----------------------------------------------------------------------------
-# NORMALIZED RESOLUTION RULES (duplicates + transforms + containers)
-# -----------------------------------------------------------------------------
-#
-# Each BASE token may have:
-# - "canonical": force a canonical domain + macro_group
-# - "when": conditional variants (based on other-domain presence)
-# - "container": parent/child container-drop semantics
-#
-# Notes:
-# - "macro_group" refers to the top-level key inside the *_GROUPS dict
-#   (e.g., AMENITY_GROUPS["education"] -> macro_group="education").
-# - "domain" refers to OSM domains (building, amenity, shop, ...).
-# - Conditions are declarative; implementation interprets them later.
-# -----------------------------------------------------------------------------
+# Resolution rules, read by derive.apply_resolution_rules. A token may have:
+# - "canonical": the domain and macro group it always takes;
+# - "when": reclassifications that depend on the triplet's domain;
+# - "container": a parent dropped when one of its children is present.
+# "macro_group" is a key of a *_GROUPS dict (AMENITY_GROUPS["education"] -> "education"),
+# "domain" an OSM key (building, amenity, shop, ...).
 
-# ------------------------------------------------------------------
-# Place-of-worship suppression: if ANY religious building is present,
-# drop ANY place_of_worship-domain token (generic + sub-features).
-# ------------------------------------------------------------------
-# ------------------------------------------------------------------
-# Place-of-worship global rule (implemented in apply_resolution_rules)
-# ------------------------------------------------------------------
-# If ANY religious building exists in the row (domain="building" and base in BUILDING_GROUPS["religious"]),
-# then DROP ALL triplets with domain == "place_of_worship" (e.g., mass_rock:place_of_worship:place_of_worship).
+# A religious building (a building token in BUILDING_GROUPS["religious"]) drops every
+# place_of_worship triplet of its row, e.g. mass_rock:place_of_worship:place_of_worship.
 POW_RELIGIOUS_BUILDINGS = set(BUILDING_GROUPS["religious"])  # cathedral, church, mosque, ...
 
 RESOLUTION_RULES: dict[str, dict[str, Any]] = {
-    # ---------------------------------------------------------
     # Always education (amenity), regardless of source domain/group
-    # ---------------------------------------------------------
     "kindergarten": {"canonical": {"domain": "amenity", "macro_group": "education"}},
     "college": {"canonical": {"domain": "amenity", "macro_group": "education"}},
     "school": {"canonical": {"domain": "amenity", "macro_group": "education"}},
     "university": {"canonical": {"domain": "amenity", "macro_group": "education"}},
-    # ---------------------------------------------------------
     # Always public_service (amenity), regardless of source domain/group
-    # ---------------------------------------------------------
     "fire_station": {"canonical": {"domain": "amenity", "macro_group": "public_service"}},
     "police": {"canonical": {"domain": "amenity", "macro_group": "public_service"}},
-    # ---------------------------------------------------------
     # Always healthcare (amenity), regardless of source domain/group
-    # ---------------------------------------------------------
     "hospital": {"canonical": {"domain": "amenity", "macro_group": "healthcare"}},
     "clinic": {"canonical": {"domain": "amenity", "macro_group": "healthcare"}},
-    # ---------------------------------------------------------
     # Always religious (building), regardless of source domain/group
-    # ---------------------------------------------------------
     "chapel": {"canonical": {"domain": "building", "macro_group": "religious"}},
     "monastery": {"canonical": {"domain": "building", "macro_group": "religious"}},
     "temple": {"canonical": {"domain": "building", "macro_group": "religious"}},
-    # ---------------------------------------------------------
     # Always accommodation (building), regardless of source domain/group
-    # ---------------------------------------------------------
     "hotel": {"canonical": {"domain": "building", "macro_group": "accommodation"}},
     "house": {"canonical": {"domain": "building", "macro_group": "accommodation"}},
-    # ---------------------------------------------------------
     # Museum: canonical to tourism, regardless of source domain/group
-    # ---------------------------------------------------------
     "museum": {"canonical": {"domain": "tourism", "macro_group": "tourism"}},
-    # ---------------------------------------------------------
     # Pharmacy: canonical to shop taxonomy, regardless of source domain/group
-    # ---------------------------------------------------------
     "pharmacy": {"canonical": {"domain": "shop", "macro_group": "shop_health_beauty"}},
-    # ---------------------------------------------------------
     # Always shop_food_beverages (shop), regardless of source domain/group
-    # ---------------------------------------------------------
     "restaurant": {"canonical": {"domain": "shop", "macro_group": "shop_food_beverages"}},
     "bar": {"canonical": {"domain": "shop", "macro_group": "shop_food_beverages"}},
     "cafe": {"canonical": {"domain": "shop", "macro_group": "shop_food_beverages"}},
     "ice_cream": {"canonical": {"domain": "shop", "macro_group": "shop_food_beverages"}},
-    # ---------------------------------------------------------
     # Always entertainment_arts_culture (amenity), regardless of source domain/group
-    # ---------------------------------------------------------
     "cinema": {"canonical": {"domain": "amenity", "macro_group": "entertainment_arts_culture"}},
     "community_centre": {
         "canonical": {"domain": "amenity", "macro_group": "entertainment_arts_culture"}
     },
-    # ---------------------------------------------------------
     # Always shop categories (shop), regardless of source domain/group
-    # ---------------------------------------------------------
     "internet_cafe": {"canonical": {"domain": "shop", "macro_group": "shop_other"}},
     "kiosk": {"canonical": {"domain": "shop", "macro_group": "shop_general"}},
     "kitchen": {"canonical": {"domain": "shop", "macro_group": "shop_furniture_interior"}},
     "supermarket": {"canonical": {"domain": "shop", "macro_group": "shop_general"}},
-    # ---------------------------------------------------------
     # Building containers: drop if ANY shop token exists (any base under domain="shop")
-    # ---------------------------------------------------------
     "commercial": {
         "container": {
             "parent_domain": "building",
@@ -1014,10 +966,8 @@ RESOLUTION_RULES: dict[str, dict[str, Any]] = {
             "drop_parent_if_child": [{"child_domain": "shop", "child_tokens": None}],
         }
     },
-    # ---------------------------------------------------------
     # amenity=place_of_worship (generic) -> move into place_of_worship domain taxonomy
     # (then the global POW drop rule may remove it if any religious building exists)
-    # ---------------------------------------------------------
     "place_of_worship": {
         "when": [
             {
@@ -1033,10 +983,8 @@ RESOLUTION_RULES: dict[str, dict[str, Any]] = {
             }
         ]
     },
-    # ---------------------------------------------------------
     # amenity=place_of_mourning -> move into place_of_worship domain taxonomy (keep base token)
     # (then the global POW drop rule may remove it if any religious building exists)
-    # ---------------------------------------------------------
     "place_of_mourning": {
         "when": [
             {
@@ -1055,9 +1003,7 @@ RESOLUTION_RULES: dict[str, dict[str, Any]] = {
 }
 
 
-# ----------------------------
 # Duplicates (values appearing in multiple GROUPS across domains)
-# ----------------------------
 def build_duplicate_tokens_map() -> dict[str, set[str]]:
     """
     Values appearing in >1 place across all GROUPS in OSM_DOMAIN_GROUPS.

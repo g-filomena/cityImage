@@ -1,8 +1,8 @@
-"""Lightweight 2D visibility helpers for cityImage.
+"""2D visibility: the visibility polygon (isovist) used by the structural landmark score, and
+its measures.
 
-This module contains the core 2D visibility primitive used by landmark
-structural scoring. It deliberately avoids heavy 3D/runtime dependencies such
-as Dask and psutil.
+It needs only NumPy and Shapely; the 3D sight lines, which need Dask and psutil, are in
+``cityImage.visibility3d``.
 """
 
 from __future__ import annotations

@@ -1,8 +1,8 @@
-"""Core building landmark and imageability scoring functions.
+"""Landmark components of buildings (structural, visual, cultural, pragmatic) and their global
+and local scores.
 
-This module contains the scientific cityImage building-level scoring logic.
-It deliberately excludes data-loading helpers such as OSM download wrappers.
-External libraries should prepare/download data; cityImage should score already-prepared GeoDataFrames.
+The buildings come already loaded; downloading them is ``cityImage.osm``'s or
+``cityImage.io``'s.
 """
 
 from __future__ import annotations

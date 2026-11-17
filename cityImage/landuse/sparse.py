@@ -1,20 +1,14 @@
-"""Sparse/non-OSM land-use helpers.
+"""Land uses from sources other than OSM: an attribute of the building footprints, a municipal,
+survey or classified land-use layer. Their labels are mapped to the same macro groups as the
+OSM ones, which the pragmatic landmark score reads.
 
-This module is intentionally separate from the OSM land-use pipeline.
-
-Use this route when land-use evidence comes from:
-- a sparse attribute already attached to building footprints;
-- a municipal / survey / classified land-use layer;
-- any non-OSM source with labels that need to be mapped to the same
-  macro-groups consumed downstream by landmark/pragmatic scoring.
-
-The expected downstream schema is:
+The result has two columns:
 
     land_uses          list[str]
     land_uses_overlap  list[float]
 
-`land_uses_overlap` is optional for some consumers. When it is present, it
-should align 1:1 with `land_uses` and sum to 1 per row.
+``land_uses_overlap`` is optional for some consumers; when present, it has one value per label
+and sums to 1 in each row.
 """
 
 from __future__ import annotations

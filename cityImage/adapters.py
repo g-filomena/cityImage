@@ -1,10 +1,9 @@
-"""Thin adapters from external GeoDataFrames to cityImage schemas.
+"""GeoDataFrames from OSMnx, GeoPandas, momepy, cityseer or other workflows, in the cityImage
+schemas of ``cityImage.schema``.
 
-These helpers are deliberately small. They do not download data, clean an
-entire street network, classify land use, or compute scores. Their job is to
-normalise data produced by OSMnx, GeoPandas, momepy, cityseer, or custom
-workflows into the minimal cityImage column contracts defined in
-``cityImage.schema``.
+These functions set the ID columns, fill what the geometry gives (``x``/``y`` of nodes, for
+instance) and validate the result. They do not download data, clean street networks, classify
+land use or compute scores.
 """
 
 from __future__ import annotations

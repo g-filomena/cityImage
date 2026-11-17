@@ -836,10 +836,8 @@ def filter_distance(
         order = np.lexsort((target_pos, observer_pos))
         observer_pos, target_pos = observer_pos[order], target_pos[order]
     else:
-        # Broadcast the pairwise distance filter instead of materialising the cartesian
-        # product with a pandas cross merge (which duplicated every attribute column —
-        # including object-dtype Points — for all observer x target pairs and dominated
-        # per-chunk runtime on real cities).
+        # The distance filter runs on coordinate arrays: only the pairs it keeps get their
+        # attribute columns (a cross merge would copy them, Points included, for every pair).
         dx = observer_xy[:, 0][:, None] - target_xy[None, :, 0]
         dy = observer_xy[:, 1][:, None] - target_xy[None, :, 1]
         keep = (dx * dx + dy * dy) >= min_sq
