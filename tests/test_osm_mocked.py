@@ -52,7 +52,8 @@ def test_pure_helpers():
         _distance_arg(None, "distance_from_address")
 
     assert _unit_overlaps_for_land_uses(["a", "b"]) == [0.5, 0.5]
-    assert _unit_overlaps_for_land_uses(None) == [1.0]
+    assert _unit_overlaps_for_land_uses(None) == []
+    assert _unit_overlaps_for_land_uses([]) == []
     assert _unit_overlaps_for_land_uses("solo") == [1.0]
 
     assert _normalise_crs(3857) == "EPSG:3857"
@@ -132,6 +133,15 @@ def test_buildings_from_osm_builds_cityimage_schema(monkeypatch):
     assert "buildingID" in buildings.columns
     assert "land_uses" in buildings.columns
     assert len(buildings) == 1
+
+
+def test_buildings_from_osm_without_default_land_use_leaves_untagged_buildings_without_one(
+    monkeypatch,
+):
+    monkeypatch.setattr(osm, "ox", _fake_ox(_building_features))
+    buildings = buildings_from_osm("Place", crs=UTM, min_area=200, default_land_use="")
+    assert buildings["land_uses"].tolist() == [[]]
+    assert buildings["land_uses_overlap"].tolist() == [[]]
 
 
 def test_barriers_from_osm_with_no_features_returns_empty(monkeypatch):

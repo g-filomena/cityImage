@@ -93,7 +93,7 @@ def _required_distance(distance: float | None, download_method: str) -> float:
 
 
 def _unit_overlaps_for_land_uses(value):
-    """Return equal overlap weights matching a land-use list."""
+    """Return equal overlap weights matching a land-use list (none for no land use)."""
     if isinstance(value, tuple | set | list):
         values = [item for item in value if item is not None]
     elif value is None:
@@ -102,7 +102,7 @@ def _unit_overlaps_for_land_uses(value):
         values = [value]
 
     if not values:
-        return [1.0]
+        return []
 
     weight = 1.0 / len(values)
     return [weight] * len(values)

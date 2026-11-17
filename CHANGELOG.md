@@ -8,6 +8,11 @@ Entries marked **⚠ behaviour** change the output of an existing call with the 
 
 ## [Unreleased]
 
+### Fixed
+
+- `buildings_from_osm(default_land_use="")` no longer fails on a building without OSM land-use
+  tags: it gets no land use and no overlap (`[]`, `[]`) instead of a schema error.
+
 ## [3.0.0] — 2026-11-16
 
 The first release on PyPI since 2.1.1. The changes are listed by kind, then by subject from
