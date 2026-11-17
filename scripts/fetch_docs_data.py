@@ -19,8 +19,8 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
-# The Zenodo file of the dataset (cityImage-docs-data.zip); empty until the record is published.
-DATA_URL = ""
+# The archive of version 24322208 of the dataset (all versions: doi:10.5281/zenodo.24322207)
+DATA_URL = "https://zenodo.org/records/24322208/files/cityImage-docs-data.zip?download=1"
 DATA_SHA256 = "c3b8332f853c0ad8cbcbad2d3a8db8eab1268c8aa9804801b1b2fe5c18198a27"
 
 DATA_DIR = Path(__file__).resolve().parents[1] / "docs" / "data"
