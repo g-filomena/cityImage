@@ -3,16 +3,15 @@
 This module keeps the cityImage-specific district/gateway semantics while
 making community detection an explicitly delegated operation.
 
-Preferred delegated workflow:
+Any partition of the dual graph, as a mapping from its nodes to communities, gives regions:
 
 ```python
-partition = community.best_partition(dual_graph, weight="topo")
-regions = ci.regions_from_dual_partition(partition, dual_graph, edges_gdf, column="p_topo")
+communities = nx.community.louvain_communities(dual_graph, weight="rad", seed=0)
+partition = {node: i for i, community in enumerate(communities) for node in community}
+regions = ci.regions_from_dual_partition(partition, dual_graph, edges_gdf, column="p_rad")
 ```
 
-Convenience wrappers ``identify_regions`` and ``identify_regions_primal`` are
-retained, but they lazy-import ``python-louvain``/``community`` and only wrap its
-``best_partition`` result.
+``identify_regions`` and ``identify_regions_primal`` do this with NetworkX's Louvain method.
 """
 
 from __future__ import annotations
@@ -30,17 +29,22 @@ pd.set_option("display.precision", 3)
 INVALID_DISTRICT = 999999
 
 
-def _best_partition(graph: Any, weight: str, random_state: int | None = 0) -> dict[Any, int]:
-    """Delegate modularity/community detection to python-louvain (imported lazily).
+def _best_partition(
+    graph: Any, weight: str, random_state: int | None = 0, resolution: float = 1.0
+) -> dict[Any, int]:
+    """The Louvain partition of ``graph`` that maximises modularity (NetworkX), as a mapping
+    from its nodes to community numbers, the largest community first.
 
     Louvain visits nodes in random order, so the partition is fixed by ``random_state``;
-    ``None`` draws a different one on each call.
+    ``None`` draws a different one on each call. ``resolution`` (Reichardt & Bornholdt's
+    gamma) sets the scale of the communities: below 1 fewer and larger, above 1 more and
+    smaller.
 
     ``weight="topo"`` partitions on the topology alone. Any other weight must be an attribute
-    of the edges: python-louvain counts a missing one as 1 without a word, which would hand back a
+    of the edges: Louvain counts a missing one as 1 without a word, which would hand back a
     topological partition under the weight's name.
     """
-    import community
+    import networkx as nx
 
     if weight != "topo" and graph.number_of_edges():
         available = set().union(*(data.keys() for *_, data in graph.edges(data=True)))
@@ -50,7 +54,14 @@ def _best_partition(graph: Any, weight: str, random_state: int | None = 0) -> di
                 f"available: {sorted(map(str, available))} (or weight=None for topology alone)"
             )
 
-    return community.best_partition(graph, weight=weight, random_state=random_state)
+    communities = nx.community.louvain_communities(
+        graph,
+        weight=None if weight == "topo" else weight,
+        resolution=resolution,
+        seed=random_state,
+    )
+    communities = sorted(communities, key=lambda community: (-len(community), min(community)))
+    return {node: number for number, community in enumerate(communities) for node in community}
 
 
 def _graph_from_gdfs(
@@ -131,17 +142,22 @@ def identify_regions(
     edges_gdf: gpd.GeoDataFrame,
     weight: str | None = None,
     random_state: int | None = 0,
+    resolution: float = 1.0,
 ) -> gpd.GeoDataFrame:
-    """Identify edge-based regions using delegated python-louvain partitioning.
+    """Identify edge-based regions: the Louvain partition of the dual graph (NetworkX).
 
-    This convenience function preserves the old cityImage behaviour but the
-    community-detection algorithm itself is delegated to python-louvain.
-    The partition is fixed by ``random_state``; ``None`` draws a different one on each call.
+    The partition maximises modularity on the dual graph. It is fixed by
+    ``random_state``; ``None`` draws a different one on each call. ``resolution`` sets the scale
+    of the regions: below 1 fewer and larger, above 1 more and smaller. Modularity cannot tell
+    apart communities below a size that grows with the network, so the same ``resolution`` gives
+    larger regions on a larger network.
     """
     if weight is None:
         weight = "topo"
 
-    partition = _best_partition(dual_graph, weight=weight, random_state=random_state)
+    partition = _best_partition(
+        dual_graph, weight=weight, random_state=random_state, resolution=resolution
+    )
     return regions_from_dual_partition(
         partition,
         dual_graph,
@@ -155,15 +171,20 @@ def identify_regions_primal(
     nodes_gdf: gpd.GeoDataFrame,
     weight: str | None = None,
     random_state: int | None = 0,
+    resolution: float = 1.0,
 ) -> gpd.GeoDataFrame:
-    """Identify node-based regions using delegated python-louvain partitioning.
+    """Identify node-based regions: the Louvain partition of the primal graph (NetworkX).
 
     The partition is fixed by ``random_state``; ``None`` draws a different one on each call.
+    ``resolution`` sets the scale of the regions: below 1 fewer and larger, above 1 more and
+    smaller.
     """
     if weight is None:
         weight = "topo"
 
-    partition = _best_partition(graph, weight=weight, random_state=random_state)
+    partition = _best_partition(
+        graph, weight=weight, random_state=random_state, resolution=resolution
+    )
     return regions_from_primal_partition(partition, nodes_gdf, column=f"p_{weight}")
 
 
@@ -172,20 +193,40 @@ def polygonise_partitions(
     column: str,
     convex_hull: bool = True,
     buffer: float = 30,
+    *,
+    blocks: bool = False,
+    min_block_width: float = 20,
+    closing: float = 50,
 ) -> gpd.GeoDataFrame:
     """Create district polygons from edge-based partition labels.
 
-    This preserves the old geometry pipeline: union partition edges,
-    ``polygonize_full``, union the result, buffer, and optionally return the
-    convex hull.
+    By default the streets of each partition, with the blocks they close (``polygonize_full``),
+    are buffered by ``buffer`` and, with ``convex_hull``, replaced by their convex hull.
+
+    With ``blocks=True`` a district is the blocks its streets close, at least ``min_block_width``
+    wide, buffered by ``buffer`` and closed (buffered by ``closing`` and back) so that adjacent
+    blocks join. The streets that close no block (dead ends, bridges, a street on its own) and the
+    strips between the two carriageways of a road are left out, so a district does not reach over
+    the water along a bridge or a riverside road; the convex hull would. A partition that closes
+    no block wide enough keeps its buffered streets.
     """
     polygons = []
     partition_ids = []
 
     for partition_id in edges_gdf[column].unique():
         partition_edges = edges_gdf[edges_gdf[column] == partition_id]
-        polygonised = polygonize_full(_geometry_union(partition_edges.geometry))
-        polygon = unary_union(polygonised).buffer(buffer)
+        streets = _geometry_union(partition_edges.geometry)
+        polygonised = polygonize_full(streets)
+        if blocks:
+            half_width = min_block_width / 2
+            wide = [
+                block for block in polygonised[0].geoms if not block.buffer(-half_width).is_empty
+            ]
+            polygon = unary_union(wide).buffer(buffer) if wide else streets.buffer(buffer)
+            if closing:
+                polygon = polygon.buffer(closing).buffer(-closing)
+        else:
+            polygon = unary_union(polygonised).buffer(buffer)
         polygons.append(polygon.convex_hull if convex_hull else polygon)
         partition_ids.append(partition_id)
 

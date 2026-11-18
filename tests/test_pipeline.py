@@ -8,13 +8,14 @@ import warnings
 
 import geopandas as gpd
 import networkx as nx
+import osmnx as ox
 import pandas as pd
 import pytest
 from shapely.geometry import LineString, box
 
 import cityImage as ci
 import cityImage.osm as osm
-from cityImage.pipeline import LYNCH_BINS, _rank
+from cityImage.pipeline import LYNCH_BINS, _district_area, _district_network, _rank
 from tests.fixtures.cityimage_minimal import york_raw_network
 
 CONFIG = ci.CityImageConfig(min_district_size=3)
@@ -163,13 +164,45 @@ def test_explore_maps_one_layer_per_element(york_image, tmp_path):
         assert name in text
 
 
+def _clean_york():
+    nodes, edges, _, _ = _layers()
+    return ci.clean_network(nodes, edges, **dict(CONFIG.clean_kwargs))
+
+
+def test_districts_leave_out_the_excluded_highways():
+    nodes, edges = _clean_york()
+    config = ci.CityImageConfig(district_excluded_highways=("footway", "service"))
+
+    kept, dual = _district_network(nodes, edges, edges.crs, config)
+
+    assert not kept["highway"].astype(str).isin(["footway", "service"]).any()
+    assert len(kept) < len(edges)
+    left_out = set(edges["edgeID"]) - set(kept["edgeID"])
+    assert set(dual.nodes) <= set(kept["edgeID"]) and not set(dual.nodes) & left_out
+
+
+def test_district_network_reuses_the_dual_graph_when_no_street_is_left_out():
+    nodes, edges = _clean_york()
+    dual = object()
+    config = ci.CityImageConfig(district_excluded_highways=("motorway",))
+
+    kept, reused = _district_network(nodes, edges, edges.crs, config, dual_graph=dual)
+
+    assert reused is dual and kept is edges
+
+
 def test_place_downloads_the_drive_network_for_districts(monkeypatch):
     nodes, edges, buildings, barriers = _layers()
     calls = []
 
     def fake_network(place, *, network_type, **kwargs):
-        calls.append(("network", network_type))
+        calls.append(("network", network_type, kwargs["download_method"]))
         return nodes.copy(), edges.copy()
+
+    def fake_geocode(place):
+        calls.append(("geocode", place))
+        york = gpd.GeoSeries([edges.union_all().convex_hull], crs=edges.crs).to_crs(4326)
+        return gpd.GeoDataFrame(geometry=york)
 
     def fake_barriers(place, **kwargs):
         calls.append(("barriers", None))
@@ -182,15 +215,53 @@ def test_place_downloads_the_drive_network_for_districts(monkeypatch):
     monkeypatch.setattr(osm, "network_from_osm", fake_network)
     monkeypatch.setattr(osm, "barriers_from_osm", fake_barriers)
     monkeypatch.setattr(osm, "buildings_from_osm", fake_buildings)
+    monkeypatch.setattr(ox, "geocode_to_gdf", fake_geocode)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UserWarning)
         img = ci.image_of_the_city("York, Ontario", config=CONFIG)
 
-    assert ("network", "walk") in calls and ("network", "drive") in calls
+    # the paths network of the place; the drive network of the place's polygon and a margin
+    assert ("network", "walk", "OSMplace") in calls
+    assert ("geocode", "York, Ontario") in calls and ("network", "drive", "polygon") in calls
     assert ("barriers", None) in calls and ("buildings", None) in calls
     assert img.metadata["place"] == "York, Ontario"
-    assert img.metadata["district_network"] == "OSM (drive)"
+    assert img.metadata["district_network"] == "OSM (drive), study area + 1000 m"
     assert set(img.layers()) == {"paths", "nodes", "edges", "districts", "landmarks"}
+
+
+def test_district_area_is_the_study_area_and_a_margin():
+    point = (43.77, -79.50)
+    config = ci.CityImageConfig()
+    assert _district_area(point, "distance_from_point", 1500, config) == (
+        point,
+        "distance_from_point",
+        2500,
+    )
+    no_margin = ci.CityImageConfig(district_margin=0)
+    assert _district_area(point, "distance_from_point", 1500, no_margin) == (
+        point,
+        "distance_from_point",
+        1500,
+    )
+
+    square = gpd.GeoSeries([box(0, 0, 1000, 1000)], crs="EPSG:32617").to_crs(4326).iloc[0]
+    wider, method, distance = _district_area(square, "polygon", None, config)
+
+    metric = gpd.GeoSeries([square, wider], crs=4326).to_crs("EPSG:32617")
+    assert method == "polygon" and distance is None
+    assert metric.iloc[1].contains(metric.iloc[0])
+    # a 1 km square with a 1 km margin: 3 km wide, the corners rounded
+    assert 8.0e6 < metric.iloc[1].area < 9.0e6
+
+
+def test_district_place_is_the_area_the_districts_partition():
+    config = ci.CityImageConfig(district_place="Greater London", district_margin=500)
+
+    assert _district_area("City of London", "OSMplace", None, config) == (
+        "Greater London",
+        "OSMplace",
+        None,
+    )
 
 
 @pytest.mark.parametrize(
@@ -218,6 +289,10 @@ def test_config_rejects_bad_values():
         ci.CityImageConfig(lynch_bins=(0.0, 0.5))
     with pytest.raises(ValueError, match="district_network"):
         ci.CityImageConfig(district_network="walk")
+    with pytest.raises(ValueError, match="district_margin"):
+        ci.CityImageConfig(district_margin=-1)
+    with pytest.raises(ValueError, match="district_resolution"):
+        ci.CityImageConfig(district_resolution=0)
 
 
 def test_rank_classes_follow_lynch_ranges():

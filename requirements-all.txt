@@ -9,7 +9,6 @@ osmnx>=2.0.5
 pandas>=2.2.2
 psutil>=5.9
 pyproj>=3.4
-python-louvain>=0.16
 rasterio>=1.3
 rasterstats>=0.19
 shapely>=2.1

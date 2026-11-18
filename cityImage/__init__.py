@@ -1,8 +1,8 @@
 """Top-level public API for cityImage.
 
 The package uses lazy attribute loading: importing ``cityImage`` no longer
-eagerly imports heavy dependencies such as rasterstats, igraph,
-python-louvain, or matplotlib. Public functions/classes are loaded from their
+eagerly imports heavy dependencies such as rasterstats, igraph or
+matplotlib. Public functions/classes are loaded from their
 implementation modules only when first accessed, preserving the historical
 ``import cityImage as ci`` style for most workflows.
 """

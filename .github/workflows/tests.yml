@@ -44,7 +44,6 @@ jobs:
             matplotlib>=3.8
             osmnx>=2.0.5
             psutil>=5.9
-            python-louvain>=0.16
             rasterio>=1.3
             rasterstats>=0.19
           cache-environment: true
@@ -106,7 +105,6 @@ jobs:
             matplotlib>=3.8
             osmnx>=2.0.5
             psutil>=5.9
-            python-louvain>=0.16
             rasterio>=1.3
             rasterstats>=0.19
           cache-environment: true
@@ -158,7 +156,6 @@ jobs:
             matplotlib>=3.8
             osmnx>=2.0.5
             psutil>=5.9
-            python-louvain>=0.16
             rasterio>=1.3
             rasterstats>=0.19
           cache-environment: true

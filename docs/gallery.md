@@ -48,13 +48,21 @@ Street are the strongest paths, then Essex Street. The edges are crowded: OpenSt
 of Boston's streets as major roads, and their 60 km of barriers outweigh the 17 km along the
 water, where Lynch's interviewees saw above all the Charles River.
 `CityImageConfig(include_primary_barriers=False)` keeps only the motorways and trunk roads.
+As in Filomena, Verstegen & Manley (2019), the districts partition the drive network within
+8 km of City Hall.
 
 ```python
+config = ci.CityImageConfig(
+    district_place=(42.3603, -71.0580),  # Boston City Hall
+    district_download_method="distance_from_point",
+    district_distance=8000,
+)
 img = ci.image_of_the_city(
     (42.357, -71.064),
     download_method="distance_from_point",
     distance=1500,
     crs="EPSG:32619",
+    config=config,
 )
 img.explore()
 ```

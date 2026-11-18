@@ -32,7 +32,7 @@ img = ci.image_of_the_city(
 | Paths | `img.paths` (streets) | angular betweenness on the dual graph | `Ab`, `Ab_sc`, `lynch_class`, `sep_barr` |
 | Nodes | `img.nodes` (junctions) | betweenness weighted by length | `Bc`, `Bc_sc`, `lynch_class`, `district`, `gateway` |
 | Edges | `img.edges` (barriers) | rivers, railways, major roads, parks | `barrier_type`, `barrierID` |
-| Districts | `img.districts` (polygons) | modularity on the dual drive network, weighted by angle | `district` |
+| Districts | `img.districts` (polygons) | modularity on the dual drive network of the study area and 1 km around it (or of `district_place`), without motorways, weighted by angle; the blocks of each partition | `district` |
 | Landmarks | `img.landmarks` (buildings) | global landmark score | `gScore`, `gScore_sc`, `lynch_class`, its components |
 
 A city of 2 km around its centre takes 10–30 minutes, most of it spent waiting for

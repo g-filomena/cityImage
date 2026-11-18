@@ -8,9 +8,11 @@ existing cityImage function, so the pipeline adds no method of its own:
   length (``network_from_osm``, ``clean_network``, ``calculate_centrality``);
 - **paths**: angular betweenness of the streets (``Ab``): betweenness of the dual graph, whose
   links are weighted by the angle between two streets;
-- **districts**: modularity partitions of the dual graph of the drive network, weighted by angle
-  (``identify_regions``), as polygons (``polygonise_partitions``) and on the street nodes, with
-  their gateways (``amend_nodes_membership``, ``find_gateways``);
+- **districts**: modularity partitions of the dual graph of the drive network of the city the
+  study area belongs to (``district_place``), or of the study area and a margin, without its
+  motorways, weighted by angle (``identify_regions``), as the blocks their streets close
+  (``polygonise_partitions(blocks=True)``) and on the street nodes, with their gateways
+  (``amend_nodes_membership``, ``find_gateways``);
 - **edges**: the barriers (``barriers_from_osm``), and the streets crossing them
   (``assign_structuring_barriers``);
 - **landmarks**: the global landmark score of the buildings (``score_cityimage_buildings``).
@@ -24,6 +26,7 @@ only the strongest elements. Districts and edges are not ranked.
 
 from __future__ import annotations
 
+import re
 import warnings
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
@@ -101,6 +104,29 @@ class CityImageConfig:
     min_district_size
         Partitions with this many streets or fewer are left out, and their nodes join a
         neighbouring district.
+    district_place, district_download_method, district_distance
+        The area whose drive network the districts partition, as a query of
+        ``network_from_osm``: the city or the metropolitan area the study area belongs to (e.g.
+        ``"Greater London"`` for central London). The districts then form on the whole city,
+        and the study area takes those that reach it. The 2019 paper partitioned the network
+        within 8 km of Boston City Hall for paths and nodes within 4 km. Without
+        ``district_place``, the study area widened by ``district_margin``.
+    district_margin
+        Without ``district_place``: metres added around the study area, so that the districts
+        along its edge are not cut by it (about the width of a district). A distance
+        (``distance_from_point``, ``distance_from_address``) grows by it; a place or a polygon
+        is buffered by it. ``0`` partitions the study area only.
+    district_resolution
+        Resolution of the modularity partition (NetworkX's Louvain): below 1 fewer and larger
+        districts, above 1 more and smaller. Modularity cannot tell apart communities below a
+        size that grows with the network, so a wider district area gives larger districts at
+        the same resolution.
+    district_excluded_highways
+        OSM ``highway`` values left out of the network the districts partition: motorways are
+        Lynch's edges, not streets of a district (the 2019 paper leaves them out too). Leaving
+        them out can split the network (in Boston, East Boston is reached by the motorway
+        tunnels only): each part is then partitioned on its own. ``trunk`` roads are kept, as in
+        many countries they are ordinary main streets.
     random_state
         Seed of the modularity partition; ``None`` draws a different partition on each call.
     include_primary_barriers, include_secondary_barriers, parks_min_area
@@ -123,6 +149,12 @@ class CityImageConfig:
     district_network: str = "drive"
     district_weight: str | None = "rad"
     min_district_size: int = 10
+    district_place: Any = None
+    district_download_method: str = "OSMplace"
+    district_distance: float | None = None
+    district_margin: float = 1000.0
+    district_resolution: float = 1.0
+    district_excluded_highways: tuple[str, ...] = ("motorway", "motorway_link")
     random_state: int | None = 0
     include_primary_barriers: bool = True
     include_secondary_barriers: bool = False
@@ -137,6 +169,10 @@ class CityImageConfig:
             raise ValueError("lynch_bins must be increasing thresholds in (0, 1]")
         if self.district_network not in {"drive", "same"}:
             raise ValueError("district_network must be 'drive' or 'same'")
+        if not self.district_margin >= 0:
+            raise ValueError("district_margin must be 0 or more")
+        if not self.district_resolution > 0:
+            raise ValueError("district_resolution must be positive")
 
 
 @dataclass
@@ -337,14 +373,22 @@ def image_of_the_city(
 
     districts = None
     if "districts" in requested:
-        district_edges = edges
-        district_graph = dual_graph
-        if config.district_network == "drive" and place is not None:
+        district_edges, district_graph = edges, dual_graph
+        if config.district_network == "drive" and (
+            place is not None or config.district_place is not None
+        ):
             district_edges, district_graph = _drive_dual_graph(
                 place, download_method, distance, crs, config
             )
-            metadata["district_network"] = "OSM (drive)"
+            metadata["district_network"] = (
+                f"OSM (drive) of {config.district_place}"
+                if config.district_place is not None
+                else f"OSM (drive), study area + {config.district_margin:g} m"
+            )
         else:
+            district_edges, district_graph = _district_network(
+                nodes, edges, crs, config, dual_graph=dual_graph
+            )
             metadata["district_network"] = "paths network"
         nodes, districts = _districts(nodes, edges, district_edges, district_graph, config)
 
@@ -434,10 +478,68 @@ def _drive_dual_graph(
 ) -> tuple[gpd.GeoDataFrame, Any]:
     from .osm import network_from_osm
 
+    place, download_method, distance = _district_area(place, download_method, distance, config)
     nodes, edges = network_from_osm(
         place, download_method=download_method, network_type="drive", crs=crs, distance=distance
     )
     nodes, edges = clean_network(nodes, edges, **dict(config.clean_kwargs))
+    return _district_network(nodes, edges, crs, config)
+
+
+def _district_area(
+    place: Any, download_method: str, distance: float | None, config: CityImageConfig
+) -> tuple[Any, str, float | None]:
+    """The query of the area the districts partition: ``district_place``, or else the study
+    area widened by ``district_margin``."""
+    if config.district_place is not None:
+        return config.district_place, config.district_download_method, config.district_distance
+    margin = config.district_margin
+    if margin == 0:
+        return place, download_method, distance
+    if download_method in {"distance_from_point", "distance_from_address"} and distance:
+        return place, download_method, distance + margin
+    if download_method == "polygon":
+        polygon = place
+    else:
+        import osmnx as ox
+
+        polygon = ox.geocode_to_gdf(place).geometry.union_all()
+    area = gpd.GeoSeries([polygon], crs="EPSG:4326")
+    metric = area.estimate_utm_crs()
+    wider = gpd.GeoSeries([area.to_crs(metric).iloc[0].buffer(margin)], crs=metric)
+    return wider.to_crs("EPSG:4326").iloc[0], "polygon", None
+
+
+def _highway_values(value: Any) -> set[str]:
+    """The OSM ``highway`` values of an edge: one, or several on a merged edge."""
+    if isinstance(value, list | tuple | set | np.ndarray):
+        return {str(v) for v in value}
+    if value is None or (isinstance(value, float) and np.isnan(value)):
+        return set()
+    return set(re.findall(r"[A-Za-z_]+", str(value)))
+
+
+def _district_network(
+    nodes: gpd.GeoDataFrame,
+    edges: gpd.GeoDataFrame,
+    crs: Any,
+    config: CityImageConfig,
+    dual_graph: Any = None,
+) -> tuple[gpd.GeoDataFrame, Any]:
+    """The streets the districts partition (without ``district_excluded_highways``) and their
+    dual graph; ``dual_graph``, the dual graph of all ``edges``, is reused when none is left out.
+
+    A street is left out only after cleaning, so that cleaning does not drop as an island the
+    part of the network the left-out streets alone connect.
+    """
+    excluded = set(config.district_excluded_highways)
+    if excluded and "highway" in edges.columns:
+        left_out = edges["highway"].apply(lambda value: bool(_highway_values(value) & excluded))
+    else:
+        left_out = pd.Series(False, index=edges.index)
+    if dual_graph is not None and not left_out.any():
+        return edges, dual_graph
+    edges = edges[~left_out]
     nodes_dual, edges_dual = dual_gdf(nodes, edges, crs)
     return edges, dual_graph_fromGDF(nodes_dual, edges_dual)
 
@@ -453,7 +555,11 @@ def _districts(
     weight = config.district_weight
     column = f"p_{weight or 'topo'}"
     partitioned = identify_regions(
-        district_graph, district_edges, weight=weight, random_state=config.random_state
+        district_graph,
+        district_edges,
+        weight=weight,
+        random_state=config.random_state,
+        resolution=config.district_resolution,
     )
     sizes = partitioned[column].value_counts()
     kept = partitioned[
@@ -464,7 +570,7 @@ def _districts(
         _warn("districts", f"no partition has more than {config.min_district_size} streets")
         return nodes, None
 
-    polygons = polygonise_partitions(kept, column)
+    polygons = polygonise_partitions(kept, column, convex_hull=False, blocks=True)
     assigned = district_to_nodes_from_polygons(nodes, polygons, column)
     try:
         assigned = amend_nodes_membership(assigned, edges, column, config.min_district_size)

@@ -41,8 +41,7 @@ From a street network, buildings and barriers, cityImage derives Lynch's five el
 
 - GeoPandas and Shapely: geometries, CRS, spatial joins and file IO;
 - OSMnx: OpenStreetMap downloads;
-- NetworkX and igraph: graphs and their algorithms;
-- python-louvain: modularity partitions;
+- NetworkX and igraph: graphs and their algorithms, the modularity partitions among them;
 - rasterio and rasterstats: raster sampling (extra `height`);
 - Dask: the parallel 3D sight lines (extra `visibility3d`).
 
@@ -70,7 +69,7 @@ pip install cityImage
 ```
 
 The core install includes graph centrality (igraph) and region detection
-(python-louvain), and keeps only heavier, workflow-specific dependencies out of the
+(NetworkX), and keeps only heavier, workflow-specific dependencies out of the
 base environment. Use extras for those:
 
 ```bash
@@ -110,7 +109,7 @@ Submodules marked *(extra: X)* need the corresponding optional install (see
 - `cityImage.barriers`: natural and artificial barriers such as rivers,
   railways, parks, and major roads.
 - `cityImage.regions`: districts and gateways from network partitions
-  (modularity-based detection via python-louvain, a core dependency).
+  (Louvain modularity partitions, with NetworkX).
 - `cityImage.landuse`: land-use derivation, classification, sparse
   representation, and assignment.
 - `cityImage.buildings`: building selection, study-area and height-reading helpers.

@@ -5,7 +5,7 @@ cityImage API reference
 
 This page documents the public API. cityImage leaves file reading and CRS
 handling to GeoPandas, OpenStreetMap downloads to OSMnx, graph algorithms to
-NetworkX, igraph and python-louvain, raster sampling to rasterio and
+NetworkX and igraph, raster sampling to rasterio and
 rasterstats, the parallel 3D sight lines to Dask and static plots to Matplotlib
 and mapclassify. The functions listed here are cityImage's own: networks,
 barriers, regions, land use, landmarks, visibility and scores. Internal helpers

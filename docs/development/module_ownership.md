@@ -21,7 +21,7 @@ Status meanings:
 | `cityImage/angles.py` | graph semantics | keep | none | math/shapely only | Preserves custom endpoint-oriented street-segment angle semantics. |
 | `cityImage/graph.py` | graph core | keep | none | NetworkX | Prepared GDF to graph and dual graph semantics. |
 | `cityImage/centrality.py` | centrality outputs | keep thin | none (igraph is core) | igraph | Preserves centrality output semantics used by scoring; delegates algorithms. |
-| `cityImage/regions.py` | regions/districts | keep | none (python-louvain is core) | NetworkX/python-louvain/Shapely | Keeps district/gateway semantics and mapping between primal/dual outputs. |
+| `cityImage/regions.py` | regions/districts | keep | none | NetworkX/Shapely | Keeps district/gateway semantics and mapping between primal/dual outputs. |
 | `cityImage/barriers.py` | barriers | keep | none | Shapely/GeoPandas | Keeps custom barrier extraction/crossing semantics. |
 | `cityImage/landmarks.py` | landmarks | keep | none | Shapely/GeoPandas | Landmark components and their global and local scores. |
 | `cityImage/scoring.py` | imageability scoring | keep | none | NumPy/Pandas | Combines Lynchian/imageability indicators into score outputs. |

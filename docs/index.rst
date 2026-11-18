@@ -65,7 +65,7 @@ Installation above); the rest are available with the core install.
 - ``cityImage.barriers``: natural and artificial barriers such as rivers,
   railways, parks, and major roads.
 - ``cityImage.regions``: districts and gateways from network partitions
-  (modularity-based detection via python-louvain, a core dependency).
+  (Louvain modularity partitions, with NetworkX).
 - ``cityImage.landuse``: land-use derivation, classification, sparse
   representation, and assignment.
 - ``cityImage.buildings``: building selection and study-area helpers.

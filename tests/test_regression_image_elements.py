@@ -85,9 +85,7 @@ def test_structuring_barrier_assignment_preserves_boolean_crossing_semantics():
     assert assigned.sort_values("edgeID")["sep_barr"].tolist() == [True, True, True, True]
 
 
-def test_district_and_gateway_semantics_are_preserved_when_regions_extra_is_available():
-    pytest.importorskip("community")
-
+def test_district_and_gateway_semantics_are_preserved():
     nodes_gdf, edges_gdf = minimal_network()
     edges_with_districts = edges_gdf.copy()
     edges_with_districts["district"] = [1, 1, 2, 2]

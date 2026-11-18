@@ -5,5 +5,4 @@ numpy>=2.0
 osmnx>=2.0.5
 pandas>=2.2.2
 pyproj>=3.4
-python-louvain>=0.16
 shapely>=2.1

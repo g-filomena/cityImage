@@ -124,8 +124,8 @@ OWNERSHIP: dict[str, ModuleOwner] = {
         "cityImage/regions.py",
         "regions/districts",
         "keep",
-        "python-louvain/community",
-        "networkx/community-louvain/shapely",
+        "none",
+        "networkx/shapely",
         "Keeps district/gateway semantics and mapping between primal/dual outputs.",
     ),
     "cityImage/barriers.py": ModuleOwner(

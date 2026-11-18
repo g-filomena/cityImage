@@ -37,7 +37,6 @@ def test_import_cityimage_does_not_eagerly_import_heavy_optional_modules():
             "dask",
             "rasterstats",
             "igraph",
-            "community",
             "matplotlib",
             "matplotlib.pyplot",
         ]

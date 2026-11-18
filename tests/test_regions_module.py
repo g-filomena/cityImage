@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import geopandas as gpd
 import networkx as nx
 import pytest
+from shapely.geometry import LineString, Point
 
 import cityImage as ci
 from tests.fixtures.cityimage_minimal import CRS, minimal_network, york_network
@@ -45,6 +47,61 @@ def test_polygonise_partitions_preserves_polygonising_buffer_semantics():
     assert all(geom.area > 0 for geom in polygons.geometry)
 
 
+def test_identify_regions_resolution_sets_the_scale_of_the_regions():
+    nodes, edges = york_network()
+    nodes_dual, edges_dual = ci.dual_gdf(nodes, edges, edges.crs)
+    dual = ci.dual_graph_fromGDF(nodes_dual, edges_dual)
+
+    def regions(resolution):
+        partition = ci.identify_regions(dual, edges, weight="rad", resolution=resolution)
+        return partition["p_rad"].nunique()
+
+    assert regions(0.3) < regions(1.0) < regions(3.0)
+
+
+def _district_with_bridge_and_strip():
+    """Two 100 m blocks; a 300 m street out of them (a bridge); a street leading to a 6 m wide
+    strip between two carriageways."""
+    lines = [
+        LineString([(0, 0), (200, 0), (200, 100), (0, 100), (0, 0)]),
+        LineString([(100, 0), (100, 100)]),
+        LineString([(200, 50), (500, 50)]),
+        LineString([(100, 100), (100, 400)]),
+        LineString([(0, 400), (200, 400), (200, 406), (0, 406), (0, 400)]),
+    ]
+    return gpd.GeoDataFrame({"district": [1] * len(lines)}, geometry=lines, crs=CRS)
+
+
+def test_polygonise_partitions_blocks_leave_out_streets_that_close_no_block():
+    edges = _district_with_bridge_and_strip()
+
+    district = ci.polygonise_partitions(
+        edges, "district", convex_hull=False, blocks=True
+    ).geometry.iloc[0]
+
+    assert district.contains(Point(50, 50)) and district.contains(Point(150, 50))
+    assert not district.contains(Point(450, 50))  # the bridge
+    assert not district.contains(Point(100, 403))  # the strip between the carriageways
+
+
+def test_polygonise_partitions_convex_hull_reaches_the_end_of_every_street():
+    edges = _district_with_bridge_and_strip()
+
+    district = ci.polygonise_partitions(edges, "district").geometry.iloc[0]
+
+    assert district.contains(Point(450, 50)) and district.contains(Point(100, 403))
+
+
+def test_polygonise_partitions_blocks_keep_the_streets_of_a_partition_without_blocks():
+    edges = gpd.GeoDataFrame({"district": [1]}, geometry=[LineString([(0, 0), (300, 0)])], crs=CRS)
+
+    district = ci.polygonise_partitions(
+        edges, "district", convex_hull=False, blocks=True
+    ).geometry.iloc[0]
+
+    assert district.contains(Point(150, 0)) and district.area > 0
+
+
 def test_district_gateway_semantics_remain_stable():
     nodes_gdf, edges_gdf = minimal_network()
     edges_with_districts = edges_gdf.copy()
@@ -76,8 +133,7 @@ def test_district_gateway_semantics_remain_stable():
     assert gateways["gateway"].tolist() == [1, 0, 1, 1]
 
 
-def test_identify_regions_convenience_delegates_to_python_louvain_when_available():
-    pytest.importorskip("community")
+def test_identify_regions_gives_every_edge_a_region():
     nodes_gdf, edges_gdf = minimal_network()
     nodes_dual, edges_dual = ci.dual_gdf(nodes_gdf.copy(), edges_gdf.copy(), CRS, angle="degree")
     dual_graph = ci.dual_graph_fromGDF(nodes_dual.copy(), edges_dual.copy())
@@ -89,7 +145,6 @@ def test_identify_regions_convenience_delegates_to_python_louvain_when_available
 
 
 def test_identify_regions_is_reproducible_by_default():
-    pytest.importorskip("community")
     nodes_gdf, edges_gdf = york_network()
     graph = ci.graph_fromGDF(nodes_gdf.copy(), edges_gdf.copy())
 
@@ -123,7 +178,6 @@ def _york_dual_graph():
 
 
 def test_identify_regions_weights_by_the_angle_the_dual_graph_carries():
-    pytest.importorskip("community")
     dual_graph, edges_gdf = _york_dual_graph()
 
     angular = ci.identify_regions(dual_graph, edges_gdf.copy(), weight="rad")
@@ -135,7 +189,6 @@ def test_identify_regions_weights_by_the_angle_the_dual_graph_carries():
 
 @pytest.mark.parametrize("weight", ["radians", "angle"])
 def test_identify_regions_rejects_a_weight_no_edge_has(weight):
-    pytest.importorskip("community")
     dual_graph, edges_gdf = _york_dual_graph()
 
     with pytest.raises(ValueError, match="no edge of the graph has"):
@@ -143,7 +196,6 @@ def test_identify_regions_rejects_a_weight_no_edge_has(weight):
 
 
 def test_identify_regions_primal_rejects_a_weight_no_edge_has():
-    pytest.importorskip("community")
     nodes_gdf, edges_gdf = york_network()
     graph = ci.graph_fromGDF(nodes_gdf, edges_gdf)
 
