@@ -8,48 +8,7 @@ Entries marked **⚠ behaviour** change the output of an existing call with the 
 
 ## [Unreleased]
 
-### Added
-
-- `polygonise_partitions(blocks=True)` draws a district as the blocks its streets close, at least
-  `min_block_width` (20 m) wide, buffered and closed (`closing`, 50 m), without the streets that
-  close no block (bridges, dead ends) or the strips between two carriageways.
-- `CityImageConfig.district_excluded_highways`: the OSM `highway` values left out of the network
-  the districts partition; `("motorway", "motorway_link")` by default.
-- `CityImageConfig.district_place` (with `district_download_method`, `district_distance`): the
-  area whose drive network the districts partition, such as the city or the metropolitan area
-  of the study area (`"Greater London"` for central London); without it, the study area widened
-  by `district_margin` (1000 m).
-- `identify_regions(resolution=...)`, `identify_regions_primal(resolution=...)` and
-  `CityImageConfig.district_resolution`: the resolution of the modularity partition (1 by
-  default): above 1 more and smaller districts, below 1 fewer and larger.
-
-### Changed
-
-- **⚠ behaviour** `identify_regions` and `identify_regions_primal` partition with NetworkX's
-  Louvain method instead of python-louvain, which is no longer a dependency. python-louvain's
-  resolution is not monotonic (on the dual graph of central Boston, 84 communities at 0.25, 28 at
-  1 and 64 at 4); NetworkX's is (13, 30, 66). At resolution 1 the two partitions have the same
-  modularity (0.908 and 0.909 on that graph) but are not identical, and the seed
-  (`random_state`) fixes a different one.
-- **⚠ behaviour** `image_of_the_city` districts:
-  - they partition the drive network of a wider area than the study area: `district_place`, or
-    the study area and a 1000 m margin, so that the districts along its edge are not cut by it
-    (Filomena, Verstegen & Manley (2019) partitioned the network within 8 km of Boston City Hall
-    for paths and nodes within 4 km);
-  - the motorways, Lynch's edges, are left out of that network. This can split it (East Boston
-    is reached by motorway tunnels only): each part is then partitioned on its own;
-  - they are drawn as the blocks their streets close (`polygonise_partitions(blocks=True)`), not
-    as their convex hull, which reached over rivers and over the neighbouring districts. In
-    Boston, 1.5 km around the Common, on the drive network of that area alone, the water under
-    the districts falls from 0.68 to 0.02 km², and the overlap between districts from 4.5 to
-    0.07 km².
-
-### Fixed
-
-- `buildings_from_osm(default_land_use="")` no longer fails on a building without OSM land-use
-  tags: it gets no land use and no overlap (`[]`, `[]`) instead of a schema error.
-
-## [3.0.0] — 2026-11-16
+## [3.0.0] — 2026-11-23
 
 The first release on PyPI since 2.1.1. The changes are listed by kind, then by subject from
 *Network cleaning* on.
@@ -132,8 +91,8 @@ The first release on PyPI since 2.1.1. The changes are listed by kind, then by s
 - `plot_grid_gdf_columns` and `plot_grid_gdfs_column` with one legend for a classified point layer
   no longer fail on recent matplotlib (`'PathCollection' object has no attribute '_legmarker'`);
   the legend markers are sized as before.
-- `requirements.txt` left out `osmnx`, `igraph` and `python-louvain`, which are core: an install
-  from it could not download a network, nor compute centrality and districts. `environment.yml`
+- `requirements.txt` left out `osmnx` and `igraph`, which are core: an install from it could not
+  download a network, nor compute centrality. `environment.yml`
   now has `folium` (for `explore()`) and `pytest-timeout`.
 - `environment.yml` installed the igraph C library (`igraph`) instead of its Python bindings
   (`python-igraph`), so centrality failed in a fresh conda environment.
@@ -147,6 +106,8 @@ The first release on PyPI since 2.1.1. The changes are listed by kind, then by s
   geometries with no category are grey, and the legend is drawn even with a single panel.
 - The `Landmarks_fromOSM` notebook runs on the current API (land uses from `buildings_from_osm`,
   local component weights summing to 1) and is saved with its outputs.
+- `buildings_from_osm(default_land_use="")` no longer fails on a building without OSM land-use
+  tags: it gets no land use and no overlap (`[]`, `[]`) instead of a schema error.
 
 ### Network cleaning — reworked
 
@@ -373,9 +334,37 @@ for a visual walk-through of every case.
 - `along_within_parks` no longer writes into the caller's frame.
 
 ### Districts
+
+- **⚠ behaviour** `identify_regions` and `identify_regions_primal` partition with NetworkX's
+  Louvain method instead of python-louvain, which is no longer a dependency. python-louvain's
+  resolution is not monotonic (on the dual graph of central Boston, 84 communities at 0.25, 28 at
+  1 and 64 at 4); NetworkX's is (13, 30, 66). At resolution 1 the two partitions have the same
+  modularity (0.908 and 0.909 on that graph) but are not identical.
 - **⚠ behaviour** `identify_regions` and `identify_regions_primal` take `random_state` (default `0`)
-  and pass it to python-louvain, so the same input gives the same districts on every call.
-  `random_state=None` restores the previous random partition.
+  and pass it as the seed of the Louvain method, so the same input gives the same districts on
+  every call. `random_state=None` restores the previous random partition.
+- `identify_regions(resolution=...)`, `identify_regions_primal(resolution=...)` and
+  `CityImageConfig.district_resolution`: the resolution of the modularity partition (1 by
+  default): above 1 more and smaller districts, below 1 fewer and larger.
+- `polygonise_partitions(blocks=True)` draws a district as the blocks its streets close, at least
+  `min_block_width` (20 m) wide, buffered and closed (`closing`, 50 m), without the streets that
+  close no block (bridges, dead ends) or the strips between two carriageways.
+- `image_of_the_city` districts:
+  - they partition the drive network of a wider area than the study area: `district_place` (with
+    `district_download_method`, `district_distance`), such as the city or the metropolitan area
+    of the study area (`"Greater London"` for central London), or else the study area widened by
+    `district_margin` (1000 m), so that the districts along its edge are not cut by it
+    (Filomena, Verstegen & Manley (2019) partitioned the network within 8 km of Boston City Hall
+    for paths and nodes within 4 km);
+  - the motorways, Lynch's edges, are left out of that network
+    (`CityImageConfig.district_excluded_highways`, `("motorway", "motorway_link")` by default).
+    This can split it (East Boston is reached by motorway tunnels only): each part is then
+    partitioned on its own;
+  - they are drawn as the blocks their streets close (`polygonise_partitions(blocks=True)`), not
+    as their convex hull, which reached over rivers and over the neighbouring districts. In
+    Boston, 1.5 km around the Common, on the drive network of that area alone, the water under
+    the districts falls from 0.68 to 0.02 km², and the overlap between districts from 4.5 to
+    0.07 km².
 - **⚠ behaviour** `amend_nodes_membership` raises a `ValueError`, instead of looping forever, when
   the network is not connected (remove its islands first), is smaller than `min_size_district`,
   has no district of that size, has nodes that cannot be amended, or does not settle within one
