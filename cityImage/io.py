@@ -137,7 +137,7 @@ def buildings_from_file(
             method="polygon",
             polygon=case_study_area,
         )
-    elif distance_from_center not in (None, 0):
+    elif distance_from_center:
         buildings = select_buildings_by_study_area(
             buildings,
             method="distance",
